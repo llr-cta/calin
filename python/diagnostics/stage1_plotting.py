@@ -27,6 +27,29 @@ import calin.diagnostics.stage1
 import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
+def trigger_type_title(trigger_type):
+    if(trigger_type == 'physics'):
+        return 'PHYS'
+    elif(trigger_type == 'pedestal'):
+        return 'PED'
+    elif(trigger_type == 'external_flasher'):
+        return 'EXT-FLASH'
+    elif(trigger_type == 'internal_flasher'):
+        return 'INT-FLASH'
+    return ''
+
+def trigger_type_and_gain_title(trigger_type, low_gain = False):
+    gain_title = ', LG' if low_gain else ', HG'
+    if(trigger_type == 'physics'):
+        return 'PHYS' + gain_title
+    elif(trigger_type == 'pedestal'):
+        return 'PED' + gain_title
+    elif(trigger_type == 'external_flasher'):
+        return 'EXT-FLASH' + gain_title
+    elif(trigger_type == 'internal_flasher'):
+        return 'INT-FLASH' + gain_title
+    return ''
+
 def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=True,
         lin_scale_suppress_zero=False, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -204,7 +227,8 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         data, cl, channel_mask=mask, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
-        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
+        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC',
+        draw_top12_val=True, top12_val_format='%.1f')
 
     cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
             camera_layout=cl, configured_channels=rc.configured_channel_id(),
@@ -215,7 +239,8 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
 
     return pc, cb
 
-def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
+def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r',
+        figure_factory = calin.plotting.PyPlotFigureFactory(),
         draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, aux_label_fontsize=5.5, stat_label_fontsize=4.75):
     SQRT3_2 = numpy.sqrt(3)/2
@@ -224,6 +249,10 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
     rc = stage1.const_run_config()
     cl = rc.const_camera_layout()
     ri = stage1.const_run_info()
+
+    fig_dict = dict()
+    fig, axis = figure_factory.new_camera_figure()
+    fig_dict['missing_components'] = [ fig, axis ]
 
     max_xy = max(numpy.max(numpy.abs(cl.outline_polygon_vertex_x())),
                  numpy.max(numpy.abs(cl.outline_polygon_vertex_y())))
@@ -303,11 +332,12 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
     axis.axis(numpy.asarray([-1,1,-1,1])*1.05*max_xy)
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
+    axis.set_title('Missing components, run : %d'%stage1.run_number())
 
-    cb = axis.get_figure().colorbar(pc, ax=axis, label='Component missing fraction')
+    cb = fig.colorbar(pc, ax=axis, label='Component missing fraction')
     cb.ax.plot([-max_xy, max_xy], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75)
 
-    return pc
+    return fig_dict
 
 def draw_module_dataorder(stage1, cmap = 'inferno', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -892,23 +922,24 @@ def draw_event_number_histogram(stage1, axis = None):
     return so
 
 def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
-        ped = None, pedvarbase = None, evf = 1.2,
-        axis_hist = None, axis_median = None, axis_gain = None, axis_intensity = None,
+        ped = None, pedvarbase = None, evf = 1.2, draw_median=False, draw_scale=False, draw_gain=False,
+        figure_factory = calin.plotting.PyPlotFigureFactory(),
         cmap = 'inferno', stat_label_fontsize=4.75, pix_lw = 0, outline_lw = 0.5,
         outline_color = '#888888'):
 
-    axis_hist = axis_hist if axis_hist is not None else matplotlib.pyplot.gca()
-
     if(dataset == 'physics'):
-        wfh = stage1.const_wf_hists_physics()
+        wfh = stage1.const_wf_hists_physics() if stage1.has_wf_hists_physics() else None
     elif(dataset == 'pedestal'):
-        wfh = stage1.const_wf_hists_pedestal()
+        wfh = stage1.const_wf_hists_pedestal() if stage1.has_wf_hists_pedestal() else None
     elif(dataset == 'external_flasher'):
-        wfh = stage1.const_wf_hists_external_flasher()
+        wfh = stage1.const_wf_hists_external_flasher() if stage1.has_wf_hists_external_flasher() else None
     elif(dataset == 'internal_flasher'):
-        wfh = stage1.const_wf_hists_internal_flasher()
+        wfh = stage1.const_wf_hists_internal_flasher() if stage1.has_wf_hists_internal_flasher() else None
     else:
         raise RuntimeError('Unknown dataset type :',dataset)
+
+    if wfh is None:
+        return None
 
     all_hist = []
     if(low_gain):
@@ -916,11 +947,16 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         for i in range(wfh.low_gain_channel_size()):
             all_hist.append(wfh.const_low_gain_channel(i))
         cam_hist = wfh.const_low_gain_camera()
+        fig_name = dataset+'_lg'
     else:
         csg = stage1.const_charge_stats().const_high_gain()
         for i in range(wfh.high_gain_channel_size()):
             all_hist.append(wfh.const_high_gain_channel(i))
         cam_hist = wfh.const_high_gain_camera()
+        fig_name = dataset+'_hg'
+
+    if(len(all_hist)==0 or numpy.max([h.const_opt_win_qsum().sum_w() for h in all_hist])==0):
+        return None
 
     if ped is None:
         ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain)
@@ -928,6 +964,11 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                 (low_gain and stage1.config().has_low_gain_opt_sum()) \
             else stage1.config().high_gain_opt_sum().integration_n()
         ped *= nsamp
+
+    fig_dict = dict()
+
+    fig_hist, axis_hist = figure_factory.new_histogram_figure()
+    fig_dict['charge_spectrum_'+fig_name] = [ fig_hist, axis_hist ]
 
     p_x_lr = 0.005
     all_xl = []
@@ -975,8 +1016,12 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
     axis_hist.set_xlabel('Summed waveform [DC]')
     axis_hist.set_ylabel('Density [1/DC]')
     axis_hist.legend(loc=1)
+    axis_hist.set_title('Charge spectrum (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
 
-    if(axis_median is not None):
+    if(draw_median):
+        fig_median, axis_median = figure_factory.new_camera_figure()
+        fig_dict['charge_median_'+fig_name] = [ fig_median, axis_median ]
+
         all_median = numpy.asarray(all_xc)
         data = all_median/numpy.median(all_median)
         mask = numpy.ones_like(all_median, dtype=bool)
@@ -992,14 +1037,45 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_median, pc, data, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                cb_label='Gain estimate [DC]')
+                cb_label='Charge spectrum median [DC]')
 
         # cb = axis_median.get_figure().colorbar(pc, ax=axis_median, label='Median relative signal')
 
         axis_median.get_xaxis().set_visible(False)
         axis_median.get_yaxis().set_visible(False)
+        axis_median.set_title('Charge spectrum median (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
 
-    if(axis_gain is not None):
+    if(draw_scale):
+        fig_scale, axis_scale = figure_factory.new_camera_figure()
+        fig_dict['charge_scale_'+fig_name] = [ fig_scale, axis_scale ]
+
+        all_rms = (numpy.asarray(all_xr)-numpy.asarray(all_xl))/(-2*scipy.special.erfinv(0.005*2-1)*numpy.sqrt(2))
+        data = all_rms
+        mask = numpy.ones_like(all_rms, dtype=bool)
+        rc = stage1.const_run_config()
+        cl = rc.const_camera_layout()
+
+        pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
+                        configured_channels=rc.configured_channel_id(),
+                        axis=axis_scale, cmap=cmap, draw_outline=True, draw_stats=True,
+                        pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_channels=True, stats_format='%.3f',
+                        stats_fontsize=stat_label_fontsize)
+
+        cb = calin.plotting.add_colorbar_and_clipping(axis_scale, pc, data, mask=mask, percentile=99.5,
+                camera_layout=cl, configured_channels=rc.configured_channel_id(),
+                cb_label='Charge spectrum scale [DC]')
+
+        # cb = axis_scale.get_figure().colorbar(pc, ax=axis_scale, label='Median relative signal')
+
+        axis_scale.get_xaxis().set_visible(False)
+        axis_scale.get_yaxis().set_visible(False)
+        axis_scale.set_title('Charge spectrum scale (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
+
+    if(draw_gain):
+        fig_gain, axis_gain = figure_factory.new_camera_figure()
+        fig_dict['charge_gain_'+fig_name] = [ fig_gain, axis_gain ]
+
         all_rms = (numpy.asarray(all_xr)-numpy.asarray(all_xl))/(-2*scipy.special.erfinv(0.005*2-1)*numpy.sqrt(2))
         all_var = all_rms**2
         if pedvarbase is not None:
@@ -1021,32 +1097,38 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
 
         axis_gain.get_xaxis().set_visible(False)
         axis_gain.get_yaxis().set_visible(False)
+        axis_gain.set_title('Charge spectrum gain (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
 
-        if(axis_intensity is not None):
-            all_intensity = numpy.asarray(all_xc)/all_gain
+        fig_intensity, axis_intensity = figure_factory.new_camera_figure()
+        fig_dict['charge_intensity_'+fig_name] = [ fig_intensity, axis_intensity ]
 
-            pc = calin.plotting.plot_camera_image(all_intensity, cl, channel_mask=mask,
-                            configured_channels=rc.configured_channel_id(),
-                            axis=axis_intensity, cmap=cmap, draw_outline=True, draw_stats=True,
-                            pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
-                            hatch_missing_channels=True, stats_format='%.3f PE',
-                            stats_fontsize=stat_label_fontsize)
+        all_intensity = numpy.asarray(all_xc)/all_gain
 
-            cb = calin.plotting.add_colorbar_and_clipping(axis_intensity, pc, all_intensity, mask=mask, percentile=99.5,
-                    camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                    cb_label='Intensity estimate [PE]')
+        pc = calin.plotting.plot_camera_image(all_intensity, cl, channel_mask=mask,
+                        configured_channels=rc.configured_channel_id(),
+                        axis=axis_intensity, cmap=cmap, draw_outline=True, draw_stats=True,
+                        pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_channels=True, stats_format='%.3f PE',
+                        stats_fontsize=stat_label_fontsize)
+
+        cb = calin.plotting.add_colorbar_and_clipping(axis_intensity, pc, all_intensity, mask=mask, percentile=99.5,
+                camera_layout=cl, configured_channels=rc.configured_channel_id(),
+                cb_label='Intensity estimate [PE]')
 
             # cb = axis_intensity.get_figure().colorbar(pc, ax=axis_intensity, label='Intensity estimate [PE]')
 
-            axis_intensity.get_xaxis().set_visible(False)
-            axis_intensity.get_yaxis().set_visible(False)
+        axis_intensity.get_xaxis().set_visible(False)
+        axis_intensity.get_yaxis().set_visible(False)
+        axis_gain.set_title('Charge spectrum intensity (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
+
+    return fig_dict
 
 def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=False, draw_P1 = False,
     figure_factory = calin.plotting.PyPlotFigureFactory()):
 
     if(not stage1.has_charge_stats() or not stage1.const_charge_stats().has_dual_gain() or \
             stage1.const_charge_stats().const_dual_gain().all_max_sample_count_size() == 0):
-        return None
+        return None, None, None
 
     dg = stage1.const_charge_stats().const_dual_gain()
 
@@ -1081,7 +1163,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         raise RuntimeError('Unknown dataset : '+dataset)
 
     if(numpy.max([h.sum_w() for h in all_h_c]) == 0):
-        return None
+        return None, None, None
 
     fig_dict = dict()
 
@@ -1137,7 +1219,8 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         minx = min(minx, numpy.min(x[m]))
         maxx = max(maxx, numpy.max(x[m]))
 
-        axis_hist.plot(x[m], y[m], 'k.', markersize=2, alpha=0.2)
+        if(len(x) > 0 and numpy.count_nonzero(m) > 0):
+            axis_hist.plot(x[m], y[m], 'k.', markersize=2, alpha=0.2)
 
     axis_hist.set_xlim(minx-10, min(maxx+10,700))
     axis_hist.set_xlabel('Low-gain %s [DC]'%dataset_label)
