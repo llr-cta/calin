@@ -15,6 +15,9 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+import matplotlib
+import matplotlib.figure
+import matplotlib.backends.backend_agg
 import matplotlib.pyplot
 import matplotlib.collections
 import matplotlib.path
@@ -27,6 +30,38 @@ import calin.math.histogram
 import calin.ix.iact_data.instrument_layout
 import calin.iact_data.instrument_layout
 import calin.math.regular_grid
+
+class FigureFactory:
+    def __init__(self, dpi=200):
+        self.dpi = dpi
+
+    def new_figure(self):
+        raise RuntimeError("new_figure unimplemented in base clase")
+
+    def new_camera_figure(self):
+        f = self.new_figure()
+        ax = f.subplots(1,1)
+        return f, ax
+
+    def new_histogram_figure(self):
+        f = self.new_figure()
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        return f, ax
+
+class PyPlotFigureFactory(FigureFactory):
+    def __init__(self, dpi=200):
+        super().__init__(dpi)
+
+    def new_figure(self):
+        return matplotlib.pyplot.figure(dpi=self.dpi)
+
+class MatplotlibFigureFactory(FigureFactory):
+    def __init__(self, dpi=200):
+        super().__init__(dpi)
+
+    def new_figure(self):
+        return matplotlib.figure.Figure(dpi=self.dpi)
 
 def obsolete_plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = None,
         cbar_label = None):
