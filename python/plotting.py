@@ -185,7 +185,7 @@ def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
             fill=fill, lw=outline_lw, ls=outline_ls, edgecolor=outline_color, **args))
 
 def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_format='%.3f',
-        draw_top12 = True, draw_top12_val=False, top12_val_format='%.1f'):
+        draw_top12 = True, draw_top12_val=False):
 
     if(mask is not None):
         if(len(mask) != len(values)):
@@ -209,14 +209,21 @@ def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_f
         nshow = min(len(values),12)
         isort = numpy.argsort(values)
         id_len = numpy.max(list(map(lambda i: len(str(i)), ids)))
-        id_fmt = '%%0%dd:%s'%(id_len,top12_val_format)
         top_label = []
         for i in range(nshow):
-            top_label.append(id_fmt%(ids[isort[-(i+1)]],values[isort[-(i+1)]]))
+            value = values[isort[-(i+1)]]
+            if(numpy.abs(value) > 100):
+                value_format = '%.0f'
+            elif(numpy.abs(value) > 10):
+                value_format = '%.1f'
+            else:
+                value_format = '%.2f'
+            id_fmt = '%%0%dd:%s'%(id_len,value_format)
+            top_label.append(id_fmt%(ids[isort[-(i+1)]],value))
         lab_len = numpy.max(list(map(lambda s: len(s), top_label)))
         topN = ''
         for i in range(nshow):
-            if i in [3, 6, 8, 10]:
+            if i in [3, 6, 8, 10, 11]:
                 topN = '\n' + topN
             elif i>0:
                 topN = ' ' + topN
@@ -228,11 +235,19 @@ def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_f
 
         bot_label = []
         for i in range(nshow):
-            bot_label.append(id_fmt%(ids[isort[i]],values[isort[i]]))
+            value = values[isort[i]]
+            if(numpy.abs(value) > 100):
+                value_format = '%.0f'
+            elif(numpy.abs(value) > 10):
+                value_format = '%.1f'
+            else:
+                value_format = '%.2f'
+            id_fmt = '%%0%dd:%s'%(id_len,value_format)
+            bot_label.append(id_fmt%(ids[isort[i]],value))
         lab_len = numpy.max(list(map(lambda s: len(s), bot_label)))
         botN = ''
         for i in range(nshow):
-            if i in [3, 6, 8, 10]:
+            if i in [3, 6, 8, 10, 11]:
                 botN = '\n' + botN
             elif i>0:
                 botN = ' ' + botN
@@ -356,7 +371,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         hatch_missing_channels = False,
         draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f',
-        draw_top12 = True, draw_top12_val=False, top12_val_format='%.1f',
+        draw_top12 = True, draw_top12_val=False,
         additional_polygons = [], additional_polygon_data = []):
     if(channel_mask is None and zero_suppression is not None):
         channel_mask = numpy.asarray(channel_data)>zero_suppression
@@ -427,7 +442,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     if(draw_stats):
         add_stats(axis, max_xy, pix_data, pix_ids,
            stats_fontsize=stats_fontsize, stats_format=stats_format,
-           draw_top12=draw_top12, draw_top12_val=draw_top12_val, top12_val_format=top12_val_format)
+           draw_top12=draw_top12, draw_top12_val=draw_top12_val)
 
     axis.axis('square')
     axis.axis(numpy.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
