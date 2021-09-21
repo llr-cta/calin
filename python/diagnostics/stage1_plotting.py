@@ -1023,7 +1023,8 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         fig_dict['charge_median_'+fig_name] = [ fig_median, axis_median ]
 
         all_median = numpy.asarray(all_xc)
-        data = all_median/numpy.median(all_median)
+        ref_value = numpy.median(all_median)
+        data = all_median/ref_value
         mask = numpy.ones_like(all_median, dtype=bool)
         rc = stage1.const_run_config()
         cl = rc.const_camera_layout()
@@ -1033,11 +1034,16 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                         axis=axis_median, cmap=cmap, draw_outline=True, draw_stats=True,
                         pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_channels=True, stats_format='%.3f',
-                        stats_fontsize=stat_label_fontsize)
+                        stats_fontsize=stat_label_fontsize, draw_top12_val=True)
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_median, pc, data, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                cb_label='Intensity relative to median [DC]')
+                cb_label='Median charge relative to reference')
+
+        max_xy = cl.camera_boundary_maxabs_xy()
+        axis_median.text(max_xy,max_xy,'Reference : %.1f DC'%ref_value,
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
 
         # cb = axis_median.get_figure().colorbar(pc, ax=axis_median, label='Median relative signal')
 
@@ -1060,7 +1066,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                         axis=axis_scale, cmap=cmap, draw_outline=True, draw_stats=True,
                         pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_channels=True, stats_format='%.3f',
-                        stats_fontsize=stat_label_fontsize)
+                        stats_fontsize=stat_label_fontsize, draw_top12_val=True)
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_scale, pc, data, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
@@ -1094,13 +1100,18 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_gain, pc, all_gain, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                cb_label='Gain estimate [DC]')
+                cb_label='Gain estimate [DC/PE]')
 
         # cb = axis_gain.get_figure().colorbar(pc, ax=axis_gain, label='Gain estimate [DC]')
 
+        max_xy = cl.camera_boundary_maxabs_xy()
+        axis_gain.text(max_xy,max_xy,'EVF=$1+\\beta^2$ : %.3f'%numpy.median(evf),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
+
         axis_gain.get_xaxis().set_visible(False)
         axis_gain.get_yaxis().set_visible(False)
-        axis_gain.set_title('Approximate photo-stats gain (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
+        axis_gain.set_title('Photostatistics gain (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
 
         fig_intensity, axis_intensity = figure_factory.new_camera_figure()
         fig_dict['charge_intensity_'+fig_name] = [ fig_intensity, axis_intensity ]
@@ -1118,7 +1129,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
                 cb_label='Approximate intensity [PE/flash]')
 
-            # cb = axis_intensity.get_figure().colorbar(pc, ax=axis_intensity, label='Intensity estimate [PE]')
+        # cb = axis_intensity.get_figure().colorbar(pc, ax=axis_intensity, label='Intensity estimate [PE]')
 
         axis_intensity.get_xaxis().set_visible(False)
         axis_intensity.get_yaxis().set_visible(False)
