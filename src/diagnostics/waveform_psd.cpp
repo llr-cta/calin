@@ -214,3 +214,15 @@ bool WaveformPSDParallelVisitor::merge_results()
   }
   return true;
 }
+
+calin::ix::diagnostics::waveform::CameraWaveformSumPSD*
+WaveformPSDParallelVisitor::psd(calin::ix::diagnostics::waveform::CameraWaveformSumPSD* _psd) const
+{
+  if(_psd == nullptr) {
+    _psd = new calin::ix::diagnostics::waveform::CameraWaveformSumPSD();
+  } else {
+    _psd->Clear();
+  }
+  _psd->CopyFrom(results_);
+  return _psd;
+}
