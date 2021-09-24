@@ -85,7 +85,7 @@ message WaveformRawStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.", (CFO).is_counter=true ];
   repeated uint64 sum                                      = 11 [
     (CFO).desc = "Sum over all events of each waveform sample." ];
   repeated uint64 sum_squared                              = 12 [
@@ -109,7 +109,7 @@ message CameraWaveformRawStats {
 
 message PartialWaveformRawStats {
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.", (CFO).is_counter=true ];
   repeated uint32 sum                                      = 11 [
     (CFO).desc = "Sum over all events of each waveform sample." ];
   repeated uint32 sum_squared                              = 12 [
@@ -131,7 +131,7 @@ message WaveformRawPSD {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.", (CFO).is_counter=true ];
   repeated double psd_sum                                  = 2 [
     (CFO).desc = "Sum of PSDs for all events." ];
   repeated double psd_sum_squared                          = 3 [

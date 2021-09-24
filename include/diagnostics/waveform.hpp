@@ -155,6 +155,49 @@ protected:
 #endif // ndef SWIG
 };
 
+class WaveformPSDParallelVisitor:
+public iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  WaveformPSDParallelVisitor();
+
+  virtual ~WaveformPSDParallelVisitor();
+
+  WaveformPSDParallelVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
+  bool leave_telescope_run(
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+protected:
+  void process_one_waveform(const uint16_t*__restrict__ wf,
+    calin::ix::diagnostics::waveform::WaveformRawPSD* psd);
+
+  WaveformPSDParallelVisitor* parent_ = nullptr;
+
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+  bool has_dual_gain_ = false;
+
+  calin::ix::diagnostics::waveform::CameraWaveformRawPSD results_;
+
+  float*__restrict__ waveform_t_ = nullptr;
+  float*__restrict__ waveform_f_ = nullptr;
+  fftwf_plan fftw_plan_fwd_ = nullptr;
+  fftwf_plan fftw_plan_bwd_ = nullptr;
+};
+
 class WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {

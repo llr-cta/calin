@@ -16,7 +16,7 @@
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 
 set(CALIN_TARGET_LIBRARY calin_diagnostics)
-set(CALIN_SOURCES waveform.cpp
+set(CALIN_SOURCES waveform.cpp waveform_psd.cpp
   run_info.cpp simple_charge_stats.cpp simple_charge_hists.cpp
   stage1.cpp clock_regression.cpp)
 
