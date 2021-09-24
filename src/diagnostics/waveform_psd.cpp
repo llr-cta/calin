@@ -180,15 +180,20 @@ process_one_waveform(const uint16_t*__restrict__ wf,
   calin::ix::diagnostics::waveform::WaveformRawPSD* psd)
 {
   const unsigned nsample = run_config_->num_samples();
+  int32_t wf_sum = 0;
   for(unsigned isample=0; isample<nsample; isample++) {
-    waveform_t_[isample] = float(wf[isample]);
+    wf_sum += wf[isample];
+  }
+  float wf_mean = float(wf_sum)/float(nsample);
+  for(unsigned isample=0; isample<nsample; isample++) {
+    waveform_t_[isample] = float(wf[isample]) - wf_mean;
   }
   fftwf_execute(fftw_plan_fwd_);
   psd->increment_num_entries();
   auto* psd_sum = psd->mutable_psd_sum()->mutable_data();
   const float*__restrict__ ri = waveform_f_;
   const float*__restrict__ ci = waveform_f_ + nsample-1;
-  double psdi = SQR(*ri++);
+  double psdi = SQR(*ri++ + wf_sum);
   (*psd_sum++) += psdi;
   while(ri < ci)
   {
