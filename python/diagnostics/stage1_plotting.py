@@ -1189,6 +1189,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
     all_P0 = []
     all_P1 = []
+    fit_mask = []
 
     minx = numpy.inf
     maxx = -numpy.inf
@@ -1223,12 +1224,19 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         mm = numpy.bitwise_and(h_c.bins()>10, numpy.bitwise_and(x>xcut , y<4000))
 
         if(numpy.count_nonzero(mm) > 5):
-            P = numpy.polyfit(x[mm], y[mm], 1, w=dy[mm])
-            all_P0.append(P[0])
-            all_P1.append(P[1])
+            try:
+                P = numpy.polyfit(x[mm], y[mm], 1, w=dy[mm])
+                all_P0.append(P[0])
+                all_P1.append(P[1])
+                fit_mask.append(True)
+            except:
+                all_P0.append(numpy.nan)
+                all_P1.append(numpy.nan)
+                fit_mask.append(False)
         else:
             all_P0.append(numpy.nan)
             all_P1.append(numpy.nan)
+            fit_mask.append(False)
 
         minx = min(minx, numpy.min(x[m]))
         maxx = max(maxx, numpy.max(x[m]))
@@ -1257,7 +1265,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         #             configured_channels=s1.run_config().configured_channel_id(),
         #             percentile=99.5, percentile_factor=2.0, cb_label='High/Low gain')
         calin.plotting.add_stats(axis_P0, cl.camera_boundary_maxabs_xy(), all_P0,
-             ccid, mask=mask)
+             ccid, mask=mask, draw_top12_val=True)
 
         axis_P0.get_xaxis().set_visible(False)
         axis_P0.get_yaxis().set_visible(False)
@@ -1279,7 +1287,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
             #             configured_channels=s1.run_config().configured_channel_id(),
             #             percentile=99.5, percentile_factor=2.0, cb_label='High/Low gain')
             calin.plotting.add_stats(axis_P1, cl.camera_boundary_maxabs_xy(), all_P1,
-                 ccid, mask=mask)
+                 ccid, mask=mask, draw_top12_val=True)
 
             axis_P1.get_xaxis().set_visible(False)
             axis_P1.get_yaxis().set_visible(False)
