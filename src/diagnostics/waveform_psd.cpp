@@ -177,7 +177,7 @@ bool WaveformPSDParallelVisitor::visit_telescope_event(uint64_t seq_index,
 
 void WaveformPSDParallelVisitor::
 process_one_waveform(const uint16_t*__restrict__ wf,
-  calin::ix::diagnostics::waveform::WaveformRawPSD* psd)
+  calin::ix::diagnostics::waveform::WaveformSumPSD* psd)
 {
   const unsigned nsample = run_config_->num_samples();
   int32_t wf_sum = 0;

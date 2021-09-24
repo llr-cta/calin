@@ -848,7 +848,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
-      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      calin::ix::diagnostics::waveform::WaveformSumPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_high_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_high_gain(ichan),
         results_.mutable_high_gain(ichan), psd);
@@ -863,7 +863,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
-      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      calin::ix::diagnostics::waveform::WaveformSumPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_low_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_low_gain(ichan),
         results_.mutable_low_gain(ichan), psd);
@@ -879,7 +879,7 @@ void WaveformStatsParallelVisitor::
 process_one_waveform(const uint16_t*__restrict__ wf,
   ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
   ix::diagnostics::waveform::WaveformRawStats* r_stat,
-  calin::ix::diagnostics::waveform::WaveformRawPSD* psd)
+  calin::ix::diagnostics::waveform::WaveformSumPSD* psd)
 {
   const unsigned nsample = run_config_->num_samples();
   p_stat->set_num_entries(p_stat->num_entries()+1);
