@@ -798,13 +798,13 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
       auto* hg_wf = psd_results_.add_high_gain();
       hg_wf->mutable_psd_sum()->Resize(nfreq,0);
       hg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
-      hg_wf->mutable_corr_sum()->Resize(N,0);
-      hg_wf->mutable_corr_sum_squared()->Resize(N,0);
+      hg_wf->mutable_auto_correlation_sum()->Resize(N,0);
+      hg_wf->mutable_auto_correlation_sum_squared()->Resize(N,0);
       auto* lg_wf = psd_results_.add_low_gain();
       lg_wf->mutable_psd_sum()->Resize(nfreq,0);
       lg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
-      lg_wf->mutable_corr_sum()->Resize(N,0);
-      lg_wf->mutable_corr_sum_squared()->Resize(N,0);
+      lg_wf->mutable_auto_correlation_sum()->Resize(N,0);
+      lg_wf->mutable_auto_correlation_sum_squared()->Resize(N,0);
     }
   }
 
@@ -915,12 +915,12 @@ process_one_waveform(const uint16_t*__restrict__ wf,
     }
     hcvec_scale_and_multiply_conj(waveform_f_, waveform_f_, waveform_f_, nsample);
     fftwf_execute(fftw_plan_bwd_);
-    auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
+    auto* auto_correlation_sum = psd->mutable_auto_correlation_sum()->mutable_data();
     for(unsigned isample=0; isample<nsample; isample++)
-      corr_sum[isample] += waveform_t_[isample];
-    auto* corr_sum_squared = psd->mutable_corr_sum_squared()->mutable_data();
+      auto_correlation_sum[isample] += waveform_t_[isample];
+    auto* auto_correlation_sum_squared = psd->mutable_auto_correlation_sum_squared()->mutable_data();
     for(unsigned isample=0; isample<nsample; isample++)
-      corr_sum_squared[isample] += SQR(waveform_t_[isample]);
+      auto_correlation_sum_squared[isample] += SQR(waveform_t_[isample]);
   } else {
     for(unsigned isample=0; isample<nsample; isample++) {
       uint32_t sample = wf[isample];

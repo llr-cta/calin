@@ -136,9 +136,9 @@ message WaveformRawPSD {
     (CFO).desc = "Sum of PSDs for all events." ];
   repeated double psd_sum_squared                          = 3 [
     (CFO).desc = "Sum of squared PSD for all events." ];
-  repeated double corr_sum                                 = 4 [
+  repeated double auto_correlation_sum                                 = 4 [
     (CFO).desc = "Sum of auto correlations for all events." ];
-  repeated double corr_sum_squared                         = 5 [
+  repeated double auto_correlation_sum_squared                         = 5 [
     (CFO).desc = "Sum of squared auto correlations for all events." ];
 };
 

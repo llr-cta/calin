@@ -43,7 +43,7 @@ WaveformPSDParallelVisitor::WaveformPSDParallelVisitor():
 
 WaveformPSDParallelVisitor::~WaveformPSDParallelVisitor()
 {
-  fftwf_destroy_plan(fftw_plan_bwd_);
+  // fftwf_destroy_plan(fftw_plan_bwd_);
   fftwf_destroy_plan(fftw_plan_fwd_);
   fftwf_free(waveform_t_);
   fftwf_free(waveform_f_);
@@ -86,9 +86,9 @@ bool WaveformPSDParallelVisitor::visit_telescope_run(
   fftw_plan_fwd_ =
     fftwf_plan_r2r_1d(N, waveform_t_, waveform_f_, FFTW_R2HC, FFTW_MEASURE|FFTW_DESTROY_INPUT);
   assert(fftw_plan_fwd_);
-  fftw_plan_bwd_ =
-    fftwf_plan_r2r_1d(N, waveform_f_, waveform_t_, FFTW_HC2R, FFTW_MEASURE|FFTW_DESTROY_INPUT);
-  assert(fftw_plan_bwd_);
+  // fftw_plan_bwd_ =
+  //   fftwf_plan_r2r_1d(N, waveform_f_, waveform_t_, FFTW_HC2R, FFTW_MEASURE|FFTW_DESTROY_INPUT);
+  // assert(fftw_plan_bwd_);
   for(int ichan = 0; ichan<run_config->configured_channel_id_size(); ichan++)
   {
     auto* hg_wf = results_.add_high_gain();
@@ -106,8 +106,8 @@ bool WaveformPSDParallelVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   run_config_ = nullptr;
-  fftwf_destroy_plan(fftw_plan_bwd_);
-  fftw_plan_bwd_ = nullptr;
+  // fftwf_destroy_plan(fftw_plan_bwd_);
+  // fftw_plan_bwd_ = nullptr;
   fftwf_destroy_plan(fftw_plan_fwd_);
   fftw_plan_fwd_ = nullptr;
   fftwf_free(waveform_t_);

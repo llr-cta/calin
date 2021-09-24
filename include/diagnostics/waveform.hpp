@@ -195,7 +195,7 @@ protected:
   float*__restrict__ waveform_t_ = nullptr;
   float*__restrict__ waveform_f_ = nullptr;
   fftwf_plan fftw_plan_fwd_ = nullptr;
-  fftwf_plan fftw_plan_bwd_ = nullptr;
+  // fftwf_plan fftw_plan_bwd_ = nullptr;
 };
 
 class WaveformStatsParallelVisitor:
