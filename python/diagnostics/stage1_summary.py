@@ -40,7 +40,7 @@ def make_logsheet_dict(logsheet_db_rows):
         if(run_lo > 0):
             for run in range(run_lo, run_hi + 1):
                 if(run in logsheet):
-                    print("Duplicate run : ",irun,run,logsheet[run],row,file=sys.stderr)
+                    print("Duplicate run : ",run,logsheet[run],row,file=sys.stderr)
                 else:
                     logsheet[run] = url
     return logsheet
