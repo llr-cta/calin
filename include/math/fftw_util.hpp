@@ -625,7 +625,7 @@ void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
   *ro = sri;
   ++ro, ++ri;
 
-  // Evaluate two AVX vectors of real and complex compnents (i.e. 2 * num_real
+  // Evaluate three AVX vectors of real and complex compnents (i.e. 3 * num_real
   // frequencies) using vector types
   while(co - ro >= 6*VCLReal::num_real)
   {
