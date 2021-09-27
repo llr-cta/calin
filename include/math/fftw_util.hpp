@@ -1086,23 +1086,24 @@ public:
 
   bool has_codelet(unsigned size) {
     switch(size) {
-    case 8:
-    case 12:
-    case 15:
-    case 16:
-    case 18:
-    case 20:
-    case 24:
-    case 28:
-    case 30:
-    case 32:
-    case 36:
-    case 40:
-    case 48:
-    case 56:
-    case 60:
-    case 64:
-      return true;
+#define ADD_CASE(n) case n : return(true)
+    ADD_CASE(8);
+    ADD_CASE(12);
+    ADD_CASE(15);
+    ADD_CASE(16);
+    ADD_CASE(18);
+    ADD_CASE(20);
+    ADD_CASE(24);
+    ADD_CASE(28);
+    ADD_CASE(30);
+    ADD_CASE(32);
+    ADD_CASE(36);
+    ADD_CASE(40);
+    ADD_CASE(48);
+    ADD_CASE(56);
+    ADD_CASE(60);
+    ADD_CASE(64);
+#undef ADD_CASE
     default:
       return false;
     }
@@ -1110,38 +1111,24 @@ public:
 
   void r2hc(unsigned size, const float_type* r, float_type* c) {
     switch(size) {
-    case 8:
-      return r2hc_8(r, c);
-    case 12:
-      return r2hc_12(r, c);
-    case 15:
-      return r2hc_15(r, c);
-    case 16:
-      return r2hc_16(r, c);
-    case 18:
-      return r2hc_18(r, c);
-    case 20:
-      return r2hc_20(r, c);
-    case 24:
-      return r2hc_24(r, c);
-    case 28:
-      return r2hc_28(r, c);
-    case 30:
-      return r2hc_30(r, c);
-    case 32:
-      return r2hc_32(r, c);
-    case 36:
-      return r2hc_36(r, c);
-    case 40:
-      return r2hc_40(r, c);
-    case 48:
-      return r2hc_48(r, c);
-    case 56:
-      return r2hc_56(r, c);
-    case 60:
-      return r2hc_60(r, c);
-    case 64:
-      return r2hc_64(r, c);
+#define ADD_CASE(n) case n : return r2hc_##n(r,c)
+    ADD_CASE(8);
+    ADD_CASE(12);
+    ADD_CASE(15);
+    ADD_CASE(16);
+    ADD_CASE(18);
+    ADD_CASE(20);
+    ADD_CASE(24);
+    ADD_CASE(28);
+    ADD_CASE(30);
+    ADD_CASE(32);
+    ADD_CASE(36);
+    ADD_CASE(40);
+    ADD_CASE(48);
+    ADD_CASE(56);
+    ADD_CASE(60);
+    ADD_CASE(64);
+#undef ADD_CASE
     default:
       throw std::runtime_error("No FFT codelet available for array size : " + std::to_string(size));
     }
@@ -1149,38 +1136,24 @@ public:
 
   void hc2r(unsigned size, float_type* r, const float_type* c) {
     switch(size) {
-    case 8:
-      return hc2r_8(r, c);
-    case 12:
-      return hc2r_12(r, c);
-    case 15:
-      return hc2r_15(r, c);
-    case 16:
-      return hc2r_16(r, c);
-    case 18:
-      return hc2r_18(r, c);
-    case 20:
-      return hc2r_20(r, c);
-    case 24:
-      return hc2r_24(r, c);
-    case 28:
-      return hc2r_28(r, c);
-    case 30:
-      return hc2r_30(r, c);
-    case 32:
-      return hc2r_32(r, c);
-    case 36:
-      return hc2r_36(r, c);
-    case 40:
-      return hc2r_40(r, c);
-    case 48:
-      return hc2r_48(r, c);
-    case 56:
-      return hc2r_56(r, c);
-    case 60:
-      return hc2r_60(r, c);
-    case 64:
-      return hc2r_64(r, c);
+#define ADD_CASE(n) case n : return hc2r_##n(r,c)
+    ADD_CASE(8);
+    ADD_CASE(12);
+    ADD_CASE(15);
+    ADD_CASE(16);
+    ADD_CASE(18);
+    ADD_CASE(20);
+    ADD_CASE(24);
+    ADD_CASE(28);
+    ADD_CASE(30);
+    ADD_CASE(32);
+    ADD_CASE(36);
+    ADD_CASE(40);
+    ADD_CASE(48);
+    ADD_CASE(56);
+    ADD_CASE(60);
+    ADD_CASE(64);
+#undef ADD_CASE
     default:
       throw std::runtime_error("No FFT codelet available for array size : " + std::to_string(size));
     }
