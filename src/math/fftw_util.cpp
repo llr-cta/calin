@@ -26,6 +26,7 @@
 
 #include <util/vcl.hpp>
 #include <util/file.hpp>
+#include <util/memory.hpp>
 #include <math/fftw_util.hpp>
 
 #if INSTRSET >= 7
@@ -204,4 +205,72 @@ proto_planning_enum_to_fftw_flag(calin::ix::math::fftw_util::FFTWPlanningRigor x
     case calin::ix::math::fftw_util::EXHAUSTIVE:  return FFTW_EXHAUSTIVE;
     default: throw std::invalid_argument("Unknown planning rigor type.");
   }
+}
+
+Eigen::VectorXd calin::math::fftw_util::fftw_codelet_r2hc(const Eigen::VectorXd& x)
+{
+  using Real = calin::util::vcl::VCLMaxDoubleReal;
+  auto* r = calin::util::memory::aligned_calloc<typename Real::real_vt>(x.size());
+  auto* c = calin::util::memory::aligned_calloc<typename Real::real_vt>(x.size());
+  for(unsigned i=0; i<x.size(); i++) {
+    r[i] = x[i];
+  }
+  calin::math::fftw_util::FFTWCodelet<Real> codelet;
+  codelet.r2hc(x.size(), r, c);
+  Eigen::VectorXd f(x.size());
+  for(unsigned i=0; i<x.size(); i++) {
+    f[i] = c[i][0];
+  }
+  return f;
+}
+
+Eigen::VectorXd calin::math::fftw_util::fftw_codelet_hc2r(const Eigen::VectorXd& f)
+{
+  using Real = calin::util::vcl::VCLMaxDoubleReal;
+  auto* r = calin::util::memory::aligned_calloc<typename Real::real_vt>(f.size());
+  auto* c = calin::util::memory::aligned_calloc<typename Real::real_vt>(f.size());
+  for(unsigned i=0; i<f.size(); i++) {
+    c[i] = f[i];
+  }
+  calin::math::fftw_util::FFTWCodelet<Real> codelet;
+  codelet.hc2r(f.size(), r, c);
+  Eigen::VectorXd x(f.size());
+  for(unsigned i=0; i<f.size(); i++) {
+    x[i] = r[i][0];
+  }
+  return x;
+}
+
+Eigen::VectorXd calin::math::fftw_util::fftw_codelet_r2hc_float(const Eigen::VectorXd& x)
+{
+  using Real = calin::util::vcl::VCLMaxFloatReal;
+  auto* r = calin::util::memory::aligned_calloc<typename Real::real_vt>(x.size());
+  auto* c = calin::util::memory::aligned_calloc<typename Real::real_vt>(x.size());
+  for(unsigned i=0; i<x.size(); i++) {
+    r[i] = x[i];
+  }
+  calin::math::fftw_util::FFTWCodelet<Real> codelet;
+  codelet.r2hc(x.size(), r, c);
+  Eigen::VectorXd f(x.size());
+  for(unsigned i=0; i<x.size(); i++) {
+    f[i] = c[i][0];
+  }
+  return f;
+}
+
+Eigen::VectorXd calin::math::fftw_util::fftw_codelet_hc2r_float(const Eigen::VectorXd& f)
+{
+  using Real = calin::util::vcl::VCLMaxFloatReal;
+  auto* r = calin::util::memory::aligned_calloc<typename Real::real_vt>(f.size());
+  auto* c = calin::util::memory::aligned_calloc<typename Real::real_vt>(f.size());
+  for(unsigned i=0; i<f.size(); i++) {
+    c[i] = f[i];
+  }
+  calin::math::fftw_util::FFTWCodelet<Real> codelet;
+  codelet.hc2r(f.size(), r, c);
+  Eigen::VectorXd x(f.size());
+  for(unsigned i=0; i<f.size(); i++) {
+    x[i] = r[i][0];
+  }
+  return x;
 }
