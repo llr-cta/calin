@@ -24,7 +24,9 @@
 %feature(autodoc,2);
 
 %{
+#include "util/log.hpp"
 #include "diagnostics/waveform.hpp"
+#include "diagnostics/waveform_psd_vcl.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -35,6 +37,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "util/log.i"
 %import "iact_data/event_visitor.i"
 %import "diagnostics/waveform.pb.i"
 
@@ -44,5 +47,21 @@
 %newobject calin::diagnostics::waveform::WaveformSumParallelEventVisitor::mean_waveforms() const;
 %newobject calin::diagnostics::waveform::WaveformCodeHistParallelEventVisitor::waveform_code_hist() const;
 %newobject calin::diagnostics::waveform::WaveformCodeHistParallelEventVisitor::compact_waveform_code_hist() const;
+%newobject calin::diagnostics::waveform::WaveformCodeHistParallelEventVisitor::compact_waveform_code_hist() const;
+%newobject calin::diagnostics::waveform::WaveformPSDParallelVisitor::psd() const;
 
 %include "diagnostics/waveform.hpp"
+%include "diagnostics/waveform_psd_vcl.hpp"
+
+%template(VCL128_WaveformPSDParallelVisitor)
+  calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL128Architecture>;
+
+#ifdef __AVX__
+%template(VCL256_WaveformPSDParallelVisitor)
+  calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL256Architecture>;
+#endif
+
+#ifdef __AVX512F__;
+%template(VCL512_WaveformPSDParallelVisitor)
+  calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL512Architecture>;
+#endif

@@ -26,7 +26,10 @@
 
 #include <iact_data/event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
+#include <diagnostics/waveform.hpp>
+#include <math/special.hpp>
 #include <util/log.hpp>
+#include <util/memory.hpp>
 
 using namespace calin::util::log;
 
@@ -76,29 +79,33 @@ public:
         }
         // Rest of the entries are set by WaveformPSDParallelVisitor::visit_telescope_run
       }
+
+      static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
+
+      nchan_ = run_config->configured_channel_id_size();
+      nsamp_ = run_config->num_samples();
+      nfreq_ = calin::math::fftw_util::hcvec_num_real(nsamp_);
+      nchan_block_ = (nchan_+num_int16-1)/num_int16;
+      nsamp_block_ = (nsamp_+num_int16-1)/num_int16;
+      nsamp_inv_ = 1.0/nsamp_;
+
+      calin::util::memory::safe_aligned_recalloc(signal_type_, nchan_);
+      calin::util::memory::safe_aligned_recalloc(samples_, nsamp_block_*num_int16);
+      calin::util::memory::safe_aligned_recalloc(waveform_x_, nsamp_);
+      calin::util::memory::safe_aligned_recalloc(waveform_f_, nsamp_);
+      calin::util::memory::safe_aligned_recalloc(waveform_p_, nfreq_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_ * nsamp_);
+      if(run_config->camera_layout().adc_gains() !=
+          calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN) {
+        calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_lg_, nchan_);
+        calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_lg_, nchan_ * nsamp_);
+      }
     } else {
       LOG(WARNING) << "VCL_WaveformPSDParallelVisitor : no codelet for array size : "
         << run_config->num_samples() << '\n'
         << "Falling back to non-vectorized implementation.";
     }
-
-    static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
-
-    nchan_ = run_config->configured_channel_id_size();
-    nsamp_ = run_config->num_samples();
-    nfreq_ = calin::math::fftw_util::hcvec_num_real(nsamp_);
-    nchan_block_ = (nchan_+num_int16-1)/num_int16;
-    nsamp_block_ = (nsamp_+num_int16-1)/num_int16;
-    nsamp_inv_ = 1.0/nsamp_;
-
-    calin::util::memory::safe_aligned_recalloc(samples_, nsamp_block_*num_int16);
-    calin::util::memory::safe_aligned_recalloc(waveform_x_, nsamp_);
-    calin::util::memory::safe_aligned_recalloc(waveform_f_, nsamp_);
-    calin::util::memory::safe_aligned_recalloc(waveform_p_, nfreq_);
-    calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_);
-    calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_lg_, nchan_);
-    calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_ * nsamp_);
-    calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_lg_, nchan_ * nsamp_);
 
     return WaveformPSDParallelVisitor::visit_telescope_run(run_config, event_lifetime_manager, processing_record);
   }
@@ -106,33 +113,99 @@ public:
   bool leave_telescope_run(
     calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
-    ::free(samples_);
-    samples_ = nullptr;
-    ::free(waveform_x_);
-    waveform_x_ = nullptr;
-    ::free(waveform_f_);
-    waveform_f_ = nullptr;
-    ::free(waveform_p_);
-    waveform_p_ = nullptr;
-    ::free(psd_count_hg_);
-    psd_count_hg_ = nullptr;
-    ::free(psd_count_lg_);
-    psd_count_lg_ = nullptr;
-    ::free(psd_sum_hg_);
-    psd_sum_hg_ = nullptr;
-    ::free(psd_sum_lg_);
-    psd_sum_lg_ = nullptr;
+    static constexpr unsigned num_double = VCLArchitecture::num_double;
+    if(has_codelet_) {
+      for(unsigned ichan=0; ichan<nchan_; ++ichan) {
+        unsigned ichan_block = ichan / num_double;
+        unsigned ichan_offset = ichan - ichan_block*num_double;
+        auto* chan_results = results_.mutable_high_gain(ichan);
+        chan_results->set_num_entries(psd_count_hg_[ichan_block * num_double + ichan]);
+        for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
+          chan_results->set_psd_sum(ifreq, psd_sum_hg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
+        }
+      }
+
+      if(psd_sum_lg_ != nullptr) {
+        for(unsigned ichan=0; ichan<nchan_; ++ichan) {
+          unsigned ichan_block = ichan / num_double;
+          unsigned ichan_offset = ichan - ichan_block*num_double;
+          auto* chan_results = results_.mutable_low_gain(ichan);
+          chan_results->set_num_entries(psd_count_lg_[ichan_block * num_double + ichan]);
+          for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
+            chan_results->set_psd_sum(ifreq, psd_sum_lg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
+          }
+        }
+      }
+
+      ::free(signal_type_);
+      signal_type_ = nullptr;
+      ::free(samples_);
+      samples_ = nullptr;
+      ::free(waveform_x_);
+      waveform_x_ = nullptr;
+      ::free(waveform_f_);
+      waveform_f_ = nullptr;
+      ::free(waveform_p_);
+      waveform_p_ = nullptr;
+      ::free(psd_count_hg_);
+      psd_count_hg_ = nullptr;
+      ::free(psd_count_lg_);
+      psd_count_lg_ = nullptr;
+      ::free(psd_sum_hg_);
+      psd_sum_hg_ = nullptr;
+      ::free(psd_sum_lg_);
+      psd_sum_lg_ = nullptr;
+    }
+
     return WaveformPSDParallelVisitor::leave_telescope_run(processing_record);
   }
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
   {
+    if(not has_codelet_) {
+      return WaveformPSDParallelVisitor::visit_telescope_event(seq_index, event);
+    }
 
+    if(event->has_high_gain_image() and event->high_gain_image().has_camera_waveforms()) {
+      const ix::iact_data::telescope_event::Waveforms* wf =
+        &event->high_gain_image().camera_waveforms();
+      const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
+        wf->raw_samples_array().data());
+      for(unsigned ichan = 0; ichan<nchan_; ichan++) {
+        signal_type_[ichan] = wf->channel_signal_type(ichan);
+      }
+      vcl_analyze_waveforms(wf_data, signal_type_);
+    }
+
+    if(event->has_low_gain_image() and event->low_gain_image().has_camera_waveforms()) {
+      const ix::iact_data::telescope_event::Waveforms* wf =
+        &event->low_gain_image().camera_waveforms();
+      const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
+        wf->raw_samples_array().data());
+      for(unsigned ichan = 0; ichan<nchan_; ichan++) {
+        signal_type_[ichan] = wf->channel_signal_type(ichan);
+      }
+      vcl_analyze_waveforms(wf_data, signal_type_);
+    }
+
+    if(event->has_image() and event->image().has_camera_waveforms()) {
+      const ix::iact_data::telescope_event::Waveforms* wf =
+        &event->image().camera_waveforms();
+      const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
+        wf->raw_samples_array().data());
+      for(unsigned ichan = 0; ichan<nchan_; ichan++) {
+        signal_type_[ichan] = wf->channel_signal_type(ichan);
+      }
+      vcl_analyze_waveforms(wf_data, signal_type_);
+    }
+
+    return true;
   }
 
+#ifndef SWIG
 protected:
-  void vcl_analyze_waveforms(const uint16_t* __restrict__ data, const uint32_t* __restrict__ signal_type)
+  void vcl_analyze_waveforms(const uint16_t* __restrict__ data, const int32_t*__restrict__ signal_type)
   {
     typedef typename VCLArchitecture::int32_vt int32_vt;
     typedef typename VCLArchitecture::int64_vt int64_vt;
@@ -144,6 +217,8 @@ protected:
     static constexpr unsigned num_int32 = VCLArchitecture::num_int32;
     static constexpr unsigned num_int64 = VCLArchitecture::num_int64;
     static constexpr unsigned num_double = VCLArchitecture::num_double;
+
+    using calin::math::special::SQR;
 
     unsigned nchan_left = nchan_;
 
@@ -187,7 +262,7 @@ protected:
 
       for(unsigned isamp=0; isamp<nsamp_; ++isamp) {
         int32_vt q = calin::util::vcl::extend_16_to_32_low(samples_[isamp]);
-        waveform_x_[isamp] = calin::util::vcl::to_float(q) -= q_mean;
+        waveform_x_[isamp] = calin::util::vcl::to_float(q) - q_mean;
       }
 
       codelet_.r2hc(nsamp_, waveform_x_, waveform_f_);
@@ -309,7 +384,7 @@ protected:
 
       for(unsigned isamp=0; isamp<nsamp_; ++isamp) {
         int32_vt q = calin::util::vcl::extend_16_to_32_high(samples_[isamp]);
-        waveform_x_[isamp] = calin::util::vcl::to_float(q) -= q_mean;
+        waveform_x_[isamp] = calin::util::vcl::to_float(q) - q_mean;
       }
 
       codelet_.r2hc(nsamp_, waveform_x_, waveform_f_);
@@ -423,11 +498,13 @@ protected:
   typename VCLArchitecture::float_vt*__restrict__ waveform_f_ = nullptr;
   typename VCLArchitecture::double_vt*__restrict__ waveform_p_ = nullptr;
 
-  typename VCLArchitecture::int64_t*__restrict__ psd_count_hg_ = nullptr;
-  typename VCLArchitecture::int64_t*__restrict__ psd_count_lg_ = nullptr;
+  int32_t*__restrict__ signal_type_ = nullptr;
 
-  typename VCLArchitecture::double_t*__restrict__ psd_sum_hg_ = nullptr;
-  typename VCLArchitecture::double_t*__restrict__ psd_sum_lg_ = nullptr;
+  int64_t*__restrict__ psd_count_hg_ = nullptr;
+  int64_t*__restrict__ psd_count_lg_ = nullptr;
+
+  double_t*__restrict__ psd_sum_hg_ = nullptr;
+  double_t*__restrict__ psd_sum_lg_ = nullptr;
 
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
@@ -438,7 +515,7 @@ protected:
 
   calin::math::fftw_util::FFTWCodelet<calin::util::vcl::VCLFloatReal<VCLArchitecture> > codelet_;
   bool has_codelet_ = false;
-
+#endif // defined SWIG
 };
 
 } } } // namespace calin::diagnostics::waveform

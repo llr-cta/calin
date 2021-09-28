@@ -184,10 +184,11 @@ public:
   calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd(
     calin::ix::diagnostics::waveform::CameraWaveformSumPSD* _psd = nullptr) const;
 #else
-  calin::ix::diagnostics::waveform::CameraWaveformSumPSD* mean_waveforms() const;
-  void mean_waveforms(calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd_) const;
+  calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd() const;
+  void psd(calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd_) const;
 #endif
 
+#ifndef SWIG
 protected:
   void process_one_waveform(const uint16_t*__restrict__ wf,
     calin::ix::diagnostics::waveform::WaveformSumPSD* psd);
@@ -204,6 +205,7 @@ protected:
   float*__restrict__ waveform_f_ = nullptr;
   fftwf_plan fftw_plan_fwd_ = nullptr;
   // fftwf_plan fftw_plan_bwd_ = nullptr;
+#endif
 };
 
 class WaveformStatsParallelVisitor:
