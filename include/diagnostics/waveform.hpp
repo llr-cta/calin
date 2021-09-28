@@ -180,13 +180,13 @@ public:
 
   bool merge_results() override;
 
-  #ifndef SWIG
-    calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd(
-      calin::ix::diagnostics::waveform::CameraWaveformSumPSD* _psd = nullptr) const;
-  #else
-    calin::ix::diagnostics::waveform::CameraWaveformSumPSD* mean_waveforms() const;
-    void mean_waveforms(calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd_) const;
-  #endif
+#ifndef SWIG
+  calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd(
+    calin::ix::diagnostics::waveform::CameraWaveformSumPSD* _psd = nullptr) const;
+#else
+  calin::ix::diagnostics::waveform::CameraWaveformSumPSD* mean_waveforms() const;
+  void mean_waveforms(calin::ix::diagnostics::waveform::CameraWaveformSumPSD* psd_) const;
+#endif
 
 protected:
   void process_one_waveform(const uint16_t*__restrict__ wf,
