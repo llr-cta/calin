@@ -65,7 +65,9 @@ bool WaveformPSDParallelVisitor::visit_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   if(processing_record) {
-    processing_record->set_type("WaveformPSDParallelVisitor");
+    if(processing_record->type().empty()) {
+      processing_record->set_type("WaveformPSDParallelVisitor");
+    }
     processing_record->set_description("Waveform PSD");
   }
 
