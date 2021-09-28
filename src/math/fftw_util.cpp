@@ -221,6 +221,8 @@ Eigen::VectorXd calin::math::fftw_util::fftw_codelet_r2hc(const Eigen::VectorXd&
   for(unsigned i=0; i<x.size(); i++) {
     f[i] = c[i][0];
   }
+  ::free(r);
+  ::free(c);
   return f;
 }
 
@@ -238,6 +240,8 @@ Eigen::VectorXd calin::math::fftw_util::fftw_codelet_hc2r(const Eigen::VectorXd&
   for(unsigned i=0; i<f.size(); i++) {
     x[i] = r[i][0];
   }
+  ::free(r);
+  ::free(c);
   return x;
 }
 
@@ -255,6 +259,8 @@ Eigen::VectorXd calin::math::fftw_util::fftw_codelet_r2hc_float(const Eigen::Vec
   for(unsigned i=0; i<x.size(); i++) {
     f[i] = c[i][0];
   }
+  ::free(r);
+  ::free(c);
   return f;
 }
 
@@ -272,5 +278,7 @@ Eigen::VectorXd calin::math::fftw_util::fftw_codelet_hc2r_float(const Eigen::Vec
   for(unsigned i=0; i<f.size(); i++) {
     x[i] = r[i][0];
   }
+  ::free(r);
+  ::free(c);
   return x;
 }
