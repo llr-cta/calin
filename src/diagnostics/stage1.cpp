@@ -27,6 +27,7 @@
 #include <io/json.hpp>
 #include <diagnostics/stage1.hpp>
 #include <provenance/anthology.hpp>
+#include <diagnostics/waveform_psd_vcl.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::stage1;
