@@ -179,15 +179,15 @@ reconfigure(unsigned nchan, unsigned nsamp)
     nsamp_ = nsamp;
     chan_signal_type_.resize(nchan);
     unsigned nalloc = ((nchan_+31)/32)*32; // Worst case of AVX512
-    safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_sum_qt_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(sig_window_0_, nalloc);
+    safe_aligned_recalloc(chan_max_, nalloc);
+    safe_aligned_recalloc(chan_max_index_, nalloc);
+    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_sum_qt_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_index_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_, nalloc);
   }
 }
 
@@ -342,18 +342,18 @@ reconfigure(unsigned nchan, unsigned nsamp)
     nchan_ = nchan;
     nsamp_ = nsamp;
     unsigned nalloc = ((nchan_+15)/16)*16;
-    safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_ped_est_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_q_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_qt_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_mean_t_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(sig_window_0_, nalloc);
+    safe_aligned_recalloc(chan_ped_est_, nalloc);
+    safe_aligned_recalloc(chan_max_index_, nalloc);
+    safe_aligned_recalloc(chan_max_, nalloc);
+    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_max_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_max_sum_index_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_q_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_qt_, nalloc);
+    safe_aligned_recalloc(chan_sig_, nalloc);
+    safe_aligned_recalloc(chan_mean_t_, nalloc);
   }
 }
 
