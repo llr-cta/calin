@@ -174,7 +174,6 @@ void OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 reconfigure(unsigned nchan, unsigned nsamp)
 {
   if(nchan != nchan_){
-    auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
     chan_signal_type_.resize(nchan);
@@ -338,7 +337,6 @@ void SingleGainDualWindowWaveformTreatmentEventVisitor::
 reconfigure(unsigned nchan, unsigned nsamp)
 {
   if(nchan != nchan_){
-    auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
     unsigned nalloc = ((nchan_+15)/16)*16;
