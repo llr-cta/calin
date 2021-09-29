@@ -287,16 +287,16 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     clock_regression_pev_->clock_regression(stage1->mutable_clock_regression());
   }
 
-  if(wf_psd_phy_pev_) {
+  if(wf_psd_phy_pev_ and this->visitor_saw_event(wf_psd_phy_pev_)) {
     wf_psd_phy_pev_->psd(stage1->mutable_psd_wf_physics());
   }
-  if(wf_psd_ped_pev_) {
+  if(wf_psd_ped_pev_ and this->visitor_saw_event(wf_psd_ped_pev_)) {
     wf_psd_ped_pev_->psd(stage1->mutable_psd_wf_pedestal());
   }
-  if(wf_psd_ext_pev_) {
+  if(wf_psd_ext_pev_ and this->visitor_saw_event(wf_psd_ext_pev_)) {
     wf_psd_ext_pev_->psd(stage1->mutable_psd_wf_external_flasher());
   }
-  if(wf_psd_int_pev_) {
+  if(wf_psd_int_pev_ and this->visitor_saw_event(wf_psd_int_pev_)) {
     wf_psd_int_pev_->psd(stage1->mutable_psd_wf_internal_flasher());
   }
 
