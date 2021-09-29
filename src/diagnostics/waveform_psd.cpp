@@ -25,6 +25,7 @@
 #include <io/json.hpp>
 #include <util/memory.hpp>
 #include <diagnostics/waveform.hpp>
+#include <diagnostics/waveform_psd_vcl.hpp>
 #include <math/covariance_calc.hpp>
 #include <math/fftw_util.hpp>
 
@@ -47,6 +48,28 @@ WaveformPSDParallelVisitor::~WaveformPSDParallelVisitor()
   fftwf_destroy_plan(fftw_plan_fwd_);
   fftwf_free(waveform_t_);
   fftwf_free(waveform_f_);
+}
+
+WaveformPSDParallelVisitor* WaveformPSDParallelVisitor::New()
+{
+#if INSTRSET >= 9
+  if(calin::provenance::system_info::has_avx512f()) {
+    return new VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL5121Architecture>();
+  }
+#endif
+
+#if INSTRSET >= 7
+  if(calin::provenance::system_info::has_avx()) {
+    return new VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL256Architecture>();
+  }
+#endif
+
+#if INSTRSET >= 1
+  // All modern CPUs have AVX so don't bother testing
+  return new VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL128Architecture>();
+#else
+  return new WaveformPSDParallelVisitor();
+#endif
 }
 
 WaveformPSDParallelVisitor* WaveformPSDParallelVisitor::new_sub_visitor(

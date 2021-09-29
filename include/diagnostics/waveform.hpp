@@ -163,6 +163,8 @@ public:
 
   virtual ~WaveformPSDParallelVisitor();
 
+  static WaveformPSDParallelVisitor* New();
+
   WaveformPSDParallelVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
