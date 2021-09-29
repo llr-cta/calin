@@ -55,13 +55,5 @@
 
 %template(VCL128_WaveformPSDParallelVisitor)
   calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL128Architecture>;
-
-#ifdef __AVX__
 %template(VCL256_WaveformPSDParallelVisitor)
   calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL256Architecture>;
-#endif
-
-#ifdef __AVX512F__;
-%template(VCL512_WaveformPSDParallelVisitor)
-  calin::diagnostics::waveform::VCL_WaveformPSDParallelVisitor<calin::util::vcl::VCL512Architecture>;
-#endif
