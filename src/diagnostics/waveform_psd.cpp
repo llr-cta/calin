@@ -249,5 +249,15 @@ WaveformPSDParallelVisitor::psd(calin::ix::diagnostics::waveform::CameraWaveform
     _psd->Clear();
   }
   _psd->CopyFrom(results_);
+  for(auto& channel : *(_psd->mutable_high_gain())) {
+    if(channel.num_entries() == 0) {
+      channel.Clear();
+    }
+  }
+  for(auto& channel : *(_psd->mutable_low_gain())) {
+    if(channel.num_entries() == 0) {
+      channel.Clear();
+    }
+  }
   return _psd;
 }
