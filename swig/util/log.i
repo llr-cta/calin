@@ -20,7 +20,7 @@
 
 */
 
-%module (package="calin.io") log
+%module (package="calin.util") log
 %feature(autodoc,2);
 
 %{
