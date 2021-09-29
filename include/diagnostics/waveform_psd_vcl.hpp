@@ -94,12 +94,12 @@ public:
       calin::util::memory::safe_aligned_recalloc(waveform_x_, nsamp_);
       calin::util::memory::safe_aligned_recalloc(waveform_f_, nsamp_);
       calin::util::memory::safe_aligned_recalloc(waveform_p_, nfreq_);
-      calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_);
-      calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_ * nsamp_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_block_*num_int16);
+      calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_block_*num_int16 * nsamp_);
       if(run_config->camera_layout().adc_gains() !=
           calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN) {
-        calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_lg_, nchan_);
-        calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_lg_, nchan_ * nsamp_);
+        calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_lg_, nchan_block_*num_int16);
+        calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_lg_, nchan_block_*num_int16 * nsamp_);
       }
     } else {
       LOG(WARNING) << "VCL_WaveformPSDParallelVisitor : no codelet for array size : "
