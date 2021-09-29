@@ -119,12 +119,17 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
   }
 
   if(config_.enable_all_waveform_psd()) {
-    wf_psd_all_pev_ = new calin::diagnostics::waveform::WaveformPSDParallelVisitor();
-    this->add_visitor(wf_psd_all_pev_);
-  }
-  if(config_.enable_pedestal_waveform_psd()) {
-    wf_psd_ped_pev_ = new calin::diagnostics::waveform::WaveformPSDParallelVisitor();
-    this->add_visitor(wf_psd_ped_pev_, "Pedestal triggers");
+    wf_psd_phy_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_visitor(wf_psd_phy_pev_);
+    wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_visitor(wf_psd_ped_pev_);
+    wf_psd_ext_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_visitor(wf_psd_ext_pev_);
+    wf_psd_int_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_visitor(wf_psd_int_pev_);
+  } else if(config_.enable_pedestal_waveform_psd()) {
+    wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_visitor(wf_psd_ped_pev_);
   }
 
   if(config_.enable_clock_regression()) {
@@ -151,8 +156,10 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete lg_sum_pev_;
   delete hg_sum_pev_;
   delete clock_regression_pev_;
+  delete wf_psd_phy_pev_;
   delete wf_psd_ped_pev_;
-  delete wf_psd_all_pev_;
+  delete wf_psd_ext_pev_;
+  delete wf_psd_int_pev_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
@@ -280,11 +287,17 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     clock_regression_pev_->clock_regression(stage1->mutable_clock_regression());
   }
 
-  if(wf_psd_all_pev_) {
-    wf_psd_all_pev_->psd(stage1->mutable_psd_wf_all());
+  if(wf_psd_phy_pev_) {
+    wf_psd_phy_pev_->psd(stage1->mutable_psd_wf_physics());
   }
   if(wf_psd_ped_pev_) {
     wf_psd_ped_pev_->psd(stage1->mutable_psd_wf_pedestal());
+  }
+  if(wf_psd_ext_pev_) {
+    wf_psd_ext_pev_->psd(stage1->mutable_psd_wf_external_flasher());
+  }
+  if(wf_psd_int_pev_) {
+    wf_psd_int_pev_->psd(stage1->mutable_psd_wf_internal_flasher());
   }
 
   stage1->set_run_number(stage1->run_config().run_number());
