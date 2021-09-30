@@ -120,16 +120,16 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
 
   if(config_.enable_all_waveform_psd()) {
     wf_psd_phy_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
-    this->add_visitor(wf_psd_phy_pev_);
+    this->add_physics_trigger_visitor(wf_psd_phy_pev_, "Physics triggers");
     wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
-    this->add_visitor(wf_psd_ped_pev_);
+    this->add_pedestal_trigger_visitor(wf_psd_ped_pev_, "Pedestal triggers");
     wf_psd_ext_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
-    this->add_visitor(wf_psd_ext_pev_);
+    this->add_external_flasher_trigger_visitor(wf_psd_ext_pev_, "External-flasher triggers");
     wf_psd_int_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
-    this->add_visitor(wf_psd_int_pev_);
+    this->add_internal_flasher_trigger_visitor(wf_psd_int_pev_, "Internal-flasher triggers");
   } else if(config_.enable_pedestal_waveform_psd()) {
     wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
-    this->add_visitor(wf_psd_ped_pev_);
+    this->add_pedestal_trigger_visitor(wf_psd_ped_pev_, "Pedestal triggers");
   }
 
   if(config_.enable_clock_regression()) {
