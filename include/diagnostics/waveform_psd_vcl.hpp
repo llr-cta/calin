@@ -119,9 +119,10 @@ public:
         unsigned ichan_block = ichan / num_double;
         unsigned ichan_offset = ichan - ichan_block*num_double;
         auto* chan_results = results_.mutable_high_gain(ichan);
-        chan_results->set_num_entries(psd_count_hg_[ichan_block * num_double + ichan]);
+        chan_results->set_num_entries(chan_results->num_entries() + psd_count_hg_[ichan]);
         for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
-          chan_results->set_psd_sum(ifreq, psd_sum_hg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
+          chan_results->set_psd_sum(ifreq, chan_results->psd_sum(ifreq) +
+            psd_sum_hg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
         }
       }
 
@@ -130,9 +131,10 @@ public:
           unsigned ichan_block = ichan / num_double;
           unsigned ichan_offset = ichan - ichan_block*num_double;
           auto* chan_results = results_.mutable_low_gain(ichan);
-          chan_results->set_num_entries(psd_count_lg_[ichan_block * num_double + ichan]);
+          chan_results->set_num_entries(chan_results->num_entries() + psd_count_lg_[ichan]);
           for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
-            chan_results->set_psd_sum(ifreq, psd_sum_lg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
+            chan_results->set_psd_sum(ifreq, chan_results->psd_sum(ifreq) +
+              psd_sum_lg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
           }
         }
       }
