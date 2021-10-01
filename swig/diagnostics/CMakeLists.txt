@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES run_info.i simple_charge_stats.i simple_charge_hists.i
-	clock_regression.i stage1.i waveform.i)
+	simple_charge_capture.i clock_regression.i stage1.i waveform.i)
 set(CALIN_SWIG_TARGET diagnostics)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
