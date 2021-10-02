@@ -110,6 +110,10 @@ bool SimpleChargeCaptureParallelEventVisitor::leave_telescope_run(
 bool SimpleChargeCaptureParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+  if(event->local_event_number()<min_event_number_ or (max_event_number_>0 and
+      event->local_event_number()>=max_event_number_)) {
+    return true;
+  }
   unsigned nchan = waveform_sum_visitor_->nchan();
   auto* data = new CapturedEventData;
   data->event_number = event->local_event_number();
