@@ -71,6 +71,7 @@ public:
 
   bool merge_results() override;
 
+  uint64_t size() const { return captured_data_.size(); }
   std::vector<uint64_t> keys() const;
   bool has(uint64_t event_number) const;
   int64_t time(uint64_t event_number) const;

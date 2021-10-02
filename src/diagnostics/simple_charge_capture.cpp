@@ -139,6 +139,7 @@ bool SimpleChargeCaptureParallelEventVisitor::visit_telescope_event(uint64_t seq
     data->values[ichan] =
       (waveform_sum_visitor_->array_chan_signal_type()[ichan]&0x3) | (array[ichan] << 2);
   }
+  captured_data_[data->event_number] = data;
   return true;
 }
 
@@ -160,7 +161,7 @@ bool SimpleChargeCaptureParallelEventVisitor::merge_results()
 std::vector<uint64_t> SimpleChargeCaptureParallelEventVisitor::keys() const
 {
   std::vector<uint64_t> kv;
-  kv.resize(captured_data_.size());
+  kv.reserve(captured_data_.size());
   for(auto& icaptured : captured_data_) {
     kv.push_back(icaptured.first);
   }
