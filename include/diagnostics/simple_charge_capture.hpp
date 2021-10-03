@@ -71,6 +71,9 @@ public:
 
   bool merge_results() override;
 
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration& run_config() const {
+    return run_config_;
+  }
   uint64_t size() const { return captured_data_.size(); }
   std::vector<uint64_t> keys() const;
   bool has(uint64_t event_number) const;
@@ -89,6 +92,8 @@ private:
   };
 
   SimpleChargeCaptureParallelEventVisitor* parent_ = nullptr;
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config_;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* waveform_sum_visitor_ = nullptr;
   bool adopt_waveform_sum_visitor_ = false;

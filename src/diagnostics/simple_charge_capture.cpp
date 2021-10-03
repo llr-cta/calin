@@ -94,6 +94,8 @@ bool SimpleChargeCaptureParallelEventVisitor::visit_telescope_run(
       calin::io::json::json_value(min_event_number_));
     config_json->set_json(calin::io::json::json_for_dictionary(keyval));
   }
+  run_config_.Clear();
+  run_config_.CopyFrom(*run_config);
   for(auto& icaptured : captured_data_) {
     delete icaptured.second;
   }
