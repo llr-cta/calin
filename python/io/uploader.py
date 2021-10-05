@@ -329,7 +329,7 @@ class GoogleDriveUploader(Uploader):
         else:
             return []
 
-    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+    def append_rows_to_sheet(self, sheet_id_and_tab_name, rows, row_start=0, max_try=2):
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
         if range:
             range = "'" + range + "'!"
@@ -340,7 +340,7 @@ class GoogleDriveUploader(Uploader):
             ntry += 1
             try:
                 body = {
-                    'values': [row]
+                    'values': rows
                 }
                 response = self.sheets_service.spreadsheets().values().append(
                     spreadsheetId=sheet_id, range=range,
@@ -361,6 +361,9 @@ class GoogleDriveUploader(Uploader):
                     raise
 
         return response.get('updates').get('updatedCells')
+
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+        return self.append_rows_to_sheet(sheet_id_and_tab_name, [row], row_start, max_try)
 
     def get_url(self, rel_filepath):
         if(rel_filepath in self.directory):
