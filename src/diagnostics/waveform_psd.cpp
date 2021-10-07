@@ -218,7 +218,9 @@ process_one_waveform(const uint16_t*__restrict__ wf,
   auto* psd_sum = psd->mutable_psd_sum()->mutable_data();
   const float*__restrict__ ri = waveform_f_;
   const float*__restrict__ ci = waveform_f_ + nsample-1;
-  double psdi = SQR(double(*ri++) + wf_sum);
+  double dc_cpt = double(*ri++) + wf_sum;
+  psd->set_dc_sum(psd->dc_sum() + dc_cpt);
+  double psdi = SQR(dc_cpt);
   (*psd_sum++) += psdi;
   while(ri < ci)
   {

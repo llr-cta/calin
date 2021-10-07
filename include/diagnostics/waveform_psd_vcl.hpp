@@ -52,6 +52,8 @@ public:
     ::free(waveform_p_);
     ::free(psd_count_hg_);
     ::free(psd_count_lg_);
+    ::free(dc_sum_hg_);
+    ::free(dc_sum_lg_);
     ::free(psd_sum_hg_);
     ::free(psd_sum_lg_);
   }
@@ -95,10 +97,12 @@ public:
       calin::util::memory::safe_aligned_recalloc(waveform_f_, nsamp_);
       calin::util::memory::safe_aligned_recalloc(waveform_p_, nfreq_);
       calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_block_*num_int16);
+      calin::util::memory::safe_aligned_recalloc_and_fill(dc_sum_hg_, nchan_block_*num_int16);
       calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_block_*num_int16 * nfreq_);
       if(run_config->camera_layout().adc_gains() !=
           calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN) {
         calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_lg_, nchan_block_*num_int16);
+        calin::util::memory::safe_aligned_recalloc_and_fill(dc_sum_lg_, nchan_block_*num_int16);
         calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_lg_, nchan_block_*num_int16 * nfreq_);
       }
     } else {
@@ -120,6 +124,7 @@ public:
         unsigned ichan_offset = ichan - ichan_block*num_double;
         auto* chan_results = results_.mutable_high_gain(ichan);
         chan_results->set_num_entries(chan_results->num_entries() + psd_count_hg_[ichan]);
+        chan_results->set_dc_sum(chan_results->dc_sum() + dc_sum_hg_[ichan]);
         for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
           chan_results->set_psd_sum(ifreq, chan_results->psd_sum(ifreq) +
             psd_sum_hg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
@@ -132,6 +137,7 @@ public:
           unsigned ichan_offset = ichan - ichan_block*num_double;
           auto* chan_results = results_.mutable_low_gain(ichan);
           chan_results->set_num_entries(chan_results->num_entries() + psd_count_lg_[ichan]);
+          chan_results->set_dc_sum(chan_results->dc_sum() + dc_sum_lg_[ichan]);
           for(unsigned ifreq=0; ifreq<nfreq_; ++ifreq) {
             chan_results->set_psd_sum(ifreq, chan_results->psd_sum(ifreq) +
               psd_sum_lg_[(ichan_block*nfreq_ + ifreq) * num_double + ichan_offset]);
@@ -143,16 +149,24 @@ public:
       signal_type_ = nullptr;
       ::free(samples_);
       samples_ = nullptr;
+
       ::free(waveform_x_);
       waveform_x_ = nullptr;
       ::free(waveform_f_);
       waveform_f_ = nullptr;
       ::free(waveform_p_);
       waveform_p_ = nullptr;
+
       ::free(psd_count_hg_);
       psd_count_hg_ = nullptr;
       ::free(psd_count_lg_);
       psd_count_lg_ = nullptr;
+
+      ::free(dc_sum_hg_);
+      dc_sum_hg_ = nullptr;
+      ::free(dc_sum_lg_);
+      dc_sum_lg_ = nullptr;
+
       ::free(psd_sum_hg_);
       psd_sum_hg_ = nullptr;
       ::free(psd_sum_lg_);
@@ -248,6 +262,7 @@ protected:
       int64_vt type_64;
       int64_bvt mask_hg;
       int64_bvt mask_lg;
+      double_vt dc_val;
 
       // -----------------------------------------------------------------------
       // PASS 1 : 16-bit -> 32-bit for values [..XX]
@@ -284,7 +299,8 @@ protected:
       ci = waveform_f_ + nsamp_ - 1;
       pi = waveform_p_;
 
-      *(pi++) = SQR(vcl::extend_low(*ri++) + vcl::to_double(vcl::extend_low(q_sum)));
+      dc_val = vcl::extend_low(*ri++) + vcl::to_double(vcl::extend_low(q_sum));
+      *(pi++) = SQR(dc_val);
       while(ri < ci) {
         *(pi++) = SQR(vcl::extend_low(*ri++)) + SQR(vcl::extend_low(*ci--));
       }
@@ -303,6 +319,11 @@ protected:
         count = vcl::if_add(mask_hg, count, 1);
         count.store(COUNT_INDEX(psd_count_hg_, ichan_block, 0));
 
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_hg_, ichan_block, 0));
+        dc_sum = vcl::if_add(mask_hg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_hg_, ichan_block, 0));
+
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
           psd_sum.load(SUM_INDEX(psd_sum_hg_, ichan_block, 0, ifreq));
@@ -316,6 +337,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_lg_, ichan_block, 0));
         count = vcl::if_add(mask_lg, count, 1);
         count.store(COUNT_INDEX(psd_count_lg_, ichan_block, 0));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_lg_, ichan_block, 0));
+        dc_sum = vcl::if_add(mask_lg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_lg_, ichan_block, 0));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -338,7 +364,8 @@ protected:
       ci = waveform_f_ + nsamp_ - 1;
       pi = waveform_p_;
 
-      *(pi++) = SQR(vcl::extend_high(*ri++) + vcl::to_double(vcl::extend_high(q_sum)));
+      dc_val = vcl::extend_high(*ri++) + vcl::to_double(vcl::extend_high(q_sum));
+      *(pi++) = SQR(dc_val);
       while(ri < ci) {
         *(pi++) = SQR(vcl::extend_high(*ri++)) + SQR(vcl::extend_high(*ci--));
       }
@@ -351,6 +378,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_hg_, ichan_block, 1));
         count = vcl::if_add(mask_hg, count, 1);
         count.store(COUNT_INDEX(psd_count_hg_, ichan_block, 1));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_hg_, ichan_block, 1));
+        dc_sum = vcl::if_add(mask_hg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_hg_, ichan_block, 1));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -365,6 +397,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_lg_, ichan_block, 1));
         count = vcl::if_add(mask_lg, count, 1);
         count.store(COUNT_INDEX(psd_count_lg_, ichan_block, 1));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_lg_, ichan_block, 1));
+        dc_sum = vcl::if_add(mask_lg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_lg_, ichan_block, 1));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -409,7 +446,8 @@ protected:
       ci = waveform_f_ + nsamp_ - 1;
       pi = waveform_p_;
 
-      *(pi++) = SQR(vcl::extend_low(*ri++) + vcl::to_double(vcl::extend_low(q_sum)));
+      dc_val = vcl::extend_low(*ri++) + vcl::to_double(vcl::extend_low(q_sum));
+      *(pi++) = SQR(dc_val);
       while(ri < ci) {
         *(pi++) = SQR(vcl::extend_low(*ri++)) + SQR(vcl::extend_low(*ci--));
       }
@@ -422,6 +460,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_hg_, ichan_block, 2));
         count = vcl::if_add(mask_hg, count, 1);
         count.store(COUNT_INDEX(psd_count_hg_, ichan_block, 2));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_hg_, ichan_block, 2));
+        dc_sum = vcl::if_add(mask_hg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_hg_, ichan_block, 2));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -436,6 +479,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_lg_, ichan_block, 2));
         count = vcl::if_add(mask_lg, count, 1);
         count.store(COUNT_INDEX(psd_count_lg_, ichan_block, 2));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_lg_, ichan_block, 2));
+        dc_sum = vcl::if_add(mask_lg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_lg_, ichan_block, 2));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -458,7 +506,8 @@ protected:
       ci = waveform_f_ + nsamp_ - 1;
       pi = waveform_p_;
 
-      *(pi++) = SQR(vcl::extend_high(*ri++) + vcl::to_double(vcl::extend_high(q_sum)));
+      dc_val = vcl::extend_high(*ri++) + vcl::to_double(vcl::extend_high(q_sum));
+      *(pi++) = SQR(dc_val);
       while(ri < ci) {
         *(pi++) = SQR(vcl::extend_high(*ri++)) + SQR(vcl::extend_high(*ci--));
       }
@@ -471,6 +520,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_hg_, ichan_block, 3));
         count = vcl::if_add(mask_hg, count, 1);
         count.store(COUNT_INDEX(psd_count_hg_, ichan_block, 3));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_hg_, ichan_block, 3));
+        dc_sum = vcl::if_add(mask_hg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_hg_, ichan_block, 3));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -485,6 +539,11 @@ protected:
         count.load(COUNT_INDEX(psd_count_lg_, ichan_block, 3));
         count = vcl::if_add(mask_lg, count, 1);
         count.store(COUNT_INDEX(psd_count_lg_, ichan_block, 3));
+
+        double_vt dc_sum;
+        dc_sum.load(COUNT_INDEX(dc_sum_lg_, ichan_block, 3));
+        dc_sum = vcl::if_add(mask_lg, dc_sum, dc_val);
+        dc_sum.store(COUNT_INDEX(dc_sum_lg_, ichan_block, 3));
 
         for(unsigned ifreq=0; ifreq<nfreq_; ifreq++) {
           double_vt psd_sum;
@@ -508,6 +567,9 @@ protected:
 
   int64_t*__restrict__ psd_count_hg_ = nullptr;
   int64_t*__restrict__ psd_count_lg_ = nullptr;
+
+  double_t*__restrict__ dc_sum_hg_ = nullptr;
+  double_t*__restrict__ dc_sum_lg_ = nullptr;
 
   double_t*__restrict__ psd_sum_hg_ = nullptr;
   double_t*__restrict__ psd_sum_lg_ = nullptr;
