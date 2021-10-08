@@ -26,6 +26,7 @@ import calin.plotting
 import calin.diagnostics.stage1
 import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
+import calin.math.fftw_util
 
 def trigger_type_title(trigger_type):
     if(trigger_type == 'physics'):
@@ -36,6 +37,8 @@ def trigger_type_title(trigger_type):
         return 'ExtFlash'
     elif(trigger_type == 'internal_flasher'):
         return 'IntFlash'
+    elif(trigger_type == 'all'):
+        return 'All'
     return ''
 
 def trigger_type_and_gain_title(trigger_type, low_gain = False):
@@ -48,6 +51,8 @@ def trigger_type_and_gain_title(trigger_type, low_gain = False):
         return 'ExtFlash' + gain_title
     elif(trigger_type == 'internal_flasher'):
         return 'IntFlash' + gain_title
+    elif(trigger_type == 'all'):
+        return 'All' + gain_title
     return ''
 
 def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=True,
@@ -1187,6 +1192,10 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
     all_hg_ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain=False)
     all_lg_ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain=True)
 
+    if subtract_pedestal and \
+            numpy.all(numpy.bitwise_and(numpy.isnan(all_hg_ped),numpy.isnan(all_lg_ped))):
+        return None, None, None
+
     all_P0 = []
     all_P1 = []
     fit_mask = []
@@ -1213,6 +1222,12 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
         xcut = xcut_base
         if(subtract_pedestal):
+            if(numpy.isnan(lg_ped) or numpy.isnan(hg_ped)):
+                all_P0.append(numpy.nan)
+                all_P1.append(numpy.nan)
+                fit_mask.append(False)
+                continue
+
             x = lg_scale * x - lg_ped
             y = hg_scale * y - hg_ped
         else:
@@ -1294,3 +1309,76 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
             axis_P0.set_title(figure_title+' intercept, run : %d'%stage1.run_number())
 
     return fig_dict, all_P0, all_P1
+
+def draw_psd(stage1, dataset='all', low_gain=False,
+        figure_factory = calin.plotting.PyPlotFigureFactory()):
+
+    rc = stage1.const_run_config().Clone()
+    cl = rc.const_camera_layout()
+
+    dataset_psd = None
+    if(dataset == 'physics'):
+        dataset_psd = stage1.const_psd_wf_physics().Clone() if stage1.has_psd_wf_physics() else None
+    elif(dataset == 'pedestal'):
+        dataset_psd = stage1.const_psd_wf_pedestal().Clone() if stage1.has_psd_wf_pedestal() else None
+    elif(dataset == 'external_flasher'):
+        dataset_psd = stage1.const_psd_wf_external_flasher().Clone() if stage1.has_psd_wf_external_flasher() else None
+    elif(dataset == 'internal_flasher'):
+        dataset_psd = stage1.const_psd_wf_internal_flasher().Clone() if stage1.has_psd_wf_internal_flasher() else None
+    elif(dataset == 'all'):
+        all_dataset_psd = []
+        if stage1.has_psd_wf_physics(): all_dataset_psd.append(stage1.const_psd_wf_physics())
+        if stage1.has_psd_wf_pedestal(): all_dataset_psd.append(stage1.const_psd_wf_pedestal())
+        if stage1.has_psd_wf_external_flasher(): all_dataset_psd.append(stage1.const_psd_wf_external_flasher())
+        if stage1.has_psd_wf_internal_flasher(): all_dataset_psd.append(stage1.const_psd_wf_internal_flasher())
+        for ipsd in all_dataset_psd:
+            if dataset_psd is None:
+                dataset_psd = ipsd.Clone()
+            else:
+                dataset_psd.IntegrateFrom(ipsd)
+    else:
+        raise RuntimeError('Unknown dataset type :',dataset)
+
+    if dataset_psd is None:
+        return None
+
+    nchan = dataset_psd.low_gain_size() if low_gain else dataset_psd.high_gain_size()
+    if nchan==0:
+        return None
+
+    nsamp = rc.num_samples()
+    nfreq = calin.math.fftw_util.hcvec_num_real(nsamp)
+    freq = rc.nominal_sampling_frequency() * numpy.arange(nfreq)/rc.num_samples()
+
+    figure_title = 'High-gain vs low-gain max sample'
+
+    fig_psd = None
+    axis_psd = None
+
+    sum_psd_sum = numpy.zeros_like(freq)
+    sum_psd_count = 0
+    for ichan in range(nchan):
+        chan_psd = dataset_psd.const_low_gain(ichan) if low_gain else dataset_psd.const_high_gain(ichan)
+        if(chan_psd.num_entries()):
+            plot_opt_dict = dict()
+            if(fig_psd is None):
+                fig_psd, axis_psd = figure_factory.new_histogram_figure()
+                plot_opt_dict['label'] = 'Channels'
+            psd = chan_psd.psd_sum()/nsamp**2/chan_psd.num_entries()
+            sum_psd_sum += psd
+            sum_psd_count += 1
+            axis_psd.plot(freq[1:], psd[1:],'k',alpha=0.2,**plot_opt_dict)
+
+    if(fig_psd is None):
+        return None
+
+    axis_psd.plot(freq[1:], sum_psd_sum[1:]/sum_psd_count,'C1', label='Camera average')
+    axis_psd.grid()
+    axis_psd.set_xlabel('Frequency [MHz]')
+    axis_psd.set_ylabel('Power [DC$^2$]')
+    axis_psd.legend()
+    axis_psd.set_title('Mean power spectrum (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+
+    fig_dict = dict()
+    fig_dict['psd_'+dataset] = [ fig_psd, axis_psd ]
+    return fig_dict
