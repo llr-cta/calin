@@ -1310,11 +1310,14 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
     return fig_dict, all_P0, all_P1
 
-def draw_psd(stage1, dataset='all', low_gain=False,
-        figure_factory = calin.plotting.PyPlotFigureFactory()):
+def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
+        min_peak_freq=200, figure_factory = calin.plotting.PyPlotFigureFactory(),
+        cmap = 'inferno', stat_label_fontsize=4.75, pix_lw = 0, outline_lw = 0.5,
+        outline_color = '#888888'):
 
     rc = stage1.const_run_config().Clone()
     cl = rc.const_camera_layout()
+    ccid = rc.configured_channel_id()
 
     dataset_psd = None
     if(dataset == 'physics'):
@@ -1357,6 +1360,11 @@ def draw_psd(stage1, dataset='all', low_gain=False,
 
     sum_psd_sum = numpy.zeros_like(freq)
     sum_psd_count = 0
+
+    all_lf_var = numpy.zeros(nchan)
+    all_hf_var = numpy.zeros(nchan)
+    all_pk_var = numpy.zeros(nchan)
+
     for ichan in range(nchan):
         chan_psd = dataset_psd.const_low_gain(ichan) if low_gain else dataset_psd.const_high_gain(ichan)
         if(chan_psd.num_entries()):
@@ -1368,6 +1376,14 @@ def draw_psd(stage1, dataset='all', low_gain=False,
             sum_psd_sum += psd
             sum_psd_count += 1
             axis_psd.plot(freq[1:], psd[1:],'k',alpha=0.2,**plot_opt_dict)
+
+            all_lf_var[ichan] = psd[0] - (chan_psd.dc_sum()/nsamp/chan_psd.num_entries())**2
+            all_hf_var[ichan] = numpy.sum(psd[1:])
+            all_pk_var[ichan] = numpy.max(psd[freq>=min_peak_freq])
+        else:
+            all_lf_var[ichan] = numpy.nan
+            all_hf_var[ichan] = numpy.nan
+            all_pk_var[ichan] = numpy.nan
 
     if(fig_psd is None):
         return None
@@ -1381,4 +1397,59 @@ def draw_psd(stage1, dataset='all', low_gain=False,
 
     fig_dict = dict()
     fig_dict['psd_'+dataset] = [ fig_psd, axis_psd ]
+
+    all_lf_var = numpy.asarray(all_lf_var)
+    all_hf_var = numpy.asarray(all_hf_var)
+    all_pk_var = numpy.asarray(all_pk_var)
+
+    mask = ~numpy.isnan(all_lf_var)
+    if(draw_camera_plots and numpy.count_nonzero(mask)):
+        fig_lf, axis_lf = figure_factory.new_camera_figure()
+        fig_dict['psd_lf_rms_'+dataset] = [ fig_lf, axis_lf ]
+        data = numpy.sqrt(all_lf_var)
+        pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
+            configured_channels=ccid, cmap='inferno', axis=axis_lf,
+            draw_outline=True, hatch_missing_channels=True)
+        calin.plotting.add_colorbar_and_clipping(axis_lf, pc, data, camera_layout=cl,
+                    configured_channels=ccid,
+                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [DC]')
+        calin.plotting.add_stats(axis_lf, cl.camera_boundary_maxabs_xy(), data,
+             ccid, mask=mask, draw_top12_val=True)
+        axis_lf.get_xaxis().set_visible(False)
+        axis_lf.get_yaxis().set_visible(False)
+        axis_lf.set_title('Low-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+
+
+        fig_hf, axis_hf = figure_factory.new_camera_figure()
+        fig_dict['psd_hf_rms_'+dataset] = [ fig_hf, axis_hf ]
+        data = numpy.sqrt(all_hf_var)
+        pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
+            configured_channels=ccid, cmap='inferno', axis=axis_hf,
+            draw_outline=True, hatch_missing_channels=True)
+        calin.plotting.add_colorbar_and_clipping(axis_hf, pc, data, camera_layout=cl,
+                    configured_channels=ccid,
+                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [DC]')
+        calin.plotting.add_stats(axis_hf, cl.camera_boundary_maxabs_xy(), data,
+             ccid, mask=mask, draw_top12_val=True)
+        axis_hf.get_xaxis().set_visible(False)
+        axis_hf.get_yaxis().set_visible(False)
+        axis_hf.set_title('High-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+
+
+        fig_pk, axis_pk = figure_factory.new_camera_figure()
+        fig_dict['psd_peak_'+dataset] = [ fig_pk, axis_pk ]
+        data = all_pk_var
+        pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
+            configured_channels=ccid, cmap='inferno', axis=axis_pk,
+            draw_outline=True, hatch_missing_channels=True)
+        calin.plotting.add_colorbar_and_clipping(axis_pk, pc, data, camera_layout=cl,
+                    configured_channels=ccid,
+                    percentile=99.5, percentile_factor=2.0, cb_label='Power [DC$^2$]')
+        calin.plotting.add_stats(axis_pk, cl.camera_boundary_maxabs_xy(), data,
+             ccid, mask=mask, draw_top12_val=True)
+        axis_pk.get_xaxis().set_visible(False)
+        axis_pk.get_yaxis().set_visible(False)
+        axis_pk.set_title(u'Peak power \u2265%gMHz (%s), run : %d'%(min_peak_freq,
+            trigger_type_and_gain_title(dataset), stage1.run_number()))
+
     return fig_dict
