@@ -166,6 +166,13 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_delta_dft(double x0, unsigned nsam
   return ovec;
 }
 
+Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd(const Eigen::VectorXd& ivec)
+{
+  unsigned nsample = ivec.size();
+  Eigen::VectorXd ovec(hcvec_num_real(nsample));
+  hcvec_to_psd(ovec.data(), ivec.data(), nsample);
+  return ovec;
+}
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {

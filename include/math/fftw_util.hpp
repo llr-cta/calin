@@ -210,6 +210,22 @@ T hcvec_avg_real(const T* ivec, unsigned nsample)
 }
 
 template<typename T>
+void hcvec_to_psd(T* ovec, const T* ivec, unsigned nsample, T dc_cpt = 0)
+{
+  using calin::math::special::SQR;
+  const T* r = ivec;
+  const T* c = ivec + nsample;
+  *ovec++ = SQR(*r++ + dc_cpt);
+  c--;
+  while(r<c) {
+    *ovec++ = SQR(*r++) + SQR(*c--);
+  }
+  if(r==c) {
+    *ovec++ = SQR(*r++);
+  }
+}
+
+template<typename T>
 void hcvec_multiply_and_add_real(T* ovec, const T* ivec1,
   const T* ivec2, T real_addand, unsigned nsample)
 {
@@ -1286,6 +1302,7 @@ Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double sca
 Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_dft(double x0, unsigned nsample, bool vcl = true);
+Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
