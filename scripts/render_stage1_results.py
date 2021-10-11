@@ -176,11 +176,17 @@ def get_oids():
     return all_oid, all_runno, all_filename
 
 def render_oid(oid):
-    # Open SQL file
-    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+    try:
+        sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+        stage1 = calin.ix.diagnostics.stage1.Stage1()
+        sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+        return unprotected_render_oid(stage1)
+    except:
+        runno = stage1.run_number()
+        print('Exception while rendering run :', runno)
+        raise
 
-    stage1 = calin.ix.diagnostics.stage1.Stage1()
-    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+def unprotected_render_oid(stage1):
     runno = stage1.run_number()
     print('Started run :', runno)
 
