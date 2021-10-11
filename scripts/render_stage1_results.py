@@ -220,6 +220,27 @@ def render_oid(oid):
     draw_plots = True
 
     ############################################################################
+    # FIGURE : power spectra
+    ############################################################################
+
+    if(draw_plots):
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='pedestal', figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='pedestal', low_gain=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='all', figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='all', low_gain=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+    ############################################################################
     # FIGURE : high-gain vs low-gain values
     ############################################################################
 

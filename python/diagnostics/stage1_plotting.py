@@ -1349,11 +1349,15 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
     if nchan==0:
         return None
 
+    max_num_entries = numpy.max([dataset_psd.low_gain(i).num_entries() if low_gain \
+        else dataset_psd.high_gain(i).num_entries() for i in range(nchan)])
+    if(max_num_entries < 10):
+        return None
+
     nsamp = rc.num_samples()
     nfreq = calin.math.fftw_util.hcvec_num_real(nsamp)
-    freq = rc.nominal_sampling_frequency() * numpy.arange(nfreq)/rc.num_samples()
-
-    figure_title = 'High-gain vs low-gain max sample'
+    freq = (rc.nominal_sampling_frequency() if rc.nominal_sampling_frequency() else 1000) \
+            * numpy.arange(nfreq)/rc.num_samples()
 
     fig_psd = None
     axis_psd = None
@@ -1396,7 +1400,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
     axis_psd.set_title('Mean power spectrum (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
 
     fig_dict = dict()
-    fig_dict['psd_'+dataset] = [ fig_psd, axis_psd ]
+    fig_dict['psd_'+dataset+('_lg' if low_gain else '_hg')] = [ fig_psd, axis_psd ]
 
     all_lf_var = numpy.asarray(all_lf_var)
     all_hf_var = numpy.asarray(all_hf_var)
@@ -1405,7 +1409,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
     mask = ~numpy.isnan(all_lf_var)
     if(draw_camera_plots and numpy.count_nonzero(mask)):
         fig_lf, axis_lf = figure_factory.new_camera_figure()
-        fig_dict['psd_lf_rms_'+dataset] = [ fig_lf, axis_lf ]
+        fig_dict['psd_lf_rms_'+dataset+('_lg' if low_gain else '_hg')] = [ fig_lf, axis_lf ]
         data = numpy.sqrt(all_lf_var)
         pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
             configured_channels=ccid, cmap='inferno', axis=axis_lf,
@@ -1421,7 +1425,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
 
 
         fig_hf, axis_hf = figure_factory.new_camera_figure()
-        fig_dict['psd_hf_rms_'+dataset] = [ fig_hf, axis_hf ]
+        fig_dict['psd_hf_rms_'+dataset+('_lg' if low_gain else '_hg')] = [ fig_hf, axis_hf ]
         data = numpy.sqrt(all_hf_var)
         pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
             configured_channels=ccid, cmap='inferno', axis=axis_hf,
@@ -1437,7 +1441,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
 
 
         fig_pk, axis_pk = figure_factory.new_camera_figure()
-        fig_dict['psd_peak_'+dataset] = [ fig_pk, axis_pk ]
+        fig_dict['psd_peak_'+dataset+('_lg' if low_gain else '_hg')] = [ fig_pk, axis_pk ]
         data = all_pk_var
         pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
             configured_channels=ccid, cmap='inferno', axis=axis_pk,
