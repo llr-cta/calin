@@ -1212,10 +1212,12 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
             continue
 
         x = h_c.xval0() + (numpy.arange(h_c.bins_size())+0.5)*h_c.dxval()
-        y = h_m.bins()
+
+        vindex = int((h_m.xval0()-h_c.xval0())/h_v.dxval())
+        y = x*0
+        y[vindex:vindex+h_m.bins_size()] = h_m.bins()
 
         vindex = int((h_v.xval0()-h_c.xval0())/h_v.dxval())
-
         dy = y*0
         dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(h_v.bins())
         dy = dy/(numpy.sqrt(h_c.bins())+1e-9)
