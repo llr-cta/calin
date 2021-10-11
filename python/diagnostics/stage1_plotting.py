@@ -1399,7 +1399,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
     axis_psd.set_xlabel('Frequency [MHz]')
     axis_psd.set_ylabel('Power [DC$^2$]')
     axis_psd.legend()
-    axis_psd.set_title('Mean power spectrum (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+    axis_psd.set_title('Mean power spectrum (%s), run : %d'%(trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
     fig_dict = dict()
     fig_dict['psd_'+dataset+('_lg' if low_gain else '_hg')] = [ fig_psd, axis_psd ]
@@ -1423,7 +1423,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
              ccid, mask=mask, draw_top12_val=True)
         axis_lf.get_xaxis().set_visible(False)
         axis_lf.get_yaxis().set_visible(False)
-        axis_lf.set_title('Low-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+        axis_lf.set_title('Low-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
 
         fig_hf, axis_hf = figure_factory.new_camera_figure()
@@ -1439,7 +1439,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
              ccid, mask=mask, draw_top12_val=True)
         axis_hf.get_xaxis().set_visible(False)
         axis_hf.get_yaxis().set_visible(False)
-        axis_hf.set_title('High-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset), stage1.run_number()))
+        axis_hf.set_title('High-frequency RMS (%s), run : %d'%(trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
 
         fig_pk, axis_pk = figure_factory.new_camera_figure()
@@ -1456,6 +1456,6 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
         axis_pk.get_xaxis().set_visible(False)
         axis_pk.get_yaxis().set_visible(False)
         axis_pk.set_title(u'Peak power \u2265%gMHz (%s), run : %d'%(min_peak_freq,
-            trigger_type_and_gain_title(dataset), stage1.run_number()))
+            trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
     return fig_dict
