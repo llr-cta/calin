@@ -1222,7 +1222,8 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
         vindex = int((h_v.xval0()-h_c.xval0())/h_v.dxval())
         dy = y*0
-        dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(numpy.max(h_v.bins(),0))
+        if(h_v.bins_size() > 0):
+            dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(numpy.max(h_v.bins(),0))
         dy = dy/(numpy.sqrt(h_c.bins())+1e-9)
 
         xcut = xcut_base
