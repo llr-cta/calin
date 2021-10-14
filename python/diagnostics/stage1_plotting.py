@@ -1161,6 +1161,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         figure_name = 'high_low_max_sample'
         figure_title = 'High-gain vs low-gain max sample'
         xcut_base = 30
+        ycut_base = 4000
         for ichan in range(dg.all_opt_sum_count_size()):
             all_h_c.append(dg.all_max_sample_count(ichan))
             all_h_m.append(dg.all_max_sample_mean(ichan))
@@ -1174,6 +1175,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         figure_name = 'high_low_window_sum'
         figure_title = 'High-gain vs low-gain window sum'
         xcut_base = 8
+        ycut_base = 4000
         for ichan in range(dg.all_opt_sum_count_size()):
             all_h_c.append(dg.all_opt_sum_count(ichan))
             all_h_m.append(dg.all_opt_sum_mean(ichan))
@@ -1223,6 +1225,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         dy = dy/(numpy.sqrt(h_c.bins())+1e-9)
 
         xcut = xcut_base
+        ycut = ycut_base
         if(subtract_pedestal):
             if(numpy.isnan(lg_ped) or numpy.isnan(hg_ped)):
                 all_P0.append(numpy.nan)
@@ -1232,13 +1235,15 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
             x = lg_scale * x - lg_ped
             y = hg_scale * y - hg_ped
+            ycut -= hg_ped
         else:
             x = lg_scale * x
             y = hg_scale * y
             xcut += lg_ped
         dy = hg_scale * dy
 
-        mm = numpy.bitwise_and(h_c.bins()>10, numpy.bitwise_and(x>xcut , y<4000))
+        mm = numpy.bitwise_and(numpy.bitwise_and(h_c.bins()>10, dy>0),
+            numpy.bitwise_and(x>xcut , y<ycut))
 
         if(numpy.count_nonzero(mm) > 5):
             try:
