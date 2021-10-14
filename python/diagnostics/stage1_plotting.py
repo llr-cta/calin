@@ -1013,6 +1013,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
     if(h is not None):
         scale = 1/len(all_hist)
         offset = sum(ped) * scale
+        h = calin.math.histogram.rebin(h, int(numpy.sqrt(len(all_hist))))
         calin.plotting.plot_histogram(h, xscale=scale, xoffset=-offset, histtype='floating',
             color='C1', density=True, normalise=True, label='Camera average', axis=axis_hist)
 
@@ -1221,7 +1222,7 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
         vindex = int((h_v.xval0()-h_c.xval0())/h_v.dxval())
         dy = y*0
-        dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(h_v.bins())
+        dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(numpy.max(h_v.bins(),0))
         dy = dy/(numpy.sqrt(h_c.bins())+1e-9)
 
         xcut = xcut_base
