@@ -91,6 +91,7 @@ jobs:
       with:
         go-version: 1.13
       id: go
+
     - name: Install Singularity
       env:
         SINGULARITY_VERSION: 3.8.3
