@@ -65,6 +65,7 @@ public:
   double asymptotic_value() override;
 protected:
   double C_;
+  double D_;
   double D2_;
 };
 

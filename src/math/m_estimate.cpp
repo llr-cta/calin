@@ -83,7 +83,7 @@ double NullLikelihoodRhoFunction::asymptotic_value()
 
 HyperbolicLikelihoodRhoFunction::
 HyperbolicLikelihoodRhoFunction(double asymptotic_value, double turnover_scale):
-  LikelihoodRhoFunction(), C_(asymptotic_value), D2_(SQR(turnover_scale))
+  LikelihoodRhoFunction(), C_(asymptotic_value), D_(std::abs(turnover_scale)), D2_(SQR(turnover_scale))
 {
   // nothing to see here
 }
@@ -95,45 +95,46 @@ HyperbolicLikelihoodRhoFunction::~HyperbolicLikelihoodRhoFunction()
 
 double HyperbolicLikelihoodRhoFunction::value_1d(double x)
 {
-  double xlim = std::min(x, 1e3*C_);
-  double R2 = SQR(xlim-C_) + D2_;
-  double R = std::sqrt(R2);
-  if(x > xlim) {
-    // Prefer that the function is continuous ast xlim mather than it reaches asymptote C_
-    return 0.5*(xlim+C_-R) + 0.25*D2_*(1/xlim - 1/x);
+  double xprime = x-C_;
+  double xprime_lim = std::min(xprime, 1e3*D_);
+  double R = std::sqrt(SQR(xprime_lim) + D2_);
+  if(xprime > xprime_lim) {
+    // Prefer that the function is continuous at xprime_lim mather than it reaches asymptote C_
+    return C_ + 0.5*(xprime_lim - R) + 0.25*D2_*(1/xprime_lim - 1/xprime);
   } else {
-    return 0.5*(xlim+C_-R);
+    return C_ + 0.5*(xprime_lim - R);
   }
 }
 
 double HyperbolicLikelihoodRhoFunction::value_and_gradient_1d(double x, double& dfdx)
 {
-  double xlim = std::min(x, 1e3*C_);
-  double R2 = SQR(xlim-C_) + D2_;
-  double R = std::sqrt(R2);
-  if(x > xlim) {
-    dfdx = 0.25*D2_/SQR(x);
-    return 0.5*(xlim+C_-R) + 0.25*D2_*(1/xlim - 1/x);
+  double xprime = x-C_;
+  double xprime_lim = std::min(xprime, 1e3*D_);
+  double R = std::sqrt(SQR(xprime_lim) + D2_);
+  if(xprime > xprime_lim) {
+    dfdx = 0.25*D2_/SQR(xprime);
+    return C_ + 0.5*(xprime_lim - R) + 0.25*D2_*(1/xprime_lim - 1/xprime);
   } else {
-    dfdx = 0.5*(1 - (x-C_)/R);
-    return 0.5*(xlim+C_-R);
+    dfdx = 0.5*(1 - xprime_lim/R);
+    return C_ + 0.5*(xprime_lim - R);
   }
 }
 
 double HyperbolicLikelihoodRhoFunction::
 value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
 {
-  double xlim = std::min(x, 1e3*C_);
-  double R2 = SQR(xlim-C_) + D2_;
+  double xprime = x-C_;
+  double xprime_lim = std::min(xprime, 1e3*D_);
+  double R2 = SQR(xprime_lim) + D2_;
   double R = std::sqrt(R2);
-  if(x > xlim) {
-    dfdx = 0.25*D2_/SQR(x);
-    d2fdx2 = -2.0*dfdx/x;
-    return 0.5*(xlim+C_-R) + 0.25*D2_*(1/xlim - 1/x);
+  if(xprime > xprime_lim) {
+    dfdx = 0.25*D2_/SQR(xprime);
+    d2fdx2 = -2.0*dfdx/xprime;
+    return C_ + 0.5*(xprime_lim - R) + 0.25*D2_*(1/xprime_lim - 1/xprime);
   } else {
-    dfdx = 0.5*(1 - (x-C_)/R);
+    dfdx = 0.5*(1 - xprime_lim/R);
     d2fdx2 = -0.5*D2_/(R2*R);
-    return 0.5*(xlim+C_-R);
+    return C_ + 0.5*(xprime_lim - R);
   }
 }
 
