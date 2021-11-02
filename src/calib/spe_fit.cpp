@@ -64,20 +64,22 @@ MultiElectronSpectrum::~MultiElectronSpectrum()
 // ============================================================================
 
 SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
-                             const math::histogram::SimpleHist& mes_data):
+                             const math::histogram::SimpleHist& mes_data,
+                             double pdf_min):
     function::MultiAxisFunction(), mes_model_(&mes_model),
     npar_(mes_model.num_parameters()),
-    mes_data_(mes_data), has_ped_data_(false), ped_data_(1.0)
+    mes_data_(mes_data), has_ped_data_(false), ped_data_(1.0), pdf_min_(std::max(pdf_min, 0.0))
 {
   // nothing to see here
 }
 
 SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
                              const math::histogram::SimpleHist& mes_data,
-                             const math::histogram::SimpleHist& ped_data):
+                             const math::histogram::SimpleHist& ped_data,
+                             double pdf_min):
     function::MultiAxisFunction(), mes_model_(&mes_model),
     npar_(mes_model.num_parameters()),
-    mes_data_(mes_data), has_ped_data_(true), ped_data_(ped_data)
+    mes_data_(mes_data), has_ped_data_(true), ped_data_(ped_data), pdf_min_(std::max(pdf_min, 0.0))
 {
   // nothing to see here
 }
@@ -104,7 +106,7 @@ double SPELikelihood::value(ConstVecRef x)
   for(auto& ibin : mes_data_)
     if(ibin.weight())
     {
-      double pdf = mes_model_->pdf_mes(ibin.xval_center());
+      double pdf = std::max(mes_model_->pdf_mes(ibin.xval_center()), pdf_min_);
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
     }
@@ -113,7 +115,7 @@ double SPELikelihood::value(ConstVecRef x)
     for(auto& ibin : ped_data_)
       if(ibin.weight())
       {
-        double pdf = mes_model_->pdf_ped(ibin.xval_center());
+        double pdf = std::max(mes_model_->pdf_ped(ibin.xval_center()), pdf_min_);
         if(pdf<=0)continue;
         acc.accumulate(std::log(pdf)*ibin.weight());
       }
@@ -139,7 +141,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
   for(auto& ibin : mes_data_)
     if(ibin.weight())
     {
-      double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
+      double pdf = std::max(mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient), pdf_min_);
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
@@ -150,7 +152,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
     for(auto& ibin : ped_data_)
       if(ibin.weight())
       {
-        double pdf = mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient);
+        double pdf = std::max(mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient), pdf_min_);
         if(pdf<=0)continue;
         acc.accumulate(std::log(pdf)*ibin.weight());
         for(unsigned ipar=0;ipar<npar_;ipar++)
