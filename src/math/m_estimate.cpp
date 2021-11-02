@@ -96,7 +96,7 @@ HyperbolicLikelihoodRhoFunction::~HyperbolicLikelihoodRhoFunction()
 double HyperbolicLikelihoodRhoFunction::value_1d(double x)
 {
   double xprime = x-C_;
-  double xprime_lim = std::min(xprime, 1e3*D_);
+  double xprime_lim = std::min(xprime, std::max(1e3*D_, 1e-9));
   double R = std::sqrt(SQR(xprime_lim) + D2_);
   if(xprime > xprime_lim) {
     // Prefer that the function is continuous at xprime_lim mather than it reaches asymptote C_
@@ -109,7 +109,7 @@ double HyperbolicLikelihoodRhoFunction::value_1d(double x)
 double HyperbolicLikelihoodRhoFunction::value_and_gradient_1d(double x, double& dfdx)
 {
   double xprime = x-C_;
-  double xprime_lim = std::min(xprime, 1e3*D_);
+  double xprime_lim = std::min(xprime, std::max(1e3*D_, 1e-9));
   double R = std::sqrt(SQR(xprime_lim) + D2_);
   if(xprime > xprime_lim) {
     dfdx = 0.25*D2_/SQR(xprime);
@@ -124,7 +124,7 @@ double HyperbolicLikelihoodRhoFunction::
 value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
 {
   double xprime = x-C_;
-  double xprime_lim = std::min(xprime, 1e3*D_);
+  double xprime_lim = std::min(xprime, std::max(1e3*D_, 1e-9));
   double R2 = SQR(xprime_lim) + D2_;
   double R = std::sqrt(R2);
   if(xprime > xprime_lim) {
