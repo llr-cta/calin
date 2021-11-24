@@ -38,6 +38,11 @@ class FigureFactory:
     def new_figure(self):
         raise RuntimeError("new_figure unimplemented in base clase")
 
+    def new_default_figure(self):
+        f = self.new_figure()
+        ax = f.subplots(1,1)
+        return f, ax
+
     def new_camera_figure(self):
         f = self.new_figure()
         ax = f.subplots(1,1)
