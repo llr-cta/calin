@@ -500,7 +500,7 @@ def unprotected_render_oid(stage1):
         if(stage1.const_mean_wf_pedestal().channel_low_gain_size() \
                 and stage1.const_mean_wf_pedestal().has_camera_low_gain() \
                 and numpy.count_nonzero([ stage1.const_mean_wf_pedestal().channel_low_gain(i).num_entries() \
-                    for i in range(stage1.const_mean_wf_pedestal().channel_low_gain()) ])):
+                    for i in range(stage1.const_mean_wf_pedestal().channel_low_gain_size()) ])):
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',low_gain=True)
             ax.set_title('Mean waveform (pedestal, low-gain), run : %d'%runno)
@@ -530,7 +530,7 @@ def unprotected_render_oid(stage1):
         if(stage1.const_mean_wf_physics().channel_low_gain_size() \
                 and stage1.const_mean_wf_physics().has_camera_low_gain() \
                 and numpy.count_nonzero([ stage1.const_mean_wf_physics().channel_low_gain(i).num_entries() \
-                    for i in range(stage1.const_mean_wf_physics().channel_low_gain()) ])):
+                    for i in range(stage1.const_mean_wf_physics().channel_low_gain_size()) ])):
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='physics',low_gain=True)
             ax.set_title('Mean waveform (physics, low-gain), run : %d'%runno)
@@ -548,13 +548,13 @@ def unprotected_render_oid(stage1):
         if(stage1.const_mean_wf_external_flasher().channel_low_gain_size() \
                 and stage1.const_mean_wf_external_flasher().has_camera_low_gain() \
                 and numpy.count_nonzero([ stage1.const_mean_wf_external_flasher().channel_low_gain(i).num_entries() \
-                    for i in range(stage1.const_mean_wf_external_flasher().channel_low_gain()) ])):
+                    for i in range(stage1.const_mean_wf_external_flasher().channel_low_gain_size()) ])):
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='external_flasher',low_gain=True)
             ax.set_title('Mean waveform (ext flasher, low-gain), run : %d'%runno)
             upload_figure(runno, 'waveform_mean_external_flasher_lg', ax.figure)
 
-    if(stage1.has_mean_wf_internal_flasher() and stage1.has_charge_stats()):
+    if(stage1.has_mean_wf_internal_flasher()):
         if(stage1.const_mean_wf_internal_flasher().channel_high_gain_size() \
                 and stage1.const_mean_wf_internal_flasher().has_camera_high_gain() \
                 and numpy.count_nonzero([ stage1.const_mean_wf_internal_flasher().channel_high_gain(i).num_entries() \
@@ -566,7 +566,7 @@ def unprotected_render_oid(stage1):
         if(stage1.const_mean_wf_internal_flasher().channel_low_gain_size() \
                 and stage1.const_mean_wf_internal_flasher().has_camera_low_gain() \
                 and numpy.count_nonzero([ stage1.const_mean_wf_internal_flasher().channel_high_gain(i).num_entries() \
-                    for i in range(stage1.const_mean_wf_internal_flasher().channel_high_gain_size()) ])):
+                    for i in range(stage1.const_mean_wf_internal_flasher().channel_high_gain_size_size()) ])):
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='internal_flasher',low_gain=True)
             ax.set_title('Mean waveform (int flasher, low-gain), run : %d'%runno)
