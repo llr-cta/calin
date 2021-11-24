@@ -273,8 +273,8 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   }
   results_g->add_ext_trigger_num_wf_clipped(partials_gc.ext_trig_num_wf_clipped());
 
-  results_g->add_phy_trigger_event_count(partials_gc.ext_trig_num_events());
-  results_g->add_phy_trigger_num_wf_clipped(partials_gc.ext_trig_num_wf_clipped());
+  results_g->add_phy_trigger_event_count(partials_gc.phys_trig_num_events());
+  results_g->add_phy_trigger_num_wf_clipped(partials_gc.phys_trig_num_wf_clipped());
 
   results_g->add_int_trigger_event_count(partials_gc.int_trig_num_events());
   results_g->add_int_trigger_num_wf_clipped(partials_gc.int_trig_num_wf_clipped());
