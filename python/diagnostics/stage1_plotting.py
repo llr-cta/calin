@@ -766,54 +766,72 @@ def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, z
     axis.set_ylabel('Probability')
 
 def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
-        subtract_pedestal = False, axis = None):
-    axis = axis if axis is not None else matplotlib.pyplot.gca()
+        subtract_pedestal = False, figure_factory = calin.plotting.PyPlotFigureFactory()):
 
+    mwf = None
     if(dataset == 'pedestal'):
-        mwf = stage1.const_mean_wf_pedestal()
+        mwf = stage1.const_mean_wf_pedestal() if stage1.has_mean_wf_pedestal() else None
     elif(dataset == 'physics'):
-        mwf = stage1.const_mean_wf_physics()
+        mwf = stage1.const_mean_wf_physics() if stage1.has_mean_wf_physics() else None
     elif(dataset == 'external_flasher'):
-        mwf = stage1.const_mean_wf_external_flasher()
+        mwf = stage1.const_mean_wf_external_flasher() if stage1.has_mean_wf_external_flasher() else None
     elif(dataset == 'internal_flasher'):
-        mwf = stage1.const_mean_wf_internal_flasher()
+        mwf = stage1.const_mean_wf_internal_flasher() if stage1.has_mean_wf_internal_flasher() else None
     else:
         raise RuntimeError('Unknown data set : '+dataset)
 
+    if mwf is None:
+        return None
+
+    if(low_gain):
+        nchan = mwf.channel_low_gain_size()
+        chan_nentries = [ mwf.channel_low_gain(i).num_entries() for i in range(nchan) ]
+        chan_traces = [ mwf.channel_low_gain(i).mean_waveform() for i in range(nchan) ]
+        cam_nentries = mwf.const_camera_low_gain().num_entries() if mwf.has_camera_low_gain() else 0
+        cam_trace = mwf.const_camera_low_gain().mean_waveform() if mwf.has_camera_high_gain() else None
+    else:
+        nchan = mwf.channel_high_gain_size()
+        chan_nentries = [ mwf.channel_high_gain(i).num_entries() for i in range(nchan) ]
+        chan_traces = [ mwf.channel_high_gain(i).mean_waveform() for i in range(nchan) ]
+        cam_nentries = mwf.const_camera_high_gain().num_entries() if mwf.has_camera_high_gain() else 0
+        cam_trace = mwf.const_camera_high_gain().mean_waveform() if mwf.has_camera_high_gain() else None
+
+    if(numpy.max(chan_nentries) == 0):
+        return None
+
+    fig_mwf, axis_mwf = figure_factory.new_default_figure()
+
     has_label = False
-    for ichan in range(mwf.channel_high_gain_size()):
-        if(low_gain):
-            chan = mwf.const_channel_low_gain(ichan)
-        else:
-            chan = mwf.const_channel_high_gain(ichan)
-        if(chan.num_entries()):
-            wf = chan.mean_waveform()
+    for ichan in range(nchan):
+        if(chan_nentries[ichan]):
+            wf = chan_traces[ichan]
             if(subtract_pedestal):
                 if(pedestals is None):
                     wf -= numpy.mean(wf)
                 else:
                     wf -= pedestals[ichan]
             if(has_label):
-                axis.plot(wf,'k',alpha=0.1)
+                axis_mwf.plot(wf,'k',alpha=0.1)
             else:
-                axis.plot(wf,'k',alpha=0.1,label='Channels')
+                axis_mwf.plot(wf,'k',alpha=0.1,label='Channels')
                 has_label = True
-    if(low_gain):
-        cam = mwf.const_camera_low_gain()
-    else:
-        cam = mwf.const_camera_high_gain()
-    if(cam.num_entries()):
-        wf = cam.mean_waveform()
+    if(cam_nentries):
+        wf = cam_trace
         if(subtract_pedestal):
             if(pedestals is None):
                 wf -= numpy.mean(wf)
             else:
                 wf -= numpy.mean(pedestals)
-        axis.plot(wf,'C1',label='Camera average')
-    axis.legend()
-    axis.grid()
-    axis.set_xlabel('Waveform sample number')
-    axis.set_ylabel('Mean waveform amplitude [DC]')
+        axis_mwf.plot(wf,'C1',label='Camera average')
+    axis_mwf.legend()
+    axis_mwf.grid()
+    axis_mwf.set_xlabel('Waveform sample number')
+    axis_mwf.set_ylabel('Mean waveform amplitude [DC]')
+    axis_mwf.set_title('Mean waveform %s(%s), run : %d'%('offset ' if subtract_pedestal else '',trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
+
+    fig_dict = dict()
+    fig_dict['waveform_mean_'+dataset+('_lg' if low_gain else '_hg')+('_offset' if subtract_pedestal else '')] = [ fig_mwf, axis_mwf ]
+    return fig_dict
 
 def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
         pedestals = None, low_gain=False, axis = None, cmap = 'inferno',
