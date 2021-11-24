@@ -47,21 +47,53 @@ message CommandLineOptions {
   string summary_sheet                                     = 6;
   string run_log_sheet                                     = 7;
 
-  int32 run_number                                         = 8;
-  int32 from_run_number                                    = 9;
-  int32 to_run_number                                      = 10;
+  int32 run_number                                         = 8 [
+    (CFO).desc = "Draw plots only for one run with given number."];
+  int32 from_run_number                                    = 9 [
+    (CFO).desc = "Draw plots for all runs from given number."];
+  int32 to_run_number                                      = 10 [
+    (CFO).desc = "Draw plots for all runs to given number."];
 
   bool skip_existing                                       = 11 [
     (CFO).desc = "Skip runs (files) for which there is already an entry in the "
       "summary sheet (if it is configured). Runs are matched based on the last three "
       "components of their path name, e.g. \"2021/20210901/NectarCAM.Run2571.0000.fits.fz\"."];
 
-  bool loud_upload                                         = 12;
-  bool overwrite                                           = 13;
+  bool loud_upload                                         = 12 [
+    (CFO).desc = "Print name of all plots being uploaded."];
+  bool overwrite                                           = 13 [
+    (CFO).desc = "Overwite plots that already exist."];
 
-  uint32 nthread                                           = 14;
+  uint32 nthread                                           = 14 [
+    (CFO).desc = "Set number of threads to use to process runs."];
 
-  uint32 figure_dpi                                        = 30;
+  uint32 figure_dpi                                        = 30[
+    (CFO).desc = "Set DPI for plots."];
+
+  bool draw_psd                                            = 40 [
+    (CFO).desc = "Enable drawing of PSD plot."];
+  bool draw_high_low                                       = 41 [
+    (CFO).desc = "Enable drawing of high-low gain plots."];
+  bool draw_charge                                         = 42 [
+    (CFO).desc = "Enable drawing of charge histograms and related plots."];
+  bool draw_missing_components                             = 43 [
+    (CFO).desc = "Enable drawing of missing-component plot."];
+  bool draw_pedestal                                       = 44 [
+    (CFO).desc = "Enable drawing of pedestal plots."];
+  bool draw_temperature                                    = 45 [
+    (CFO).desc = "Enable drawing of temperature plots."];
+  bool draw_clock                                          = 46 [
+    (CFO).desc = "Enable drawing of clock regression plots."];
+  bool draw_data_ordering                                  = 47 [
+    (CFO).desc = "Enable drawing of channel and module data ordering plots."];
+  bool draw_hvpa                                           = 48 [
+    (CFO).desc = "Enable drawing of HVPA voltage and current plots."];
+  bool draw_trigger                                        = 49 [
+    (CFO).desc = "Enable drawing of trigger plots."];
+  bool draw_waveform_mean                                  = 50 [
+    (CFO).desc = "Enable drawing of mean waveform plots."];
+  bool draw_event                                          = 51 [
+    (CFO).desc = "Enable drawing of event rate and delta-t plots."];
 
   bool force_nectarcam_61_camera                           = 100;
 };
