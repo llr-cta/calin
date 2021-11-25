@@ -224,18 +224,19 @@ def unprotected_render_oid(stage1):
         uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
 
     draw_all = True
-    draw_all = False if(opt.draw_psd()) else draw_all
-    draw_all = False if(opt.draw_high_low()) else draw_all
-    draw_all = False if(opt.draw_charge()) else draw_all
-    draw_all = False if(opt.draw_missing_components()) else draw_all
-    draw_all = False if(opt.draw_pedestal()) else draw_all
-    draw_all = False if(opt.draw_temperature()) else draw_all
-    draw_all = False if(opt.draw_clock()) else draw_all
-    draw_all = False if(opt.draw_data_ordering()) else draw_all
-    draw_all = False if(opt.draw_hvpa()) else draw_all
-    draw_all = False if(opt.draw_trigger()) else draw_all
-    draw_all = False if(opt.draw_waveform_mean()) else draw_all
-    draw_all = False if(opt.draw_event()) else draw_all
+    draw_all &= not opt.draw_psd()
+    draw_all &= not opt.draw_high_low()
+    draw_all &= not opt.draw_charge()
+    draw_all &= not opt.draw_missing_components()
+    draw_all &= not opt.draw_pedestal()
+    draw_all &= not opt.draw_temperature()
+    draw_all &= not opt.draw_clock()
+    draw_all &= not opt.draw_data_ordering()
+    draw_all &= not opt.draw_hvpa()
+    draw_all &= not opt.draw_trigger()
+    draw_all &= not opt.draw_waveform_mean()
+    draw_all &= not opt.draw_event()
+    draw_all &= not opt.draw_provenance()
 
     ############################################################################
     # FIGURE : power spectra
@@ -575,9 +576,10 @@ def unprotected_render_oid(stage1):
     # PROVENANCE LOG
     ############################################################################
 
-    writer = io.StringIO()
-    calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
-    upload_text(runno, 'provenance_log_stage1', writer)
+    if(opt.draw_provenance() or draw_all):
+        writer = io.StringIO()
+        calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
+        upload_text(runno, 'provenance_log_stage1', writer)
 
     ############################################################################
     # WRITE SUMMARY SHEET

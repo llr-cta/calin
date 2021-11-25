@@ -94,6 +94,8 @@ message CommandLineOptions {
     (CFO).desc = "Enable drawing of mean waveform plots."];
   bool draw_event                                          = 51 [
     (CFO).desc = "Enable drawing of event rate and delta-t plots."];
+  bool draw_provenance                                     = 52 [
+    (CFO).desc = "Enable upload of provenance summary."];
 
   bool force_nectarcam_61_camera                           = 100;
 };
