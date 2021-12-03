@@ -375,9 +375,11 @@ std::string calin::provenance::system_info::build_info_string(
     L << " (dirty)";
   }
   L << '\n';
-  L << "URL : "
-    << build_info->git_origin_url().substr(0, build_info->git_origin_url().length()-4)
-    << "/commit/" << build_info->git_commit_sha1() << '\n';
+  std::string origin = build_info->git_origin_url();
+  if(origin.length()>=4 and origin.substr(origin.length()-4)==".git") {
+    origin = origin.substr(0, origin.length()-4);
+  }
+  L << "URL : " << origin << "/commit/" << build_info->git_commit_sha1() << '\n';
   if(build_info->compiled_with_sse()) {
     L << "Built with :";
     if(build_info->compiled_with_avx512f())L << " AVX-512F";
