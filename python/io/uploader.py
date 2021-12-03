@@ -32,6 +32,7 @@ import googleapiclient.http
 import googleapiclient.discovery
 # import google_auth_oauthlib.flow
 import google.auth.transport.requests
+import socket
 
 class Uploader:
     def __init__(self, overwrite=True, loud=False):
@@ -274,7 +275,7 @@ class GoogleDriveUploader(Uploader):
                 try:
                     self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
                     uploaded = True
-                except googleapiclient.errors.HttpError:
+                except (googleapiclient.errors.HttpError, socket.timeout):
                     if(ntry<max_try):
                         if(ntry<len(self.ordinal)):
                             print("Upload failed on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
