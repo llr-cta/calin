@@ -90,7 +90,7 @@ report_run_configuration_problems(
       while(imod<cam_nmod) {
         if(mod_map.find(imod) == mod_map.end()) {
           unsigned jmod = imod+1;
-          while(mod_map.find(jmod) == mod_map.end()) {
+          while(jmod<cam_nmod and mod_map.find(jmod)==mod_map.end()) {
             jmod++;
           }
           if(imod_print >= 10) {
