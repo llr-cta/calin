@@ -576,8 +576,11 @@ def draw_all_clock_regression(stage1,
                         module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=stats_format,
-                        stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label=cb_label)
+                        stats_fontsize=stat_label_fontsize, draw_top12_val=True)
+        # `cb = axis.get_figure().colorbar(pc, label=cb_label)
+        cb = calin.plotting.add_colorbar_and_clipping(axis, pc, mod_data, mask=mask, percentile=99.5,
+                camera_layout=cl, configured_modules=rc.configured_module_id(),
+                cb_label=cb_label)
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
