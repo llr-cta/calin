@@ -333,7 +333,7 @@ def add_colorbar_and_clipping(axis, pc, data, mask=None,
         under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
     mask = mask if mask is not None else numpy.ones_like(data, dtype=bool)
-    mask = bitwise_and(mask, numpy.isfinite(data)) if len(data)>0 else mask
+    mask = numpy.bitwise_and(mask, numpy.isfinite(data)) if len(data)>0 else mask
     if(numpy.count_nonzero(mask) == 0):
         dmax = 1.0
         dmin = -1.0
