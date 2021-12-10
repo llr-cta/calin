@@ -327,22 +327,37 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
                     color=nonconfigured_color, **args)
 
 def add_colorbar_and_clipping(axis, pc, data, mask=None,
-        camera_layout=None, plate_scale = 1.0, rotation = 0.0, configured_channels=None,
+        camera_layout=None, plate_scale = 1.0, rotation = 0.0,
+        configured_channels=None, configured_modules=None,
         cb_label=None, percentile=100, percentile_factor=2.0,
         under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
     mask = mask if mask is not None else numpy.ones_like(data, dtype=bool)
-    dmax = numpy.max(data[mask])
-    dmin = numpy.min(data[mask])
-    dmed = numpy.median(data[mask])
-    dpch = numpy.percentile(data[mask],min(100,percentile))
-    dpcl = numpy.percentile(data[mask],max(0,100-percentile))
+    mask = bitwise_and(mask, numpy.isfinite(data)) if len(data)>0 else mask
+    if(numpy.count_nonzero(mask) == 0):
+        dmax = 1.0
+        dmin = -1.0
+        dmed = 0.0
+        dpch = min(100,percentile)/100
+        dpcl = -min(100,percentile)/100
+    elif(numpy.count_nonzero(mask) == 1):
+        dmax = numpy.max(data[mask]) + 1.0
+        dmin = numpy.min(data[mask]) - 1.0
+        dmed = numpy.median(data[mask])
+        dpch = numpy.max(data[mask]) + min(100,percentile)/100
+        dpcl = numpy.min(data[mask]) - min(100,percentile)/100
+    else:
+        dmax = numpy.max(data[mask])
+        dmin = numpy.min(data[mask])
+        dmed = numpy.median(data[mask])
+        dpch = numpy.percentile(data[mask],min(100,percentile))
+        dpcl = numpy.percentile(data[mask],max(0,100-percentile))
     liml = max(dmin, dmed + (dpcl-dmed)*percentile_factor)
     limh = min(dmax, dmed + (dpch-dmed)*percentile_factor)
     pc.cmap = copy.copy(pc.cmap)
     pc.set_clim(liml,limh)
     cb_clip = 'neither'
-    if(liml>dmin):
+    if(numpy.count_nonzero(mask)>1 and liml>dmin):
         if(under_color is not None):
             pc.cmap.set_under(under_color)
         if(limh<dmax):
@@ -351,7 +366,7 @@ def add_colorbar_and_clipping(axis, pc, data, mask=None,
             cb_clip = 'both'
         else:
             cb_clip = 'min'
-    elif(limh<dmax):
+    elif(numpy.count_nonzero(mask)>1 and limh<dmax):
         if(over_color is not None):
             pc.cmap.set_over(over_color)
         cb_clip = 'max'
@@ -359,11 +374,15 @@ def add_colorbar_and_clipping(axis, pc, data, mask=None,
     cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label, extend=cb_clip)
 
     if(cb_clip != 'neither' and camera_layout is not None and clip_highlight is not None):
-        if(configured_channels is None):
-            configured_channels = numpy.arange(camera_layout.channel_size())
         clipped_mask = numpy.bitwise_and(mask, numpy.bitwise_or(data>limh, data<liml))
-        clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_channels(
-            camera_layout, configured_channels[clipped_mask])
+        if(configured_modules is not None):
+            clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_modules(
+                camera_layout, configured_modules[clipped_mask])
+        else:
+            if(configured_channels is None):
+                configured_channels = numpy.arange(camera_layout.channel_size())
+            clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_channels(
+                camera_layout, configured_channels[clipped_mask])
         add_outline(axis,clipped_camera_layout, plate_scale=plate_scale, rotation=rotation,
             outline_color=clip_highlight, outline_lw=clip_highlight_lw)
 
@@ -459,7 +478,8 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         hatch_missing_modules = False,
-        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f', draw_top12 = True,
+        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f',
+        draw_top12 = True, draw_top12_val = False,
         additional_polygons = [], additional_polygon_data = []):
     if(module_mask is None and zero_suppression is not None):
         module_mask = numpy.asarray(module_data)>zero_suppression
@@ -528,7 +548,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
     if(draw_stats):
         add_stats(axis, max_xy, mod_data, mod_ids,
             stats_fontsize=stats_fontsize, stats_format=stats_format,
-            draw_top12=draw_top12)
+            draw_top12=draw_top12, draw_top12_val=draw_top12_val)
 
     axis.axis('square')
     axis.axis(numpy.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
