@@ -27,6 +27,7 @@ import calin.diagnostics.stage1
 import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 import calin.math.fftw_util
+import calin.util.string
 
 def trigger_type_title(trigger_type):
     if(trigger_type == 'physics'):
@@ -1000,10 +1001,19 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
     all_xl = []
     all_xr = []
     all_xc = []
+    all_hist_x = []
+    all_hist_y = []
 
     xl_min = numpy.inf
     xr_max = -numpy.inf
+    x_min = numpy.inf
+    x_max = -numpy.inf
     has_label = False
+
+    nevent = 0
+    nchanevent = 0
+    chan_hist_x = []
+    chan_hist_y = []
 
     for i in range(len(all_hist)):
         offset = ped[i]
@@ -1011,15 +1021,22 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
             h = calin.math.histogram.densify(all_hist[i].const_opt_win_qsum())
         else:
             h = calin.math.histogram.densify(all_hist[i].const_sig_win_qsum())
-        x = h.xval0() + h.dxval()*numpy.arange(h.bins_size()+1)
+        x = h.xval0() + h.dxval()*numpy.arange(h.bins_size()+1) - offset
         y = numpy.append(0, numpy.cumsum(h.bins()))
-        xl,xc,xr = numpy.interp(y[-1]*numpy.asarray([p_x_lr,0.5,1-p_x_lr]),y,x)-offset
-        xl_min = min(xl_min, 1.5*(xl-xc) + xc)
-        xr_max = max(xr_max, 1.5*(xr-xc) + xc)
+        xl,xc,xr = numpy.interp(y[-1]*numpy.asarray([p_x_lr,0.5,1-p_x_lr]),y,x)
+        xl_min = min(xl_min, max(1.5*(xl-xc) + xc, numpy.min(x)))
+        xr_max = max(xr_max, min(1.5*(xr-xc) + xc, numpy.max(x)))
+        x_min = min(x_min, numpy.min(x))
+        x_max = max(x_max, numpy.max(x))
         all_xl.append(xl)
         all_xc.append(xc)
         all_xr.append(xr)
+        all_hist_x.append(x)
+        all_hist_y.append(y)
+        nevent = max(nevent, h.sum_w())
+        nchanevent += h.sum_w()
         args = dict()
+        print(i, xl_min, xr_max)
         if(not has_label):
             args['label'] = 'Channels'
             has_label = True
@@ -1037,13 +1054,49 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         h = calin.math.histogram.rebin(h, int(numpy.sqrt(len(all_hist))))
         calin.plotting.plot_histogram(h, xscale=scale, xoffset=-offset, histtype='floating',
             color='C1', density=True, normalise=True, label='Camera average', axis=axis_hist)
+        x = (h.xval0() + h.dxval()*numpy.arange(h.bins_size()+1)) * scale - offset
+        y = numpy.append(0, numpy.cumsum(h.bins()))
+        xl,xc,xr = numpy.interp(y[-1]*numpy.asarray([p_x_lr,0.5,1-p_x_lr]),y,x)
+        xl_min = min(xl_min, max(1.5*(xl-xc) + xc, numpy.min(x)))
+        xr_max = max(xr_max, min(1.5*(xr-xc) + xc, numpy.max(x)))
+        cam_hist_x = x
+        cam_hist_y = y
+        print("Cam",xl_min, xr_max)
 
-    axis_hist.set_xlim(xl_min - 0.025*(xr_max-xl_min), xr_max + 0.025*(xr_max-xl_min))
+    xlim_l = xl_min - 0.025*(xr_max-xl_min)
+    xlim_r = xr_max + 0.025*(xr_max-xl_min)
+
+    nchanevent_shown = 0
+    for i in range(len(all_hist)):
+        x = all_hist_x[i]
+        y = all_hist_y[i]
+        yl,yr = numpy.interp([xlim_l, xlim_r],x,y,left=0,right=y[-1])
+        nchanevent_shown += yr-yl
+
+    t = 'Number of events : %s'%calin.util.string.int64_to_string_with_commas(int(nevent))
+    if(nchanevent_shown < 0.999*nchanevent):
+        t += ' (%.1f%% shown)'%(100*nchanevent_shown/nchanevent)
+    elif(nchanevent_shown < nchanevent):
+        t += ' (>99.9%% shown)'%(100*nchanevent_shown/nchanevent)
+    if(x_min<xlim_l or x_max>xlim_r):
+        t += '\nOutliers to : '
+        if(x_min<xlim_l):
+            t += '%.1f DC'%x_min
+            if(x_max>xlim_r):
+                t += ' and %.1f DC'%x_max
+        else:
+            t +=  '%.1f DC'%x_max
+
     axis_hist.set_yscale('log')
     axis_hist.set_xlabel('Summed waveform [DC]')
     axis_hist.set_ylabel('Density [1/DC]')
     axis_hist.legend(loc=1)
     axis_hist.set_title('Charge spectrum (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
+
+    ylo,yhi = axis_hist.get_ylim()
+    axis_hist.set_ylim(ylo, yhi*3)
+    axis_hist.set_xlim(xlim_l, xlim_r)
+    axis_hist.text(0.03, 0.97, t, fontsize=6, ha='left', va='top', transform=axis_hist.transAxes)
 
     if(draw_median):
         fig_median, axis_median = figure_factory.new_camera_figure()
