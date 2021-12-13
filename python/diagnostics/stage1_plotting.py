@@ -1036,7 +1036,6 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         nevent = max(nevent, h.sum_w())
         nchanevent += h.sum_w()
         args = dict()
-        print(i, xl_min, xr_max)
         if(not has_label):
             args['label'] = 'Channels'
             has_label = True
@@ -1061,7 +1060,6 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         xr_max = max(xr_max, min(1.5*(xr-xc) + xc, numpy.max(x)))
         cam_hist_x = x
         cam_hist_y = y
-        print("Cam",xl_min, xr_max)
 
     xlim_l = xl_min - 0.025*(xr_max-xl_min)
     xlim_r = xr_max + 0.025*(xr_max-xl_min)
