@@ -1072,18 +1072,17 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         nchanevent_shown += yr-yl
 
     t = 'Number of events : %s'%calin.util.string.int64_to_string_with_commas(int(nevent))
-    if(nchanevent_shown < 0.999*nchanevent):
-        t += ' (%.1f%% shown)'%(100*nchanevent_shown/nchanevent)
+    if(nchanevent_shown < 0.9999*nchanevent):
+        t += ' (%.2f%% shown)'%(100*nchanevent_shown/nchanevent)
     elif(nchanevent_shown < nchanevent):
-        t += ' (>99.9%% shown)'%(100*nchanevent_shown/nchanevent)
-    if(x_min<xlim_l or x_max>xlim_r):
-        t += '\nOutliers to : '
-        if(x_min<xlim_l):
-            t += '%.1f DC'%x_min
-            if(x_max>xlim_r):
-                t += ' and %.1f DC'%x_max
-        else:
-            t +=  '%.1f DC'%x_max
+        t += ' (>99.99%% shown)'%(100*nchanevent_shown/nchanevent)
+    t += '\nChannel charge range : %s to %s DC'%(
+        calin.util.string.double_to_string_with_commas(x_min,1),
+        calin.util.string.double_to_string_with_commas(x_max,1))
+    if(h is not None):
+        t += '\nCamera mean charge range : %s to %s DC'%(
+            calin.util.string.double_to_string_with_commas(numpy.min(cam_hist_x),1),
+            calin.util.string.double_to_string_with_commas(numpy.max(cam_hist_x),1))
 
     axis_hist.set_yscale('log')
     axis_hist.set_xlabel('Summed waveform [DC]')
@@ -1094,7 +1093,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
     ylo,yhi = axis_hist.get_ylim()
     axis_hist.set_ylim(ylo, yhi*3)
     axis_hist.set_xlim(xlim_l, xlim_r)
-    axis_hist.text(0.03, 0.97, t, fontsize=6, ha='left', va='top', transform=axis_hist.transAxes)
+    axis_hist.text(0.02, 0.98, t, fontsize=6, ha='left', va='top', transform=axis_hist.transAxes)
 
     if(draw_median):
         fig_median, axis_median = figure_factory.new_camera_figure()
