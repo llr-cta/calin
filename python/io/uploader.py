@@ -458,7 +458,7 @@ class GoogleDriveUploader(Uploader):
                     else:
                         raise RuntimeError('Sheet not found ' + tab_name)
                 else:
-                    tab_id = self.get_sheet_tab_idf(sheet_id)[0]
+                    tab_id = self.get_sheet_tab_ids(sheet_id)[0]
 
                 self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=sheet_id,
                     body={
