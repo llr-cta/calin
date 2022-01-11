@@ -1100,7 +1100,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         fig_dict['charge_median_'+fig_name] = [ fig_median, axis_median ]
 
         all_median = numpy.asarray(all_xc)
-        ref_value = numpy.median(all_median)
+        ref_value = numpy.nanmedian(all_median)
         data = all_median/ref_value
         mask = numpy.ones_like(all_median, dtype=bool)
         rc = stage1.const_run_config()
