@@ -1283,6 +1283,9 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
 
         m = h_c.bins()>0
         if numpy.count_nonzero(m) == 0:
+            all_P0.append(numpy.nan)
+            all_P1.append(numpy.nan)
+            fit_mask.append(False)
             continue
 
         x = h_c.xval0() + (numpy.arange(h_c.bins_size())+0.5)*h_c.dxval()
