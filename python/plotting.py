@@ -374,7 +374,7 @@ def add_colorbar_and_clipping(axis, pc, data, mask=None,
     cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label, extend=cb_clip)
 
     if(cb_clip != 'neither' and camera_layout is not None and clip_highlight is not None):
-        clipped_mask = numpy.bitwise_and(mask, numpy.bitwise_or(data>limh, data<liml))
+        clipped_mask = numpy.bitwise_and(mask, numpy.bitwise_or(numpy.fmax(data,limh)>limh, numpy.fmin(data,liml)<liml))
         if(configured_modules is not None):
             clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_modules(
                 camera_layout, configured_modules[clipped_mask])
