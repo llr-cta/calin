@@ -213,10 +213,9 @@ public:
     bool old_nsamp = nsamp_;
     bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, processing_record);
     if(nsamp_!=old_nsamp) {
-      auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+31)/32;
       const unsigned nv_block = nv_samp*32;
-      calin::util::memory::safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+      calin::util::memory::safe_aligned_recalloc(samples_, nv_block);
     }
     return good;
   }
@@ -559,10 +558,9 @@ public:
     bool old_nsamp = nsamp_;
     bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, nullptr);
     if(nsamp_!=old_nsamp) {
-      auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+15)/16;
       const unsigned nv_block = nv_samp*16;
-      calin::util::memory::safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+      calin::util::memory::safe_aligned_recalloc(samples_, nv_block);
     }
     return good;
   }

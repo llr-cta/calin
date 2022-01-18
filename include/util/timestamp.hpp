@@ -37,12 +37,14 @@ public:
   Timestamp(const timeval &tp): nsec_(tp.tv_sec * 1000000000LL + tp.tv_usec*1000LL) { }
   uint64_t unix_sec() const { return nsec_/1000000000LL; }
   uint32_t unix_nsec() const { return nsec_%1000000000LL; }
-  std::string as_string() const;
+  std::string as_string(bool utc = false) const;
 #ifndef SWIG
-  calin::ix::util::timestamp::Timestamp* as_proto(calin::ix::util::timestamp::Timestamp* x = nullptr) const;
+  calin::ix::util::timestamp::Timestamp* as_proto(calin::ix::util::timestamp::Timestamp* x = nullptr, bool utc = false) const;
+  calin::ix::util::timestamp::Timestamp* as_proto(bool utc, calin::ix::util::timestamp::Timestamp* x = nullptr) const;
 #else
-  calin::ix::util::timestamp::Timestamp* as_proto() const;
-  void as_proto(calin::ix::util::timestamp::Timestamp* x) const;
+  calin::ix::util::timestamp::Timestamp* as_proto(bool utc = false) const;
+  void as_proto(calin::ix::util::timestamp::Timestamp* x, bool utc = false) const;
+  void as_proto(bool utc, calin::ix::util::timestamp::Timestamp* x) const;
 #endif
   static Timestamp now();
   double seconds_since(const Timestamp& then) const;

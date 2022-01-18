@@ -38,7 +38,7 @@ TEST(TestHyperbolicLikelihoodRhoFunction, GradientCheck) {
   for(double C = 0; C < 10; C += 1) {
     for(double D = 0.1; D < 2; D += 0.1) {
       HyperbolicLikelihoodRhoFunction rho(C,D);
-      for(double x = -10.0; x<20.0; x+=0.1) {
+      for(double x = -100.0; x<1000.0; x+=0.1) {
         double good;
         EXPECT_TRUE(gradient_check(rho, x, 0.001, good, maxgood));
         EXPECT_LE(good, maxgood);
@@ -51,7 +51,7 @@ TEST(TestHyperbolicLikelihoodRhoFunction, HessianCheck) {
   for(double C = 0; C < 10; C += 1) {
     for(double D = 0.1; D < 2; D += 0.1) {
       HyperbolicLikelihoodRhoFunction rho(C,D);
-      for(double x = -10.0; x<20.0; x+=0.1) {
+      for(double x = -100.0; x<1000.0; x+=0.1) {
         double good;
         EXPECT_TRUE(hessian_check(rho, x, 0.001, good, maxgood));
         EXPECT_LE(good, maxgood);

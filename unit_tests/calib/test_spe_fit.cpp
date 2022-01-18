@@ -591,7 +591,7 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   //opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
+  opt.set_initial_values({ 0.5, 3100.0, 20.0, 90.0, 0.35 });
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);

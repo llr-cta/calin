@@ -16,6 +16,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 import numpy
+import scipy.special
 import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
 import calin.ix.math.histogram
@@ -122,20 +123,33 @@ def summarize_module_clock_regression(stage1, iclock=0):
     return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_time_spread_ns, mod_d2_per_event, mod_problem_bins
 
 def estimate_run_pedestal(stage1, low_gain=False):
-    rc = stage1.const_run_config()
-    cl = rc.const_camera_layout()
-
     charge_stats = stage1.const_charge_stats().const_low_gain() if low_gain \
         else stage1.const_charge_stats().const_high_gain()
-
-    if(charge_stats.ped_trigger_event_count()):
-        nsamp = rc.num_samples()
+    if(numpy.max(charge_stats.ped_trigger_event_count()) > 1000):
+        nsamp = stage1.const_run_config().num_samples()
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_mean()/nsamp
+    elif True:
+        nevent = numpy.zeros_like(charge_stats.all_trigger_event_count())
+        values = numpy.zeros_like(charge_stats.all_trigger_event_count(), dtype=float)
+        all_mwf = []
+        if stage1.has_mean_wf_pedestal(): all_mwf.append(stage1.const_mean_wf_pedestal())
+        if stage1.has_mean_wf_physics(): all_mwf.append(stage1.const_mean_wf_physics())
+        if stage1.has_mean_wf_external_flasher(): all_mwf.append(stage1.const_mean_wf_external_flasher())
+        if stage1.has_mean_wf_internal_flasher(): all_mwf.append(stage1.const_mean_wf_internal_flasher())
+        for mwf in all_mwf:
+            if low_gain:
+                all_chan = [ mwf.channel_low_gain(ichan) for ichan in range(mwf.channel_low_gain_size()) ]
+            else:
+                all_chan = [ mwf.channel_high_gain(ichan) for ichan in range(mwf.channel_high_gain_size()) ]
+            if len(all_chan) == len(nevent):
+                nevent += numpy.asarray([ c.num_entries() for c in all_chan ])
+                values += numpy.asarray([ c.num_entries()*(c.mean_waveform(4) if c.num_entries() else 0) for c in all_chan ])
+        values[nevent>0] /= nevent[nevent>0]
     else:
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
-                (low_gain and stage1.config().has_low_gain_opt_sum()) \
-            else stage1.config().high_gain_opt_sum().integration_n()
+        nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.const_config().has_low_gain_opt_sum()) \
+            else stage1.const_config().const_high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_mean()/nsamp
 
@@ -243,3 +257,53 @@ def num_wf(stage1):
     if(nwfp.sum_w() == 0 or stage1.const_run_config().configured_channel_id_size() == 0):
         return 0
     return nwfp.sum_wx()/nwfp.sum_w()/stage1.const_run_config().configured_channel_id_size()
+
+def analyze_charge_hists(all_hist, ped=None, pedvar0=None, evf=1.2, flasher_resolution=0,
+        dataset = 'opt_win', pxl=0.02, pxr = 0.98):
+    all_xl = []
+    all_xc = []
+    all_xr = []
+
+    xscale = (scipy.special.erfinv(pxr*2-1) - scipy.special.erfinv(pxl*2-1))*numpy.sqrt(2)
+
+    for i in range(len(all_hist)):
+        if(dataset == 'opt_win' and all_hist[i].has_opt_win_qsum()):
+            h = calin.math.histogram.densify(all_hist[i].const_opt_win_qsum())
+        elif(dataset == 'sig_win' and all_hist[i].has_sig_win_qsum()):
+            h = calin.math.histogram.densify(all_hist[i].const_sig_win_qsum())
+        elif(dataset == 'ped_win' and all_hist[i].has_ped_win_qsum()):
+            h = calin.math.histogram.densify(all_hist[i].const_ped_win_qsum())
+        else:
+            raise RuntimeError('Dataset not found : '+dataset)
+
+        x = h.xval0() + h.dxval()*numpy.arange(h.bins_size()+1)
+        y = numpy.append(0, numpy.cumsum(h.bins()))
+        xl,xc,xr = numpy.interp(y[-1]*numpy.asarray([pxl,0.5,pxr]),y,x)
+
+        all_xl.append(xl)
+        all_xc.append(xc)
+        all_xr.append(xr)
+
+    all_xl = numpy.asarray(all_xl)
+    all_xc = numpy.asarray(all_xc)
+    all_xr = numpy.asarray(all_xr)
+    all_rms = (all_xr-all_xl)/xscale
+
+    all_gain = None
+    all_intensity = None
+    if ped is not None:
+        all_gain = []
+        all_intensity = []
+
+        all_var = all_rms**2
+        all_mean = all_xc - ped
+
+        if pedvar0 is not None:
+            all_var -= pedvar0
+        if flasher_resolution > 0:
+            all_var -= (all_mean*flasher_resolution)**2
+
+        all_gain = all_var/all_mean/evf
+        all_intensity = all_mean/all_gain
+
+    return all_xl, all_xc, all_xr, all_rms, all_gain, all_intensity

@@ -624,6 +624,16 @@ typedef VCLDoubleReal<VCL128Architecture> VCL128DoubleReal;
 typedef VCLDoubleReal<VCL256Architecture> VCL256DoubleReal;
 typedef VCLDoubleReal<VCL512Architecture> VCL512DoubleReal;
 
+#if INSTRSET >= 9
+typedef VCL512Architecture VCLMaxArchitecture;
+#elif INSTRSET >= 7
+typedef VCL256Architecture VCLMaxArchitecture;
+#else
+typedef VCL128Architecture VCLMaxArchitecture;
+#endif
+typedef VCLFloatReal<VCLMaxArchitecture> VCLMaxFloatReal;
+typedef VCLDoubleReal<VCLMaxArchitecture> VCLMaxDoubleReal;
+
 template<typename VCLArchitecture> std::string templated_class_name(
   const std::string& class_name)
 {

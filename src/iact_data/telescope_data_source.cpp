@@ -63,7 +63,6 @@ report_run_configuration_problems(
   unsigned cam_nmod = run_config->camera_layout().module_size();
   if(run_config->configured_module_id_size())
   {
-    bool module_id_strictly_increasing = true;
     std::map<unsigned, unsigned> mod_map;
     unsigned mod_id = run_config->configured_module_id(0);
     if(mod_id >= cam_nmod)
@@ -72,9 +71,7 @@ report_run_configuration_problems(
       mod_map[mod_id] = 0;
     for(int irank=1; irank<run_config->configured_module_id_size();irank++)
     {
-      unsigned next_mod_id = run_config->configured_module_id(irank);
-      if(next_mod_id <= mod_id)module_id_strictly_increasing=false;
-      mod_id = next_mod_id;
+      mod_id = run_config->configured_module_id(irank);
       if(mod_id >= cam_nmod)
         LOG(ERROR,logger) << "Expected module #" << mod_id << " not valid in camera";
       else if(mod_map.find(mod_id) == mod_map.end()) {
@@ -84,22 +81,34 @@ report_run_configuration_problems(
           << irank  << " and " << mod_map[mod_id];
       }
     }
-    // if(!module_id_strictly_increasing)
-    //   LOG(INFO,logger) << "Module ids not strictly increasing.";
     if(mod_map.size() != cam_nmod) {
       auto log = LOG(INFO,logger);
       log << mod_map.size() << " modules configured, " << cam_nmod-mod_map.size()
         << " missing:";
       unsigned imod_print = 0;
-      for(unsigned imod=0;imod<cam_nmod;imod++) {
+      unsigned imod = 0;
+      while(imod<cam_nmod) {
         if(mod_map.find(imod) == mod_map.end()) {
-          if(imod_print == 10) {
+          unsigned jmod = imod+1;
+          while(jmod<cam_nmod and mod_map.find(jmod)==mod_map.end()) {
+            jmod++;
+          }
+          if(imod_print >= 10) {
             log << " ...";
             break;
-          } else {
+          } else if(jmod - imod == 1) {
             log << ' ' << imod;
             imod_print++;
+          } else if(jmod - imod == 2) {
+            log << ' ' << imod << ' ' << jmod;
+            imod_print+=2;
+          } else {
+            log << ' ' << imod << '-' << jmod;
+            imod_print+=2;
           }
+          imod = jmod;
+        } else {
+          imod++;
         }
       }
     }

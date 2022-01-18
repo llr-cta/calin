@@ -426,8 +426,8 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
         option.key = iarg.substr(ikey);
       } else if (iarg[ifind] == '=') {
         option.key = iarg.substr(ikey, ifind-ikey);
+        option.has_val = true;
         if(ifind < iarg.size()-1) {
-          option.has_val = true;
           option.val = iarg.substr(ifind+1);
         }
       } else {

@@ -1,10 +1,10 @@
 /*
 
-   calin/util/log.i -- Stephen Fegan -- 2015-12-15
+   calin/diagnostics/simple_charge_capture.i -- Stephen Fegan -- 2021-01-01
 
-   SWIG interface file for calin.io.sql_transceiver
+   SWIG interface file for simple charge capture
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
@@ -20,11 +20,12 @@
 
 */
 
-%module (package="calin.util") log
+%module (package="calin.diagnostics") simple_charge_capture
 %feature(autodoc,2);
 
 %{
-#include "util/log.hpp"
+#include "iact_data/event_visitor.hpp"
+#include "diagnostics/simple_charge_capture.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -35,5 +36,6 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "util/log.pb.i"
-%include "util/log.hpp"
+%import "iact_data/event_visitor.i"
+
+%include "diagnostics/simple_charge_capture.hpp"

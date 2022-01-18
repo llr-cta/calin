@@ -32,6 +32,7 @@ import googleapiclient.http
 import googleapiclient.discovery
 # import google_auth_oauthlib.flow
 import google.auth.transport.requests
+import socket
 
 class Uploader:
     def __init__(self, overwrite=True, loud=False):
@@ -274,7 +275,7 @@ class GoogleDriveUploader(Uploader):
                 try:
                     self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
                     uploaded = True
-                except googleapiclient.errors.HttpError:
+                except (googleapiclient.errors.HttpError, socket.timeout):
                     if(ntry<max_try):
                         if(ntry<len(self.ordinal)):
                             print("Upload failed on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
@@ -324,9 +325,12 @@ class GoogleDriveUploader(Uploader):
                         print("Failed to retrieve sheet on final attempt %d"%ntry, file=sys.stderr)
                     raise
 
-        return response['values']
+        if response and 'values' in response:
+            return response['values']
+        else:
+            return []
 
-    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+    def append_rows_to_sheet(self, sheet_id_and_tab_name, rows, row_start=0, max_try=2):
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
         if range:
             range = "'" + range + "'!"
@@ -337,7 +341,7 @@ class GoogleDriveUploader(Uploader):
             ntry += 1
             try:
                 body = {
-                    'values': [row]
+                    'values': rows
                 }
                 response = self.sheets_service.spreadsheets().values().append(
                     spreadsheetId=sheet_id, range=range,
@@ -358,6 +362,9 @@ class GoogleDriveUploader(Uploader):
                     raise
 
         return response.get('updates').get('updatedCells')
+
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+        return self.append_rows_to_sheet(sheet_id_and_tab_name, [row], row_start, max_try)
 
     def get_url(self, rel_filepath):
         if(rel_filepath in self.directory):
@@ -451,7 +458,7 @@ class GoogleDriveUploader(Uploader):
                     else:
                         raise RuntimeError('Sheet not found ' + tab_name)
                 else:
-                    tab_id = self.get_sheet_tab_idf(sheet_id)[0]
+                    tab_id = self.get_sheet_tab_ids(sheet_id)[0]
 
                 self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=sheet_id,
                     body={

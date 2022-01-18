@@ -505,10 +505,12 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
 {
  public:
   SPELikelihood(MultiElectronSpectrum& mes_model,
-                const calin::math::histogram::SimpleHist& mes_data);
+                const calin::math::histogram::SimpleHist& mes_data,
+                double pdf_min = std::numeric_limits<double>::min());
   SPELikelihood(MultiElectronSpectrum& mes_model,
                 const calin::math::histogram::SimpleHist& mes_data,
-                const calin::math::histogram::SimpleHist& ped_data);
+                const calin::math::histogram::SimpleHist& ped_data,
+                double pdf_min = std::numeric_limits<double>::min());
   virtual ~SPELikelihood();
 
   unsigned num_domain_axes() override;
@@ -529,6 +531,7 @@ private:
   const calin::math::histogram::SimpleHist mes_data_;
   bool has_ped_data_ { false };
   const calin::math::histogram::SimpleHist ped_data_;
+  double pdf_min_;
 };
 
 class SPERobust: public calin::math::function::MultiAxisFunction

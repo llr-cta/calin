@@ -27,6 +27,7 @@
 #include <io/json.hpp>
 #include <diagnostics/stage1.hpp>
 #include <provenance/anthology.hpp>
+#include <diagnostics/waveform_psd_vcl.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::stage1;
@@ -117,6 +118,20 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     this->add_visitor(charge_hists_trig_bit_clr_pev_, "L0 trigger-bit clear");
   }
 
+  if(config_.enable_all_waveform_psd()) {
+    wf_psd_phy_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_physics_trigger_visitor(wf_psd_phy_pev_, "Physics triggers");
+    wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_pedestal_trigger_visitor(wf_psd_ped_pev_, "Pedestal triggers");
+    wf_psd_ext_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_external_flasher_trigger_visitor(wf_psd_ext_pev_, "External-flasher triggers");
+    wf_psd_int_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_internal_flasher_trigger_visitor(wf_psd_int_pev_, "Internal-flasher triggers");
+  } else if(config_.enable_pedestal_waveform_psd()) {
+    wf_psd_ped_pev_ = calin::diagnostics::waveform::WaveformPSDParallelVisitor::New();
+    this->add_pedestal_trigger_visitor(wf_psd_ped_pev_, "Pedestal triggers");
+  }
+
   if(config_.enable_clock_regression()) {
     clock_regression_pev_ = new calin::diagnostics::clock_regression::
       ClockRegressionParallelEventVisitor(config_.clock_regression());
@@ -141,6 +156,10 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete lg_sum_pev_;
   delete hg_sum_pev_;
   delete clock_regression_pev_;
+  delete wf_psd_phy_pev_;
+  delete wf_psd_ped_pev_;
+  delete wf_psd_ext_pev_;
+  delete wf_psd_int_pev_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
@@ -268,6 +287,19 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     clock_regression_pev_->clock_regression(stage1->mutable_clock_regression());
   }
 
+  if(wf_psd_phy_pev_ and this->visitor_saw_event(wf_psd_phy_pev_)) {
+    wf_psd_phy_pev_->psd(stage1->mutable_psd_wf_physics());
+  }
+  if(wf_psd_ped_pev_ and this->visitor_saw_event(wf_psd_ped_pev_)) {
+    wf_psd_ped_pev_->psd(stage1->mutable_psd_wf_pedestal());
+  }
+  if(wf_psd_ext_pev_ and this->visitor_saw_event(wf_psd_ext_pev_)) {
+    wf_psd_ext_pev_->psd(stage1->mutable_psd_wf_external_flasher());
+  }
+  if(wf_psd_int_pev_ and this->visitor_saw_event(wf_psd_int_pev_)) {
+    wf_psd_int_pev_->psd(stage1->mutable_psd_wf_internal_flasher());
+  }
+
   stage1->set_run_number(stage1->run_config().run_number());
   stage1->set_run_start_time(stage1->run_config().run_start_time().time_ns());
   stage1->set_run_start_time_string(
@@ -302,6 +334,8 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
   cfg.set_enable_l0_trigger_bit_waveform_hists(true);
   cfg.set_enable_ancillary_data(true);
   cfg.set_enable_clock_regression(true);
+  cfg.set_enable_pedestal_waveform_psd(true);
+  cfg.set_enable_all_waveform_psd(false);
 
   cfg.mutable_high_gain_opt_sum()->CopyFrom(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor::default_config());

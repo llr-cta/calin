@@ -192,7 +192,7 @@ protected:
 
   T& bin_with_extend(const double x, bool& x_outside_limits)
   {
-    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend");
+    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend: x is infinite");
     if(limited_)
     {
       if(x < xval_limit_lo_) { x_outside_limits = true; return overflow_lo_; }
@@ -225,7 +225,7 @@ protected:
 
   T& bin_with_extend_back(const double x, bool& x_outside_limits)
   {
-    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend_back");
+    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend_back: x is infinite");
     if(limited_)
     {
       if(x < xval_limit_lo_) { x_outside_limits = true; return overflow_lo_; }

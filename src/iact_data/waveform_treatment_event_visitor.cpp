@@ -142,15 +142,20 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   else
     bkg_window_0_ = config_.bkg_integration_0();
 
-  if(config_.chan_sig_integration_0_size() == 0)
+  if(config_.chan_sig_integration_0_size() == 0) {
     std::fill(sig_window_0_, sig_window_0_+nchan_, config_.sig_integration_0());
-  else if(config_.chan_sig_integration_0_size() == int(nchan_))
-    std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_);
-  else
+  } else if(config_.chan_sig_integration_0_size() == run_config->configured_channel_index_size()) {
+    for(unsigned ichan=0; ichan<nchan_; ichan++) {
+      sig_window_0_[ichan] = config_.chan_sig_integration_0(run_config->configured_channel_id(ichan));
+    }
+  // } else if(config_.chan_sig_integration_0_size() == int(nchan_)) {
+  //   std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_);
+  } else {
     throw std::out_of_range("OptimalWindowSumWaveformTreatmentParallelEventVisitor: "
       "size of chan_sig_integration_0 vector must be either zero or number of configured channels, "
       + std::to_string(config_.chan_sig_integration_0_size()) + " != 0 or "
       + std::to_string(nchan_));
+  }
 
   for(unsigned ichan=0; ichan<nchan_; ichan++)
   {
@@ -174,20 +179,19 @@ void OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 reconfigure(unsigned nchan, unsigned nsamp)
 {
   if(nchan != nchan_){
-    auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
     chan_signal_type_.resize(nchan);
     unsigned nalloc = ((nchan_+31)/32)*32; // Worst case of AVX512
-    safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_sum_qt_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_opt_win_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(sig_window_0_, nalloc);
+    safe_aligned_recalloc(chan_max_, nalloc);
+    safe_aligned_recalloc(chan_max_index_, nalloc);
+    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_sum_qt_, nalloc);
+    safe_aligned_recalloc(chan_opt_win_index_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_, nalloc);
   }
 }
 
@@ -338,22 +342,21 @@ void SingleGainDualWindowWaveformTreatmentEventVisitor::
 reconfigure(unsigned nchan, unsigned nsamp)
 {
   if(nchan != nchan_){
-    auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
     unsigned nalloc = ((nchan_+15)/16)*16;
-    safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_ped_est_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_win_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_index_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_q_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_qt_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_, nalloc, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_mean_t_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(sig_window_0_, nalloc);
+    safe_aligned_recalloc(chan_ped_est_, nalloc);
+    safe_aligned_recalloc(chan_max_index_, nalloc);
+    safe_aligned_recalloc(chan_max_, nalloc);
+    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_win_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_max_sum_, nalloc);
+    safe_aligned_recalloc(chan_sig_max_sum_index_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_q_, nalloc);
+    safe_aligned_recalloc(chan_all_sum_qt_, nalloc);
+    safe_aligned_recalloc(chan_sig_, nalloc);
+    safe_aligned_recalloc(chan_mean_t_, nalloc);
   }
 }
 

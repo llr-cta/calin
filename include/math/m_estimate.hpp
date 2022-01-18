@@ -38,6 +38,7 @@ public:
   double value_and_gradient_1d(double x,  double& dfdx) override = 0;
   bool can_calculate_hessian() override; // default : true
   double value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2) override = 0;
+  virtual double asymptotic_value() = 0;
 };
 
 class NullLikelihoodRhoFunction: public LikelihoodRhoFunction
@@ -49,6 +50,7 @@ public:
   double value_and_gradient_1d(double x,  double& dfdx) override;
   double value_gradient_and_hessian_1d(double x, double& dfdx,
                                        double& d2fdx2) override;
+  double asymptotic_value() override;
 };
 
 class HyperbolicLikelihoodRhoFunction: public LikelihoodRhoFunction
@@ -60,8 +62,10 @@ public:
   double value_and_gradient_1d(double x,  double& dfdx) override;
   double value_gradient_and_hessian_1d(double x, double& dfdx,
                                        double& d2fdx2) override;
+  double asymptotic_value() override;
 protected:
   double C_;
+  double D_;
   double D2_;
 };
 
@@ -74,6 +78,7 @@ public:
   double value_and_gradient_1d(double x,  double& dfdx) override;
   double value_gradient_and_hessian_1d(double x, double& dfdx,
                                        double& d2fdx2) override;
+  double asymptotic_value() override;
 protected:
   double D2_;
   double C_;

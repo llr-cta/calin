@@ -150,6 +150,52 @@ CALIN_DEFINE_T_FROM_STRING(unsigned, unsigned_from_string)
 
 #undef CALIN_DEFINE_T_FROM_STRING
 
+#define CALIN_DEFINE_T_TO_STRING(T, fn) \
+inline std::string fn(const T& val) \
+{ \
+  return to_string(val); \
+}
+
+CALIN_DEFINE_T_TO_STRING(bool, bool_to_string)
+CALIN_DEFINE_T_TO_STRING(int8_t, int8_to_string)
+CALIN_DEFINE_T_TO_STRING(uint8_t, uint8_to_string)
+CALIN_DEFINE_T_TO_STRING(int16_t, int16_to_string)
+CALIN_DEFINE_T_TO_STRING(uint16_t, uint16_to_string)
+CALIN_DEFINE_T_TO_STRING(int32_t, int32_to_string)
+CALIN_DEFINE_T_TO_STRING(uint32_t, uint32_to_string)
+CALIN_DEFINE_T_TO_STRING(int64_t, int64_to_string)
+CALIN_DEFINE_T_TO_STRING(uint64_t, uint64_to_string)
+CALIN_DEFINE_T_TO_STRING(float, float_to_string)
+CALIN_DEFINE_T_TO_STRING(double, double_to_string)
+
+CALIN_DEFINE_T_TO_STRING(int, int_to_string)
+CALIN_DEFINE_T_TO_STRING(unsigned, unsigned_to_string)
+
+#undef CALIN_DEFINE_T_TO_STRING
+
+#define CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(T, fn) \
+inline std::string fn(const T& val, unsigned precision = 2) \
+{ \
+  return to_string_with_commas(val, precision); \
+}
+
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(bool, bool_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(int8_t, int8_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(uint8_t, uint8_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(int16_t, int16_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(uint16_t, uint16_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(int32_t, int32_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(uint32_t, uint32_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(int64_t, int64_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(uint64_t, uint64_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(float, float_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(double, double_to_string_with_commas)
+
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(int, int_to_string_with_commas)
+CALIN_DEFINE_T_TO_STRING_WITH_COMMAS(unsigned, unsigned_to_string_with_commas)
+
+#undef CALIN_DEFINE_T_TO_STRING_WITH_COMMAS
+
 // https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
 
 template <typename I> std::string number_to_hexstring(I w, size_t hex_len = sizeof(I)<<1)

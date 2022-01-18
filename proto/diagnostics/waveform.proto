@@ -85,7 +85,7 @@ message WaveformRawStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.", (CFO).is_counter=true ];
   repeated uint64 sum                                      = 11 [
     (CFO).desc = "Sum over all events of each waveform sample." ];
   repeated uint64 sum_squared                              = 12 [
@@ -109,7 +109,7 @@ message CameraWaveformRawStats {
 
 message PartialWaveformRawStats {
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.", (CFO).is_counter=true ];
   repeated uint32 sum                                      = 11 [
     (CFO).desc = "Sum over all events of each waveform sample." ];
   repeated uint32 sum_squared                              = 12 [
@@ -127,29 +127,32 @@ message PartialCameraWaveformRawStats {
     (CFO).desc = "Raw waveform stats for all low gain channels." ];
 };
 
-message WaveformRawPSD {
+message WaveformSumPSD {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+    (CFO).desc = "Number of waveforms accumulated in the stats.",
+    (CFO).is_counter=true ];
   repeated double psd_sum                                  = 2 [
     (CFO).desc = "Sum of PSDs for all events." ];
   repeated double psd_sum_squared                          = 3 [
     (CFO).desc = "Sum of squared PSD for all events." ];
-  repeated double corr_sum                                 = 4 [
+  repeated double auto_correlation_sum                     = 4 [
     (CFO).desc = "Sum of auto correlations for all events." ];
-  repeated double corr_sum_squared                         = 5 [
+  repeated double auto_correlation_sum_squared             = 5 [
     (CFO).desc = "Sum of squared auto correlations for all events." ];
+  double dc_sum                                            = 6 [
+    (CFO).desc = "Sum of DC component over all events." ];
 };
 
-message CameraWaveformRawPSD {
+message CameraWaveformSumPSD {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   repeated uint32 channel_id                               = 1 [
     (CFO).desc = "Channel id." ];
-  repeated WaveformRawPSD high_gain                        = 11 [
+  repeated WaveformSumPSD high_gain                        = 11 [
     (CFO).desc = "Raw PSD for all high gain channels." ];
-  repeated WaveformRawPSD low_gain                         = 12 [
+  repeated WaveformSumPSD low_gain                         = 12 [
     (CFO).desc = "Raw PSD for all low gain channels." ];
 };
 

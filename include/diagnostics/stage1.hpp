@@ -90,6 +90,11 @@ private:
   calin::ix::iact_data::nectarcam_ancillary_data::NectarCAMAncillaryData* nectarcam_ancillary_data_ = nullptr;
 
   calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor* clock_regression_pev_ = nullptr;
+
+  calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_phy_pev_ = nullptr;
+  calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ped_pev_ = nullptr;
+  calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ext_pev_ = nullptr;
+  calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_int_pev_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::stage1

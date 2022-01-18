@@ -143,16 +143,11 @@ def new_uploader():
             overwrite=opt.overwrite(), loud=opt.loud_upload())
     return uploader
 
-uploader = new_uploader()
-
-logsheet = dict()
-if(opt.run_log_sheet()):
-    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
-    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
-
-del uploader
-
 def get_oids():
+    all_oid = []
+    all_filename = []
+    all_runno = []
+
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
@@ -172,18 +167,31 @@ def get_oids():
     else:
         all_oid = sql.select_all_oids(opt.db_stage1_table_name())
 
-    return all_oid
+    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
+    for oid in all_oid:
+        sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1pod)
+        all_runno.append(stage1pod.run_number())
+        all_filename.append(stage1pod.filename())
+
+    return all_oid, all_runno, all_filename
 
 def render_oid(oid):
-    # Open SQL file
-    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+    try:
+        sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+        stage1 = calin.ix.diagnostics.stage1.Stage1()
+        sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+        return unprotected_render_oid(stage1)
+    except:
+        runno = stage1.run_number()
+        print('Exception while rendering run :', runno)
+        raise
 
-    stage1 = calin.ix.diagnostics.stage1.Stage1()
-    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+def unprotected_render_oid(stage1):
     runno = stage1.run_number()
     print('Started run :', runno)
 
     uploader = new_uploader()
+    figure_factory = calin.plotting.MatplotlibFigureFactory(dpi=figure_dpi)
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
@@ -207,358 +215,371 @@ def render_oid(oid):
     def upload_figure(runno, quantity, f):
         uploader.upload_png_from_figure(filenames(runno, quantity, 'png'), f)
 
+    def upload_figure_dict(runno, fig_dict):
+        if(fig_dict):
+            for fig_name in fig_dict.keys():
+                upload_figure(runno, fig_name, fig_dict[fig_name][0])
+
     def upload_text(runno, quantity, iostream):
         uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
+
+    draw_all = True
+    draw_all &= not opt.draw_psd()
+    draw_all &= not opt.draw_high_low()
+    draw_all &= not opt.draw_charge()
+    draw_all &= not opt.draw_missing_components()
+    draw_all &= not opt.draw_pedestal()
+    draw_all &= not opt.draw_temperature()
+    draw_all &= not opt.draw_clock()
+    draw_all &= not opt.draw_data_ordering()
+    draw_all &= not opt.draw_hvpa()
+    draw_all &= not opt.draw_trigger()
+    draw_all &= not opt.draw_waveform_mean()
+    draw_all &= not opt.draw_event()
+    draw_all &= not opt.draw_provenance()
+
+    ############################################################################
+    # FIGURE : power spectra
+    ############################################################################
+
+    if(opt.draw_psd() or draw_all):
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='pedestal', figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='pedestal', low_gain=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='all', figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict = calin.diagnostics.stage1_plotting.draw_psd(stage1,
+            dataset='all', low_gain=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+    ############################################################################
+    # FIGURE : high-gain vs low-gain values
+    ############################################################################
+
+    if(opt.draw_high_low() or draw_all):
+        fig_dict, _, _ = calin.diagnostics.stage1_plotting.draw_high_gain_low_gain(stage1,
+            dataset='max_sample', subtract_pedestal=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+        fig_dict, _, _ = calin.diagnostics.stage1_plotting.draw_high_gain_low_gain(stage1,
+            dataset='opt_sum', subtract_pedestal=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+
+    ############################################################################
+    # FIGURE : charge histograms for all trigger types
+    ############################################################################
+
+    if(opt.draw_charge() or draw_all):
+        for trigger_type in [ 'physics', 'pedestal', 'external_flasher', 'internal_flasher' ]:
+            for low_gain in [ False, True ]:
+                fig_dict = calin.diagnostics.stage1_plotting.draw_charge_spectrum(stage1,
+                    dataset=trigger_type, low_gain = low_gain,
+                    draw_median=True, draw_scale=True, figure_factory = figure_factory)
+                upload_figure_dict(runno, fig_dict)
 
     ############################################################################
     # FIGURE : Missing components
     ############################################################################
 
-    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-    calin.diagnostics.stage1_plotting.draw_missing_components_fraction(stage1,
-        axis=ax, mod_label_fontsize=4, aux_label_fontsize=5.5)
-    ax.set_title('Missing components, run : %d'%runno)
-    upload_figure(runno, 'missing_components', ax.figure)
+    if(opt.draw_missing_components() or draw_all):
+        fig_dict = calin.diagnostics.stage1_plotting.draw_missing_components_fraction(stage1,
+            figure_factory = figure_factory, mod_label_fontsize=4, aux_label_fontsize=5.5)
+        upload_figure_dict(runno, fig_dict)
 
     ############################################################################
     # FIGURE : Pedestals
     ############################################################################
 
-    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
-            and max(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
-        ax.set_title('High-gain pedestal mean (ped events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_mean_hg_ped_evt', ax.figure)
+    if(opt.draw_pedestal() or draw_all):
+        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+                and max(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+            ax.set_title('High-gain pedestal mean (ped events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_mean_hg_ped_evt', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
-        ax.set_title('High-gain pedestal rms (ped events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_rms_hg_ped_evt', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+            ax.set_title('High-gain pedestal rms (ped events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_rms_hg_ped_evt', ax.figure)
 
-    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
-            and max(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
-        ax.set_title('Low-gain pedestal mean (ped events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_mean_lg_ped_evt', ax.figure)
+        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+                and max(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+            ax.set_title('Low-gain pedestal mean (ped events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_mean_lg_ped_evt', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
-        ax.set_title('Low-gain pedestal rms (ped events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_rms_lg_ped_evt', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+            ax.set_title('Low-gain pedestal rms (ped events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_rms_lg_ped_evt', ax.figure)
 
-    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
-            and max(stage1.const_charge_stats().const_high_gain().all_trigger_event_count())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
-        ax.set_title('High-gain pedestal mean (all events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_mean_hg_all_evt', ax.figure)
+        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+                and max(stage1.const_charge_stats().const_high_gain().all_trigger_event_count())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+            ax.set_title('High-gain pedestal mean (all events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_mean_hg_all_evt', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
-        ax.set_title('High-gain pedestal rms (all events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_rms_hg_all_evt', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+            ax.set_title('High-gain pedestal rms (all events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_rms_hg_all_evt', ax.figure)
 
-    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
-            and max(stage1.const_charge_stats().const_low_gain().all_trigger_event_count())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
-        ax.set_title('Low-gain pedestal mean (all events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_mean_lg_all_evt', ax.figure)
+        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+                and max(stage1.const_charge_stats().const_low_gain().all_trigger_event_count())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+            ax.set_title('Low-gain pedestal mean (all events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_mean_lg_all_evt', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
-        ax.set_title('Low-gain pedestal rms (all events), run : %d'%runno)
-        upload_figure(runno, 'pedestal_rms_lg_all_evt', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+            ax.set_title('Low-gain pedestal rms (all events), run : %d'%runno)
+            upload_figure(runno, 'pedestal_rms_lg_all_evt', ax.figure)
 
     ############################################################################
     # FIGURE : FEB temperatures
     ############################################################################
 
-    if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
-            len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
-        ax.set_title('Temperature (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_feb1', ax.figure)
+    if(opt.draw_temperature() or draw_all):
+        if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
+                len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
+            ax.set_title('Temperature (FEB 1), run : %d'%runno)
+            upload_figure(runno, 'temperature_feb1', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
-        ax.set_title('Temperature (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_feb2', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
+            ax.set_title('Temperature (FEB 2), run : %d'%runno)
+            upload_figure(runno, 'temperature_feb2', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
-        ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_feb1', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
+            ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
+            upload_figure(runno, 'temperature_spread_feb1', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
-        ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_feb2', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
+            ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
+            upload_figure(runno, 'temperature_spread_feb2', ax.figure)
 
     ############################################################################
     # FIGURE : clock regression
     ############################################################################
 
-    iclock = 0
-    if(stage1.has_clock_regression() and \
-            stage1.const_clock_regression().module_clock_size()>=iclock and \
-            stage1.const_clock_regression().const_module_clock(iclock).modules_size() > 0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+    if(opt.draw_clock() or draw_all):
+        iclock = 0
+        if(stage1.has_clock_regression() and \
+                stage1.const_clock_regression().module_clock_size()>=iclock and \
+                stage1.const_clock_regression().const_module_clock(iclock).modules_size() > 0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
 
-        calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4,ax5)
+            calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4,ax5)
 
-        ax.set_title('Clock frequency error, run : %d'%runno)
-        upload_figure(runno, 'clock_frequency_error', ax.figure)
+            ax.set_title('Clock frequency error, run : %d'%runno)
+            upload_figure(runno, 'clock_frequency_error', ax.figure)
 
-        ax2.set_title('Clock offset from UCTS, run : %d'%runno)
-        upload_figure(runno, 'clock_offset', ax2.figure)
+            ax2.set_title('Clock offset from UCTS, run : %d'%runno)
+            upload_figure(runno, 'clock_offset', ax2.figure)
 
-        ax3.set_title('Clock vs UCTS fit RMS residual, run : %d'%runno)
-        upload_figure(runno, 'clock_residual', ax3.figure)
+            ax3.set_title('Clock vs UCTS fit RMS residual, run : %d'%runno)
+            upload_figure(runno, 'clock_residual', ax3.figure)
 
-        ax4.set_title('Clock frequency spread, run : %d'%runno)
-        upload_figure(runno, 'clock_frequency_spread', ax4.figure)
+            ax4.set_title('Clock frequency spread, run : %d'%runno)
+            upload_figure(runno, 'clock_frequency_spread', ax4.figure)
 
-        ax5.set_title('Clock offset from UCTS spread, run : %d'%runno)
-        upload_figure(runno, 'clock_offset_spread', ax5.figure)
+            ax5.set_title('Clock offset from UCTS spread, run : %d'%runno)
+            upload_figure(runno, 'clock_offset_spread', ax5.figure)
 
     ############################################################################
     # FIGURE : channel and module data order
     ############################################################################
 
-    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-    calin.diagnostics.stage1_plotting.draw_module_dataorder(stage1, axis=ax)
-    ax.set_title('Module data ordering, run : %d'%runno)
-    upload_figure(runno, 'data_ordering_module', ax.figure)
+    if(opt.draw_data_ordering() or draw_all):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_module_dataorder(stage1, axis=ax)
+        ax.set_title('Module data ordering, run : %d'%runno)
+        upload_figure(runno, 'data_ordering_module', ax.figure)
 
-    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-    calin.diagnostics.stage1_plotting.draw_channel_dataorder(stage1, axis=ax)
-    ax.set_title('Channel data ordering, run : %d'%runno)
-    upload_figure(runno, 'data_ordering_channel', ax.figure)
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_channel_dataorder(stage1, axis=ax)
+        ax.set_title('Channel data ordering, run : %d'%runno)
+        upload_figure(runno, 'data_ordering_channel', ax.figure)
 
     ############################################################################
     # FIGURE : FPM voltage and current
     ############################################################################
 
-    if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
-            len(stage1.const_nectarcam().const_ancillary_data().hvpa_voltage_keys())>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        ax6 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+    if(opt.draw_hvpa() or draw_all):
+        if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
+                len(stage1.const_nectarcam().const_ancillary_data().hvpa_voltage_keys())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            ax6 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
 
-        calin.diagnostics.stage1_plotting.draw_nectarcam_fpm_measurements(stage1,ax,ax2,ax3,ax4,ax5,ax6)
+            calin.diagnostics.stage1_plotting.draw_nectarcam_fpm_measurements(stage1,ax,ax2,ax3,ax4,ax5,ax6)
 
-        ax.set_title('HVPA mean voltage, run : %d'%runno)
-        upload_figure(runno, 'hvpa_voltage_mean', ax.figure)
+            ax.set_title('HVPA mean voltage, run : %d'%runno)
+            upload_figure(runno, 'hvpa_voltage_mean', ax.figure)
 
-        ax2.set_title('HVPA Cockroft-Walton current, run : %d'%runno)
-        upload_figure(runno, 'hvpa_cw_current_mean', ax2.figure)
+            ax2.set_title('HVPA Cockroft-Walton current, run : %d'%runno)
+            upload_figure(runno, 'hvpa_cw_current_mean', ax2.figure)
 
-        ax3.set_title('HVPA board current, run : %d'%runno)
-        upload_figure(runno, 'hvpa_board_current_mean', ax3.figure)
+            ax3.set_title('HVPA board current, run : %d'%runno)
+            upload_figure(runno, 'hvpa_board_current_mean', ax3.figure)
 
-        ax4.set_title('HVPA voltage spread, run : %d'%runno)
-        upload_figure(runno, 'hvpa_voltage_spread', ax4.figure)
+            ax4.set_title('HVPA voltage spread, run : %d'%runno)
+            upload_figure(runno, 'hvpa_voltage_spread', ax4.figure)
 
-        ax5.set_title('HVPA Cockroft-Walton current spread, run : %d'%runno)
-        upload_figure(runno, 'hvpa_cw_current_spread', ax5.figure)
+            ax5.set_title('HVPA Cockroft-Walton current spread, run : %d'%runno)
+            upload_figure(runno, 'hvpa_cw_current_spread', ax5.figure)
 
-        ax6.set_title('HVPA board current spread, run : %d'%runno)
-        upload_figure(runno, 'hvpa_board_current_spread', ax6.figure)
+            ax6.set_title('HVPA board current spread, run : %d'%runno)
+            upload_figure(runno, 'hvpa_board_current_spread', ax6.figure)
 
     ############################################################################
     # FIGURE : L0 trigger frequency
     ############################################################################
 
-    if(stage1.const_charge_stats().channel_triggered_count_size()>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_trigger_event_fraction(stage1, axis=ax)
-        ax.set_title('L0 trigger bit frequency, run : %d'%runno)
-        upload_figure(runno, 'trigger_l0_bit_frequency', ax.figure)
+    if(opt.draw_trigger() or draw_all):
+        if(stage1.const_charge_stats().channel_triggered_count_size()>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_trigger_event_fraction(stage1, axis=ax)
+            ax.set_title('L0 trigger bit frequency, run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_frequency', ax.figure)
 
-    if(stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count_size()>0):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_nn_failed_phy_trigger_event_fraction(stage1, axis=ax)
-        ax.set_title('L0 trigger bit in sub-3NN events, run : %d'%runno)
-        upload_figure(runno, 'trigger_sub_3nn_l0_bit_frequency', ax.figure)
+        if(stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count_size()>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_nn_failed_phy_trigger_event_fraction(stage1, axis=ax)
+            ax.set_title('L0 trigger bit in sub-3NN events, run : %d'%runno)
+            upload_figure(runno, 'trigger_sub_3nn_l0_bit_frequency', ax.figure)
 
-    if(stage1.const_charge_stats().const_num_channel_triggered_hist().sum_w()):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax)
-        ax.set_title('L0 trigger bit histogram (all events), run : %d'%runno)
-        upload_figure(runno, 'trigger_l0_bit_count', ax.figure)
+        if(stage1.const_charge_stats().const_num_channel_triggered_hist().sum_w()):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax)
+            ax.set_title('L0 trigger bit histogram (all events), run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_count', ax.figure)
 
-    if(stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist().sum_w()):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
-            phys_trigger=True)
-        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
-        upload_figure(runno, 'trigger_l0_bit_count_phys', ax.figure)
+        if(stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist().sum_w()):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+                phys_trigger=True)
+            ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_count_phys', ax.figure)
 
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
-            phys_trigger=True,zoom=True)
-        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
-        upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+                phys_trigger=True,zoom=True)
+            ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
 
     ############################################################################
     # FIGURE : mean waveforms
     ############################################################################
 
-    if(stage1.has_mean_wf_pedestal() and stage1.has_charge_stats()):
-        if(stage1.const_mean_wf_pedestal().channel_high_gain_size() \
-                and stage1.const_mean_wf_pedestal().has_camera_high_gain() \
-                and stage1.const_charge_stats().has_high_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal')
-            ax.set_title('Mean waveform (pedestal, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_hg', ax.figure)
+    if(opt.draw_waveform_mean() or draw_all):
+        for trigger_type in [ 'physics', 'pedestal', 'external_flasher', 'internal_flasher' ]:
+            fig_dict = calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,
+                dataset=trigger_type, figure_factory=figure_factory)
+            upload_figure_dict(runno, fig_dict)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,
+                dataset=trigger_type, low_gain=True, figure_factory=figure_factory)
+            upload_figure_dict(runno, fig_dict)
 
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',
-                subtract_pedestal=True)
-            ax.set_title('Mean waveform offset (pedestal, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_hg_offset', ax.figure)
+        fig_dict = calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,
+            dataset='pedestal', subtract_pedestal=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
+        fig_dict = calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,
+            dataset='pedestal', subtract_pedestal=True, low_gain=True, figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
 
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
-                axis=ax,dataset='pedestal')
-            ax.set_title('RMS waveform offset (pedestal, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_hg_offset_rms', ax.figure)
+        if(stage1.has_mean_wf_pedestal()):
+            if(stage1.const_mean_wf_pedestal().channel_high_gain_size() \
+                    and stage1.const_mean_wf_pedestal().has_camera_high_gain() \
+                    and numpy.count_nonzero([ stage1.const_mean_wf_pedestal().channel_high_gain(i).num_entries() \
+                        for i in range(stage1.const_mean_wf_pedestal().channel_high_gain_size()) ])):
+                ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+                calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
+                    axis=ax,dataset='pedestal')
+                ax.set_title('RMS waveform offset (pedestal, high-gain), run : %d'%runno)
+                upload_figure(runno, 'waveform_mean_pedestal_hg_offset_rms', ax.figure)
 
-        if(stage1.const_mean_wf_pedestal().channel_low_gain_size() \
-                and stage1.const_mean_wf_pedestal().has_camera_low_gain() \
-                and stage1.const_charge_stats().has_low_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',low_gain=True)
-            ax.set_title('Mean waveform (pedestal, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_lg', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',low_gain=True,
-                subtract_pedestal=True)
-            ax.set_title('Mean waveform offset (pedestal, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_lg_offset', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
-                axis=ax, dataset='pedestal', low_gain=True)
-            ax.set_title('RMS waveform offset (pedestal, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_pedestal_lg_offset_rms', ax.figure)
-
-    if(stage1.has_mean_wf_physics() and stage1.has_charge_stats()):
-        if(stage1.const_mean_wf_physics().channel_high_gain_size() \
-                and stage1.const_mean_wf_physics().has_camera_high_gain() \
-                and stage1.const_charge_stats().has_high_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().phy_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='physics')
-            ax.set_title('Mean waveform (physics, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_physics_hg', ax.figure)
-        if(stage1.const_mean_wf_physics().channel_low_gain_size() \
-                and stage1.const_mean_wf_physics().has_camera_low_gain() \
-                and stage1.const_charge_stats().has_low_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().phy_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='physics',low_gain=True)
-            ax.set_title('Mean waveform (physics, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_physics_lg', ax.figure)
-
-    if(stage1.has_mean_wf_external_flasher() and stage1.has_charge_stats()):
-        if(stage1.const_mean_wf_external_flasher().channel_high_gain_size() \
-                and stage1.const_mean_wf_external_flasher().has_camera_high_gain() \
-                and stage1.const_charge_stats().has_high_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().ext_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='external_flasher')
-            ax.set_title('Mean waveform (ext flasher, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_external_flasher_hg', ax.figure)
-        if(stage1.const_mean_wf_external_flasher().channel_low_gain_size() \
-                and stage1.const_mean_wf_external_flasher().has_camera_low_gain() \
-                and stage1.const_charge_stats().has_low_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().ext_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='external_flasher',low_gain=True)
-            ax.set_title('Mean waveform (ext flasher, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_external_flasher_lg', ax.figure)
-
-    if(stage1.has_mean_wf_internal_flasher() and stage1.has_charge_stats()):
-        if(stage1.const_mean_wf_internal_flasher().channel_high_gain_size() \
-                and stage1.const_mean_wf_internal_flasher().has_camera_high_gain() \
-                and stage1.const_charge_stats().has_high_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().int_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='internal_flasher')
-            ax.set_title('Mean waveform (int flasher, high-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_internal_flasher_hg', ax.figure)
-        if(stage1.const_mean_wf_internal_flasher().channel_low_gain_size() \
-                and stage1.const_mean_wf_internal_flasher().has_camera_low_gain() \
-                and stage1.const_charge_stats().has_low_gain() \
-                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().int_trigger_event_count())):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='internal_flasher',low_gain=True)
-            ax.set_title('Mean waveform (int flasher, low-gain), run : %d'%runno)
-            upload_figure(runno, 'waveform_mean_internal_flasher_lg', ax.figure)
+            if(stage1.const_mean_wf_pedestal().channel_low_gain_size() \
+                    and stage1.const_mean_wf_pedestal().has_camera_low_gain() \
+                    and numpy.count_nonzero([ stage1.const_mean_wf_pedestal().channel_low_gain(i).num_entries() \
+                        for i in range(stage1.const_mean_wf_pedestal().channel_low_gain_size()) ])):
+                ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+                calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
+                    axis=ax, dataset='pedestal', low_gain=True)
+                ax.set_title('RMS waveform offset (pedestal, low-gain), run : %d'%runno)
+                upload_figure(runno, 'waveform_mean_pedestal_lg_offset_rms', ax.figure)
 
     ############################################################################
     # FIGURE : mean event rate and on-disk fraction
     ############################################################################
 
-    if(stage1.const_run_info().const_elapsed_time_histogram().sum_w()):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
-        ax.set_title('Event rate on disk, run : %d'%runno)
-        upload_figure(runno, 'event_rate', ax.figure)
+    if(opt.draw_event() or draw_all):
+        if(stage1.const_run_info().const_elapsed_time_histogram().sum_w()):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
+            ax.set_title('Event rate on disk, run : %d'%runno)
+            upload_figure(runno, 'event_rate', ax.figure)
 
-    if(stage1.const_run_info().const_log10_delta_t_histogram_all_recorded().sum_w()):
-        f = matplotlib.figure.Figure(dpi=figure_dpi)
-        f.subplots_adjust(top=0.85)
-        ax = f.subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'all', axis=ax)
-        ax.set_title('Event $\Delta$T distribution (all events), run : %d'%runno)
-        upload_figure(runno, 'event_delta_t_all', ax.figure)
+        if(stage1.const_run_info().const_log10_delta_t_histogram_all_recorded().sum_w()):
+            f = matplotlib.figure.Figure(dpi=figure_dpi)
+            f.subplots_adjust(top=0.85)
+            ax = f.subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'all', axis=ax)
+            ax.set_title('Event $\Delta$T distribution (all events), run : %d'%runno)
+            upload_figure(runno, 'event_delta_t_all', ax.figure)
 
-    if(stage1.const_run_info().const_log10_delta_t_histogram().sum_w()):
-        f = matplotlib.figure.Figure(dpi=figure_dpi)
-        f.subplots_adjust(top=0.85)
-        ax = f.subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'consecutive', axis=ax)
-        ax.set_title('Event $\Delta$T distribution (consecutive events), run : %d'%runno)
-        upload_figure(runno, 'event_delta_t_consecutive', ax.figure)
+        if(stage1.const_run_info().const_log10_delta_t_histogram().sum_w()):
+            f = matplotlib.figure.Figure(dpi=figure_dpi)
+            f.subplots_adjust(top=0.85)
+            ax = f.subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'consecutive', axis=ax)
+            ax.set_title('Event $\Delta$T distribution (consecutive events), run : %d'%runno)
+            upload_figure(runno, 'event_delta_t_consecutive', ax.figure)
 
-    if(stage1.const_run_info().const_log10_delta_t_histogram_trigger_physics().sum_w()):
-        f = matplotlib.figure.Figure(dpi=figure_dpi)
-        f.subplots_adjust(top=0.85)
-        ax = f.subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'physics', axis=ax)
-        ax.set_title('Event $\Delta$T distribution (consecutive physics events), run : %d'%runno)
-        upload_figure(runno, 'event_delta_t_physics', ax.figure)
+        if(stage1.const_run_info().const_log10_delta_t_histogram_trigger_physics().sum_w()):
+            f = matplotlib.figure.Figure(dpi=figure_dpi)
+            f.subplots_adjust(top=0.85)
+            ax = f.subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'physics', axis=ax)
+            ax.set_title('Event $\Delta$T distribution (consecutive physics events), run : %d'%runno)
+            upload_figure(runno, 'event_delta_t_physics', ax.figure)
 
-    if(stage1.const_run_info().const_event_number_histogram().sum_w()):
-        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-        calin.diagnostics.stage1_plotting.draw_event_number_histogram(stage1, axis=ax)
-        ax.set_title('Event fraction on disk, run : %d'%runno)
-        upload_figure(runno, 'event_fraction', ax.figure)
+        if(stage1.const_run_info().const_event_number_histogram().sum_w()):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_event_number_histogram(stage1, axis=ax)
+            ax.set_title('Event fraction on disk, run : %d'%runno)
+            upload_figure(runno, 'event_fraction', ax.figure)
 
     ############################################################################
     # PROVENANCE LOG
     ############################################################################
 
-    writer = io.StringIO()
-    calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
-    upload_text(runno, 'provenance_log_stage1', writer)
+    if(opt.draw_provenance() or draw_all):
+        writer = io.StringIO()
+        calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
+        upload_text(runno, 'provenance_log_stage1', writer)
 
     ############################################################################
     # WRITE SUMMARY SHEET
@@ -576,8 +597,41 @@ def render_oid(oid):
     print('Finished run :', runno)
     return True
 
-all_oid = get_oids()
+uploader = new_uploader()
+
+logsheet = dict()
+if(opt.run_log_sheet()):
+    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
+    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
+
+all_oid = []
+all_runno = []
+all_filename = []
 all_status = []
+
+if(opt.summary_sheet() and opt.skip_existing()):
+    superset_all_oid, superset_all_runno, superset_all_filenames = get_oids()
+    summary_rows = uploader.retrieve_sheet(opt.summary_sheet(),row_start=3)
+    for oid, runno, filename in zip(superset_all_oid, superset_all_runno, superset_all_filenames):
+        skip_oid = False
+        for row in summary_rows:
+            if(filename.endswith(row[-1])):
+                skip_oid = True
+                break
+        if(skip_oid):
+            print("Skipping :",filename)
+        else:
+            all_oid.append(oid)
+            all_runno.append(runno)
+            all_filename.append(filename)
+else:
+    all_oid, all_runno, all_filename = get_oids()
+
+del uploader
+
+if(not all_oid):
+    print("No runs to process, exiting")
+    sys.exit()
 
 if(opt.nthread()>1):
     with concurrent.futures.ProcessPoolExecutor(max_workers=opt.nthread()) as executor:
@@ -605,10 +659,7 @@ if(opt.upload_to_google_drive() and opt.summary_sheet()):
     del uploader
 
 print("=================================== RESULTS ===================================")
-sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-for oid_status in zip(all_oid, all_status):
-    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
-    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid_status[0], stage1pod)
-    print(stage1pod.run_number(), "success" if oid_status[1] else "*** FAILED ***")
+for runno_status in zip(all_runno, all_status):
+    print(runno_status[0], "success" if runno_status[1] else "*** FAILED ***")
 
 # The end

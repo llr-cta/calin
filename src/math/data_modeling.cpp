@@ -175,8 +175,13 @@ double IID1DDataMEstimateLikelihoodFunction::value(ConstVecRef x)
     if(w>0)
     {
       double pdf = pdf_->value_1d(x_[ix]);
-      if(pdf<=0)continue;
-      acc.accumulate(rho_->value_1d(-std::log(pdf))*w);
+      double rho;
+      if(pdf<=0) {
+        rho = rho_->asymptotic_value();
+      } else {
+        rho = rho_->value_1d(-std::log(pdf));
+      }
+      acc.accumulate(rho*w);
     }
   }
   return acc.total();
@@ -201,12 +206,16 @@ double IID1DDataMEstimateLikelihoodFunction::value_and_gradient(ConstVecRef x, V
     if(w>0)
     {
       double pdf = pdf_->value_and_parameter_gradient_1d(x_[ix], gradient);
-      if(pdf<=0)continue;
-      double drho_dx;
-      double rho = rho_->value_and_gradient_1d(-std::log(pdf), drho_dx);
+      double rho;
+      if(pdf<=0) {
+        rho = rho_->asymptotic_value();
+      } else {
+        double drho_dx;
+        rho = rho_->value_and_gradient_1d(-std::log(pdf), drho_dx);
+        for(unsigned ipar=0;ipar<npar_;ipar++)
+          gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+      }
       acc.accumulate(rho*w);
-      for(unsigned ipar=0;ipar<npar_;ipar++)
-        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
     }
   }
   for(unsigned ipar=0;ipar<npar_;ipar++)
@@ -238,22 +247,27 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
     {
       double pdf = pdf_->value_parameter_gradient_and_hessian_1d(x_[ix],
         gradient, hessian);
-      if(pdf<=0)continue;
-      double drho_dx;
-      double d2rho_dx2;
-      double rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
-      acc.accumulate(rho*w);
-      for(unsigned ipar=0;ipar<npar_;ipar++)
-        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+      double rho;
+      if(pdf<=0) {
+        rho = rho_->asymptotic_value();
+      } else {
+        double drho_dx;
+        double d2rho_dx2;
+        rho = rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
 
-      unsigned itri = 0;
-      for(unsigned icol=0;icol<npar_;icol++)
-        for(unsigned irow=icol;irow<npar_;irow++)
-        {
-          double summand = (drho_dx*hessian(icol,irow)
-            - (d2rho_dx2 + drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
-          hessian_acc[itri++].accumulate(summand*w);
+        for(unsigned ipar=0;ipar<npar_;ipar++)
+          gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+
+        unsigned itri = 0;
+        for(unsigned icol=0;icol<npar_;icol++) {
+          for(unsigned irow=icol;irow<npar_;irow++) {
+            double summand = (drho_dx*hessian(icol,irow)
+              - (d2rho_dx2 + drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
+            hessian_acc[itri++].accumulate(summand*w);
+          }
         }
+      }
+      acc.accumulate(rho*w);
     }
   }
 

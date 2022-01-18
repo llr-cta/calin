@@ -798,13 +798,13 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
       auto* hg_wf = psd_results_.add_high_gain();
       hg_wf->mutable_psd_sum()->Resize(nfreq,0);
       hg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
-      hg_wf->mutable_corr_sum()->Resize(N,0);
-      hg_wf->mutable_corr_sum_squared()->Resize(N,0);
+      hg_wf->mutable_auto_correlation_sum()->Resize(N,0);
+      hg_wf->mutable_auto_correlation_sum_squared()->Resize(N,0);
       auto* lg_wf = psd_results_.add_low_gain();
       lg_wf->mutable_psd_sum()->Resize(nfreq,0);
       lg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
-      lg_wf->mutable_corr_sum()->Resize(N,0);
-      lg_wf->mutable_corr_sum_squared()->Resize(N,0);
+      lg_wf->mutable_auto_correlation_sum()->Resize(N,0);
+      lg_wf->mutable_auto_correlation_sum_squared()->Resize(N,0);
     }
   }
 
@@ -848,7 +848,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
-      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      calin::ix::diagnostics::waveform::WaveformSumPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_high_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_high_gain(ichan),
         results_.mutable_high_gain(ichan), psd);
@@ -863,7 +863,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
-      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      calin::ix::diagnostics::waveform::WaveformSumPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_low_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_low_gain(ichan),
         results_.mutable_low_gain(ichan), psd);
@@ -879,7 +879,7 @@ void WaveformStatsParallelVisitor::
 process_one_waveform(const uint16_t*__restrict__ wf,
   ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
   ix::diagnostics::waveform::WaveformRawStats* r_stat,
-  calin::ix::diagnostics::waveform::WaveformRawPSD* psd)
+  calin::ix::diagnostics::waveform::WaveformSumPSD* psd)
 {
   const unsigned nsample = run_config_->num_samples();
   p_stat->set_num_entries(p_stat->num_entries()+1);
@@ -915,12 +915,12 @@ process_one_waveform(const uint16_t*__restrict__ wf,
     }
     hcvec_scale_and_multiply_conj(waveform_f_, waveform_f_, waveform_f_, nsample);
     fftwf_execute(fftw_plan_bwd_);
-    auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
+    auto* auto_correlation_sum = psd->mutable_auto_correlation_sum()->mutable_data();
     for(unsigned isample=0; isample<nsample; isample++)
-      corr_sum[isample] += waveform_t_[isample];
-    auto* corr_sum_squared = psd->mutable_corr_sum_squared()->mutable_data();
+      auto_correlation_sum[isample] += waveform_t_[isample];
+    auto* auto_correlation_sum_squared = psd->mutable_auto_correlation_sum_squared()->mutable_data();
     for(unsigned isample=0; isample<nsample; isample++)
-      corr_sum_squared[isample] += SQR(waveform_t_[isample]);
+      auto_correlation_sum_squared[isample] += SQR(waveform_t_[isample]);
   } else {
     for(unsigned isample=0; isample<nsample; isample++) {
       uint32_t sample = wf[isample];
