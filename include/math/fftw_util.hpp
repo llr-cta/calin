@@ -51,6 +51,9 @@ inline unsigned hcvec_num_imag(unsigned nsample) {
   return (std::max(nsample,1U)-1)/2; // Max to handle zero case
 }
 
+void hcvec_fftfreq(double* ovec, unsigned nsample, double d=1.0,  bool imaginary_negative = false);
+void hcvec_fftindex(int* ovec, unsigned nsample, bool imaginary_negative = false);
+
 #ifndef SWIG
 
 template<typename T>
@@ -222,6 +225,21 @@ void hcvec_to_psd(T* ovec, const T* ivec, unsigned nsample, T dc_cpt = 0)
   }
   if(r==c) {
     *ovec++ = SQR(*r++);
+  }
+}
+
+template<typename T>
+void hcvec_to_psd_no_square(T* ovec, const T* ivec, unsigned nsample)
+{
+  const T* r = ivec;
+  const T* c = ivec + nsample;
+  *ovec++ = *r++;
+  c--;
+  while(r<c) {
+    *ovec++ = *r++ + *c--;
+  }
+  if(r==c) {
+    *ovec++ = *r++;
   }
 }
 
@@ -1076,7 +1094,7 @@ void hcvec_delta_dft_vcl(typename VCLReal::real_t* ovec, typename VCLReal::real_
   }
 
   if(ro==co) {
-    typename VCLReal::real_t x = double(ro-ovec) * phase;
+    typename VCLReal::real_t x = typename VCLReal::real_t(ro-ovec) * phase;
     typename VCLReal::real_t c = std::cos(x);
     (*ro++) = c;
   }
@@ -1085,6 +1103,71 @@ void hcvec_delta_dft_vcl(typename VCLReal::real_t* ovec, typename VCLReal::real_
 // NOTE : This function overrides the template for systems with AVX !!!
 #if INSTRSET >= 7
 void hcvec_delta_dft(double* ovec, double x0, unsigned nsample);
+#endif
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// Analytic Inverse DFT of Delta(k-k0)
+//
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T>
+void hcvec_delta_idft(T* ovec, T k0, T phase0, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample;
+
+  T nsample_inv = 1.0/T(nsample);
+  T phase = 2*M_PI*k0*nsample_inv;
+
+  while(ro < co)
+  {
+    T k = T(ro-ovec) * phase + phase0;
+    T c = std::cos(k);
+    (*ro++) = 2.0*c;
+  }
+}
+
+template<typename VCLReal>
+void hcvec_delta_idft_vcl(typename VCLReal::real_t* ovec, typename VCLReal::real_t k0,
+  typename VCLReal::real_t phase0, unsigned nsample)
+{
+  // No user servicable parts inside
+
+  typename VCLReal::real_t* ro = ovec;
+  typename VCLReal::real_t* co = ovec + nsample;
+
+  typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
+  typename VCLReal::real_t phase = 2*M_PI*k0*nsample_inv;
+
+  // Evaluate one AVX vectors of points (i.e. num_real points) using vector types
+  typename VCLReal::real_vt k = VCLReal::iota();
+  while(co - ro >= VCLReal::num_real)
+  {
+    typename VCLReal::real_vt c;
+    vcl::sincos(&c, k*phase + phase0);
+    c *= 2.0;
+
+    k += VCLReal::num_real;
+
+    c.store(ro);
+    ro += VCLReal::num_real;
+  }
+
+  // Evaluate any remaining points that don't fit into a vector
+  while(ro < co)
+  {
+    typename VCLReal::real_t k = typename VCLReal::real_t(ro-ovec) * phase + phase0;
+    typename VCLReal::real_t c = std::cos(k);
+    (*ro++) = 2.0*c;
+  }
+}
+
+// NOTE : This function overrides the template for systems with AVX !!!
+#if INSTRSET >= 7
+void hcvec_delta_idft(double* ovec, double k0, double phase0, unsigned nsample);
 #endif
 
 // *****************************************************************************
@@ -1296,13 +1379,19 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 #endif // defined SWIG
 
 // Expose some of these functions in more SWIG friendly way
+Eigen::VectorXd hcvec_fftfreq(unsigned nsample, double d=1.0,  bool imaginary_negative = false);
+Eigen::VectorXi hcvec_fftindex(unsigned nsample, bool imaginary_negative = false);
 double hcvec_sum_real(const Eigen::VectorXd& ivec);
 double hcvec_avg_real(const Eigen::VectorXd& ivec);
 Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
 Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_dft(double x0, unsigned nsample, bool vcl = true);
-Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec);
+Eigen::VectorXd hcvec_delta_idft(double k0, double phase0, unsigned nsample, bool vcl=true);
+Eigen::VectorXd hcvec_delta_index_idft(unsigned index, unsigned nsample, bool vcl=true);
+
+Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt=0);
+Eigen::VectorXd hcvec_to_psd_no_square(const Eigen::VectorXd& ivec);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);

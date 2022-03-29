@@ -29,6 +29,67 @@
 #include <util/memory.hpp>
 #include <math/fftw_util.hpp>
 
+void calin::math::fftw_util::
+hcvec_fftfreq(double* ovec, unsigned nsample, double d, bool imaginary_negative)
+{
+  double norm = 1.0/(d*nsample);
+  double* r = ovec;
+  double* c = ovec + nsample;
+  unsigned k=0;
+  *r++ = k++;
+  c--;
+  if(imaginary_negative) {
+    while(r<c) {
+      *c-- = -(*r++ = k++ * norm);
+    }
+  } else {
+    while(r<c) {
+      *c-- = *r++ = k++ * norm;
+    }
+  }
+  if(r==c) {
+    *r++ = k * norm;
+  }
+}
+
+Eigen::VectorXd calin::math::fftw_util::
+hcvec_fftfreq(unsigned nsample, double d, bool imaginary_negative)
+{
+  Eigen::VectorXd ovec(nsample);
+  hcvec_fftfreq(ovec.data(), nsample, d, imaginary_negative);
+  return ovec;
+}
+
+void calin::math::fftw_util::
+hcvec_fftindex(int* ovec, unsigned nsample, bool imaginary_negative)
+{
+  int* r = ovec;
+  int* c = ovec + nsample;
+  int k=0;
+  *r++ = k++;
+  c--;
+  if(imaginary_negative) {
+    while(r<c) {
+      *c-- = -(*r++ = k++);
+    }
+  } else {
+    while(r<c) {
+      *c-- = *r++ = k++;
+    }
+  }
+  if(r==c) {
+    *r++ = k;
+  }
+}
+
+Eigen::VectorXi calin::math::fftw_util::
+hcvec_fftindex(unsigned nsample, bool imaginary_negative)
+{
+  Eigen::VectorXi ovec(nsample);
+  hcvec_fftindex(ovec.data(), nsample, imaginary_negative);
+  return ovec;
+}
+
 #if INSTRSET >= 7
 void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
   const double* ivec2, double real_addand, unsigned nsample)
@@ -65,6 +126,11 @@ void calin::math::fftw_util::hcvec_2gaussian_dft(double* ovec, double mean, doub
 void calin::math::fftw_util::hcvec_delta_dft(double* ovec, double x0, unsigned nsample)
 {
   hcvec_delta_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, x0, nsample);
+}
+
+void calin::math::fftw_util::hcvec_delta_idft(double* ovec, double k0, double phase0, unsigned nsample)
+{
+  hcvec_delta_idft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, k0, phase0, nsample);
 }
 #endif
 
@@ -166,11 +232,54 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_delta_dft(double x0, unsigned nsam
   return ovec;
 }
 
-Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd(const Eigen::VectorXd& ivec)
+Eigen::VectorXd calin::math::fftw_util::hcvec_delta_idft(double k0, double phase0, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_delta_idft(ovec.data(), k0, phase0, nsample);
+  } else {
+    hcvec_delta_idft<double>(ovec.data(), k0, phase0, nsample);
+  }
+  return ovec;
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_delta_index_idft(unsigned index, unsigned nsample, bool vcl)
+{
+  if(index >= nsample) {
+    throw std::out_of_range("hcvec_delta_index_idft: index must be smaller than nsample");
+  }
+  double k0;
+  double phase0;
+  if(index < hcvec_num_real(nsample)) {
+    k0 = index;
+    phase0 = 0;
+  } else {
+    k0 = nsample - index;
+    phase0 = M_PI_2;
+  }
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_delta_idft(ovec.data(), k0, phase0, nsample);
+  } else {
+    hcvec_delta_idft<double>(ovec.data(), k0, phase0, nsample);
+  }
+  return ovec;
+}
+
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt)
 {
   unsigned nsample = ivec.size();
   Eigen::VectorXd ovec(hcvec_num_real(nsample));
-  hcvec_to_psd(ovec.data(), ivec.data(), nsample);
+  hcvec_to_psd(ovec.data(), ivec.data(), nsample, dc_cpt);
+  return ovec;
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd_no_square(const Eigen::VectorXd& ivec)
+{
+  unsigned nsample = ivec.size();
+  Eigen::VectorXd ovec(hcvec_num_real(nsample));
+  hcvec_to_psd_no_square(ovec.data(), ivec.data(), nsample);
   return ovec;
 }
 
