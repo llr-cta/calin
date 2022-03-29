@@ -1388,7 +1388,7 @@ Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, 
 Eigen::VectorXd hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_dft(double x0, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_idft(double k0, double phase0, unsigned nsample, bool vcl=true);
-Eigen::VectorXd hcvec_delta_index_idft(unsigned index, unsigned nsample, bool vcl=true);
+Eigen::VectorXd hcvec_delta_idft_by_index(unsigned index, unsigned nsample, bool vcl=true);
 
 Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt=0);
 Eigen::VectorXd hcvec_to_psd_no_square(const Eigen::VectorXd& ivec);

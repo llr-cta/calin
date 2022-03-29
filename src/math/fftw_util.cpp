@@ -243,10 +243,10 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_delta_idft(double k0, double phase
   return ovec;
 }
 
-Eigen::VectorXd calin::math::fftw_util::hcvec_delta_index_idft(unsigned index, unsigned nsample, bool vcl)
+Eigen::VectorXd calin::math::fftw_util::hcvec_delta_idft_by_index(unsigned index, unsigned nsample, bool vcl)
 {
   if(index >= nsample) {
-    throw std::out_of_range("hcvec_delta_index_idft: index must be smaller than nsample");
+    throw std::out_of_range("hcvec_delta_idft_by_index: index must be smaller than nsample");
   }
   double k0;
   double phase0;
