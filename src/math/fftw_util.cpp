@@ -132,6 +132,12 @@ void calin::math::fftw_util::hcvec_delta_idft(double* ovec, double k0, double ph
 {
   hcvec_delta_idft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, k0, phase0, nsample);
 }
+
+void calin::math::fftw_util::hcvec_delta_iq_idft(
+  double* oivec, double* oqvec, double k0, double phase0, unsigned nsample)
+{
+  hcvec_delta_iq_idft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(oivec, oqvec, k0, phase0, nsample);
+}
 #endif
 
 Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,
@@ -266,6 +272,32 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_delta_idft_by_index(unsigned index
   return ovec;
 }
 
+void calin::math::fftw_util::hcvec_delta_iq_idft(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
+  double k0, double phase0, unsigned nsample, bool vcl)
+{
+  oivec.resize(nsample);
+  oqvec.resize(nsample);
+  if(vcl) {
+    hcvec_delta_iq_idft(oivec.data(), oqvec.data(), k0, phase0, nsample);
+  } else {
+    hcvec_delta_iq_idft<double>(oivec.data(), oqvec.data(), k0, phase0, nsample);
+  }
+}
+
+void calin::math::fftw_util::hcvec_delta_iq_idft_by_index(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
+  unsigned index, unsigned nsample, bool vcl)
+{
+  if(index >= hcvec_num_real(nsample)) {
+    throw std::out_of_range("hcvec_delta_iq_idft_by_index: index must be smaller than number of frequencies");
+  }
+  oivec.resize(nsample);
+  oqvec.resize(nsample);
+  if(vcl) {
+    hcvec_delta_iq_idft(oivec.data(), oqvec.data(), index, 0, nsample);
+  } else {
+    hcvec_delta_iq_idft<double>(oivec.data(), oqvec.data(), index, 0, nsample);
+  }
+}
 
 Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt)
 {

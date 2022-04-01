@@ -1122,11 +1122,14 @@ void hcvec_delta_idft(T* ovec, T k0, T phase0, unsigned nsample)
   T nsample_inv = 1.0/T(nsample);
   T phase = 2*M_PI*k0*nsample_inv;
 
+  bool unity_amplitude = (k0==0) || (fabs(k0) == T(nsample)/2);
+  const T amp = unity_amplitude ? 1.0 : 2.0;
+
   while(ro < co)
   {
     T k = T(ro-ovec) * phase + phase0;
     T c = std::cos(k);
-    (*ro++) = 2.0*c;
+    (*ro++) = amp*c;
   }
 }
 
@@ -1142,13 +1145,16 @@ void hcvec_delta_idft_vcl(typename VCLReal::real_t* ovec, typename VCLReal::real
   typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
   typename VCLReal::real_t phase = 2*M_PI*k0*nsample_inv;
 
+  bool unity_amplitude = (k0==0) || (fabs(k0) == typename VCLReal::real_t(nsample)/2);
+  typename VCLReal::real_t amp = unity_amplitude ? 1.0 : 2.0;
+
   // Evaluate one AVX vectors of points (i.e. num_real points) using vector types
   typename VCLReal::real_vt k = VCLReal::iota();
   while(co - ro >= VCLReal::num_real)
   {
     typename VCLReal::real_vt c;
     vcl::sincos(&c, k*phase + phase0);
-    c *= 2.0;
+    c *= amp;
 
     k += VCLReal::num_real;
 
@@ -1161,13 +1167,79 @@ void hcvec_delta_idft_vcl(typename VCLReal::real_t* ovec, typename VCLReal::real
   {
     typename VCLReal::real_t k = typename VCLReal::real_t(ro-ovec) * phase + phase0;
     typename VCLReal::real_t c = std::cos(k);
-    (*ro++) = 2.0*c;
+    (*ro++) = amp*c;
+  }
+}
+
+template<typename T>
+void hcvec_delta_iq_idft(T* oivec, T* oqvec, T k0, T phase0, unsigned nsample)
+{
+  T nsample_inv = 1.0/T(nsample);
+  T phase = 2*M_PI*k0*nsample_inv;
+
+  bool unity_amplitude = (k0==0) || (fabs(k0) == T(nsample)/2);
+  T iamp = unity_amplitude ? 1.0 : 2.0;
+  T qamp = unity_amplitude ? 0.0 : -2.0;
+
+  for(unsigned ik=0; ik<nsample; ++ik)
+  {
+    T k = T(ik) * phase + phase0;
+    T c = std::cos(k);
+    T s = std::sin(k);
+    (*oivec++) = iamp*c;
+    (*oqvec++) = qamp*s;
+  }
+}
+
+template<typename VCLReal>
+void hcvec_delta_iq_idft_vcl(
+  typename VCLReal::real_t* oivec, typename VCLReal::real_t* oqvec,
+  typename VCLReal::real_t k0, typename VCLReal::real_t phase0, unsigned nsample)
+{
+  // No user servicable parts inside
+
+  typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
+  typename VCLReal::real_t phase = 2*M_PI*k0*nsample_inv;
+
+  bool unity_amplitude = (k0==0) || (fabs(k0) == typename VCLReal::real_t(nsample)/2);
+  typename VCLReal::real_t iamp = unity_amplitude ? 1.0 : 2.0;
+  typename VCLReal::real_t qamp = unity_amplitude ? 0.0 : -2.0;
+
+  // Evaluate one AVX vectors of points (i.e. num_real points) using vector types
+  typename VCLReal::real_vt ikv = VCLReal::iota();
+  unsigned ik = 0;
+  while(nsample - ik >= VCLReal::num_real)
+  {
+    typename VCLReal::real_vt c;
+    typename VCLReal::real_vt s;
+    s = vcl::sincos(&c, ikv*phase + phase0);
+    c *= iamp;
+    s *= qamp;
+
+    ikv += VCLReal::num_real;
+    ik += VCLReal::num_real;
+
+    c.store(oivec);
+    oivec += VCLReal::num_real;
+    s.store(oqvec);
+    oqvec += VCLReal::num_real;
+  }
+
+  // Evaluate any remaining points that don't fit into a vector
+  while(ik < nsample)
+  {
+    typename VCLReal::real_t k = typename VCLReal::real_t(ik++) * phase + phase0;
+    typename VCLReal::real_t c = std::cos(k);
+    typename VCLReal::real_t s = std::sin(k);
+    (*oivec++) = iamp*c;
+    (*oqvec++) = qamp*s;
   }
 }
 
 // NOTE : This function overrides the template for systems with AVX !!!
 #if INSTRSET >= 7
 void hcvec_delta_idft(double* ovec, double k0, double phase0, unsigned nsample);
+void hcvec_delta_iq_idft(double* oivec, double* oqvec, double k0, double phase0, unsigned nsample);
 #endif
 
 // *****************************************************************************
@@ -1387,8 +1459,13 @@ Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double sca
 Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_dft(double x0, unsigned nsample, bool vcl = true);
-Eigen::VectorXd hcvec_delta_idft(double k0, double phase0, unsigned nsample, bool vcl=true);
-Eigen::VectorXd hcvec_delta_idft_by_index(unsigned index, unsigned nsample, bool vcl=true);
+Eigen::VectorXd hcvec_delta_idft(double k0, double phase0, unsigned nsample, bool vcl = true);
+Eigen::VectorXd hcvec_delta_idft_by_index(unsigned index, unsigned nsample, bool vcl = true);
+
+void hcvec_delta_iq_idft(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
+  double k0, double phase0, unsigned nsample, bool vcl = true);
+void hcvec_delta_iq_idft_by_index(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
+  unsigned index, unsigned nsample, bool vcl = true);
 
 Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt=0);
 Eigen::VectorXd hcvec_to_psd_no_square(const Eigen::VectorXd& ivec);
