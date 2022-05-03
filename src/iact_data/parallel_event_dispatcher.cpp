@@ -459,11 +459,17 @@ void ParallelEventDispatcher::write_final_log_message(
   if(log_frequency)
   {
     auto dt = system_clock::now() - start_time;
-    LOG(INFO) << "Dispatched "
-      << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
-      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
-      << " us/event (finished)";
+    if(ndispatched) {
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+        << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+        << " us/event (finished)";
+    } else {
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec (finished)";
+    }
   }
 }
 
