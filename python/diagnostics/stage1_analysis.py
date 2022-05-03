@@ -230,6 +230,8 @@ def run_duration(stage1):
                 camera_layout.camera_clock_frequency())
     camera_clocks_run_duration = numpy.asarray(camera_clocks_run_duration)
     camera_clocks_run_duration = camera_clocks_run_duration[camera_clocks_run_duration>0]
+    if(len(camera_clocks_run_duration) == 0):
+        return None
     median_run_duration = numpy.median(camera_clocks_run_duration)
     for the_run_duration in camera_clocks_run_duration:
         if(numpy.abs(the_run_duration - median_run_duration) < 1):
