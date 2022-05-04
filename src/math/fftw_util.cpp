@@ -293,9 +293,9 @@ void calin::math::fftw_util::hcvec_delta_iq_idft_by_index(Eigen::VectorXd& oivec
   oivec.resize(nsample);
   oqvec.resize(nsample);
   if(vcl) {
-    hcvec_delta_iq_idft(oivec.data(), oqvec.data(), index, 0, nsample);
+    hcvec_delta_iq_idft(oivec.data(), oqvec.data(), double(index), 0.0, nsample);
   } else {
-    hcvec_delta_iq_idft<double>(oivec.data(), oqvec.data(), index, 0, nsample);
+    hcvec_delta_iq_idft<double>(oivec.data(), oqvec.data(), double(index), 0.0, nsample);
   }
 }
 
