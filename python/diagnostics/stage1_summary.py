@@ -53,7 +53,9 @@ def stage1_summary_elements(stage1, logsheet_url='', dqm_url=''):
     camera_layout = run_config.const_camera_layout()
 
     run_duration = calin.diagnostics.stage1_analysis.run_duration(stage1)
-    num_event_missing = int(run_info.event_numbers_found().end_index()[-1])-run_info.num_events_found()-1+int(sum(run_info.const_duplicate_event_numbers().count()))
+    num_event_missing = ( int(run_info.event_numbers_found().end_index()[-1]) -
+        run_info.num_events_found()-1 +
+        int(sum(run_info.const_duplicate_event_numbers().count())) ) if run_info.num_events_found() else 0
 
     nsb_convert_60 = 58**2*1.19*(60-2.0308)
     nsb_convert_16 = 58**2*1.19*(16-2.0308)

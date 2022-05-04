@@ -257,6 +257,10 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r',
     ri = stage1.const_run_info()
 
     fig_dict = dict()
+
+    if(ri.num_events_found() == 0):
+        return fig_dict
+
     fig, axis = figure_factory.new_camera_figure()
     fig_dict['missing_components'] = [ fig, axis ]
 
