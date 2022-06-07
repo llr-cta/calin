@@ -892,7 +892,7 @@ inline Vec4d reverse(Vec4d x) { return ::vcl::permute4d<3,2,1,0>(x); }
 #endif
 #if MAX_VECTOR_SIZE >= 512
 inline Vec16i reverse(Vec16i x) { return ::vcl::permute16i<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
-inline Vec16ui reverse(Vec16ui x) { return ::vcl::permute16ui<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec16ui reverse(Vec16ui x) { return ::vcl::permute16ui<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(Vec16i(x)); }
 inline Vec8q reverse(Vec8q x) { return ::vcl::permute8q<7,6,5,4,3,2,1,0>(x); }
 inline Vec8uq reverse(Vec8uq x) { return ::vcl::permute8uq<7,6,5,4,3,2,1,0>(x); }
 inline Vec16f reverse(Vec16f x) { return ::vcl::permute16f<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
