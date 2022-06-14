@@ -88,7 +88,9 @@ public:
   real_vt             fplane_x;  // Ray intersection point on focal plane
   real_vt             fplane_z;  // Ray intersection point on focal plane
   real_vt             fplane_t;  // Ray intersection time on focal plane
+  real_vt             fplane_ux; // X directional cosine of ray at focal plane
   real_vt             fplane_uy; // Cosine of angle between ray and focal plane (normal)
+  real_vt             fplane_uz; // X directional cosine of ray at focal plane
 
   int_vt              pixel_hexid; // Grid hex ID of pixel on focal plane
   int_vt              pixel_id;    // Sequential ID of pixel on focal plane (or -1)
@@ -557,7 +559,9 @@ public:
     info.fplane_x = select(mask, ray.x(), 0);
     info.fplane_z = select(mask, ray.z(), 0);
     info.fplane_t = select(mask, ray.ct(), 0) * math::constants::cgs_1_c;
+    info.fplane_ux = select(mask, ray.ux(), 0);
     info.fplane_uy = select(mask, ray.uy(), 0);
+    info.fplane_uz = select(mask, ray.uz(), 0);
 
     info.status = select(bool_int_vt(mask), STS_OUTSIDE_FOCAL_PLANE_APERTURE, info.status);
     mask &= (info.fplane_x*info.fplane_x + info.fplane_z*info.fplane_z) <= fp_aperture2_;
@@ -816,7 +820,7 @@ public:
     const real_vt dx = vcl::abs(ray_out.x()-center_.x()) - flat_to_flat_x_2_;
     const real_vt dz = vcl::abs(ray_out.z()-center_.z()) - flat_to_flat_z_2_;
     if(inverted_) {
-      return ray_reaches_plane & (vcl::max(dx,dz)<=0);            
+      return ray_reaches_plane & (vcl::max(dx,dz)<=0);
     } else {
       return ray_reaches_plane & (vcl::max(dx,dz)>0);
     }

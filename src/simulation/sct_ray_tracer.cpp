@@ -799,6 +799,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.fp_position = ray.position();
+  results.fp_direction = ray.direction();
 
   // ***************************************************************************
   // Find camera module
@@ -859,6 +860,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   results.camera_pixel_id = module->first_pixel_id + results.camera_module_pixel_id;
   results.camera_position = ray.position();
+  results.camera_direction = ray.direction();
   results.camera_time = ray.time();
 
   // ***************************************************************************

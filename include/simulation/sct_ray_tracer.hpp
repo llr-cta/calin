@@ -68,8 +68,10 @@ struct SCTRayTracerResults
   int obscuration_id;
 
   Eigen::Vector3d fp_position;
+  Eigen::Vector3d fp_direction;
 
   Eigen::Vector3d camera_position;
+  Eigen::Vector3d camera_direction;
   double camera_time;
   int camera_module_grid_id;
   int camera_module_id;

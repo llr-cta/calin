@@ -35,7 +35,7 @@ public:
   virtual ~PEProcessor();
   virtual void start_processing();
   virtual void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight);
+    double x, double y, double ux, double uy, double t0, double pe_weight);
   virtual void finish_processing();
 };
 
@@ -49,7 +49,7 @@ public:
   virtual ~SimpleImagePEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
   const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
 private:
@@ -65,7 +65,7 @@ public:
   virtual ~TelescopePSFCalcPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::SecondMomentsCalc2D mom() { return mom_; }
 private:
@@ -81,7 +81,7 @@ public:
   virtual ~TelescopePSFCalcThirdMomentPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::ThirdMomentsCalc2D mom() { return mom_; }
 private:

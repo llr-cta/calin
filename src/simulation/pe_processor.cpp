@@ -40,7 +40,7 @@ void PEProcessor::start_processing()
 }
 
 void PEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight)
+    double x, double y, double ux, double uy, double t0, double pe_weight)
 {
   // nothing to see here
 }
@@ -76,8 +76,8 @@ void SimpleImagePEProcessor::start_processing()
 }
 
 void SimpleImagePEProcessor::
-process_focal_plane_hit(unsigned scope_id, int pixel_id, double x, double y,
-  double t0, double pe_weight)
+process_focal_plane_hit(unsigned scope_id, int pixel_id,
+  double x, double y, double ux, double uy, double t0, double pe_weight)
 {
 #if 0
   static unsigned counter = 0;
@@ -133,7 +133,7 @@ void TelescopePSFCalcPEProcessor::start_processing()
 }
 
 void TelescopePSFCalcPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t0, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
 }
@@ -158,7 +158,7 @@ void TelescopePSFCalcThirdMomentPEProcessor::start_processing()
 
 void TelescopePSFCalcThirdMomentPEProcessor::
 process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t0, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
 }

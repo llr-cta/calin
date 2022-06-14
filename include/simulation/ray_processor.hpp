@@ -60,7 +60,7 @@ public:
   virtual ~FederatedPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
   void finish_processing() override;
 protected:
   unsigned scope_id_base_ = 0;

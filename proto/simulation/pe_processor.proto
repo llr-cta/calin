@@ -29,11 +29,18 @@ package calin.ix.simulation.pe_processor;
 
 enum AxisVariables {
   XY                 = 0;
-  T                  = 1;
-  XY_T               = 2;
-  SCOPE_XY           = 3;
-  SCOPE_T            = 4;
-  SCOPE_XY_T         = 5;
+  UXUY               = 1;
+  T                  = 2;
+  XY_UXUY            = 3;
+  XY_T               = 4;
+  XY_UXUY_T          = 5;
+
+  SCOPE_XY           = 10;
+  SCOPE_UXUY         = 11;
+  SCOPE_T            = 12;
+  SCOPE_XY_UXUY      = 13;
+  SCOPE_XY_T         = 14;
+  SCOPE_XY_UXUY_T    = 15;
 };
 
 message NSpacePEProcessorConfig
@@ -47,15 +54,21 @@ message NSpacePEProcessorConfig
   uint32 xy_num_bins                                       = 3
     [(CFO).desc = "Number of bins on each axis of X-Y coordinate space." ];
 
-  double t_duration                                        = 4
+  double uxuy_diameter                                     = 4
+    [(CFO).desc = "Diameter of UX-UY coordinate space (FoV).", (CFO).units="deg" ];
+
+  uint32 uxuy_num_bins                                     = 5
+    [(CFO).desc = "Number of bins on each axis of UX-UY coordinate space." ];
+
+  double t_duration                                        = 6
     [(CFO).desc = "Duration of time coordinate.", (CFO).units="ns" ];
 
-  uint32 t_num_bins                                        = 5
+  uint32 t_num_bins                                        = 7
     [(CFO).desc = "Number of bins along the time coordinate axis." ];
 
-  uint32 num_scopes                                        = 6
+  uint32 num_scopes                                        = 8
     [(CFO).desc = "Number of telescopes in model." ];
 
-  bool clear_at_new_event                                  = 12
+  bool clear_at_new_event                                  = 9
     [(CFO).desc = "Clear the NSpace before each new event." ];
 };

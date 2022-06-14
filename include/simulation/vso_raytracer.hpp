@@ -99,7 +99,9 @@ class VSOTraceInfo
   double              fplane_dx;
   double              fplane_dz;
   double              fplane_t;
+  double              fplane_ux;     // x-axis directional cosine at FP
   double              fplane_uy;     // y-axis directional cosine at FP
+  double              fplane_uz;     // z-axis directional cosine at FP
   int                 pixel_hexid;
   const VSOPixel*     pixel;
   double              pixel_dist;

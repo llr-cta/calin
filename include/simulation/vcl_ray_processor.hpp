@@ -63,7 +63,10 @@ public:
   double           fplane_x;
   double           fplane_z;
   double           fplane_t;
+
+  double           fplane_ux;
   double           fplane_uy;
+  double           fplane_uz;
 
   int64_t          pixel_hexid;
   int64_t          pixel_id;
@@ -271,12 +274,16 @@ private:
       double_at fp_x;
       double_at fp_z;
       double_at fp_t;
+      double_at fplane_ux;
+      double_at fplane_uz;
       int64_at fp_pixel_id;
       unsigned imask = vcl::to_bits(mask);
 
       info.fplane_x.store(fp_x);
       info.fplane_z.store(fp_z);
       info.fplane_t.store(fp_t);
+      info.fplane_ux.store(fplane_ux);
+      info.fplane_uz.store(fplane_uz);
       info.pixel_id.store(fp_pixel_id);
 
       unsigned mray = std::min(VCLArchitecture::num_double, nray);
@@ -339,7 +346,9 @@ private:
             single_info.fplane_x = fp_x[jray];
             single_info.fplane_z = fp_z[jray];
             single_info.fplane_t = fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c;
+            single_info.fplane_ux = fplane_ux[jray];
             single_info.fplane_uy = fplane_uy[jray];
+            single_info.fplane_uz = fplane_uz[jray];
             single_info.pixel_hexid = pixel_hexid[jray];
             single_info.pixel_id = fp_pixel_id[jray];
 
@@ -354,6 +363,7 @@ private:
             ++nhit_;
             visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
               double(fp_x[jray]), double(fp_z[jray]),
+              double(fplane_ux[jray]), double(fplane_uz[jray]),
               double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
               ray_w_[iray+jray]);
           }
@@ -560,12 +570,17 @@ private:
       double fp_x[VCLArchitecture::num_float];
       double fp_z[VCLArchitecture::num_float];
       double fp_t[VCLArchitecture::num_float];
+      double fp_ux[VCLArchitecture::num_float];
+      double fp_uz[VCLArchitecture::num_float];
+
       int32_t fp_pixel_id[VCLArchitecture::num_float];
       unsigned imask = vcl::to_bits(mask);
 
       store(fp_x, info.fplane_x);
       store(fp_z, info.fplane_z);
       store(fp_t, info.fplane_t);
+      store(fp_ux, info.fplane_ux);
+      store(fp_uz, info.fplane_uz);
       info.pixel_id.store(fp_pixel_id);
 
       unsigned mray = std::min(VCLArchitecture::num_float, nray);
@@ -573,7 +588,8 @@ private:
         if(imask & (0x1<<jray)) {
           ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
-            fp_x[jray], fp_z[jray], fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c,
+            fp_x[jray], fp_z[jray], fp_ux[jray], fp_uz[jray], 
+            fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c,
             ray_w_[iray+jray]);
         }
       }
