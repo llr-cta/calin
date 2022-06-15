@@ -435,7 +435,7 @@ bool BlockSparseNSpace::index(
   array_index = 0;
   block_index = 0;
   for(int i=0; i<xlo_.size(); i++) {
-    int ii = (x(i)-xlo_(i))*dx_inv_(i);
+    int ii = std::floor((x(i)-xlo_(i))*dx_inv_(i));
     if(ii<0 or ii>=n_(i)) {
       array_index = block_index = -1;
       return false;
