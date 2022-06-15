@@ -665,7 +665,7 @@ void BlockSparseNSpace::injest_from_subspace(const Eigen::VectorXd& x_super, con
 
   Eigen::VectorXi xi_super(n_.size());
   for(int i=0; i<x_super.size(); i++) {
-    int ii = (x_super(i)-xlo_(i))*dx_inv_(i);
+    int ii = std::floor((x_super(i)-xlo_(i))*dx_inv_(i));
     if(ii<0 or ii>=n_(i)) {
       overflow_ += o.total_weight();
       return;
