@@ -61,7 +61,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[1] = uy;
     break;
   case calin::ix::simulation::pe_processor::T:
-    p_[0] = t0*1e9;
+    p_[0] = t0*1e9 - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::XY_UXUY:
     p_[0] = x;
@@ -72,14 +72,19 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
   case calin::ix::simulation::pe_processor::XY_T:
     p_[0] = x;
     p_[1] = y;
-    p_[2] = t0*1e9;
+    p_[2] = t0*1e9 - config_.t_origin();
+    break;
+  case calin::ix::simulation::pe_processor::UXUY_T:
+    p_[0] = ux;
+    p_[1] = uy;
+    p_[2] = t0*1e9 - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::XY_UXUY_T:
     p_[0] = x;
     p_[1] = y;
     p_[2] = ux;
     p_[3] = uy;
-    p_[4] = t0*1e9;
+    p_[4] = t0*1e9 - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY:
     p_[0] = scope_id;
@@ -93,7 +98,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     break;
   case calin::ix::simulation::pe_processor::SCOPE_T:
     p_[0] = scope_id;
-    p_[1] = t0*1e9;
+    p_[1] = t0*1e9 - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY:
     p_[0] = scope_id;
@@ -105,7 +110,13 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[0] = scope_id;
     p_[1] = x;
     p_[2] = y;
-    p_[3] = t0*1e9;
+    p_[3] = t0*1e9 - config_.t_origin();
+    break;
+  case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
+    p_[0] = scope_id;
+    p_[1] = ux;
+    p_[2] = uy;
+    p_[3] = t0*1e9 - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY_T:
     p_[0] = scope_id;
@@ -113,7 +124,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[2] = y;
     p_[3] = ux;
     p_[4] = uy;
-    p_[5] = t0*1e9;
+    p_[5] = t0*1e9 - config_.t_origin();
   };
   space_.accumulate(p_, pe_weight);
 }
@@ -135,7 +146,7 @@ NSpacePEProcessor::nspace_axes() const
   std::vector<calin::math::nspace::Axis> axes;
 
   double xy_radius = 0.5*config_.xy_diameter();
-  double uxuy_radius = 0.5*config_.uxuy_diameter();
+  double uxuy_radius = 0.5*config_.uxuy_diameter()*M_PI/180.0;
 
   switch(config_.axis_variables()) {
   case calin::ix::simulation::pe_processor::SCOPE_XY:
@@ -143,6 +154,7 @@ NSpacePEProcessor::nspace_axes() const
   case calin::ix::simulation::pe_processor::SCOPE_T:
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY:
   case calin::ix::simulation::pe_processor::SCOPE_XY_T:
+  case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY_T:
     axes.push_back({-0.5, config_.num_scopes()-0.5, config_.num_scopes()});
     break;
@@ -151,6 +163,7 @@ NSpacePEProcessor::nspace_axes() const
   case calin::ix::simulation::pe_processor::T:
   case calin::ix::simulation::pe_processor::XY_UXUY:
   case calin::ix::simulation::pe_processor::XY_T:
+  case calin::ix::simulation::pe_processor::UXUY_T:
   case calin::ix::simulation::pe_processor::XY_UXUY_T:
   default:
     // do nothing
@@ -172,8 +185,10 @@ NSpacePEProcessor::nspace_axes() const
     break;
   case calin::ix::simulation::pe_processor::UXUY:
   case calin::ix::simulation::pe_processor::T:
+  case calin::ix::simulation::pe_processor::UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_UXUY:
   case calin::ix::simulation::pe_processor::SCOPE_T:
+  case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
     // do nothing
     break;
   };
@@ -181,9 +196,11 @@ NSpacePEProcessor::nspace_axes() const
   switch(config_.axis_variables()) {
   case calin::ix::simulation::pe_processor::UXUY:
   case calin::ix::simulation::pe_processor::XY_UXUY:
+  case calin::ix::simulation::pe_processor::UXUY_T:
   case calin::ix::simulation::pe_processor::XY_UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_UXUY:
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY:
+  case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY_T:
     axes.push_back({-uxuy_radius, uxuy_radius, config_.uxuy_num_bins()});
     axes.push_back({-uxuy_radius, uxuy_radius, config_.uxuy_num_bins()});
@@ -202,9 +219,11 @@ NSpacePEProcessor::nspace_axes() const
   switch(config_.axis_variables()) {
   case calin::ix::simulation::pe_processor::T:
   case calin::ix::simulation::pe_processor::XY_T:
+  case calin::ix::simulation::pe_processor::UXUY_T:
   case calin::ix::simulation::pe_processor::XY_UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_T:
   case calin::ix::simulation::pe_processor::SCOPE_XY_T:
+  case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY_T:
     axes.push_back({0.0, config_.t_duration(), config_.t_num_bins()});
     break;

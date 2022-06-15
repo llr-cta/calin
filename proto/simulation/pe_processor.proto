@@ -33,14 +33,16 @@ enum AxisVariables {
   T                  = 2;
   XY_UXUY            = 3;
   XY_T               = 4;
-  XY_UXUY_T          = 5;
+  UXUY_T             = 5;
+  XY_UXUY_T          = 6;
 
   SCOPE_XY           = 10;
   SCOPE_UXUY         = 11;
   SCOPE_T            = 12;
   SCOPE_XY_UXUY      = 13;
   SCOPE_XY_T         = 14;
-  SCOPE_XY_UXUY_T    = 15;
+  SCOPE_UXUY_T       = 15;
+  SCOPE_XY_UXUY_T    = 16;
 };
 
 message NSpacePEProcessorConfig
@@ -60,15 +62,18 @@ message NSpacePEProcessorConfig
   uint32 uxuy_num_bins                                     = 5
     [(CFO).desc = "Number of bins on each axis of UX-UY coordinate space." ];
 
-  double t_duration                                        = 6
+  double t_origin                                          = 6
+    [(CFO).desc = "Origin of time axis.", (CFO).units="ns" ];
+
+  double t_duration                                        = 7
     [(CFO).desc = "Duration of time coordinate.", (CFO).units="ns" ];
 
-  uint32 t_num_bins                                        = 7
+  uint32 t_num_bins                                        = 8
     [(CFO).desc = "Number of bins along the time coordinate axis." ];
 
-  uint32 num_scopes                                        = 8
+  uint32 num_scopes                                        = 9
     [(CFO).desc = "Number of telescopes in model." ];
 
-  bool clear_at_new_event                                  = 9
+  bool clear_at_new_event                                  = 10
     [(CFO).desc = "Clear the NSpace before each new event." ];
 };
