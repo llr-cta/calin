@@ -173,6 +173,9 @@ public:
   TreeSparseNSpace* project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi) const;
   TreeSparseNSpace* project_along_axis(unsigned iaxis) const;
 
+  TreeSparseNSpace* sum_x_to_the_n_along_axis(unsigned iaxis, unsigned n, unsigned axis_cell_lo, unsigned axis_cell_hi) const;
+  TreeSparseNSpace* sum_x_to_the_n_along_axis(unsigned iaxis, unsigned n) const;
+
   Eigen::VectorXd as_vector() const;
   Eigen::MatrixXd as_matrix() const;
 
@@ -253,6 +256,9 @@ public:
 
   BlockSparseNSpace* project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi, unsigned log2_block_size = 0) const;
   BlockSparseNSpace* project_along_axis(unsigned iaxis, unsigned log2_block_size = 0) const;
+
+  BlockSparseNSpace* sum_x_to_the_n_along_axis(unsigned iaxis, unsigned n, unsigned axis_cell_lo, unsigned axis_cell_hi, unsigned log2_block_size = 0) const;
+  BlockSparseNSpace* sum_x_to_the_n_along_axis(unsigned iaxis, unsigned n, unsigned log2_block_size = 0) const;
 
   Eigen::MatrixXd select_as_vector(const Eigen::VectorXi& bin_coords) const;
   Eigen::MatrixXd select_as_matrix(const Eigen::VectorXi& bin_coords) const;
