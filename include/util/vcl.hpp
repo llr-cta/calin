@@ -840,6 +840,19 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
   inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
     return _mm512_mul_epu32(a, b);
   }
+
+  inline Vec16ui extend_16_to_32_low(const Vec32us x) {
+    return _mm512_cvtepu16_epi32(x.get_low());
+  }
+  inline Vec16ui extend_16_to_32_high(const Vec32us x) {
+    return _mm512_cvtepu16_epi32(x.get_high());
+  }
+  inline Vec16i extend_16_to_32_low(const Vec32s x) {
+    return _mm512_cvtepi16_epi32(x.get_low());
+  }
+  inline Vec16i extend_16_to_32_high(const Vec32s x) {
+    return _mm512_cvtepi16_epi32(x.get_high());
+  }
 #else // INSTRSET < 9
   inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
     return Vec8uq(mul_low32_packed64(a.get_low(), b.get_low()),
@@ -849,6 +862,23 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
 
   inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
     return a*b;
+  }
+
+  inline Vec16ui extend_16_to_32_low(const Vec32us x) {
+    return Vec16ui(extend_16_to_32_low(x.get_low()),
+                  extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec16ui extend_16_to_32_high(const Vec32us x) {
+    return Vec16ui(extend_16_to_32_low(x.get_high()),
+                  extend_16_to_32_high(x.get_high()));
+  }
+  inline Vec16i extend_16_to_32_low(const Vec32s x) {
+    return Vec16i(extend_16_to_32_low(x.get_low()),
+                 extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec16i extend_16_to_32_high(const Vec32s x) {
+    return Vec16i(extend_16_to_32_low(x.get_high()),
+                 extend_16_to_32_high(x.get_high()));
   }
 
 #endif // MAX_VECTOR_SIZE >= 512
