@@ -527,35 +527,35 @@ namespace {
     b = tmp;
   }
 
-  template<typename T> inline void do_one_512_swizzle_ps(T& a, T& b) {
-    T tmp = _mm512_unpackhi_ps(a, b);
-    a = _mm512_unpacklo_ps(a, b);
-    b = tmp;
-  }
-
-  inline void do_one_512_swizzle_pd(Vec16f& a, Vec16f& b) {
-    __m512d tmp = _mm512_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
-    a = _mm512_castpd_ps(_mm512_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
-    b = _mm512_castpd_ps(tmp);
-  }
-
-  inline void do_one_512_swizzle_pd(Vec8d& a, Vec8d& b) {
-    __m512d tmp = _mm512_unpackhi_pd(a, b);
-    a = _mm512_unpacklo_pd(a, b);
-    b = tmp;
-  }
-
-  inline void do_one_512_swizzle_flt128(Vec16f& a, Vec16f& b) {
-    __m512 tmp =  _mm512_shuffle_f32x4(a, b, 0xdd);
-    a = _mm512_shuffle_f32x4(a, b, 0x88);
-    b = tmp;
-  }
-
-  inline void do_one_512_swizzle_flt128(Vec8d& a, Vec8d& b) {
-    __m512 tmp =  _mm512_shuffle_d64x2(a, b, 0xdd);
-    a = _mm512_shuffle_d64x2(a, b, 0x88);
-    b = tmp;
-  }
+  // template<typename T> inline void do_one_512_swizzle_ps(T& a, T& b) {
+  //   T tmp = _mm512_unpackhi_ps(a, b);
+  //   a = _mm512_unpacklo_ps(a, b);
+  //   b = tmp;
+  // }
+  //
+  // inline void do_one_512_swizzle_pd(Vec16f& a, Vec16f& b) {
+  //   __m512d tmp = _mm512_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+  //   a = _mm512_castpd_ps(_mm512_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
+  //   b = _mm512_castpd_ps(tmp);
+  // }
+  //
+  // inline void do_one_512_swizzle_pd(Vec8d& a, Vec8d& b) {
+  //   __m512d tmp = _mm512_unpackhi_pd(a, b);
+  //   a = _mm512_unpacklo_pd(a, b);
+  //   b = tmp;
+  // }
+  //
+  // inline void do_one_512_swizzle_flt128(Vec16f& a, Vec16f& b) {
+  //   __m512 tmp =  _mm512_shuffle_f32x4(a, b, 0xdd);
+  //   a = _mm512_shuffle_f32x4(a, b, 0x88);
+  //   b = tmp;
+  // }
+  //
+  // inline void do_one_512_swizzle_flt128(Vec8d& a, Vec8d& b) {
+  //   __m512 tmp =  _mm512_shuffle_d64x2(a, b, 0xdd);
+  //   a = _mm512_shuffle_d64x2(a, b, 0x88);
+  //   b = tmp;
+  // }
 
 #else // INSTRSET >= 9
   template<typename T> inline void do_one_512_swizzle_16(T& a, T& b) {
@@ -602,35 +602,35 @@ namespace {
     b = T(a_hi, b_hi);
   }
 
-  inline void do_one_512_swizzle_ps(Vec8f& a, Vec8f& b) {
-    Vec8f tmp(_mm_unpackhi_ps(a.get_low(), b.get_low()),
-          _mm_unpackhi_ps(a.get_high(), b.get_high()));
-    a = Vec8f(_mm_unpacklo_ps(a.get_low(), b.get_low()),
-          _mm_unpacklo_ps(a.get_high(), b.get_high()));
-    b = tmp;
-  }
-
-  inline void do_one_512_swizzle_pd(Vec8f& a, Vec8f& b) {
-    Vec8f tmp(_mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
-              _mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
-    a = Vec8f(_mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
-              _mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
-    b = tmp;
-  }
-
-  inline void do_one_512_swizzle_pd(Vec4d& a, Vec4d& b) {
-    Vec4d tmp(_mm_unpackhi_pd(a.get_low(), b.get_low()),
-              _mm_unpackhi_pd(a.get_high(), b.get_high()));
-    a = Vec4d(_mm_unpacklo_pd(a.get_low(), b.get_low()),
-              _mm_unpacklo_pd(a.get_high(), b.get_high()));
-    b = tmp;
-  }
-
-  template<typename T> inline void do_one_512_swizzle_flt128(T& a, T& b) {
-    T tmp(a.get_high(), b.get_high());
-    a = T(a.get_low(), b.get_low());
-    b = tmp;
-  }
+  // inline void do_one_512_swizzle_ps(Vec8f& a, Vec8f& b) {
+  //   Vec8f tmp(_mm_unpackhi_ps(a.get_low(), b.get_low()),
+  //         _mm_unpackhi_ps(a.get_high(), b.get_high()));
+  //   a = Vec8f(_mm_unpacklo_ps(a.get_low(), b.get_low()),
+  //         _mm_unpacklo_ps(a.get_high(), b.get_high()));
+  //   b = tmp;
+  // }
+  //
+  // inline void do_one_512_swizzle_pd(Vec8f& a, Vec8f& b) {
+  //   Vec8f tmp(_mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+  //             _mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
+  //   a = Vec8f(_mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+  //             _mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
+  //   b = tmp;
+  // }
+  //
+  // inline void do_one_512_swizzle_pd(Vec4d& a, Vec4d& b) {
+  //   Vec4d tmp(_mm_unpackhi_pd(a.get_low(), b.get_low()),
+  //             _mm_unpackhi_pd(a.get_high(), b.get_high()));
+  //   a = Vec4d(_mm_unpacklo_pd(a.get_low(), b.get_low()),
+  //             _mm_unpacklo_pd(a.get_high(), b.get_high()));
+  //   b = tmp;
+  // }
+  //
+  // template<typename T> inline void do_one_512_swizzle_flt128(T& a, T& b) {
+  //   T tmp(a.get_high(), b.get_high());
+  //   a = T(a.get_low(), b.get_low());
+  //   b = tmp;
+  // }
 #endif // INSTRSET >= 9
 }
 
