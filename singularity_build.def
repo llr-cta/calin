@@ -78,7 +78,8 @@ From: ubuntu:20.04
         libprotobuf-c1                                             \
         libprotobuf17                                              \
         libprotoc17                                                \
-        python3-ipywidgets
+        python3-ipywidgets                                         \
+        gdb
     apt-get -y autoremove
     apt-get -y clean
 
