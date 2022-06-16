@@ -858,12 +858,7 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
     return Vec8uq(mul_low32_packed64(a.get_low(), b.get_low()),
                   mul_low32_packed64(a.get_high(), b.get_high()));
   }
-#endif // INSTRSET < 9
-
-  inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
-    return a*b;
-  }
-
+  
   inline Vec16ui extend_16_to_32_low(const Vec32us x) {
     return Vec16ui(extend_16_to_32_low(x.get_low()),
                   extend_16_to_32_high(x.get_low()));
@@ -880,7 +875,11 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
     return Vec16i(extend_16_to_32_low(x.get_high()),
                  extend_16_to_32_high(x.get_high()));
   }
+#endif // INSTRSET < 9
 
+  inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
+    return a*b;
+  }
 #endif // MAX_VECTOR_SIZE >= 512
 
 void transpose(Vec8s* x);
