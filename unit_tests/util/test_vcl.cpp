@@ -143,6 +143,19 @@ TEST(TestVCL, Transpose256_DBL) {
       EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
 }
 
+TEST(TestVCL, Transpose512_U16) {
+  Vec32us x[32];
+  for(uint16_t i=0;i<32;i++)
+    x[i] = Vec32us(i*32+0,i*32+1,i*32+2,i*32+3,i*32+4,i*32+5,i*32+6,i*32+7,
+      i*32+8,i*32+9,i*32+10,i*32+11,i*32+12,i*32+13,i*32+14,i*32+15,
+      i*32+16,i*32+17,i*32+18,i*32+19,i*32+20,i*32+21,i*32+22,i*32+23,
+      i*32+24,i*32+25,i*32+26,i*32+27,i*32+28,i*32+29,i*32+30,i*32+31);
+  transpose(x);
+  for(unsigned j=0;j<32;j++)
+    for(unsigned i=0;i<32;i++)
+      EXPECT_EQ(x[j][i], i*32+j);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

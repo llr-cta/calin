@@ -858,7 +858,7 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
     return Vec8uq(mul_low32_packed64(a.get_low(), b.get_low()),
                   mul_low32_packed64(a.get_high(), b.get_high()));
   }
-  
+
   inline Vec16ui extend_16_to_32_low(const Vec32us x) {
     return Vec16ui(extend_16_to_32_low(x.get_low()),
                   extend_16_to_32_high(x.get_low()));
@@ -900,6 +900,17 @@ void transpose(Vec4uq* x);
 void transpose(Vec8f* x);
 void transpose(Vec4d* x);
 #endif
+#if MAX_VECTOR_SIZE >= 512
+void transpose(Vec32s* x);
+void transpose(Vec32us* x);
+void transpose(Vec16i* x);
+void transpose(Vec16ui* x);
+void transpose(Vec8q* x);
+void transpose(Vec8uq* x);
+void transpose(Vec16f* x);
+void transpose(Vec8d* x);
+#endif
+
 
 inline Vec8s reverse(Vec8s x) { return ::vcl::permute8s<7,6,5,4,3,2,1,0>(x); }
 inline Vec8us reverse(Vec8us x) { return ::vcl::permute8us<7,6,5,4,3,2,1,0>(x); }
@@ -977,8 +988,8 @@ ADD_OSTREAM_OPERATOR(Vec4db);
 
 // ADD_OSTREAM_OPERATOR(Vec64c);
 // ADD_OSTREAM_OPERATOR(Vec64uc);
-// ADD_OSTREAM_OPERATOR(Vec32s);
-// ADD_OSTREAM_OPERATOR(Vec32us);
+ADD_OSTREAM_OPERATOR(Vec32s);
+ADD_OSTREAM_OPERATOR(Vec32us);
 ADD_OSTREAM_OPERATOR(Vec16i);
 ADD_OSTREAM_OPERATOR(Vec16ui);
 ADD_OSTREAM_OPERATOR(Vec8q);
