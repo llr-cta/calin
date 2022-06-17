@@ -44,7 +44,7 @@ From: ubuntu:20.04
     apt-get -y upgrade
     apt-get -y install                                             \
         wget                                                       \
-        libgsl23                                                    \
+        libgsl23                                                   \
         libzmq5                                                    \
         libpcre3                                                   \
         libpcap0.8                                                 \
