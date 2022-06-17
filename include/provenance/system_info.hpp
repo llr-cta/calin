@@ -59,4 +59,8 @@ bool has_avx2();
 bool has_avx512f();
 bool has_fma3();
 
+bool vcl_uses_avx();
+bool vcl_uses_avx2();
+bool vcl_uses_avx512f();
+
 } } } // namespace calin::provenance::system

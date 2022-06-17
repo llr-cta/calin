@@ -34,6 +34,7 @@
 #include <provenance/system_info.hpp>
 #include <util/log.hpp>
 #include <util/timestamp.hpp>
+#include <util/vcl.hpp>
 
 extern char **environ;
 
@@ -507,5 +508,35 @@ bool calin::provenance::system_info::has_avx512f()
     __cpuid_count (7, 0 /* Extended Features */, a, b, c, d);
     return b & bit_AVX512F;
   }
+  return false;
+}
+
+bool calin::provenance::system_info::vcl_uses_avx()
+{
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 7
+  return true;
+#endif
+#endif
+  return false;
+}
+
+bool calin::provenance::system_info::vcl_uses_avx2()
+{
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 8
+  return true;
+#endif
+#endif
+  return false;
+}
+
+bool calin::provenance::system_info::vcl_uses_avx512f()
+{
+#if MAX_VECTOR_SIZE >= 512
+#if INSTRSET >= 9
+  return true;
+#endif
+#endif
   return false;
 }
