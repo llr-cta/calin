@@ -129,10 +129,13 @@ add_custom_command(OUTPUT calin.pb.cc calin.pb.h
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/calin.pb.h DESTINATION ${CALIN_PROTO_HEADER_INSTALL_DIR})
 install(FILES calin.proto DESTINATION ${CALIN_PROTO_INSTALL_DIR})
 add_library(calin_proto_base SHARED calin.pb.cc)
-target_compile_options(calin_proto_base PUBLIC -march=)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(calin_proto_base ${PROTOBUF_LIBRARY})
 install(TARGETS calin_proto_base DESTINATION ${CALIN_LIB_INSTALL_DIR})
+
+add_library(calin_proto_base_native SHARED calin.pb.cc)
+target_link_libraries(calin_proto_base_native ${PROTOBUF_LIBRARY})
+target_compile_options(calin_proto_base_native PUBLIC -march=native)
 
 make_proto_modules(${CALIN_TARGET_LIBRARY} ""
 	${CALIN_SWIG_PROTO})

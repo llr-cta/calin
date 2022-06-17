@@ -21,7 +21,7 @@ add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto_util calin_proto
   ${PYTHON_LIBRARIES})
 
-add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
-target_compile_options(${CALIN_TARGET_LIBRARY}_lite PUBLIC -march=)
+add_library(${CALIN_TARGET_LIBRARY}_native SHARED string.cpp)
+target_compile_options(${CALIN_TARGET_LIBRARY}_native PUBLIC -march=native)
 
-install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION ${CALIN_LIB_INSTALL_DIR})
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})
