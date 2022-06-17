@@ -40,8 +40,8 @@ strategy:
       build_arch: ivybridge
     broadwell:
       build_arch: broadwell
-    icelake-server:
-      build_arch: icelake-server
+    cascadelake:
+      build_arch: cascadelake
 
 variables:
   imageName: 'calin:$(build_arch)'

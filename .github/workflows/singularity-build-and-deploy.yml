@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ 'generic', 'ivybridge', 'broadwell', 'icelake-server' ]
+        arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
 
     runs-on: ubuntu-20.04
 
