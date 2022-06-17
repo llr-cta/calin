@@ -24,6 +24,7 @@
 
 #include <ostream>
 #include <string>
+#include <stdlib.h>
 
 #define MAX_VECTOR_SIZE 512
 #define VCL_NAMESPACE vcl
@@ -382,6 +383,13 @@ template<typename VCLArchitecture> struct VCLFloatReal
   }
 
   static real_vt iota() { return VCLArchitecture::float_iota(); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    return VCLArchitecture::aligned_malloc(nbytes);
+  }
+  static inline void aligned_free(void* p) {
+    VCLArchitecture::aligned_free(p);
+  }
 };
 
 template<typename VCLArchitecture> struct VCLDoubleReal
@@ -429,6 +437,13 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   }
 
   static real_vt iota() { return VCLArchitecture::double_iota(); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    return VCLArchitecture::aligned_malloc(nbytes);
+  }
+  static inline void aligned_free(void* p) {
+    VCLArchitecture::aligned_free(p);
+  }
 };
 
 struct VCL128Architecture
@@ -491,6 +506,16 @@ struct VCL128Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0); }
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 struct VCL256Architecture
@@ -553,6 +578,17 @@ struct VCL256Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 struct VCL512Architecture
@@ -614,6 +650,17 @@ struct VCL512Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 typedef VCLFloatReal<VCL128Architecture> VCL128FloatReal;

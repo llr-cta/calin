@@ -892,17 +892,13 @@ public:
 
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
-    void* p = nullptr;
-    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
-      return p;
-    }
-    throw std::bad_alloc();
+    return VCLArchitecture::aligned_malloc(nbytes);
   }
   static void* operator new(size_t nbytes, void* p) {
     return p;
   }
   static void operator delete(void *p) {
-    free(p);
+    VCLArchitecture::aligned_free(p);
   }
 #endif
 
