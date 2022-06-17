@@ -22,5 +22,6 @@ target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto_ut
   ${PYTHON_LIBRARIES})
 
 add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
+target_compile_options(${CALIN_TARGET_LIBRARY}_lite PUBLIC -march=)
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION ${CALIN_LIB_INSTALL_DIR})
