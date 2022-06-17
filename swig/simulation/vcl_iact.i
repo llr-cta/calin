@@ -41,5 +41,9 @@
 
 %include "simulation/vcl_iact.hpp"
 
+%template (VCLIACTTrackVisitor128)
+  calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL128Architecture>;
 %template (VCLIACTTrackVisitor256)
   calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL256Architecture>;
+%template (VCLIACTTrackVisitor512)
+  calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL512Architecture>;
