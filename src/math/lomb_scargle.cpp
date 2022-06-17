@@ -212,7 +212,10 @@ periodogram_vcl128(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     case 1: return periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 2: return periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 3: return periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+    case 4: return periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 5: return periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 6: return periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
 }
 
@@ -227,7 +230,10 @@ periodogram_vcl256(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     case 1: return periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 2: return periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 3: return periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+    case 4: return periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 5: return periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 6: return periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
 }
 
@@ -244,7 +250,10 @@ periodogram_vcl256_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     case 1: return periodogram_vcl<Real, 1>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
     case 2: return periodogram_vcl<Real, 2>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
     case 3: return periodogram_vcl<Real, 3>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
-    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+    case 4: return periodogram_vcl<Real, 4>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 5: return periodogram_vcl<Real, 5>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 6: return periodogram_vcl<Real, 6>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
 }
 
@@ -305,15 +314,6 @@ multi_periodogram_vcl256_float(const Eigen::MatrixXd& xi, const Eigen::VectorXd&
 }
 
 Eigen::VectorXd calin::math::lomb_scargle::
-frequencies(const Eigen::VectorXd& periodogram, double freq_lo, double delta_freq)
-{
-  unsigned nfreq = periodogram.size();
-  Eigen::VectorXd freq(nfreq);
-  for(unsigned ifreq=0; ifreq<nfreq; ifreq++)freq[ifreq] = freq_lo + delta_freq*ifreq;
-  return freq;
-}
-
-Eigen::VectorXd calin::math::lomb_scargle::
 periodogram_vcl512(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
   unsigned unroll)
@@ -329,4 +329,13 @@ periodogram_vcl512(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     case 6: return periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
+}
+
+Eigen::VectorXd calin::math::lomb_scargle::
+frequencies(const Eigen::VectorXd& periodogram, double freq_lo, double delta_freq)
+{
+  unsigned nfreq = periodogram.size();
+  Eigen::VectorXd freq(nfreq);
+  for(unsigned ifreq=0; ifreq<nfreq; ifreq++)freq[ifreq] = freq_lo + delta_freq*ifreq;
+  return freq;
 }
