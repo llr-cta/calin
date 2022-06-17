@@ -312,3 +312,21 @@ frequencies(const Eigen::VectorXd& periodogram, double freq_lo, double delta_fre
   for(unsigned ifreq=0; ifreq<nfreq; ifreq++)freq[ifreq] = freq_lo + delta_freq*ifreq;
   return freq;
 }
+
+Eigen::VectorXd calin::math::lomb_scargle::
+periodogram_vcl512(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL512Architecture>;
+  validate(xi,ti);
+  switch(unroll) {
+    case 1: return periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 2: return periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 3: return periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 4: return periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 5: return periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 6: return periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
+  }
+}

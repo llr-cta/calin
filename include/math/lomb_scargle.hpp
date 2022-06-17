@@ -76,4 +76,8 @@ Eigen::MatrixXd multi_periodogram_vcl256_float(const Eigen::MatrixXd& xi, const 
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0,
   unsigned unroll = 4);
 
+Eigen::VectorXd periodogram_vcl512(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0,
+  unsigned unroll = 2);
+
 } } } // namespace calin::math::lomb_scargle
