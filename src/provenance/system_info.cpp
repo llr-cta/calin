@@ -522,6 +522,34 @@ unsigned calin::provenance::system_info::cpu_vector_size()
   }
 }
 
+bool calin::provenance::system_info::cpu_supports_vcl_instrset()
+{
+  auto host_info = calin::provenance::system_info::the_host_info();
+#if INSTRSET==10
+  return host_info->cpu_has_avx512vl() && host_info->cpu_has_avx512bw() && host_info->cpu_has_avx512dq();
+#elif INSTRSET==9
+  return host_info->cpu_has_avx512f();
+#elif INSTRSET==8
+  return host_info->cpu_has_avx2();
+#elif INSTRSET==7
+  return host_info->cpu_has_avx();
+#elif INSTRSET==6
+  return host_info->cpu_has_sse4_2();
+#elif INSTRSET==5
+  return host_info->cpu_has_sse4_1();
+#elif INSTRSET==4
+  return host_info->cpu_has_ssse3();
+#elif INSTRSET==3
+  return host_info->cpu_has_sse3();
+#elif INSTRSET==2
+  return host_info->cpu_has_sse2();
+#elif INSTRSET==1
+  return host_info->cpu_has_sse();
+#else
+  return true;
+#endif
+}
+
 bool calin::provenance::system_info::vcl_uses_avx()
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -572,4 +600,9 @@ unsigned calin::provenance::system_info::vcl_native_vector_size()
 #else
   return 128;
 #endif
+}
+
+unsigned calin::provenance::system_info::vcl_instrset()
+{
+  return INSTRSET;
 }
