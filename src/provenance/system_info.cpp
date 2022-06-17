@@ -511,6 +511,17 @@ bool calin::provenance::system_info::has_avx512f()
   return false;
 }
 
+unsigned calin::provenance::system_info::cpu_vector_size()
+{
+  if(has_avx512f()) {
+    return 512;
+  } else if(has_avx()) {
+    return 256;
+  } else {
+    return 128;
+  }
+}
+
 bool calin::provenance::system_info::vcl_uses_avx()
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -539,4 +550,26 @@ bool calin::provenance::system_info::vcl_uses_avx512f()
 #endif
 #endif
   return false;
+}
+
+unsigned calin::provenance::system_info::vcl_max_vector_size()
+{
+#if MAX_VECTOR_SIZE >= 512
+  return 512;
+#elif MAX_VECTOR_SIZE >= 256
+  return 256;
+#else
+  return 128;
+#endif
+}
+
+unsigned calin::provenance::system_info::vcl_native_vector_size()
+{
+#if MAX_VECTOR_SIZE >= 512 && INSTRSET >= 9
+  return 512;
+#elif MAX_VECTOR_SIZE >= 256 && INSTRSET >= 7
+  return 256;
+#else
+  return 128;
+#endif
 }
