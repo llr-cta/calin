@@ -145,6 +145,8 @@ private:
     calin::simulation::detector_efficiency::ACTEffectiveBandwidth effective_bandwidth = { 1.0 };
     double detector_bandwidth = 1.0;
     calin::math::interpolation_1d::InterpLinear1D cone_efficiency = { 1.0 };
+    calin::simulation::detector_efficiency::DetectionEfficiency detector_efficiency = { 1.0 };
+    calin::simulation::detector_efficiency::AtmosphericAbsorption atmospheric_absorption;
   };
 
   std::vector<ScopeResponse> scope_response_;
