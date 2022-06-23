@@ -56,6 +56,11 @@ using namespace calin::math::interpolation_1d;
 // AtmosphericAbsorption
 // ----------------------------------------------------------------------------
 
+AtmosphericAbsorption::AtmosphericAbsorption()
+{
+  // nothing to see here
+}
+
 AtmosphericAbsorption::
 AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km, double spacing_km)
@@ -199,7 +204,15 @@ next_header_line:
   calin::provenance::chronicle::register_file_close(file_record);
 }
 
-InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
+void AtmosphericAbsorption::set_zref(double zref)
+{
+  for(unsigned ie=0;ie<e_ev_.size();ie++) {
+    double tau0 = absorption_[ie](zref);
+    absorption_[ie] -= tau0;
+  }
+}
+
+InterpLinear1D AtmosphericAbsorption::optical_depth_for_altitude(double h) const
 {
   if(h < absorption_.front().xi(0))
     throw std::out_of_range("Altitude " + std::to_string(h) +
@@ -211,10 +224,35 @@ InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
   return abs;
 }
 
+double AtmosphericAbsorption::optical_depth_for_altitude_and_energy(double h, double e) const
+{
+  if(h < absorption_.front().xi(0))
+    throw std::out_of_range("Altitude " + std::to_string(h) +
+      " below lowest level available (" +
+      std::to_string(absorption_.front().xi(0)) + ")");
+  if(e > e_ev_[0])
+    throw std::out_of_range("Energy " + std::to_string(e) +
+      " below highest energy available (" +
+      std::to_string(e_ev_[0]) + ")");
+  auto e_below = std::upper_bound(e_ev_.begin(), e_ev_.end(), e, std::greater<double>());
+  if(e < *e_below)
+    throw std::out_of_range("Energy " + std::to_string(e) +
+      " below lowest energy available (" +
+      std::to_string(*e_below) + ")");
+
+  int ie_below = e_below - e_ev_.begin();
+  double tau_u = absorption_[ie_below-1](h);
+  double tau_l = absorption_[ie_below](h);
+
+  // std::cout << e << ' ' << *e_below << ' ' << *(e_below-1) << ' ' << tau_l << ' ' << tau_u << '\n';
+
+  return (tau_u*(e-*e_below) + tau_l*(*(e_below-1)-e))/(*(e_below-1)-*e_below);
+}
+
 ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
 {
-  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
 #if 1
@@ -268,7 +306,7 @@ ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff,
   double emin, double emax) const
 {
-  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
   bool obslevel = false;

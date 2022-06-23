@@ -228,17 +228,20 @@ struct OldStyleAtmObsFlag { };
 class AtmosphericAbsorption
 {
 public:
+  AtmosphericAbsorption();
   AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km = 0.0, double spacing_km=1.0);
   AtmosphericAbsorption(const std::string& filename,
     std::vector<double> levels_cm = {});
-  calin::math::interpolation_1d::InterpLinear1D opticalDepthForAltitude(double h) const;
+  calin::math::interpolation_1d::InterpLinear1D optical_depth_for_altitude(double h) const;
+  double optical_depth_for_altitude_and_energy(double h, double e) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff, double emin, double emax) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
+  void set_zref(double zref);
 private:
   std::vector<double>                                        e_ev_;
   std::vector<calin::math::interpolation_1d::InterpLinear1D> absorption_;
