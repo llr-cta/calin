@@ -360,8 +360,32 @@ unsigned CubicMultiSpline::add_spline(const std::vector<double>& y,
   unsigned ispline = y_.size();
   y_.emplace_back(y);
   dy_dx_.emplace_back(generate_cubic_spline_interpolation(s_.x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
-  name_.emplace_back(name);
+  info_.emplace_back(name, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
   return ispline;
+}
+
+CubicMultiSpline* CubicMultiSpline::new_regularized_multi_spline(double dx) const
+{
+  std::vector<double> x_knots;
+  if(dx <= 0.0) {
+    dx = s_.regular_dx;
+  }
+  for(double x=s_.xmin; x<s_.xmax; x+=dx) {
+    x_knots.push_back(x);
+  }
+  if(x_knots.back() < s_.xmax) {
+    x_knots.push_back(s_.xmax);
+  }
+  CubicMultiSpline* new_spline = new CubicMultiSpline(x_knots);
+  for(unsigned ispline=0; ispline<info_.size(); ++ispline) {
+    std::vector<double> y_knots(x_knots.size());
+    std::transform(x_knots.begin(), x_knots.end(), y_knots.begin(),
+      [this,ispline](double x){ return this->value(x, ispline); });
+    new_spline->add_spline(y_knots, info_[ispline].name,
+      info_[ispline].bc_lhs, info_[ispline].bc_lhs_val,
+      info_[ispline].bc_rhs, info_[ispline].bc_rhs_val);
+  }
+  return new_spline;
 }
 
 double CubicMultiSpline::value(double x, unsigned ispline) const

@@ -231,10 +231,23 @@ private:
   bool y_is_monotonic_dec_ = true;
 };
 
+struct CubicSplineInfo {
+  std::string name;
+  BoundaryConitions bc_lhs;
+  double bc_lhs_val;
+  BoundaryConitions bc_rhs;
+  double bc_rhs_val;
+  CubicSplineInfo(std::string name_, BoundaryConitions bc_lhs_, double bc_lhs_val_,
+      BoundaryConitions bc_rhs_, double bc_rhs_val_):
+    name(name_), bc_lhs(bc_lhs_), bc_lhs_val(bc_lhs_val_), bc_rhs(bc_rhs_), bc_rhs_val(bc_rhs_val_) { }
+};
+
 class CubicMultiSpline
 {
 public:
   CubicMultiSpline(const std::vector<double>& x);
+
+  CubicMultiSpline* new_regularized_multi_spline(double dx = 0) const;
 
   unsigned add_spline(const std::vector<double>& y, const std::string& name = "",
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
@@ -244,7 +257,8 @@ public:
   double xmax() const { return s_.xmin; }
   const std::vector<double> xknot() const { return s_.x; }
   unsigned num_spline() const { return y_.size(); };
-  const std::string& dataset_name(unsigned ispline) { return name_[ispline]; }
+  const CubicSplineInfo& dataset_info(unsigned ispline) { return info_[ispline]; }
+  const std::string& dataset_name(unsigned ispline) { return info_[ispline].name; }
 
   const InterpolationIntervals& intervals() const { return s_; }
 
@@ -374,7 +388,7 @@ private:
   InterpolationIntervals s_;
   std::vector<std::vector<double> > y_;
   std::vector<std::vector<double> > dy_dx_;
-  std::vector<std::string> name_;
+  std::vector<CubicSplineInfo> info_;
 };
 
 #define VCALC_SPLINE(ispline) cubic_value(t, dx, dx_inv,          \

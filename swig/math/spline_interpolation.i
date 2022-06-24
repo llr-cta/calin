@@ -48,6 +48,7 @@
 %apply double &OUTPUT { double& value5 };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
+%newobject new_regularized_multi_spline(double dx);
 %include "math/spline_interpolation.hpp"
 
 %template(cubic_value) calin::math::spline_interpolation::cubic_value<double>;
