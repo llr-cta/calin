@@ -427,8 +427,8 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
       4 + iobs*5 : vertical time correction to observation level
       5 + iobs*5 : position (x) correction "a" coefficient - term in tan_i
       6 + iobs*5 : position (x) correction "b" coefficient - term in tan^3_i
-      5 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
-      6 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
+      7 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
+      8 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
 
       In "normal" mode only the first two are used, as the ratio of b/a is fixed
       and the ct and x corrections are both derived from the "a_x" spline
@@ -549,6 +549,13 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
 LayeredRefractiveAtmosphere::~LayeredRefractiveAtmosphere()
 {
   delete s_;
+}
+
+void LayeredRefractiveAtmosphere::regularize_internal_spline(double dx)
+{
+  auto* new_spine = s_->new_regularized_multi_spline(dx);
+  delete s_;
+  s_ = new_spine;
 }
 
 double LayeredRefractiveAtmosphere::rho(double z)

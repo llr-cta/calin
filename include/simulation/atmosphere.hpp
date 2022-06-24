@@ -335,6 +335,7 @@ public:
   static LayeredRefractiveAtmosphere* us76(const std::vector<double>& obs_levels = {});
 
   const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
+  void regularize_internal_spline(double dx = 0);
 
   const Eigen::VectorXd& test_ray_emi_zn() { return test_ray_emi_zn_; }
   const Eigen::VectorXd& test_ray_emi_z() { return test_ray_emi_z_; }
