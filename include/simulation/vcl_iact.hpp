@@ -73,11 +73,6 @@ public:
   uint64_t num_steps() const { return num_steps_; }
   uint64_t num_rays() const { return num_rays_; }
 
-  const std::vector<double>& xgnd() const { return xgnd_; }
-  const std::vector<double>& ygnd() const { return ygnd_; }
-  const std::vector<double>& uxgnd() const { return uxgnd_; }
-  const std::vector<double>& uygnd() const { return uygnd_; }
-
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration default_config() {
     calin::ix::simulation::vcl_iact::VCLIACTConfiguration config;
     config.set_bandwidth(3.0);
@@ -128,11 +123,6 @@ protected:
 
   double bandwidth_ = 3.0;
   double forced_sin2theta_ = -1.0;
-
-  std::vector<double> xgnd_;
-  std::vector<double> ygnd_;
-  std::vector<double> uxgnd_;
-  std::vector<double> uygnd_;
 #endif // not defined SWIG
 };
 
@@ -170,11 +160,6 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   num_rays_ = 0;
   track_dx_ = 0.0;
   track_valid_ = false;
-
-  xgnd_.clear();
-  ygnd_.clear();
-  uxgnd_.clear();
-  uygnd_.clear();
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
