@@ -343,38 +343,48 @@ public:
 
   template<typename VCLArchitecture> inline void
   vcl_value(typename VCLArchitecture::double_vt x,
-    typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-    typename VCLArchitecture::double_vt& value1, unsigned ispline1) const;
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1) const;
 
   template<typename VCLArchitecture> inline void
   vcl_value(typename VCLArchitecture::double_vt x,
-    typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-    typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-    typename VCLArchitecture::double_vt& value2, unsigned ispline2) const;
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+    unsigned ispline2, typename VCLArchitecture::double_vt& value2) const;
 
   template<typename VCLArchitecture> inline void
   vcl_value(typename VCLArchitecture::double_vt x,
-    typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-    typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-    typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-    typename VCLArchitecture::double_vt& value3, unsigned ispline3) const;
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+    unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+    unsigned ispline3, typename VCLArchitecture::double_vt& value3) const;
 
   template<typename VCLArchitecture> inline void
   vcl_value(typename VCLArchitecture::double_vt x,
-    typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-    typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-    typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-    typename VCLArchitecture::double_vt& value3, unsigned ispline3,
-    typename VCLArchitecture::double_vt& value4, unsigned ispline4) const;
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+    unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+    unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+    unsigned ispline4, typename VCLArchitecture::double_vt& value4) const;
 
   template<typename VCLArchitecture> inline void
   vcl_value(typename VCLArchitecture::double_vt x,
-    typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-    typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-    typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-    typename VCLArchitecture::double_vt& value3, unsigned ispline3,
-    typename VCLArchitecture::double_vt& value4, unsigned ispline4,
-    typename VCLArchitecture::double_vt& value5, unsigned ispline5) const;
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+    unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+    unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+    unsigned ispline4, typename VCLArchitecture::double_vt& value4,
+    unsigned ispline5, typename VCLArchitecture::double_vt& value5) const;
+
+  template<typename VCLArchitecture> inline void
+  vcl_value(typename VCLArchitecture::double_vt x,
+    unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+    unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+    unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+    unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+    unsigned ispline4, typename VCLArchitecture::double_vt& value4,
+    unsigned ispline5, typename VCLArchitecture::double_vt& value5,
+    unsigned ispline6, typename VCLArchitecture::double_vt& value6) const;
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_derivative_and_value(typename VCLArchitecture::double_vt x, unsigned ispline,
@@ -426,8 +436,8 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x, unsigned ispl
 
 template<typename VCLArchitecture> void
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
-  typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-  typename VCLArchitecture::double_vt& value1, unsigned ispline1) const
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1) const
 {
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
@@ -445,9 +455,9 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
 
 template<typename VCLArchitecture> void
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
-  typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-  typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-  typename VCLArchitecture::double_vt& value2, unsigned ispline2) const
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+  unsigned ispline2, typename VCLArchitecture::double_vt& value2) const
 {
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
@@ -466,10 +476,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
 
 template<typename VCLArchitecture> inline void
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
-  typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-  typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-  typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-  typename VCLArchitecture::double_vt& value3, unsigned ispline3) const
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+  unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+  unsigned ispline3, typename VCLArchitecture::double_vt& value3) const
 {
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
@@ -489,11 +499,11 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
 
 template<typename VCLArchitecture> inline void
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
-  typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-  typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-  typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-  typename VCLArchitecture::double_vt& value3, unsigned ispline3,
-  typename VCLArchitecture::double_vt& value4, unsigned ispline4) const
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+  unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+  unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+  unsigned ispline4, typename VCLArchitecture::double_vt& value4) const
 {
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
@@ -514,12 +524,12 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
 
 template<typename VCLArchitecture> inline void
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
-  typename VCLArchitecture::double_vt& value0, unsigned ispline0,
-  typename VCLArchitecture::double_vt& value1, unsigned ispline1,
-  typename VCLArchitecture::double_vt& value2, unsigned ispline2,
-  typename VCLArchitecture::double_vt& value3, unsigned ispline3,
-  typename VCLArchitecture::double_vt& value4, unsigned ispline4,
-  typename VCLArchitecture::double_vt& value5, unsigned ispline5) const
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+  unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+  unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+  unsigned ispline4, typename VCLArchitecture::double_vt& value4,
+  unsigned ispline5, typename VCLArchitecture::double_vt& value5) const
 {
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
@@ -537,6 +547,35 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   value3 = VCALC_SPLINE(ispline3);
   value4 = VCALC_SPLINE(ispline4);
   value5 = VCALC_SPLINE(ispline5);
+}
+
+template<typename VCLArchitecture> inline void
+CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
+  unsigned ispline0, typename VCLArchitecture::double_vt& value0,
+  unsigned ispline1, typename VCLArchitecture::double_vt& value1,
+  unsigned ispline2, typename VCLArchitecture::double_vt& value2,
+  unsigned ispline3, typename VCLArchitecture::double_vt& value3,
+  unsigned ispline4, typename VCLArchitecture::double_vt& value4,
+  unsigned ispline5, typename VCLArchitecture::double_vt& value5,
+  unsigned ispline6, typename VCLArchitecture::double_vt& value6) const
+{
+  typedef typename VCLArchitecture::int64_vt int64_vt;
+  typedef typename VCLArchitecture::double_vt double_vt;
+
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
+  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
+  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
+  double_vt dx = x1-x0;
+  double_vt dx_inv = 1.0/dx;
+  double_vt t = (x-x0)*dx_inv;
+
+  value0 = VCALC_SPLINE(ispline0);
+  value1 = VCALC_SPLINE(ispline1);
+  value2 = VCALC_SPLINE(ispline2);
+  value3 = VCALC_SPLINE(ispline3);
+  value4 = VCALC_SPLINE(ispline4);
+  value5 = VCALC_SPLINE(ispline5);
+  value6 = VCALC_SPLINE(ispline6);
 }
 
 template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
