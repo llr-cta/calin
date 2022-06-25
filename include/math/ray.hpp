@@ -56,6 +56,17 @@ public:
   double& ux() { return dir_.x(); }
   double& uy() { return dir_.y(); }
   double& uz() { return dir_.z(); }
+
+  Eigen::Vector3d& mutable_position() { return pos_; }
+  Eigen::Vector3d& mutable_direction() { return dir_; }
+  double& mutable_ct() { return ct_; }
+  double& mutable_energy() { return energy_; }
+  double& mutable_x() { return pos_.x(); }
+  double& mutable_y() { return pos_.y(); }
+  double& mutable_z() { return pos_.z(); }
+  double& mutable_ux() { return dir_.x(); }
+  double& mutable_uy() { return dir_.y(); }
+  double& mutable_uz() { return dir_.z(); }
 #endif
 
   const Eigen::Vector3d& position() const { return pos_; }
