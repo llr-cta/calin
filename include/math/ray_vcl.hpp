@@ -29,6 +29,7 @@
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
 #include <util/vcl.hpp>
+#include <math/ray.hpp>
 #include <math/geometry_vcl.hpp>
 
 namespace calin { namespace math { namespace ray {
@@ -51,6 +52,24 @@ public:
       const real_vt& energy = 0):
     pos_(pos), dir_(dir), ct_(time*cgs_c), energy_(energy) {
     /* nothing to see here */
+  }
+  VCLRay(const Ray& ray) {
+    pos_ = ray.position().cast<real_vt>();
+    dir_ = ray.direction().cast<real_vt>();
+    ct_ = ray.ct();
+    energy_ = ray.energy();
+  }
+  Ray extract(unsigned i) const {
+    Ray ray;
+    ray.mutable_x() = x().extract(i);
+    ray.mutable_y() = y().extract(i);
+    ray.mutable_z() = z().extract(i);
+    ray.mutable_ux() = ux().extract(i);
+    ray.mutable_uy() = uy().extract(i);
+    ray.mutable_uz() = uz().extract(i);
+    ray.mutable_ct() = ct().extract(i);
+    ray.mutable_energy() = energy().extract(i);
+    return ray;
   }
 
   const vec3_vt& position() const { return pos_; }
