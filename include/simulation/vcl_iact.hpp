@@ -97,12 +97,13 @@ public:
     VCLArchitecture::aligned_free(p);
   }
 
-public:
+  virtual void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight);
+
+protected:
   inline int insert_track(const Eigen::Vector3d& x, const double t, const double g,
     const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
     const double dg_dx, bool valid = true);
   void generate_mc_rays();
-  void propagate_rays(double_vt sin2thetac);
 
   calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
@@ -331,7 +332,19 @@ generate_mc_rays()
 
       num_rays_ += nvalid;
 
-      propagate_rays(sin2thetac);
+      double_vt cos_thetac = vcl::sqrt(1.0 - sin2thetac);
+      double_vt sin_thetac = vcl::sqrt(sin2thetac);
+
+      double_vt cos_phi;
+      double_vt sin_phi;
+      rng_->sincos_double(sin_phi, cos_phi);
+
+      Vector3d_vt v(cos_phi*sin_thetac, sin_phi*sin_thetac,cos_thetac);
+      calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
+
+      calin::math::ray::VCLRay<double_real> rays(track_x_, v, track_t_);
+
+      propagate_rays(rays, track_valid_, 1.0);
     }
 
     if(--max_loop == 0)
@@ -356,38 +369,9 @@ generate_mc_rays()
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
-propagate_rays(double_vt sin2thetac)
+propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight)
 {
-  double_vt cos_thetac = vcl::sqrt(1.0 - sin2thetac);
-  double_vt sin_thetac = vcl::sqrt(sin2thetac);
-
-  double_vt cos_phi;
-  double_vt sin_phi;
-  rng_->sincos_double(sin_phi, cos_phi);
-
-  Vector3d_vt v(cos_phi*sin_thetac, sin_phi*sin_thetac,cos_thetac);
-  calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
-
-  calin::math::ray::VCLRay<double_real> ray(track_x_, v, track_t_);
-  double_bvt mask = ray.propagate_to_z_plane_with_mask(track_valid_, atm_->zobs(0), false);
-
-  double_at x;
-  double_at y;
-  double_at ux;
-  double_at uy;
-  ray.x().store(x);
-  ray.y().store(y);
-  ray.ux().store(ux);
-  ray.uy().store(uy);
-
-  for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
-    if(mask[iv]) {
-      xgnd_.push_back(x[iv]);
-      ygnd_.push_back(y[iv]);
-      uxgnd_.push_back(ux[iv]);
-      uygnd_.push_back(uy[iv]);
-    }
-  }
+  // default does nothing
 }
 
 #endif // not defined SWIG
