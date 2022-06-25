@@ -47,25 +47,6 @@ using namespace calin::math::special;
 */
 
 namespace {
-  template<typename R>
-  inline void calculate_refraction_angular_terms(
-    R sin_i, R sec_i, R n_i_over_n_r,
-    R& sin_r, R& cos_r, R& t1_x, R& t2_x, R& t1_ct, R& t2_ct)
-  {
-    using std::sqrt;
-    using vcl::sqrt;
-    sin_r = sin_i * n_i_over_n_r;
-    const R cos2_r = 1.0 - SQR(sin_r);
-    cos_r = sqrt(cos2_r);
-    const R sec2_i = SQR(sec_i);
-
-    t1_x = sin_i * sec2_i / cos_r;
-    t2_x = t1_x * SQR(sin_i) * sec2_i;
-
-    t1_ct = t1_x * sin_i;
-    t2_ct = t2_x * sin_i;
-  }
-
   void fit_refraction_angular_coefficients(
     double z_i, double z_r, double n_i, double n_r_inv, const std::vector<double>& zn,
     Eigen::VectorXd x_obs, Eigen::VectorXd ct_obs,
@@ -693,4 +674,16 @@ LayeredRefractiveAtmosphere*
 LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76(const std::vector<double>& obs_levels)
 {
   return new LayeredRefractiveAtmosphere(us76_levels(), obs_levels);
+}
+
+bool LayeredRefractiveAtmosphere::test_vcl_propagate_ray_with_refraction_and_mask(
+  calin::math::ray::Ray& ray, bool ray_mask, unsigned iobs, bool time_reversal_ok)
+{
+  using VCLArchitecture = calin::util::vcl::VCL256Architecture;
+  calin::math::ray::VCLRay<VCLArchitecture::double_real> vray(ray);
+  VCLArchitecture::double_bvt vray_mask = ray_mask;
+  vray_mask = vcl_propagate_ray_with_refraction_and_mask<VCLArchitecture>(
+    vray, vray_mask, iobs, time_reversal_ok);
+  ray = vray.extract(0);
+  return vray_mask[0];
 }
