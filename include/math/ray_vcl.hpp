@@ -474,18 +474,18 @@ public:
   VCLRayArray() { }
 
   VCLRayArray(const VCLRayArray<VCLReal>& ray) {
-    set_position(ray.position());
-    set_direction(ray.direction());
-    set_ct(ray.ct());
-    set_energy(ray.energy());
+    set_positions(ray.position());
+    set_directions(ray.direction());
+    set_cts(ray.ct());
+    set_energies(ray.energy());
   }
 
   VCLRayArray(const vec3_vt& pos, const vec3_vt& dir, const real_vt& ct = 0,
       const real_vt& energy = 0) {
-    set_position(pos);
-    set_direction(dir);
-    set_ct(ct);
-    set_energy(energy);
+    set_positions(pos);
+    set_directions(dir);
+    set_cts(ct);
+    set_energies(energy);
   }
 
   const real_at& x() const { return x_; }
@@ -506,27 +506,27 @@ public:
   real_at& mutable_ct() { return ct_; }
   real_at& mutable_energy() { return energy_; }
 
-  void set_ray(const VCLRayArray<VCLReal>& ray) {
-    set_position(ray.position());
-    set_direction(ray.direction());
-    set_ct(ray.ct());
-    set_energy(ray.energy());
+  void set_rays(const VCLRayArray<VCLReal>& ray) {
+    set_positions(ray.position());
+    set_directions(ray.direction());
+    set_cts(ray.ct());
+    set_energies(ray.energy());
   }
 
-  void get_ray(VCLRayArray<VCLReal>& ray) const {
-    position(ray.mutable_position());
-    direction(ray.mutable_direction());
-    ct(ray.mutable_ct());
-    energy(ray.mutable_energy());
+  void get_rays(VCLRayArray<VCLReal>& ray) const {
+    get_positions(ray.mutable_position());
+    get_directions(ray.mutable_direction());
+    get_cts(ray.mutable_ct());
+    get_energies(ray.mutable_energy());
   }
 
-  VCLRayArray<VCLReal> get_ray() const {
+  VCLRayArray<VCLReal> get_rays() const {
     VCLRayArray<VCLReal> ray;
-    get_ray(ray);
+    get_rays(ray);
     return ray;
   }
 
-  void extract_ray(unsigned i, Ray& ray) const {
+  void extract_one_ray(unsigned i, Ray& ray) const {
     ray.mutable_x() = x_[i];
     ray.mutable_y() = y_[i];
     ray.mutable_z() = z_[i];
@@ -537,13 +537,13 @@ public:
     ray.mutable_energy() = energy_[i];
   }
 
-  Ray extract_ray(unsigned i) const {
+  Ray extract_one_ray(unsigned i) const {
     VCLRayArray<VCLReal> ray;
     extract_ray(i, ray);
     return ray;
   }
 
-  void insert_ray(unsigned i, const Ray& ray) {
+  void insert_one_ray(unsigned i, const Ray& ray) {
     x_[i] = ray.x();
     y_[i] = ray.y();
     z_[i] = ray.z();
@@ -554,26 +554,20 @@ public:
     energy_[i] = ray.energy();
   }
 
-  void get_position(vec3_vt& pos) const {
-    pos.x().load(x_); pos.y().load(y_); pos.z().load(z_); }
-  void get_direction(vec3_vt& dir) const {
-    dir.x().load(ux_); dir.y().load(uy_); dir.z().load(uz_); }
-  void get_ct(real_vt& ct) const {
-    ct.load(ct_); }
-  void get_energy(real_vt& energy) const {
-    energy.load(energy_); }
+  void get_positions(vec3_vt& pos) const { pos.x().load(x_); pos.y().load(y_); pos.z().load(z_); }
+  void get_directions(vec3_vt& dir) const { dir.x().load(ux_); dir.y().load(uy_); dir.z().load(uz_); }
+  void get_cts(real_vt& ct) const { ct.load(ct_); }
+  void get_energies(real_vt& energy) const { energy.load(energy_); }
 
-  vec3_vt get_position() const { vec3_vt pos; get_position(pos); return pos; }
-  vec3_vt get_direction() const { vec3_vt dir; get_direction(dir); return dir; }
-  real_vt get_ct() const { real_vt ct; get_ct(ct); return ct; }
-  real_vt get_energy() const { real_vt energy; energy.load(energy_); return energy; }
+  vec3_vt get_positions() const { vec3_vt pos; get_positions(pos); return pos; }
+  vec3_vt get_directions() const { vec3_vt dir; get_directions(dir); return dir; }
+  real_vt get_cts() const { real_vt ct; get_cts(ct); return ct; }
+  real_vt get_energies() const { real_vt energy; get_energies(energy); return energy; }
 
-  void set_position(const vec3_vt& pos) {
-    pos.x().store(x_); pos.y().store(y_); pos.z().store(z_); }
-  void set_direction(const vec3_vt& dir) {
-    dir.x().store(ux_); dir.y().store(uy_); dir.z().store(z_); }
-  void set_ct(const real_vt& ct) { ct.store(ct_); }
-  void set_energy(const real_vt& e) { e.store(energy_); }
+  void set_positions(const vec3_vt& pos) { pos.x().store(x_); pos.y().store(y_); pos.z().store(z_); }
+  void set_directions(const vec3_vt& dir) { dir.x().store(ux_); dir.y().store(uy_); dir.z().store(z_); }
+  void set_cts(const real_vt& ct) { ct.store(ct_); }
+  void set_energies(const real_vt& energy) { energy.store(energy_); }
 
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
