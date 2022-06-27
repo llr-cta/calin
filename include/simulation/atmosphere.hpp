@@ -333,7 +333,7 @@ public:
 
   template<typename VCLArchitecture> typename VCLArchitecture::double_bvt
   vcl_propagate_ray_with_refraction_and_mask(
-    calin::math::ray::VCLRay<typename VCLArchitecture::double_real> ray,
+    calin::math::ray::VCLRay<typename VCLArchitecture::double_real>& ray,
     typename VCLArchitecture::double_bvt ray_mask,
     unsigned iobs=0, bool time_reversal_ok=true);
 
@@ -414,7 +414,7 @@ inline void calculate_refraction_angular_terms(
 
 template<typename VCLArchitecture> typename VCLArchitecture::double_bvt
 LayeredRefractiveAtmosphere::vcl_propagate_ray_with_refraction_and_mask(
-  calin::math::ray::VCLRay<typename VCLArchitecture::double_real> ray,
+  calin::math::ray::VCLRay<typename VCLArchitecture::double_real>& ray,
   typename VCLArchitecture::double_bvt ray_mask,
   unsigned iobs, bool time_reversal_ok)
 {
