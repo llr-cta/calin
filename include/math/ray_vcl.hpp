@@ -474,10 +474,7 @@ public:
   VCLRayArray() { }
 
   VCLRayArray(const VCLRayArray<VCLReal>& ray) {
-    set_positions(ray.position());
-    set_directions(ray.direction());
-    set_cts(ray.ct());
-    set_energies(ray.energy());
+    set_rays(ray);
   }
 
   VCLRayArray(const vec3_vt& pos, const vec3_vt& dir, const real_vt& ct = 0,
