@@ -36,6 +36,46 @@
 
 namespace calin { namespace simulation { namespace vcl_ray_processor {
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+//     THESE CLASSES DEFINE AND IMPLEMENT THE VCL VECORIZED RAY PROCESSOR     //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename VCLArchitecture> class VCLRayProcessor
+{
+public:
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
+#endif // not defined SWIG
+
+  virtual ~VCLRayProcessor();
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres();
+  virtual void start_processing();
+  virtual void process_rays(unsigned scope_id, const Ray_vt& ray,
+    double_vt pe_weight);
+  virtual void finish_processing();
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+//   THESE CLASSES IMPLEMENT THE SCALAR RayProcessor USING THE VCLRayTracer   //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 class SingleRayVCLScopeTraceInfo
 {
 public:
@@ -588,7 +628,7 @@ private:
         if(imask & (0x1<<jray)) {
           ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
-            fp_x[jray], fp_z[jray], fp_ux[jray], fp_uz[jray], 
+            fp_x[jray], fp_z[jray], fp_ux[jray], fp_uz[jray],
             fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c,
             ray_w_[iray+jray]);
         }
