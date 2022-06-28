@@ -123,7 +123,7 @@ jobs:
         singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
         diff calin-${{ matrix.arch }}.sif calin-pulled.sif
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: calin-${{ matrix.arch }}
-        path: calin-${{ matrix.arch }}.sif
+    # - uses: actions/upload-artifact@v2
+    #   with:
+    #     name: calin-${{ matrix.arch }}
+    #     path: calin-${{ matrix.arch }}.sif
