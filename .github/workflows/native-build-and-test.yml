@@ -82,7 +82,7 @@ jobs:
       run: |
         mkdir mybuild
         cd mybuild
-        cmake -DCALIN_BUILD_ARCH=broadwell                                \
+        cmake -DCALIN_BUILD_ARCH=native                                   \
               -DCMAKE_BUILD_TYPE=Release                                  \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
               -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
