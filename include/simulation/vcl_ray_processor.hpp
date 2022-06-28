@@ -245,10 +245,10 @@ public:
   CALIN_TYPEALIAS(uint64_at, typename VCLArchitecture::uint64_at);
   CALIN_TYPEALIAS(bool_vt, typename VCLArchitecture::double_bvt);
 
-  CALIN_TYPEALIAS(VCLRealType, calin::util::vcl::VCLDoubleReal<VCLArchitecture>);
+  CALIN_TYPEALIAS(VCLReal, calin::util::vcl::VCLDoubleReal<VCLArchitecture>);
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
-  CALIN_TYPEALIAS(RNG, calin::math::rng::VCLRealRNG<VCLRealType>);
-  CALIN_TYPEALIAS(RayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<VCLRealType>);
+  CALIN_TYPEALIAS(RNG, calin::math::rng::VCLRealRNG<VCLReal>);
+  CALIN_TYPEALIAS(RayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<VCLReal>);
 
   VCLRayTracerRayProcessorDouble(calin::simulation::vs_optics::VSOArray* array,
       calin::simulation::pe_processor::PEProcessor* visitor, ArchRNG* rng = nullptr,
@@ -360,8 +360,8 @@ public:
 
 private:
   void process_buffered_rays(unsigned scope_id) {
-    using Ray = calin::math::ray::VCLRay<VCLRealType>;
-    using TraceInfo = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<VCLRealType>;
+    using Ray = calin::math::ray::VCLRay<VCLReal>;
+    using TraceInfo = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<VCLReal>;
     unsigned nray = nray_[scope_id];
     unsigned iray = scope_id * buffer_depth_ * VCLArchitecture::num_double;
     nray_[scope_id] = 0;

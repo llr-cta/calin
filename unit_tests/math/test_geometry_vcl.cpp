@@ -36,8 +36,8 @@ using namespace calin::math::rng;
 using namespace calin::util::vcl;
 using namespace calin::math::moments_calc;
 
-template<typename VCLRealType> class VCLGeometryTest :
-  public VCLRealType, public testing::Test
+template<typename VCLReal> class VCLGeometryTest :
+  public VCLReal, public testing::Test
 {
 public:
 };

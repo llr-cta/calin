@@ -32,7 +32,7 @@
 namespace calin { namespace math { namespace geometry {
 
 // WHY DID I USE A CLASS HERE ??
-template<typename VCLReal> struct VCL: public VCLReal
+template<typename VCLReal> struct alignas(VCLReal::vec_bytes) VCL: public VCLReal
 {
 public:
   using typename VCLReal::real_t;

@@ -152,8 +152,8 @@ calin::simulation::vs_optics::VSOArray* make_test_array(bool obscure_camera)
 }
 
 
-template<typename VCLRealType> class TestVCLRaytracer :
-  public VCLRealType, public testing::Test
+template<typename VCLReal> class TestVCLRaytracer :
+  public VCLReal, public testing::Test
 {
 public:
 };

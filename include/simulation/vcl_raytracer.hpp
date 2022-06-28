@@ -57,16 +57,16 @@ enum VCLScopeTraceStatus {
   STS_TS_FOUND_PIXEL                          // 13
 };
 
-template<typename VCLRealType> class VCLScopeTraceInfo: public VCLRealType
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLScopeTraceInfo: public VCLReal
 {
 public:
-  using typename VCLRealType::real_t;
-  using typename VCLRealType::real_vt;
-  using typename VCLRealType::bool_vt;
-  using typename VCLRealType::int_vt;
-  using typename VCLRealType::uint_vt;
-  using typename VCLRealType::vec3_vt;
-  using typename VCLRealType::mat3_vt;
+  using typename VCLReal::real_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::bool_vt;
+  using typename VCLReal::int_vt;
+  using typename VCLReal::uint_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
 
   int_vt              status;    // Status of ray at end of tracing
 
@@ -96,54 +96,54 @@ public:
   int_vt              pixel_id;    // Sequential ID of pixel on focal plane (or -1)
 };
 
-template<typename VCLRealType> class VCLObscuration: public VCLRealType
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLObscuration: public VCLReal
 {
 public:
-  using typename VCLRealType::real_vt;
-  using typename VCLRealType::bool_vt;
-  using typename VCLRealType::vec3_vt;
-  using typename VCLRealType::mat3_vt;
-  using Ray = calin::math::ray::VCLRay<VCLRealType>;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::bool_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
+  using Ray = calin::math::ray::VCLRay<VCLReal>;
 
-  using typename VCLRealType::vec3_t;
-  using typename VCLRealType::real_t;
+  using typename VCLReal::vec3_t;
+  using typename VCLReal::real_t;
 
   virtual ~VCLObscuration() {
     // nothing to see here
   }
   virtual bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const = 0;
-  virtual VCLObscuration<VCLRealType>* clone() const = 0;
+  virtual VCLObscuration<VCLReal>* clone() const = 0;
 };
 
-template<typename VCLRealType> class VCLAlignedBoxObscuration;
-template<typename VCLRealType> class VCLAlignedRectangularAperture;
-template<typename VCLRealType> class VCLAlignedCircularAperture;
-template<typename VCLRealType> class VCLTubeObscuration;
+template<typename VCLReal> class VCLAlignedBoxObscuration;
+template<typename VCLReal> class VCLAlignedRectangularAperture;
+template<typename VCLReal> class VCLAlignedCircularAperture;
+template<typename VCLReal> class VCLTubeObscuration;
 
-template<typename VCLRealType> class VCLScopeRayTracer: public VCLRealType
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLScopeRayTracer: public VCLReal
 {
 public:
-  using typename VCLRealType::real_t;
-  using typename VCLRealType::int_t;
-  using typename VCLRealType::uint_t;
-  using typename VCLRealType::bool_int_vt;
-  using typename VCLRealType::bool_uint_vt;
-  using typename VCLRealType::mat3_t;
-  using typename VCLRealType::vec3_t;
-  using typename VCLRealType::real_vt;
-  using typename VCLRealType::bool_vt;
-  using typename VCLRealType::int_vt;
-  using typename VCLRealType::uint_vt;
-  using typename VCLRealType::vec3_vt;
-  using typename VCLRealType::mat3_vt;
-  using Ray = calin::math::ray::VCLRay<VCLRealType>;
-  using TraceInfo = VCLScopeTraceInfo<VCLRealType>;
-  using RNG = calin::math::rng::VCLRealRNG<VCLRealType>;
+  using typename VCLReal::real_t;
+  using typename VCLReal::int_t;
+  using typename VCLReal::uint_t;
+  using typename VCLReal::bool_int_vt;
+  using typename VCLReal::bool_uint_vt;
+  using typename VCLReal::mat3_t;
+  using typename VCLReal::vec3_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::bool_vt;
+  using typename VCLReal::int_vt;
+  using typename VCLReal::uint_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
+  using Ray = calin::math::ray::VCLRay<VCLReal>;
+  using TraceInfo = VCLScopeTraceInfo<VCLReal>;
+  using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
   VCLScopeRayTracer(const calin::simulation::vs_optics::VSOTelescope* scope,
       real_t refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
-    VCLRealType(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
+    VCLReal(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
     using calin::math::special::SQR;
@@ -374,13 +374,13 @@ public:
 
     // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
     info.status = select(bool_int_vt(mask), STS_NO_MIRROR, info.status);
-    info.mirror_hexid = calin::math::hex_array::VCLReal<VCLRealType>::
+    info.mirror_hexid = calin::math::hex_array::VCLReal<VCLReal>::
       xy_trans_to_hexid_scaleinv(info.reflec_x, info.reflec_z,
         reflec_crot_, reflec_srot_, reflec_scaleinv_, reflec_shift_x_, reflec_shift_z_,
         reflec_cw_);
 
     // Test we have a valid mirror hexid
-    mask &= typename VCLRealType::bool_vt(info.mirror_hexid < mirror_hexid_end_);
+    mask &= typename VCLReal::bool_vt(info.mirror_hexid < mirror_hexid_end_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -396,7 +396,7 @@ public:
     info.mirror_id = vcl::lookup<0x40000000>(info.mirror_hexid, mirror_id_lookup_);
 
     // Test we have a valid mirror id
-    mask &= typename VCLRealType::bool_vt(info.mirror_id < mirror_id_end_);
+    mask &= typename VCLReal::bool_vt(info.mirror_id < mirror_id_end_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -438,13 +438,13 @@ public:
 
     // Impact point relative to facet attchment point
     vec3_vt ray_pos = ray.position() + mirror_center - mirror_pos;
-    calin::math::geometry::VCL<VCLRealType>::
+    calin::math::geometry::VCL<VCLReal>::
       derotate_in_place_Ry(ray_pos, reflec_crot_, reflec_srot_);
 
-    calin::math::geometry::VCL<VCLRealType>::
+    calin::math::geometry::VCL<VCLReal>::
       derotate_in_place_Ry(mirror_dir, reflec_crot_, reflec_srot_);
 
-    calin::math::geometry::VCL<VCLRealType>::
+    calin::math::geometry::VCL<VCLReal>::
       derotate_in_place_y_to_u_Ryxy(ray_pos, mirror_dir);
 
     // Verify that ray impacts inside of hexagonal mirror surface
@@ -473,7 +473,7 @@ public:
       vcl::lookup<0x40000000>(info.mirror_id, mirror_normdisp_lookup_);
 
     // Scatter the normal direction randomly
-    calin::math::geometry::VCL<VCLRealType>::scatter_direction_in_place(
+    calin::math::geometry::VCL<VCLReal>::scatter_direction_in_place(
       mirror_normal, mirror_normal_dispersion, *rng_);
 
     // Reflect ray
@@ -570,14 +570,14 @@ public:
 #endif
 
     info.pixel_hexid =
-    calin::math::hex_array::VCLReal<VCLRealType>::
+    calin::math::hex_array::VCLReal<VCLReal>::
       xy_trans_to_hexid_scaleinv(info.fplane_x, info.fplane_z,
         pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
         pixel_cw_);
 
     // Test we have a valid mirror hexid
     info.status = select(bool_int_vt(mask), STS_TS_NO_PIXEL, info.status);
-    mask &= typename VCLRealType::bool_vt(info.pixel_hexid < pixel_hexid_end_);
+    mask &= typename VCLReal::bool_vt(info.pixel_hexid < pixel_hexid_end_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -587,7 +587,7 @@ public:
       vcl::lookup<0x40000000>(select(bool_int_vt(mask), info.pixel_hexid, pixel_hexid_end_),
         pixel_id_lookup_);
 
-    mask &= typename VCLRealType::bool_vt(info.pixel_id < pixel_id_end_);
+    mask &= typename VCLReal::bool_vt(info.pixel_id < pixel_id_end_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -612,20 +612,20 @@ public:
 
 private:
 
-  void populate_obscuration(std::vector<VCLObscuration<VCLRealType>*>& to,
+  void populate_obscuration(std::vector<VCLObscuration<VCLReal>*>& to,
     const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from,
     const std::string& type)
   {
     using namespace calin::simulation::vs_optics;
     for(const auto* obs : from) {
       if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        to.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
+        to.push_back(new VCLAlignedBoxObscuration<VCLReal>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        to.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
+        to.push_back(new VCLAlignedRectangularAperture<VCLReal>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        to.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
+        to.push_back(new VCLAlignedCircularAperture<VCLReal>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOTubeObscuration*>(obs)) {
-        to.push_back(new VCLTubeObscuration<VCLRealType>(*dc_obs));
+        to.push_back(new VCLTubeObscuration<VCLReal>(*dc_obs));
       } else {
         throw std::runtime_error("Unsupported " + type + " obscuration type");
       }
@@ -674,32 +674,32 @@ private:
   int_t           pixel_id_end_;
   int_t*          pixel_id_lookup_ = nullptr;
 
-  std::vector<VCLObscuration<VCLRealType>*> pre_reflection_obscuration;
-  std::vector<VCLObscuration<VCLRealType>*> post_reflection_obscuration;
-  std::vector<VCLObscuration<VCLRealType>*> camera_obscuration;
+  std::vector<VCLObscuration<VCLReal>*> pre_reflection_obscuration;
+  std::vector<VCLObscuration<VCLReal>*> post_reflection_obscuration;
+  std::vector<VCLObscuration<VCLReal>*> camera_obscuration;
 
   RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
 };
 
-template<typename VCLRealType> class VCLAlignedBoxObscuration:
-  public VCLObscuration<VCLRealType>
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLAlignedBoxObscuration:
+  public VCLObscuration<VCLReal>
 {
 public:
-  using typename VCLObscuration<VCLRealType>::real_vt;
-  using typename VCLObscuration<VCLRealType>::bool_vt;
-  using typename VCLObscuration<VCLRealType>::vec3_vt;
-  using typename VCLObscuration<VCLRealType>::Ray;
-  using typename VCLObscuration<VCLRealType>::vec3_t;
-  using typename VCLObscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLReal>::real_vt;
+  using typename VCLObscuration<VCLReal>::bool_vt;
+  using typename VCLObscuration<VCLReal>::vec3_vt;
+  using typename VCLObscuration<VCLReal>::Ray;
+  using typename VCLObscuration<VCLReal>::vec3_t;
+  using typename VCLObscuration<VCLReal>::real_t;
 
   VCLAlignedBoxObscuration(const vec3_t& max_corner, const vec3_t& min_corner):
-    VCLObscuration<VCLRealType>(), min_corner_(min_corner), max_corner_(max_corner)
+    VCLObscuration<VCLReal>(), min_corner_(min_corner), max_corner_(max_corner)
   {
     // nothing to see here
   }
   VCLAlignedBoxObscuration(const calin::simulation::vs_optics::VSOAlignedBoxObscuration& o):
-    VCLObscuration<VCLRealType>(),
+    VCLObscuration<VCLReal>(),
     min_corner_(o.min_corner().template cast<real_t>()),
     max_corner_(o.max_corner().template cast<real_t>()) /* still need cast for double -> float */
   {
@@ -719,34 +719,34 @@ public:
     ray_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
     return mask;
   }
-  virtual VCLAlignedBoxObscuration<VCLRealType>* clone() const override
+  virtual VCLAlignedBoxObscuration<VCLReal>* clone() const override
   {
-    return new VCLAlignedBoxObscuration<VCLRealType>(*this);
+    return new VCLAlignedBoxObscuration<VCLReal>(*this);
   }
 private:
   vec3_t min_corner_;
   vec3_t max_corner_;
 };
 
-template<typename VCLRealType> class VCLAlignedCircularAperture:
-  public VCLObscuration<VCLRealType>
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLAlignedCircularAperture:
+  public VCLObscuration<VCLReal>
 {
 public:
-  using typename VCLObscuration<VCLRealType>::real_vt;
-  using typename VCLObscuration<VCLRealType>::bool_vt;
-  using typename VCLObscuration<VCLRealType>::vec3_vt;
-  using typename VCLObscuration<VCLRealType>::Ray;
-  using typename VCLObscuration<VCLRealType>::vec3_t;
-  using typename VCLObscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLReal>::real_vt;
+  using typename VCLObscuration<VCLReal>::bool_vt;
+  using typename VCLObscuration<VCLReal>::vec3_vt;
+  using typename VCLObscuration<VCLReal>::Ray;
+  using typename VCLObscuration<VCLReal>::vec3_t;
+  using typename VCLObscuration<VCLReal>::real_t;
 
   VCLAlignedCircularAperture(const vec3_t& center, const real_t& diameter, bool invert = false):
-    VCLObscuration<VCLRealType>(), center_(center),
+    VCLObscuration<VCLReal>(), center_(center),
     radius_sq_(0.25*diameter*diameter), inverted_(invert)
   {
     // nothing to see here
   }
   VCLAlignedCircularAperture(const calin::simulation::vs_optics::VSOAlignedCircularAperture& o):
-    VCLObscuration<VCLRealType>(),
+    VCLObscuration<VCLReal>(),
     center_(o.center().template cast<real_t>()), radius_sq_(o.radius_sq()),
     inverted_(o.inverted())
   {
@@ -770,9 +770,9 @@ public:
       return ray_reaches_plane & (r2>0);
     }
   }
-  virtual VCLAlignedCircularAperture<VCLRealType>* clone() const override
+  virtual VCLAlignedCircularAperture<VCLReal>* clone() const override
   {
-    return new VCLAlignedCircularAperture<VCLRealType>(*this);
+    return new VCLAlignedCircularAperture<VCLReal>(*this);
   }
 private:
   vec3_t center_;
@@ -780,27 +780,27 @@ private:
   bool inverted_;
 };
 
-template<typename VCLRealType> class VCLAlignedRectangularAperture:
-  public VCLObscuration<VCLRealType>
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLAlignedRectangularAperture:
+  public VCLObscuration<VCLReal>
 {
 public:
-  using typename VCLObscuration<VCLRealType>::real_vt;
-  using typename VCLObscuration<VCLRealType>::bool_vt;
-  using typename VCLObscuration<VCLRealType>::vec3_vt;
-  using typename VCLObscuration<VCLRealType>::Ray;
-  using typename VCLObscuration<VCLRealType>::vec3_t;
-  using typename VCLObscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLReal>::real_vt;
+  using typename VCLObscuration<VCLReal>::bool_vt;
+  using typename VCLObscuration<VCLReal>::vec3_vt;
+  using typename VCLObscuration<VCLReal>::Ray;
+  using typename VCLObscuration<VCLReal>::vec3_t;
+  using typename VCLObscuration<VCLReal>::real_t;
 
   VCLAlignedRectangularAperture(const vec3_t& center,
       const real_t& flat_to_flat_x, const real_t& flat_to_flat_z, bool invert = false):
-    VCLObscuration<VCLRealType>(), center_(center),
+    VCLObscuration<VCLReal>(), center_(center),
     flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
     inverted_(invert)
   {
     // nothing to see here
   }
   VCLAlignedRectangularAperture(const calin::simulation::vs_optics::VSOAlignedRectangularAperture& o):
-    VCLObscuration<VCLRealType>(),
+    VCLObscuration<VCLReal>(),
     center_(o.center().template cast<real_t>()),
     flat_to_flat_x_2_(o.flat_to_flat_x_2()), flat_to_flat_z_2_(o.flat_to_flat_z_2()),
     inverted_(o.inverted())
@@ -825,9 +825,9 @@ public:
       return ray_reaches_plane & (vcl::max(dx,dz)>0);
     }
   }
-  virtual VCLAlignedRectangularAperture<VCLRealType>* clone() const override
+  virtual VCLAlignedRectangularAperture<VCLReal>* clone() const override
   {
-    return new VCLAlignedRectangularAperture<VCLRealType>(*this);
+    return new VCLAlignedRectangularAperture<VCLReal>(*this);
   }
 private:
   vec3_t center_;
@@ -836,20 +836,20 @@ private:
   bool inverted_;
 };
 
-template<typename VCLRealType> class VCLTubeObscuration:
-  public VCLObscuration<VCLRealType>
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLTubeObscuration:
+  public VCLObscuration<VCLReal>
 {
 public:
-  using typename VCLObscuration<VCLRealType>::real_vt;
-  using typename VCLObscuration<VCLRealType>::bool_vt;
-  using typename VCLObscuration<VCLRealType>::vec3_vt;
-  using typename VCLObscuration<VCLRealType>::Ray;
-  using typename VCLObscuration<VCLRealType>::vec3_t;
-  using typename VCLObscuration<VCLRealType>::mat3_t;
-  using typename VCLObscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLReal>::real_vt;
+  using typename VCLObscuration<VCLReal>::bool_vt;
+  using typename VCLObscuration<VCLReal>::vec3_vt;
+  using typename VCLObscuration<VCLReal>::Ray;
+  using typename VCLObscuration<VCLReal>::vec3_t;
+  using typename VCLObscuration<VCLReal>::mat3_t;
+  using typename VCLObscuration<VCLReal>::real_t;
 
   VCLTubeObscuration(const vec3_t& x1, const vec3_t& x2, const real_t& radius):
-    VCLObscuration<VCLRealType>(), x1_(x1), x2_(x2), r_(radius),
+    VCLObscuration<VCLReal>(), x1_(x1), x2_(x2), r_(radius),
     xc_(0.5*(x1_+x2_)), r2_(r_*r_)
   {
     nhat_ = x2_-x1_;
@@ -929,9 +929,9 @@ public:
     return does_obscure;
   }
 
-  virtual VCLTubeObscuration<VCLRealType>* clone() const override
+  virtual VCLTubeObscuration<VCLReal>* clone() const override
   {
-    return new VCLTubeObscuration<VCLRealType>(*this);
+    return new VCLTubeObscuration<VCLReal>(*this);
   }
 
 private:

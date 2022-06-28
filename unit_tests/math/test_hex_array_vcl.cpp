@@ -178,7 +178,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_EQ) {
 }
 
 
-template<typename VCLReal> class VCLHexArrayRealTest :
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLHexArrayRealTest :
   public VCLReal, public testing::Test
 {
 public:
