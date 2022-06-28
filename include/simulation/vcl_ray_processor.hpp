@@ -62,6 +62,7 @@ template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VC
   double_vt fp_uy;
   double_vt fp_uz;
   double_vt fp_t;
+  int64_vt pixel_id;
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLFocalPlaneRayPropagator
@@ -72,7 +73,8 @@ public:
   using double_bvt  = typename VCLArchitecture::double_bvt;
   using double_vt   = typename VCLArchitecture::double_vt;
   using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
-  using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = calin::math::ray::VCLRay<Real_vt>;
 #endif // not defined SWIG
 
   virtual ~VCLFocalPlaneRayPropagator() {
@@ -107,15 +109,45 @@ public:
   using double_bvt  = typename VCLArchitecture::double_bvt;
   using double_vt   = typename VCLArchitecture::double_vt;
   using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
-  using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+
+  using ArchRNG     = calin::math::rng::VCLRNG<VCLArchitecture>;
+  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
+  using RayTracer   = calin::simulation::vcl_raytracer::VCLScopeRayTracer<Real_vt>;
+  using TraceInfo   = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<Real_vt>;
 #endif // not defined SWIG
 
+  DaviesCottonVCLFocalPlaneRayPropagator(calin::simulation::vs_optics::VSOArray* array,
+      ArchRNG* rng = nullptr,
+      bool adopt_array = false, bool adopt_visitor = false,
+      bool adopt_rng = false):
+    array_(array), adopt_array_(adopt_array),
+    rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
+      rng==nullptr ? true : adopt_rng)), adopt_rng_(true),
+    ray_tracer_(array->numTelescopes())
+  {
+    for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
+      ray_tracer_[iscope] = new RayTracer(
+        array->telescope(iscope), ref_index_, rng_, /* adopt_rng= */ false);
+    }
+  }
+
   virtual ~DaviesCottonVCLFocalPlaneRayPropagator() {
-    // nothing to see here
+    for(auto* rt : ray_tracer_)delete rt;
   }
 
   virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
-    return {};
+    // Copied from VSORayProcessor::detector_spheres() - Ugh!
+    std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
+    for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
+    {
+      auto* scope = array_->telescope(iscope);
+      Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
+      scope->reflectorToGlobal_pos(sphere_center);
+      s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
+    }
+    return s;
   }
 
   virtual void start_propagating() {
@@ -125,7 +157,20 @@ public:
   virtual double_bvt propagate_rays_to_focal_plane(
       unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
       VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) {
-    return false;
+    TraceInfo info;
+    ray_mask = ray_tracer_[scope_id]->
+      trace_global_frame(ray_mask, ray, info, /* do_derotation = */ false);
+
+    fp_parameters.fp_x     = info.fplane_x;
+    fp_parameters.fp_y     = info.fplane_y;
+    fp_parameters.fp_z     = info.fplane_z;
+    fp_parameters.fp_ux    = info.fplane_ux;
+    fp_parameters.fp_uy    = info.fplane_uy;
+    fp_parameters.fp_uz    = info.fplane_uz;
+    fp_parameters.fp_t     = info.fplane_t;
+    fp_parameters.pixel_id = info.pixel_id;
+
+    return ray_mask;
   }
 
   virtual void finish_propagating() {
@@ -133,6 +178,13 @@ public:
   }
 
 private:
+  calin::simulation::vs_optics::VSOArray* array_ = nullptr;
+  bool adopt_array_ = false;
+  unsigned vcl_sti_visitor_status_min_ = 0;
+  RealRNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
+  std::vector<RayTracer*> ray_tracer_;
+  double ref_index_ = 1.0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
