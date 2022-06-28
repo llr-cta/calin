@@ -42,6 +42,8 @@
   import_array();
 %}
 
+#define alignas(T)
+
 %template (VectorDouble)      std::vector<double>;
 %template (VectorFloat)       std::vector<float>;
 %template (VectorChar)        std::vector<char>;
