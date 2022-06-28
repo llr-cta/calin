@@ -1250,7 +1250,7 @@ void hcvec_delta_iq_idft(double* oivec, double* oqvec, double k0, double phase0,
 // *****************************************************************************
 // *****************************************************************************
 
-template<typename VCLReal> class FFTWCodelet
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) FFTWCodelet
 {
 public:
   using float_type        = typename VCLReal::real_vt;
