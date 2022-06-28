@@ -46,7 +46,25 @@ namespace calin { namespace simulation { namespace vcl_ray_processor {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-template<typename VCLArchitecture> class VCLRayProcessor
+template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VCLFocalPlaneParameters
+{
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
+#endif // not defined SWIG
+  double_vt fp_x;
+  double_vt fp_y;
+  double_vt fp_z;
+  double_vt fp_ux;
+  double_vt fp_uy;
+  double_vt fp_uz;
+  double_vt fp_t;
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLFocalPlaneRayPropagator
 {
 public:
 #ifndef SWIG
@@ -57,14 +75,65 @@ public:
   using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
 #endif // not defined SWIG
 
-  virtual ~VCLRayProcessor();
-  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres();
-  virtual void start_processing();
-  virtual void process_rays(unsigned scope_id, const Ray_vt& ray,
-    double_vt pe_weight);
-  virtual void finish_processing();
+  virtual ~VCLFocalPlaneRayPropagator() {
+    // nothing to see here
+  }
+
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
+    return {};
+  }
+
+  virtual void start_propagating() {
+    // nothing to see here
+  }
+
+  virtual double_bvt propagate_rays_to_focal_plane(
+      unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
+      VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) {
+    return false;
+  }
+
+  virtual void finish_propagating() {
+    // nothing to see here
+  }
 };
 
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) DaviesCottonVCLFocalPlaneRayPropagator:
+  public VCLFocalPlaneRayPropagator<typename VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
+#endif // not defined SWIG
+
+  virtual ~DaviesCottonVCLFocalPlaneRayPropagator() {
+    // nothing to see here
+  }
+
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
+    return {};
+  }
+
+  virtual void start_propagating() {
+    // nothing to see here
+  }
+
+  virtual double_bvt propagate_rays_to_focal_plane(
+      unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
+      VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) {
+    return false;
+  }
+
+  virtual void finish_propagating() {
+    // nothing to see here
+  }
+
+private:
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +233,7 @@ private:
   Eigen::MatrixXd weight_;
 };
 
-template<typename VCLArchitecture> class VCLRayTracerRayProcessorDouble:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRayTracerRayProcessorDouble:
   public calin::simulation::ray_processor::RayProcessor
 {
 public:
@@ -439,7 +508,7 @@ private:
   uint64_t nhit_ = 0;
 };
 
-template<typename VCLArchitecture> class VCLRayTracerRayProcessorFloat:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRayTracerRayProcessorFloat:
   public calin::simulation::ray_processor::RayProcessor
 {
 public:
