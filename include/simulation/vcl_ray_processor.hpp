@@ -55,13 +55,13 @@ template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VC
   using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
   using Ray_vt      = typename calin::math::ray::VCLRay<VCLArchitecture>;
 #endif // not defined SWIG
-  double_vt fp_x;
-  double_vt fp_y;
-  double_vt fp_z;
-  double_vt fp_ux;
-  double_vt fp_uy;
-  double_vt fp_uz;
-  double_vt fp_t;
+  double_vt fplane_x;
+  double_vt fplane_y;
+  double_vt fplane_z;
+  double_vt fplane_ux;
+  double_vt fplane_uy;
+  double_vt fplane_uz;
+  double_vt fplane_t;
   int64_vt pixel_id;
 };
 
@@ -160,16 +160,14 @@ public:
     TraceInfo info;
     ray_mask = ray_tracer_[scope_id]->
       trace_global_frame(ray_mask, ray, info, /* do_derotation = */ false);
-
-    fp_parameters.fp_x     = info.fplane_x;
-    fp_parameters.fp_y     = info.fplane_y;
-    fp_parameters.fp_z     = info.fplane_z;
-    fp_parameters.fp_ux    = info.fplane_ux;
-    fp_parameters.fp_uy    = info.fplane_uy;
-    fp_parameters.fp_uz    = info.fplane_uz;
-    fp_parameters.fp_t     = info.fplane_t;
-    fp_parameters.pixel_id = info.pixel_id;
-
+    fp_parameters.fplane_x     = info.fplane_x;
+    fp_parameters.fplane_y     = info.fplane_y;
+    fp_parameters.fplane_z     = info.fplane_z;
+    fp_parameters.fplane_ux    = info.fplane_ux;
+    fp_parameters.fplane_uy    = info.fplane_uy;
+    fp_parameters.fplane_uz    = info.fplane_uz;
+    fp_parameters.fplane_t     = info.fplane_t;
+    fp_parameters.pixel_id     = info.pixel_id;
     return ray_mask;
   }
 
