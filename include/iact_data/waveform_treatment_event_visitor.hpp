@@ -154,7 +154,7 @@ protected:
 };
 
 template<typename VCLArchitecture>
-class VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor:
+class alignas(VCLArchitecture::vec_bytes) VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor:
   public OptimalWindowSumWaveformTreatmentParallelEventVisitor
 {
 public:
@@ -508,7 +508,7 @@ protected:
 
 
 template<typename VCLArchitecture>
-class VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
+class alignas(VCLArchitecture::vec_bytes) VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
   public SingleGainDualWindowWaveformTreatmentEventVisitor
 {
 public:

@@ -30,7 +30,7 @@
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
-template<typename VCLArchitecture> class VCLIACTGroundMap:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLIACTGroundMap:
   public VCLIACTTrackVisitor<VCLArchitecture>
 {
 public:

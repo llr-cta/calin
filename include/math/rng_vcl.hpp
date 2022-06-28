@@ -31,7 +31,7 @@ namespace calin { namespace math { namespace rng {
 
 template<typename VCLArchitecture> class NR3_VCLRNGCore;
 
-template<typename VCLArchitecture> class VCLRNGCore
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRNGCore
 {
 public:
   CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
@@ -89,7 +89,7 @@ protected:
   calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
-template<typename VCLArchitecture> class VCLRNG
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRNG
 {
 public:
   CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);

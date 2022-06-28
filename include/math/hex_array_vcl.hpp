@@ -29,7 +29,7 @@
 
 namespace calin { namespace math { namespace hex_array {
 
-template<typename VCLArchitecture> class VCL: public VCLArchitecture
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL: public VCLArchitecture
 {
 public:
   using typename VCLArchitecture::uint32_vt;

@@ -32,7 +32,7 @@ using namespace calin::math::accumulator;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
 
-template<typename VCLArchitecture> class NR3_VCLRNGCoreTests :
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) NR3_VCLRNGCoreTests :
   public testing::Test
 {
 public:
@@ -118,7 +118,7 @@ TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
     delete scalar_cores[j];
 }
 
-template<typename VCLArchitecture> class VCLRNGTests :
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRNGTests :
   public testing::Test
 {
 public:
