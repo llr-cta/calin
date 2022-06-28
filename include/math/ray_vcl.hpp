@@ -38,7 +38,7 @@ namespace calin { namespace math { namespace ray {
 using calin::math::constants::cgs_c;
 #endif
 
-template<typename VCLReal> class VCLRay: public VCLReal
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRay: public VCLReal
 {
 public:
   using typename VCLReal::real_t;
@@ -428,18 +428,6 @@ public:
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
 #endif
 
-#ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    return VCLReal::aligned_malloc(nbytes);
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    VCLReal::aligned_free(p);
-  }
-#endif
-
 private:
   void calc_ux_inv() const {
     if(!has_ux_inv_) { has_ux_inv_ = true; ux_inv_ = 1.0/dir_.x(); } }
@@ -463,7 +451,7 @@ private:
   mutable real_vt uz_inv_ = 0;
 };
 
-template<typename VCLReal> class VCLRayArray: public VCLReal
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRayArray: public VCLReal
 {
 public:
   using typename VCLReal::real_t;
@@ -565,18 +553,6 @@ public:
   void set_directions(const vec3_vt& dir) { dir.x().store(ux_); dir.y().store(uy_); dir.z().store(z_); }
   void set_cts(const real_vt& ct) { ct.store(ct_); }
   void set_energies(const real_vt& energy) { energy.store(energy_); }
-
-#ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    return VCLReal::aligned_malloc(nbytes);
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    VCLReal::aligned_free(p);
-  }
-#endif
 
 private:
   real_at x_;

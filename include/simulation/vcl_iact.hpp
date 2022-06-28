@@ -38,7 +38,7 @@
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
-template<typename VCLArchitecture> class VCLIACTTrackVisitor:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLIACTTrackVisitor:
   public calin::simulation::tracker::TrackVisitor
 {
 public:
@@ -82,16 +82,6 @@ public:
   }
 
 #ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    return VCLArchitecture::aligned_malloc(nbytes);
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    VCLArchitecture::aligned_free(p);
-  }
-
   virtual void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight);
 
 protected:

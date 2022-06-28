@@ -760,7 +760,7 @@ private:
 //
 // =============================================================================
 
-template<typename VCLArchitecture> class NR3_VCLRNGCore:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
 #ifndef SWIG
@@ -889,18 +889,6 @@ public:
     return proto->mutable_nr3_vcl_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::VCLRNGCoreData& proto) {
     return proto.nr3_vcl_core(); }
-
-#ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    return VCLArchitecture::aligned_malloc(nbytes);
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    VCLArchitecture::aligned_free(p);
-  }
-#endif
 
 private:
   void init()

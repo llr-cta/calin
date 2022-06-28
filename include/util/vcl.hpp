@@ -340,6 +340,8 @@ using namespace ::vcl;
 
 template<typename VCLArchitecture> struct VCLFloatReal
 {
+  constexpr static unsigned vec_bits              = VCLArchitecture::vec_bits;
+  constexpr static unsigned vec_bytes             = VCLArchitecture::vec_bytes;
   constexpr static unsigned num_real              = VCLArchitecture::num_float;
   typedef VCLArchitecture                         architecture;
 
@@ -394,6 +396,8 @@ template<typename VCLArchitecture> struct VCLFloatReal
 
 template<typename VCLArchitecture> struct VCLDoubleReal
 {
+  constexpr static unsigned vec_bits              = VCLArchitecture::vec_bits;
+  constexpr static unsigned vec_bytes             = VCLArchitecture::vec_bytes;
   constexpr static unsigned num_real              = VCLArchitecture::num_double;
   typedef VCLArchitecture                         architecture;
 
