@@ -27,7 +27,7 @@ message(STATUS "PROTOBUF_LIBRARY: " ${PROTOBUF_LIBRARY})
 
 string(REPLACE " " ";" CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
 
-execute_process(COMMAND ${CMAKE_CXX_COMPILER} -std=c++11 -Wall
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} -std=c++17 -Wall
 	-I ${PROTOBUF_INCLUDE_DIRS}
 	-o ${CMAKE_BINARY_DIR}/protoc-gen-swig_dep
 	${CMAKE_SOURCE_DIR}/tools/protoc-gen-swig_dep/protoc-gen-swig_dep.cpp
