@@ -99,7 +99,7 @@ public:
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) DaviesCottonVCLFocalPlaneRayPropagator:
-  public VCLFocalPlaneRayPropagator<typename VCLArchitecture>
+  public VCLFocalPlaneRayPropagator<VCLArchitecture>
 {
 public:
 #ifndef SWIG
