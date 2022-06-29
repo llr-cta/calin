@@ -3,8 +3,8 @@
    calin/simulation/vcl_iact_ground_map.hpp -- Stephen Fegan -- 2022-06-25
 
    Class for imaging atmospheric cherenkov technique - produce rays from charged
-   tracks in the atmosphere, propagate them to the ground and trace them through
-   optics.
+   tracks in the atmosphere, propagate them to the ground and make a map of
+   where they arrive and from which direction.
 
    Copyright 2022, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
