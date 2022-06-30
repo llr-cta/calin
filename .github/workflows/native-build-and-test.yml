@@ -41,14 +41,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
-        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11'],
-                    [gcc-10, g++-10, 'gcc-10 g++-10'],
-                    [gcc-9, g++-9, 'gcc-9 g++-9'],
-                    [gcc-8, g++-8, 'gcc-8 g++-8'],
-                    [gcc-7, g++-7, 'gcc-7 g++-7'],
-                    [clang-12, clang++-12, 'clang-12'],
-                    [clang-11, clang++-11, 'clang-11'],
-                    [clang-10, clang++-10, 'clang-10'] ]
+        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11', cascadelake ],
+                    [gcc-10, g++-10, 'gcc-10 g++-10', cascadelake ],
+                    [gcc-9, g++-9, 'gcc-9 g++-9', cascadelake ],
+                    [gcc-8, g++-8, 'gcc-8 g++-8', cannonlake ],
+                    [gcc-7, g++-7, 'gcc-7 g++-7', skylake-avx512 ],
+                    [clang-12, clang++-12, 'clang-12', cascadelake ],
+                    [clang-11, clang++-11, 'clang-11', cascadelake ],
+                    [clang-10, clang++-10, 'clang-10', cascadelake ] ]
 
     runs-on: ${{ matrix.os }}
 
@@ -82,7 +82,7 @@ jobs:
       run: |
         mkdir mybuild
         cd mybuild
-        cmake -DCALIN_BUILD_ARCH=cascadelake                              \
+        cmake -DCALIN_BUILD_ARCH=${{ matrix.compiler[2] }}                \
               -DCMAKE_BUILD_TYPE=Release                                  \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
               -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
