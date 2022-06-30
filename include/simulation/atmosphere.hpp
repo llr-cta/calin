@@ -305,6 +305,8 @@ public:
   bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
     bool time_reversal_ok=true);
 
+  double refraction_safety_radius(double theta_rad, unsigned iobs=0);
+
   template<typename VCLArchitecture> inline void
   vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
   {
@@ -486,7 +488,7 @@ LayeredRefractiveAtmosphere::vcl_propagate_ray_with_refraction_and_mask(
   ray.mutable_uy() *= vcl::select(ray_mask, n_i_over_n_r, 1.0);
 
   typename VCLArchitecture::double_vt dx = a_x * t1_x + b_x * t2_x;
-  typename VCLArchitecture::double_vt dx_csc_r = (dx / vcl::abs(sin_r)) & (sin_r != 0);
+  typename VCLArchitecture::double_vt dx_csc_r = vcl::select(sin_r == 0, 0, dx / vcl::abs(sin_r));
 
   ray.mutable_x() -= vcl::select(ray_mask, dx_csc_r * ray.ux(), 0);
   ray.mutable_y() -= vcl::select(ray_mask, dx_csc_r * ray.uy(), 0);
