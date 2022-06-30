@@ -670,6 +670,15 @@ double LayeredRefractiveAtmosphere::top_of_atmosphere()
   return s_->xknot().back();
 }
 
+double LayeredRefractiveAtmosphere::refraction_safety_radius(double theta_rad, unsigned iobs)
+{
+  Eigen::Vector3d u(-std::sin(theta_rad), 0, -std::cos(theta_rad));
+  Eigen::Vector3d x(u[0]/u[2]*(top_of_atmosphere() - zobs(iobs)), 0, top_of_atmosphere());
+  calin::math::ray::Ray r(x,u);
+  propagate_ray_with_refraction(r, iobs);
+  return r.x()*std::cos(theta_rad);
+}
+
 LayeredRefractiveAtmosphere*
 LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76(const std::vector<double>& obs_levels)
 {
