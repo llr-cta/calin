@@ -113,13 +113,12 @@ public:
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
 
   DaviesCottonVCLFocalPlaneRayPropagator(calin::simulation::vs_optics::VSOArray* array,
-      ArchRNG* rng = nullptr,
-      bool adopt_array = false, bool adopt_visitor = false,
-      bool adopt_rng = false):
+      ArchRNG* rng = nullptr, double ref_index = 1.0,
+      bool adopt_array = false, bool adopt_rng = false):
     array_(array), adopt_array_(adopt_array),
     rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
-      rng==nullptr ? true : adopt_rng)), adopt_rng_(true),
-    ray_tracer_(array->numTelescopes())
+      rng==nullptr ? true : adopt_rng)),
+    ray_tracer_(array->numTelescopes()), ref_index_(ref_index)
   {
     for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
       ray_tracer_[iscope] = new RayTracer(
@@ -129,6 +128,7 @@ public:
 
   virtual ~DaviesCottonVCLFocalPlaneRayPropagator() {
     for(auto* rt : ray_tracer_)delete rt;
+    if(adopt_array_)delete array_;
   }
 
   virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
@@ -177,7 +177,6 @@ private:
   bool adopt_array_ = false;
   unsigned vcl_sti_visitor_status_min_ = 0;
   RealRNG* rng_ = nullptr;
-  bool adopt_rng_ = false;
   std::vector<RayTracer*> ray_tracer_;
   double ref_index_ = 1.0;
 #endif
