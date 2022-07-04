@@ -43,6 +43,7 @@ template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRay: public VCLR
 public:
   using typename VCLReal::real_t;
   using typename VCLReal::real_vt;
+  using typename VCLReal::real_at;
   using typename VCLReal::bool_vt;
   using typename VCLReal::vec3_vt;
   using typename VCLReal::mat3_vt;
@@ -330,6 +331,12 @@ public:
 
     propagate_dist_with_mask(mask, dist, n);
     return mask;
+  }
+
+  //! Distance of closest approach with point
+  real_vt squared_distance_at_closest_approach(const vec3_vt& r0)
+  {
+    return (r0-pos_).cross(dir_).squaredNorm();
   }
 
   //! Propagates free particle to the closest approach with point
