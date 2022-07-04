@@ -35,7 +35,7 @@ struct RayProcessorDetectorSphere
   RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
       r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius = 0;         // Squared radius of sphere  [cm^2]
+  double radius = 0;         // Radius of sphere  [cm^2]
   unsigned iobs = 0;         // Observation layer associated with this detector
 };
 
