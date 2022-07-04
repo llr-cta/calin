@@ -32,6 +32,7 @@
 
 #include <iostream>
 
+#include <calin_global_definitions.hpp>
 #include <math/special.hpp>
 #include <util/vcl.hpp>
 
@@ -255,7 +256,13 @@ public:
 
   double xmin() const { return s_.xmax; }
   double xmax() const { return s_.xmin; }
+
+  const std::vector<double> xknot_as_stdvec() const { return s_.x; }
+  Eigen::VectorXd xknot_as_eigen() const { return calin::std_to_eigenvec(s_.x); }
+#ifndef SWIG
   const std::vector<double> xknot() const { return s_.x; }
+#endif
+
   unsigned num_spline() const { return y_.size(); };
   const CubicSplineInfo& dataset_info(unsigned ispline) { return info_[ispline]; }
   const std::string& dataset_name(unsigned ispline) { return info_[ispline].name; }
@@ -279,8 +286,16 @@ public:
     }
   }
 
+  const std::vector<double> yknot_as_stdvec(unsigned ispline) const { return y_[ispline]; }
+  const std::vector<double> dydxknot_as_stdvec(unsigned ispline) const { return dy_dx_[ispline]; }
+
+  Eigen::VectorXd yknot_as_eigen(unsigned ispline) const { return calin::std_to_eigenvec(y_[ispline]); }
+  Eigen::VectorXd dydxknot_as_eigen(unsigned ispline) const { return calin::std_to_eigenvec(dy_dx_[ispline]); }
+
+#ifndef SWIG
   const std::vector<double> yknot(unsigned ispline) const { return y_[ispline]; }
   const std::vector<double> dydxknot(unsigned ispline) const { return dy_dx_[ispline]; }
+#endif
 
   double value(double x, unsigned ispline) const;
   void value(double x, unsigned ispline0, double& value0,
