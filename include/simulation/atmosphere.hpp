@@ -287,7 +287,7 @@ public:
 
   virtual ~LayeredRefractiveAtmosphere();
 
-  double num_obs_levels() const { return zobs_.size(); }
+  unsigned num_obs_levels() const { return zobs_.size(); }
   double zobs(unsigned iground) const { return zobs_[iground]; }
 
   double rho(double z) override;
@@ -296,6 +296,8 @@ public:
   double dn_dz(double z, double& n_minus_one) override;
 
   double propagation_ct_correction(double z) override;
+  double propagation_ct_correction_to_iobs(double z, unsigned iobs);
+
   void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction) override;
 
@@ -331,6 +333,12 @@ public:
       s_->vcl_derivative_and_value<VCLArchitecture>(z, 2, n_minus_one);
     n_minus_one = vcl::exp(n_minus_one);
     return dlognmo_dz;
+  }
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_propagation_ct_correction(typename VCLArchitecture::double_vt z, unsigned iobs=0) const
+  {
+    return s_->vcl_value<VCLArchitecture>(z, 4+iobs*5);
   }
 
   template<typename VCLArchitecture> typename VCLArchitecture::double_bvt

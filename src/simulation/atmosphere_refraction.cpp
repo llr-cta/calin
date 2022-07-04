@@ -389,7 +389,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
 
   // Spline 3 - vertical propagation time correction to bottom of atmosphere
   for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
-    v[ilevel] = t[ilevel][0].total() - levels[ilevel].z;
+    v[ilevel] = test_ray_boa_ct_(ilevel,0) - levels[ilevel].z;
   }
   s_->add_spline(v, "vertical ct correction (boa) [cm]");
 
@@ -563,14 +563,19 @@ double LayeredRefractiveAtmosphere::dn_dz(double z, double& n_minus_one)
 
 double LayeredRefractiveAtmosphere::propagation_ct_correction(double z)
 {
-  return std::exp(s_->value(z, 3));
+  return s_->value(z, 3);
+}
+
+double LayeredRefractiveAtmosphere::propagation_ct_correction_to_iobs(double z, unsigned iobs)
+{
+  return s_->value(z, 4 + 5*iobs);
 }
 
 void LayeredRefractiveAtmosphere::cherenkov_parameters(double z,
   double& n_minus_one, double& propagation_ct_correction)
 {
-  n_minus_one = std::exp(s_->value(z, 2));
-  propagation_ct_correction = std::exp(s_->value(z, 3));
+  s_->value(z, 2, n_minus_one, 3, propagation_ct_correction);
+  n_minus_one = std::exp(n_minus_one);
 }
 
 bool LayeredRefractiveAtmosphere::
