@@ -41,14 +41,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
-        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11', cascadelake ],
-                    [gcc-10, g++-10, 'gcc-10 g++-10', cascadelake ],
-                    [gcc-9, g++-9, 'gcc-9 g++-9', cascadelake ],
-                    [gcc-8, g++-8, 'gcc-8 g++-8', cannonlake ],
-                    [gcc-7, g++-7, 'gcc-7 g++-7', skylake-avx512 ],
-                    [clang-12, clang++-12, 'clang-12', cascadelake ],
-                    [clang-11, clang++-11, 'clang-11', cascadelake ],
-                    [clang-10, clang++-10, 'clang-10', cascadelake ] ]
+        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11', broadwell ],
+                    [gcc-10, g++-10, 'gcc-10 g++-10', broadwell ],
+                    [gcc-9, g++-9, 'gcc-9 g++-9', broadwell ],
+                    [gcc-8, g++-8, 'gcc-8 g++-8', broadwell ],
+                    [gcc-7, g++-7, 'gcc-7 g++-7', broadwell ],
+                    [clang-12, clang++-12, 'clang-12', broadwell ],
+                    [clang-11, clang++-11, 'clang-11', broadwell ],
+                    [clang-10, clang++-10, 'clang-10', broadwell ] ]
 
     runs-on: ${{ matrix.os }}
 
