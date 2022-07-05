@@ -44,7 +44,7 @@ message VCLIACTConfiguration
 enum RefractionMode {
   REFRACT_NO_RAYS         = 0;
   REFRACT_ALL_RAYS        = 1;
-  REFTACT_ONLY_CLOSE_RAYS = 2;
+  REFRACT_ONLY_CLOSE_RAYS = 2;
 };
 
 message VCLIACTArrayConfiguration
@@ -59,6 +59,10 @@ message VCLIACTArrayConfiguration
   double forced_cherenkov_angle                            = 3
     [(CFO).desc = "Cherenkov angle for all particles in forced mode.",
      (CFO).units = "deg" ];
+
+  unsigned observation_level                               = 9
+    [(CFO).desc = "In the current implementation all telescopes must belong to "
+      "a single observation level." ];
 
   RefractionMode refraction_mode                           = 10
     [(CFO).desc = "Atmospheric refraction mode." ];
