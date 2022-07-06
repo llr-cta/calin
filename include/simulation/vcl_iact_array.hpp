@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <simulation/vcl_iact.hpp>
+#include <simulation/vcl_ray_propagator.hpp>
 #include <simulation/vcl_raytracer.hpp>
 
 namespace calin { namespace simulation { namespace vcl_iact {
@@ -49,14 +50,18 @@ public:
   using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
   using float_real  = typename VCLArchitecture::float_real;
   using double_real = typename VCLArchitecture::double_real;
+  using int64_at    = typename VCLArchitecture::int64_at;
+  using uint64_at   = typename VCLArchitecture::uint64_vt;
   using float_at    = typename VCLArchitecture::float_at;
   using double_at   = typename VCLArchitecture::double_at;
 
   using Ray         = calin::math::ray::VCLRay<double_real>;
+  using RayArray    = calin::math::ray::VCLRayArray<double_real>;
+  using FocalPlaneParameters = calin::simulation::vcl_ray_propagator::VCLFocalPlaneParameters<VCLArchitecture>;
 
   using VCLFocalPlaneParameters = calin::simulation::vcl_ray_propagator::VCLFocalPlaneParameters<VCLArchitecture>;
 
-  using calin::simulation::ray_processor::RayProcessorDetectorSphere;
+  using RayProcessorDetectorSphere = calin::simulation::ray_processor::RayProcessorDetectorSphere;
 #endif // not defined SWIG
 
   CALIN_TYPEALIAS(VCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
@@ -93,11 +98,11 @@ protected:
     unsigned global_iscope;
     double ref_index;
 
-    VCLRayArray rays_to_refract;
+    RayArray rays_to_refract;
     unsigned nrays_to_refract;
     double_at ray_weights_to_refract;
 
-    VCLRayArray rays_to_propagate;
+    RayArray rays_to_propagate;
     unsigned nrays_to_propagate;
     double_at ray_weights_to_propagate;
   };
@@ -124,18 +129,18 @@ VCLIACTArray(
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
   VCLIACTTrackVisitor<VCLArchitecture>(atm, base_config(config), rng, adopt_atm, adopt_rng),
-  config_(config), ref_index_correction_(config_.ref)
+  config_(config)
 {
-  if(config_.observation_level >= atm.num_obs_levels) {
+  if(config_.observation_level() >= this->atm_->num_obs_levels) {
     throw std::out_of_range("Request observation level out of range.");
   }
-  zobs_ = atm.zobs(config_.observation_level);
-  double n_minus_one = atm.n_minus_one(zobs_);
+  zobs_ = this->atm_->zobs(config_.observation_level());
+  double n_minus_one = this->atm_->n_minus_one(zobs_);
   ref_index_ = 1.0 + n_minus_one;
   ref_index_correction_ = -n_minus_one;
 }
 
-template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
+template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
   // nothing to see here
@@ -144,19 +149,19 @@ template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  for(const auto& ipropoagator in propoagator) {
+  for(const auto& ipropoagator : propoagator_) {
     auto spheres = ipropoagator.propagator.detector_spheres();
     if(spheres.size() != ipropoagator.ndetector) {
       // this should never happen
       throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
     }
     for(unsigned isphere=0; isphere<spheres.size(); ++isphere) {
-      if(sphere.iobs != config_.observation_level()) {
+      if(spheres[isphere].iobs != config_.observation_level()) {
         throw std::runtime_error("Detector observation level does not match configured value.");
       }
-      detector[ipropoagator.detector0+isphere].sphere = spheres[isphere];
-      detector[ipropoagator.detector0+isphere].nrays_to_refract = 0;
-      detector[ipropoagator.detector0+isphere].nrays_to_propagate = 0;
+      detector_[ipropoagator.detector0+isphere].sphere = spheres[isphere];
+      detector_[ipropoagator.detector0+isphere].nrays_to_refract = 0;
+      detector_[ipropoagator.detector0+isphere].nrays_to_propagate = 0;
     }
   }
 
@@ -172,11 +177,11 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
   case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
     // Note use of "-=" below because uz() is negative
     ray.mutable_ct() -= vcl::select(ray_mask,
-      (dz*ref_index_correction_ + atm_.propagation_ct_correction_to_iobs(ray.z(), config_.observation_level()))/ray.uz(),
+      (dz*ref_index_correction_ + this->atm_->propagation_ct_correction_to_iobs(ray.z(), config_.observation_level()))/ray.uz(),
       0);
     break;
   case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
-    atm.vcl_propagate_ray_with_refraction_and_mask(ray, ray_mask, config_.observation_level());
+    this->atm_->vcl_propagate_ray_with_refraction_and_mask(ray, ray_mask, config_.observation_level());
     // Note propagation backwards by distance since uz() is negative
     ray.propagate_dist_with_mask(dz/ray.uz(), ray_mask, ref_index_);
     break;
@@ -185,11 +190,11 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
   }
 
   calin::math::ray::VCLRayArray<double_real> ray_array { ray };
-  double_at ray_weight_array
+  double_at ray_weight_array;
   ray_weight.store(ray_weight_array);
 
   for(auto& idetector : detector_) {
-    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach() < detector.squared_safety_radius);
+    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach() < idetector.squared_safety_radius);
     unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
     if(intersecting_rays_bitmask) {
       for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
@@ -197,22 +202,22 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
           switch(double_vt dz = ray.z-zobs_; config_.refraction_mode()) {
           case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
           case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
-            idetector.rays_to_propagate.insert(detector.nrays_to_propagate, ray_array.extract(iray));
-            idetector.ray_weights_to_propagate[detector.nrays_to_propagate] = ray_weight_array[iray];
+            idetector.rays_to_propagate.insert(idetector.nrays_to_propagate, ray_array.extract(iray));
+            idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = ray_weight_array[iray];
             ++idetector.nrays_to_propagate;
             if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
-              do_propagate_rays_for_detector(idetector)
+              do_propagate_rays_for_detector(idetector);
             }
             break;
           case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
-            idetector.rays_to_refract.insert(detector.nrays_to_refract, ray_array.extract(iray));
-            idetector.ray_weights_to_refract[detector.nrays_to_refract] = ray_weight_array[iray];
+            idetector.rays_to_refract.insert(idetector.nrays_to_refract, ray_array.extract(iray));
+            idetector.ray_weights_to_refract[idetector.nrays_to_refract] = ray_weight_array[iray];
             ++idetector.nrays_to_refract;
             if(idetector.nrays_to_refract == VCLArchitecture::num_double) {
-              do_refract_rays_for_detector(idetector)
+              do_refract_rays_for_detector(idetector);
             }
             break;
-
+          }
         }
         intersecting_rays_bitmask >>= 1;
       }
@@ -232,24 +237,25 @@ do_refract_rays_for_detector(DetectorInfo& idetector)
   idetector.nrays_to_refract = 0;
 
   double_vt dz = ray.z-zobs_;
-  atm.vcl_propagate_ray_with_refraction_and_mask(ray, ray_mask, config_.observation_level());
+  this->atm_->vcl_propagate_ray_with_refraction_and_mask(ray, ray_mask, config_.observation_level());
   // Note propagation backwards by distance since uz() is negative
   ray.propagate_dist_with_mask(dz/ray.uz(), ray_mask, ref_index_);
 
   idetector.rays_to_refract.set_rays(ray);
 
-  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach() < detector.squared_radius);
+  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach() < idetector.squared_radius);
   unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
   if(intersecting_rays_bitmask) {
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(intersecting_rays_bitmask & 1) {
-        idetector.rays_to_propagate.insert(detector.nrays_to_propagate, idetector.rays_to_refract.extract(iray));
-        idetector.ray_weights_to_propagate[detector.nrays_to_propagate] = idetector.ray_weights_to_refract[iray];
+        idetector.rays_to_propagate.insert(idetector.nrays_to_propagate, idetector.rays_to_refract.extract(iray));
+        idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = idetector.ray_weights_to_refract[iray];
         ++idetector.nrays_to_propagate;
         if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
-          do_propagate_rays_for_detector(idetector)
+          do_propagate_rays_for_detector(idetector);
         }
       }
+      intersecting_rays_bitmask >>= 1;
     }
   }
 }
@@ -262,11 +268,37 @@ do_propagate_rays_for_detector(DetectorInfo& idetector)
   double_bvt ray_mask = VCLArchitecture::double_iota()<idetector.nrays_to_propagate;
   idetector.nrays_to_propagate = 0;
 
-  VCLFocalPlaneParameters<VCLArchitecture> fp_parameters;
+  FocalPlaneParameters fp_parameters;
   ray_mask = idetector.propagator->propagate_rays_to_focal_plane(
     idetector.propagator_iscope, ray, ray_mask, fp_parameters);
 
-  
+  ray_mask &= this->rng_->uniform_double() < fp_parameters.detection_prob;
+
+  unsigned fp_rays_bitmask = vcl::to_bits(ray_mask);
+  if(fp_rays_bitmask) {
+    double_at fplane_x;
+    double_at fplane_y;
+    double_at fplane_ux;
+    double_at fplane_uy;
+    double_at fplane_t;
+    int64_at pixel_id;
+
+    fp_parameters.fplane_x.store(fplane_x);
+    fp_parameters.fplane_z.store(fplane_y);
+    fp_parameters.fplane_ux.store(fplane_ux);
+    fp_parameters.fplane_uz.store(fplane_uy);
+    fp_parameters.fplane_t.store(fplane_t);
+    fp_parameters.pixel_id.store(pixel_id);
+
+    for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
+      if(fp_rays_bitmask & 1) {
+        idetector.pe_processor->process_focal_plane_hit(idetector.propagator_iscope,
+          pixel_id[iray], fplane_x[iray], fplane_y[iray], fplane_ux[iray], fplane_uy[iray],
+          fplane_t[iray], idetector.array_weights_to_propagate[iray]);
+      }
+    }
+    fp_rays_bitmask >>= 1;
+  }
 }
 
 template<typename VCLArchitecture> calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration

@@ -60,7 +60,7 @@ message VCLIACTArrayConfiguration
     [(CFO).desc = "Cherenkov angle for all particles in forced mode.",
      (CFO).units = "deg" ];
 
-  unsigned observation_level                               = 9
+  uint32 observation_level                                 = 9
     [(CFO).desc = "In the current implementation all telescopes must belong to "
       "a single observation level." ];
 

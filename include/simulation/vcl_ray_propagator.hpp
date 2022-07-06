@@ -53,6 +53,7 @@ template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VC
   double_vt fplane_uz;
   double_vt fplane_t;
   int64_vt pixel_id;
+  double_vt detection_prob;
 #endif // not defined SWIG
 };
 
@@ -163,6 +164,7 @@ public:
     fp_parameters.fplane_uz    = info.fplane_uz;
     fp_parameters.fplane_t     = info.fplane_t;
     fp_parameters.pixel_id     = info.pixel_id;
+    fp_parameters.detection_prob = 1.0;
     return ray_mask;
   }
 #endif

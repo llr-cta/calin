@@ -28,6 +28,7 @@
 #include "simulation/misc_trackers.hpp"
 #include "simulation/vcl_iact.hpp"
 #include "simulation/vcl_iact_ground_map.hpp"
+#include "simulation/vcl_iact_array.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -42,6 +43,7 @@
 
 %include "simulation/vcl_iact.hpp"
 %include "simulation/vcl_iact_ground_map.hpp"
+%include "simulation/vcl_iact_array.hpp"
 
 %template (VCLIACTTrackVisitor128)
   calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL128Architecture>;
