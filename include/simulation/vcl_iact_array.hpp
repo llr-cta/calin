@@ -26,6 +26,7 @@
 
 #include <vector>
 
+#include <math/special.hpp>
 #include <simulation/vcl_iact.hpp>
 #include <simulation/vcl_ray_propagator.hpp>
 #include <simulation/vcl_raytracer.hpp>
@@ -80,6 +81,10 @@ public:
 
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
 
+  const calin::math::spline_interpolation::CubicMultiSpline& detector_efficiency_spline() const {
+    return detector_efficiency_spline_;
+  }
+
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
   void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
@@ -88,17 +93,12 @@ public:
 protected:
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
+  std::vector<double> detector_efficiency_energy_knots();
+  void add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name);
 
   struct PropagatorInfo {
-    PropagatorInfo(FocalPlaneRayPropagator* propagator_, PEProcessor* pe_processor_,
-        unsigned detector0_, unsigned ndetector_, bool adopt_propagator_,
-        bool adopt_pe_processor_):
-      propagator(propagator_), pe_processor(pe_processor_),
-      detector0(detector0_), ndetector(ndetector_),
-      adopt_propagator(adopt_propagator_), adopt_pe_processor(adopt_pe_processor_)
-    { /* nothing to see here */ }
-
     FocalPlaneRayPropagator* propagator;
+    unsigned ipropagator;
     PEProcessor* pe_processor;
     unsigned detector0;
     unsigned ndetector;
@@ -113,9 +113,8 @@ protected:
     FocalPlaneRayPropagator* propagator;
     unsigned propagator_iscope;
     unsigned global_iscope;
-    double ref_index;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
-    unsigned detector_efficiency_spline;
+    unsigned idetector_efficiency;
 
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
@@ -129,13 +128,15 @@ protected:
   void do_propagate_rays_for_detector(DetectorInfo& idetector);
   void do_refract_rays_for_detector(DetectorInfo& idetector);
 
-  std::vector<PropagatorInfo> propoagator_;
-  std::vector<DetectorInfo> detector_;
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config_;
+  std::vector<PropagatorInfo> propagator_;
+  std::vector<DetectorInfo> detector_;
+  std::vector<DetectionEfficiency> detector_efficiency_;
+  calin::math::spline_interpolation::CubicMultiSpline detector_efficiency_spline_;
   double zobs_;
   double ref_index_;
-  double ref_index_inv_;
   double ref_index_correction_;
+  double safety_radius_;
 #endif
 };
 
@@ -148,7 +149,7 @@ VCLIACTArray(
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
   VCLIACTTrackVisitor<VCLArchitecture>(atm, base_config(config), rng, adopt_atm, adopt_rng),
-  config_(config)
+  config_(config), detector_efficiency_spline_(detector_efficiency_energy_knots())
 {
   if(config_.observation_level() >= this->atm_->num_obs_levels()) {
     throw std::out_of_range("Request observation level out of range.");
@@ -162,7 +163,7 @@ VCLIACTArray(
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
-  for(auto& ipropagator : propoagator_) {
+  for(auto& ipropagator : propagator_) {
     if(ipropagator.adopt_propagator)delete ipropagator.propagator;
     if(ipropagator.adopt_pe_processor)delete ipropagator.pe_processor;
   }
@@ -173,15 +174,73 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   const DetectionEfficiency& detector_efficiency, bool adopt_propagator,
   bool adopt_pe_processor)
 {
-  auto spheres = propagator->detector_spheres();
-  propoagator_.emplace_back(propagator, pe_processor, detector_.size(), spheres.size(),
-    adopt_propagator, adopt_pe_processor);
+  using calin::math::special::SQR;
+
+  auto sphere = propagator->detector_spheres();
+
+  PropagatorInfo propagator_info;
+  propagator_info.propagator         = propagator;
+  propagator_info.ipropagator        = propagator_.size();
+  propagator_info.pe_processor       = pe_processor;
+  propagator_info.detector0          = detector_.size();
+  propagator_info.ndetector          = sphere.size();
+  propagator_info.adopt_propagator   = adopt_propagator;
+  propagator_info.adopt_pe_processor = adopt_pe_processor;
+  propagator_.emplace_back(propagator_info);
+
+  for(unsigned isphere=0; isphere<sphere.size(); ++isphere) {
+    DetectorInfo detector_info;
+    detector_info.sphere                 = sphere[isphere];
+    detector_info.squared_radius         = SQR(sphere[isphere].radius);
+    detector_info.squared_safety_radius  = SQR(sphere[isphere].radius + safety_radius_);
+    detector_info.propagator             = propagator;
+    detector_info.propagator_iscope      = isphere;
+    detector_info.global_iscope          = detector_.size();
+    detector_info.pe_processor           = pe_processor;
+    detector_info.idetector_efficiency   = detector_efficiency_.size();
+    detector_info.nrays_to_refract       = 0;
+    detector_info.nrays_to_propagate     = 0;
+    detector_.emplace_back(detector_info);
+  }
+
+  add_detector_efficiency(detector_efficiency, "propagator "+std::to_string(propagator_info.ipropagator));
 }
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name)
+{
+  detector_efficiency_.push_back(detector_efficiency);
+  std::vector<double> detector_efficiency_xknot =
+    detector_efficiency_spline_.xknot_as_stdvec();
+
+  const auto& detector_efficiency_xy = detector_efficiency.all_xyi();
+  double xmin = -std::numeric_limits<double>::infinity();
+  for(auto ixy = detector_efficiency_xy.begin();
+      ixy!=detector_efficiency_xy.end() and ixy->second==0;
+      ++ixy) {
+    xmin = ixy->first;
+  }
+
+  double xmax = std::numeric_limits<double>::infinity();
+  for(auto ixy = detector_efficiency_xy.rbegin();
+      ixy!=detector_efficiency_xy.rend() and ixy->second==0;
+      ++ixy) {
+    xmax = ixy->first;
+  }
+
+  std::vector<double> detector_efficiency_yknot;
+  std::transform(detector_efficiency_xknot.begin(), detector_efficiency_xknot.end(),
+    detector_efficiency_yknot.begin(),
+    [detector_efficiency](double e) { return detector_efficiency(e); });
+
+  detector_efficiency_spline_.add_spline(detector_efficiency_yknot, name);
+}
+
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  for(const auto& ipropoagator : propoagator_) {
+  for(const auto& ipropoagator : propagator_) {
     auto spheres = ipropoagator.propagator->detector_spheres();
     if(spheres.size() != ipropoagator.ndetector) {
       // this should never happen
@@ -339,7 +398,9 @@ template<typename VCLArchitecture> calin::ix::simulation::vcl_iact::VCLIACTArray
 VCLIACTArray<VCLArchitecture>::default_config()
 {
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config;
-  config.set_bandwidth(3.0);
+  config.set_detector_energy_lo(1.5);
+  config.set_detector_energy_hi(4.5);
+  config.set_detector_energy_bin_width(0.05);
   return config;
 }
 
@@ -347,10 +408,21 @@ template<typename VCLArchitecture> calin::ix::simulation::vcl_iact::VCLIACTConfi
 VCLIACTArray<VCLArchitecture>::base_config(const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config)
 {
   calin::ix::simulation::vcl_iact::VCLIACTConfiguration bconfig;
-  bconfig.set_bandwidth(config.bandwidth());
+  bconfig.set_bandwidth(config.detector_energy_hi()-config.detector_energy_lo());
   bconfig.set_enable_forced_cherenkov_angle_mode(config.enable_forced_cherenkov_angle_mode());
   bconfig.set_forced_cherenkov_angle(config.forced_cherenkov_angle());
   return bconfig;
+}
+
+template<typename VCLArchitecture> std::vector<double>
+VCLIACTArray<VCLArchitecture>::detector_efficiency_energy_knots()
+{
+  std::vector<double> knots;
+  for(double e=config_.detector_energy_lo(); e<=config_.detector_energy_hi();
+      e+=config_.detector_energy_bin_width()) {
+    knots.push_back(e);
+  }
+  return knots;
 }
 
 #endif // not defined SWIG
