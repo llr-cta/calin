@@ -29,6 +29,7 @@
 #include "simulation/vcl_iact.hpp"
 #include "simulation/vcl_iact_ground_map.hpp"
 #include "simulation/vcl_iact_array.hpp"
+#include "simulation/nspace_pe_processor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -40,6 +41,9 @@
 %import "calin_global_definitions.i"
 
 %import "simulation/tracker.i"
+
+%import "atmosphere.i"
+%import "detector_efficiency.i"
 
 %include "simulation/vcl_iact.hpp"
 %include "simulation/vcl_iact_ground_map.hpp"
@@ -58,3 +62,10 @@
   calin::simulation::vcl_iact::VCLIACTGroundMap<calin::util::vcl::VCL256Architecture>;
 %template (VCLIACTGroundMap512)
   calin::simulation::vcl_iact::VCLIACTGroundMap<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLIACTArray128)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL128Architecture>;
+%template (VCLIACTArray256)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL256Architecture>;
+%template (VCLIACTArray512)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL512Architecture>;
