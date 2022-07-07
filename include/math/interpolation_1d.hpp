@@ -179,6 +179,10 @@ public:
     return vyi;
   }
 
+  const xy_vec_type& all_xyi() const {
+    return m_xy;
+  }
+
   double xmin() const { return m_xy.front().first; }
   double xmax() const { return m_xy.back().first; }
 
