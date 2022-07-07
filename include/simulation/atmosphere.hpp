@@ -336,7 +336,7 @@ public:
   }
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
-  vcl_propagation_ct_correction(typename VCLArchitecture::double_vt z, unsigned iobs=0) const
+  vcl_propagation_ct_correction_to_iobs(typename VCLArchitecture::double_vt z, unsigned iobs=0) const
   {
     return s_->vcl_value<VCLArchitecture>(z, 4+iobs*5);
   }
