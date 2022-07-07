@@ -468,7 +468,7 @@ public:
 
   VCLRayArray() { }
 
-  VCLRayArray(const VCLRayArray<VCLReal>& ray) {
+  VCLRayArray(const VCLRay<VCLReal>& ray) {
     set_rays(ray);
   }
 
@@ -498,14 +498,14 @@ public:
   real_at& mutable_ct() { return ct_; }
   real_at& mutable_energy() { return energy_; }
 
-  void set_rays(const VCLRayArray<VCLReal>& ray) {
+  void set_rays(const VCLRay<VCLReal>& ray) {
     set_positions(ray.position());
     set_directions(ray.direction());
     set_cts(ray.ct());
     set_energies(ray.energy());
   }
 
-  void get_rays(VCLRayArray<VCLReal>& ray) const {
+  void get_rays(VCLRay<VCLReal>& ray) const {
     get_positions(ray.mutable_position());
     get_directions(ray.mutable_direction());
     get_cts(ray.mutable_ct());
@@ -530,8 +530,8 @@ public:
   }
 
   Ray extract_one_ray(unsigned i) const {
-    VCLRayArray<VCLReal> ray;
-    extract_ray(i, ray);
+    Ray ray;
+    extract_one_ray(i, ray);
     return ray;
   }
 
