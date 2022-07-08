@@ -79,6 +79,14 @@ public:
     const DetectionEfficiency& detector_efficiency, bool adopt_propagator = false,
     bool adopt_pe_processor = false);
 
+  void add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
+    PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+    bool adopt_array = false, bool adopt_pe_processor = false);
+
+  void add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+    PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+    bool adopt_pe_processor = false);
+
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
 
   const calin::math::spline_interpolation::CubicMultiSpline& detector_efficiency_spline() const {
@@ -204,6 +212,30 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   }
 
   add_detector_efficiency(detector_efficiency, "propagator "+std::to_string(propagator_info.ipropagator));
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
+  PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+  bool adopt_array, bool adopt_pe_processor)
+{
+  auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
+    array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
+  add_propagator(propagator, pe_processor, detector_efficiency,
+    /* adopt_propagator= */ true, adopt_pe_processor);
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+  bool adopt_pe_processor)
+{
+  auto* array = new calin::simulation::vs_optics::VSOArray;
+  calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
+  calin::math::rng::RNG scalar_rng(&scalar_core);
+  array->generateFromArrayParameters(param, scalar_rng);
+  add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
+    /* adopt_array= */ true, adopt_pe_processor);
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
