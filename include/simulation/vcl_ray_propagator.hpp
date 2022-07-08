@@ -116,7 +116,7 @@ public:
   DaviesCottonVCLFocalPlaneRayPropagator(calin::simulation::vs_optics::VSOArray* array,
       ArchRNG* rng = nullptr, double ref_index = 1.0,
       bool adopt_array = false, bool adopt_rng = false):
-    array_(array), adopt_array_(adopt_array),
+    array_(adopt_array ? new calin::simulation::vs_optics::VSOArray(*array) : array),
     rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
       rng==nullptr ? true : adopt_rng)),
     ray_tracer_(array->numTelescopes()), ref_index_(ref_index)
@@ -129,7 +129,7 @@ public:
 
   virtual ~DaviesCottonVCLFocalPlaneRayPropagator() {
     for(auto* rt : ray_tracer_)delete rt;
-    if(adopt_array_)delete array_;
+    delete array_;
   }
 
   virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
@@ -176,7 +176,6 @@ public:
 #ifndef SWIG
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
-  bool adopt_array_ = false;
   unsigned vcl_sti_visitor_status_min_ = 0;
   RealRNG* rng_ = nullptr;
   std::vector<RayTracer*> ray_tracer_;
