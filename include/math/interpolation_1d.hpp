@@ -231,7 +231,7 @@ public:
     return sum;
   }
 
-  T integrate(double xlo, double xhi)
+  T integrate(double xlo, double xhi) const
   {
     assert(xlo <= xhi);
     if(m_xy.size() == 0)
