@@ -70,6 +70,7 @@ class VSOArray
 {
  public:
   VSOArray();
+  VSOArray(const VSOArray& array);
   virtual ~VSOArray();
 
   // ************************************************************************

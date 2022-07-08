@@ -54,6 +54,15 @@ VSOArray::VSOArray():
   // nothing to see here
 }
 
+VSOArray::VSOArray(const VSOArray& array):
+  fLatitude(array.fLatitude), fLongitude(array.fLongitude), fAltitude(array.fAltitude),
+  fTelescopes(array.fTelescopes.size())
+{
+  for(unsigned iscope=0;iscope<array.fTelescopes.size();++iscope) {
+    fTelescopes[iscope] = new VSOTelescope(*array.fTelescopes[iscope]);
+  }
+}
+
 VSOArray::~VSOArray()
 {
   for(std::vector<VSOTelescope*>::iterator i = fTelescopes.begin();
