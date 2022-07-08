@@ -931,7 +931,7 @@ public:
 
   void save_to_proto(ix::math::rng::RNGCoreData* proto) const final
   {
-    throw std::runtime_error("save_to_proto unsupported");
+    // nothing to see here
   }
 protected:
   VCLRNGCore<VCLArchitecture>* vcl_core_ = nullptr;
