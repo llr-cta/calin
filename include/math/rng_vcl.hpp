@@ -137,6 +137,8 @@ public:
     if(adopt_core_)delete core_;
   }
 
+  VCLRNGCore<VCLArchitecture>* core() { return core_; }
+
   //   void save_to_proto(ix::math::rng::RNGData* proto) const;
   //
   //   ix::math::rng::RNGData* as_proto() const {
@@ -903,6 +905,37 @@ private:
   uint64_vt u_ = C_NR3_U_INIT;
   uint64_vt v_ = C_NR3_V_INIT;
   uint64_vt w_ = C_NR3_W_INIT;
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLToScalarRNGCore:
+  public RNGCore
+{
+public:
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
+
+  VCLToScalarRNGCore(VCLRNGCore<VCLArchitecture>* vcl_core, bool adopt_vcl_core = false):
+    RNGCore(), vcl_core_(vcl_core), adopt_vcl_core_(adopt_vcl_core)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VCLToScalarRNGCore()
+  {
+    if(adopt_vcl_core_)delete vcl_core_;
+  }
+
+  uint64_t uniform_uint64() final
+  {
+    return vcl_core_->uniform_uint64()[0];
+  }
+
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const final
+  {
+    throw std::runtime_error("save_to_proto unsupported");
+  }
+protected:
+  VCLRNGCore<VCLArchitecture>* vcl_core_ = nullptr;
+  bool adopt_vcl_core_ = false;
 };
 
 } } } // namespace calin::math::rng
