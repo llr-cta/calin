@@ -26,6 +26,7 @@
 
 #include <vector>
 
+#include <util/log.hpp>
 #include <math/special.hpp>
 #include <simulation/vcl_iact.hpp>
 #include <simulation/vcl_ray_propagator.hpp>
@@ -245,22 +246,16 @@ add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const st
   std::vector<double> detector_efficiency_xknot =
     detector_efficiency_spline_.xknot_as_stdvec();
 
-  const auto& detector_efficiency_xy = detector_efficiency.all_xyi();
-  double xmin = -std::numeric_limits<double>::infinity();
-  for(auto ixy = detector_efficiency_xy.begin();
-      ixy!=detector_efficiency_xy.end() and ixy->second==0;
-      ++ixy) {
-    xmin = ixy->first;
+  double full_integral = detector_efficiency.integrate();
+  double partial_integral =
+    detector_efficiency.integrate(config_.detector_energy_lo(), config_.detector_energy_hi());
+
+  if(partial_integral < 0.99*full_integral) {
+    calin::util::log::LOG(calin::util::log::WARNING)
+      << "Configured detector energy range does contains less than 99% of detector efficiency curve.";
   }
 
-  double xmax = std::numeric_limits<double>::infinity();
-  for(auto ixy = detector_efficiency_xy.rbegin();
-      ixy!=detector_efficiency_xy.rend() and ixy->second==0;
-      ++ixy) {
-    xmax = ixy->first;
-  }
-
-  std::vector<double> detector_efficiency_yknot;
+  std::vector<double> detector_efficiency_yknot(detector_efficiency_xknot.size());
   std::transform(detector_efficiency_xknot.begin(), detector_efficiency_xknot.end(),
     detector_efficiency_yknot.begin(),
     [detector_efficiency](double e) { return detector_efficiency(e); });
