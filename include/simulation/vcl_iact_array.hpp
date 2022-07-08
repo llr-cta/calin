@@ -66,9 +66,11 @@ public:
   using RayProcessorDetectorSphere = calin::simulation::ray_processor::RayProcessorDetectorSphere;
 #endif // not defined SWIG
 
-  CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(PEProcessor, calin::simulation::pe_processor::PEProcessor);
   CALIN_TYPEALIAS(DetectionEfficiency, calin::simulation::detector_efficiency::DetectionEfficiency);
+
+  CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
+  CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
 
   VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config = default_config(),
@@ -80,11 +82,11 @@ public:
     const DetectionEfficiency& detector_efficiency, bool adopt_propagator = false,
     bool adopt_pe_processor = false);
 
-  void add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
     PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
     bool adopt_array = false, bool adopt_pe_processor = false);
 
-  void add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
     PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
     bool adopt_pe_processor = false);
 
@@ -215,8 +217,10 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   add_detector_efficiency(detector_efficiency, "propagator "+std::to_string(propagator_info.ipropagator));
 }
 
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
+  calin::simulation::vs_optics::VSOArray* array,
   PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
   bool adopt_array, bool adopt_pe_processor)
 {
@@ -224,10 +228,13 @@ add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
   add_propagator(propagator, pe_processor, detector_efficiency,
     /* adopt_propagator= */ true, adopt_pe_processor);
+  return propagator;
 }
 
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
   PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
   bool adopt_pe_processor)
 {
@@ -235,7 +242,7 @@ add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayPa
   calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
   calin::math::rng::RNG scalar_rng(&scalar_core);
   array->generateFromArrayParameters(param, scalar_rng);
-  add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
+  return add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
     /* adopt_array= */ true, adopt_pe_processor);
 }
 
@@ -426,7 +433,7 @@ VCLIACTArray<VCLArchitecture>::default_config()
 {
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config;
   config.set_detector_energy_lo(1.5);
-  config.set_detector_energy_hi(4.5);
+  config.set_detector_energy_hi(4.8);
   config.set_detector_energy_bin_width(0.05);
   return config;
 }

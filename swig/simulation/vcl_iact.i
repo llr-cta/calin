@@ -45,6 +45,8 @@
 %import "atmosphere.i"
 %import "detector_efficiency.i"
 
+%import "simulation/ray_propagator.i"
+
 %include "simulation/vcl_iact.hpp"
 %include "simulation/vcl_iact_ground_map.hpp"
 %include "simulation/vcl_iact_array.hpp"
