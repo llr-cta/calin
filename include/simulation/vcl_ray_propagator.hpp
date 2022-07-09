@@ -155,7 +155,7 @@ public:
   }
 
   void point_telescope_az_el_phi_deg(unsigned iscope,
-      double az_deg, double el_deg, double phi_deg=0.0) final {
+      double az_deg, double el_deg, double phi_deg) final {
     if(iscope >= array_->numTelescopes()) {
       throw std::out_of_range("Telescope number out of range");
     }

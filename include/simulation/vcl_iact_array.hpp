@@ -90,6 +90,17 @@ public:
     PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
     bool adopt_pe_processor = false);
 
+  void point_telescope_az_el_phi_deg(unsigned iscope, double az_deg, double el_deg, double phi_deg);
+  void point_telescope_az_el_deg(unsigned iscope, double az_deg, double el_deg);
+
+  void point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
+    const Eigen::VectorXd& el_deg, const Eigen::VectorXd& phi_deg);
+  void point_all_telescopes_az_el_deg(const Eigen::VectorXd& az_deg,
+    const Eigen::VectorXd& el_deg);
+
+  void point_all_telescopes_az_el_phi_deg(double az_deg, double el_deg, double phi_deg);
+  void point_all_telescopes_az_el_deg(double az_deg, double el_deg);
+
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
 
   const calin::math::spline_interpolation::CubicMultiSpline& detector_efficiency_spline() const {
@@ -122,6 +133,7 @@ protected:
     double squared_radius;
     double squared_safety_radius;
     FocalPlaneRayPropagator* propagator;
+    unsigned ipropagator;
     unsigned propagator_iscope;
     unsigned global_iscope;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
@@ -205,6 +217,7 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info.squared_radius         = SQR(sphere[isphere].radius);
     detector_info.squared_safety_radius  = SQR(sphere[isphere].radius + safety_radius_);
     detector_info.propagator             = propagator;
+    detector_info.ipropagator            = propagator_.size()-1;
     detector_info.propagator_iscope      = isphere;
     detector_info.global_iscope          = detector_.size();
     detector_info.pe_processor           = pe_processor;
@@ -270,6 +283,100 @@ add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const st
   detector_efficiency_spline_.add_spline(detector_efficiency_yknot, name);
 }
 
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_telescope_az_el_phi_deg(unsigned iscope,
+  double az_deg, double el_deg, double phi_deg)
+{
+  using calin::math::special::SQR;
+
+  if(iscope >= detector_.size()) {
+    throw std::out_of_range("Telescope ID out of range");
+  }
+
+  DetectorInfo& idetector(detector_[iscope]);
+  PropagatorInfo& ipropagator(propagator_[idetector.ipropagator]);
+  unsigned propagator_isphere = iscope-ipropagator.detector0;
+
+  ipropagator.propagator->point_telescope_az_el_phi_deg(
+    propagator_isphere, az_deg, el_deg, phi_deg);
+
+  auto spheres = ipropagator.propagator->detector_spheres();
+  if(spheres.size() != ipropagator.ndetector) {
+    // this should never happen
+    throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
+  }
+  const auto& isphere = spheres[propagator_isphere];
+  if(isphere.iobs != config_.observation_level()) {
+      throw std::runtime_error("Detector observation level does not match configured value.");
+    }
+  idetector.sphere = isphere;
+  idetector.squared_radius         = SQR(isphere.radius);
+  idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_telescope_az_el_deg(unsigned iscope,  double az_deg, double el_deg)
+{
+  this->point_telescope_az_el_phi_deg(iscope, az_deg, el_deg, 0.0);
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
+  const Eigen::VectorXd&  el_deg, const Eigen::VectorXd&  phi_deg)
+{
+  using calin::math::special::SQR;
+
+  for(auto& ipropagator : propagator_) {
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
+        ++propagator_isphere) {
+      unsigned isphere = ipropagator.detector0 + propagator_isphere;
+      ipropagator.propagator->point_telescope_az_el_phi_deg(
+        propagator_isphere, az_deg[isphere], el_deg[isphere],
+        phi_deg[isphere]);
+    }
+    auto spheres = ipropagator.propagator->detector_spheres();
+    if(spheres.size() != ipropagator.ndetector) {
+      // this should never happen
+      throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
+    }
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
+      ++propagator_isphere) {
+      const auto& isphere(spheres[propagator_isphere]);
+      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
+      if(isphere.iobs != config_.observation_level()) {
+        throw std::runtime_error("Detector observation level does not match configured value.");
+      }
+      idetector.sphere = isphere;
+      idetector.squared_radius         = SQR(isphere.radius);
+      idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+    }
+  }
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_all_telescopes_az_el_deg(const Eigen::VectorXd& az_deg, const Eigen::VectorXd& el_deg)
+{
+  point_all_telescopes_az_el_phi_deg(az_deg, el_deg,
+    Eigen::VectorXd::Constant(detector_.size(), 0.0));
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_all_telescopes_az_el_phi_deg(double az_deg, double el_deg, double phi_deg)
+{
+  point_all_telescopes_az_el_phi_deg(
+    Eigen::VectorXd::Constant(detector_.size(), az_deg),
+    Eigen::VectorXd::Constant(detector_.size(), el_deg),
+    Eigen::VectorXd::Constant(detector_.size(), phi_deg));
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+point_all_telescopes_az_el_deg(double az_deg, double el_deg)
+{
+  point_all_telescopes_az_el_phi_deg(
+    Eigen::VectorXd::Constant(detector_.size(), az_deg),
+    Eigen::VectorXd::Constant(detector_.size(), el_deg),
+    Eigen::VectorXd::Constant(detector_.size(), 0.0));
+}
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
