@@ -278,6 +278,7 @@ bool VSOTelescope::pointTelescope(const Eigen::Vector3d& v)
   if(v.squaredNorm()==0)return false;
   fElevation = atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y()));
   fAzimuth = fmod(atan2(v.x(),v.y())+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = 0;
   calculateRotationVector();
   return true;
 }
@@ -286,6 +287,16 @@ bool VSOTelescope::pointTelescopeAzEl(const double az_rad, const double el_rad)
 {
   fElevation = fmod(fmod(el_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
   fAzimuth = fmod(fmod(az_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = 0;
+  calculateRotationVector();
+  return true;
+}
+
+bool VSOTelescope::pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad)
+{
+  fElevation = fmod(fmod(el_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fAzimuth = fmod(fmod(az_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = fmod(fmod(phi_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
   calculateRotationVector();
   return true;
 }

@@ -136,6 +136,7 @@ public:
   //! Points telescope along axis
   bool pointTelescope(const Eigen::Vector3d& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
+  bool pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad);
 
   //! Transform particle global to reflector
   inline void globalToReflector_pos(Eigen::Vector3d& v) const;
