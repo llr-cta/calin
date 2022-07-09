@@ -47,6 +47,8 @@ struct InterpolationIntervals
   double regular_dx_inv;  // one over the interval of the regularly sampled portion
   unsigned irregular_begin;
   std::vector<double> x;  // x at the start / end of the intervals
+  std::vector<double> dx;  // difference bwteen x at the start and end of the interval
+  std::vector<double> dx_inv;  // 1/dx for the intervals
 };
 
 struct CubicSplineIntervals: public InterpolationIntervals
@@ -165,6 +167,34 @@ inline unsigned find_interval(double x, const InterpolationIntervals& intervals)
   return i - intervals.x.begin() - 1;
 }
 
+inline unsigned find_interval(double x, const InterpolationIntervals& intervals,
+  double& dx, double& dx_inv)
+{
+  if(x<=intervals.xmin) {
+    unsigned ival = 0;
+    dx = intervals.dx[ival];
+    dx_inv = intervals.dx_inv[ival];
+    return ival;
+  }
+  if(x>=intervals.xmax) {
+    unsigned ival = intervals.x.size()-2;
+    dx = intervals.dx[ival];
+    dx_inv = intervals.dx_inv[ival];
+    return ival;
+  }
+  if(x<intervals.regular_xmax) {
+    dx = intervals.regular_dx;
+    dx_inv = intervals.regular_dx_inv;
+    return std::floor((x-intervals.xmin)*intervals.regular_dx_inv);
+  }
+  auto i = std::upper_bound(
+    intervals.x.begin()+intervals.irregular_begin, intervals.x.end(), x);
+  unsigned ival = i - intervals.x.begin() - 1;
+  dx = intervals.dx[ival];
+  dx_inv = intervals.dx_inv[ival];
+  return ival;
+}
+
 template<typename VCLReal> inline typename VCLReal::int_vt
 vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& intervals)
 {
@@ -191,6 +221,43 @@ vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& int
     }
   } else {
     ireg = vcl::min(ireg, iregmax);
+  }
+  return ireg;
+}
+
+template<typename VCLReal> inline typename VCLReal::int_vt
+vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& intervals,
+  typename VCLReal::real_vt& x0, typename VCLReal::real_vt& dx, typename VCLReal::real_vt& dx_inv)
+{
+  typename VCLReal::int_vt ireg =
+    VCLReal::round_to_int(vcl::floor((x-intervals.xmin)*intervals.regular_dx_inv));
+  ireg = vcl::max(ireg, 0);
+  unsigned iregmax = intervals.x.size()-2;
+  if(intervals.irregular_begin <= iregmax)
+  {
+    if(vcl::horizontal_or(ireg > intervals.irregular_begin)) {
+      // Yucky scalar code, sniff :'(
+      typename VCLReal::real_at x_array;
+      typename VCLReal::int_at ireg_array;
+      x.store_a(x_array);
+      ireg.store_a(ireg_array);
+      for(unsigned iv=0; iv<VCLReal::num_real; ++iv) {
+        if(ireg_array[iv] > intervals.irregular_begin) {
+          auto i = std::upper_bound(
+            intervals.x.begin()+intervals.irregular_begin, intervals.x.end()-1, x_array[iv]);
+          ireg_array[iv] = i - intervals.x.begin() - 1;
+        }
+      }
+      ireg.load_a(ireg_array);
+      x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
+      dx = vcl::lookup<0x40000000>(ireg, intervals.dx.data());
+      dx_inv = vcl::lookup<0x40000000>(ireg, intervals.dx_inv.data());
+    }
+  } else {
+    ireg = vcl::min(ireg, iregmax);
+    x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
+    dx = intervals.regular_dx;
+    dx_inv = intervals.regular_dx_inv;
   }
   return ireg;
 }
@@ -323,6 +390,8 @@ public:
   double second_derivative_and_value(double x, unsigned ispline,
     double& first_derivative, double& value) const;
 
+  double integral(double x, unsigned ispline) const;
+
   template<typename VCLArchitecture> inline typename VCLArchitecture::int64_vt
   vcl_get_interval(typename VCLArchitecture::double_vt x) const {
     return vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
@@ -439,11 +508,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x, unsigned ispl
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   return VCALC_SPLINE(ispline);
@@ -457,11 +525,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -477,11 +544,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -499,11 +565,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -523,11 +588,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -549,11 +613,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -577,11 +640,10 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   value0 = VCALC_SPLINE(ispline0);
@@ -601,11 +663,10 @@ CubicMultiSpline::vcl_derivative_and_value(
   typedef typename VCLArchitecture::int64_vt int64_vt;
   typedef typename VCLArchitecture::double_vt double_vt;
 
-  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
-  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
-  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
-  double_vt dx = x1-x0;
-  double_vt dx_inv = 1.0/dx;
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
   double_vt t = (x-x0)*dx_inv;
 
   return cubic_1st_derivative_and_value(value, t, dx, dx_inv,
