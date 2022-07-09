@@ -149,15 +149,23 @@ public:
     // nothing to see here
   }
 
-  void point_telescope(unsigned iscope, double az_rad, double dec_rad, double phi_rad=0.0) {
-    array_->telescope(iscope)->pointTelescopeAzElPhi(az_rad, dec_rad, phi_rad);
+  void point_telescope_az_el_phi(unsigned iscope, double az_rad, double el_rad, double phi_rad) {
+    array_->telescope(iscope)->pointTelescopeAzElPhi(az_rad, el_rad, phi_rad);
     ray_tracer_[iscope]->point_telescope(array_->telescope(iscope));
   }
 
-  void point_all_telescopes(double az_rad, double dec_rad, double phi_rad=0) {
+  void point_all_telescopes_az_el_phi(double az_rad, double el_rad, double phi_rad) {
     for(unsigned iscope=0;iscope<array_->numTelescopes();++iscope) {
-      point_telescope(iscope, az_rad, dec_rad, phi_rad);
+      point_telescope_az_el_phi(iscope, az_rad, el_rad, phi_rad);
     }
+  }
+
+  void point_telescope_az_el(unsigned iscope, double az_rad, double el_rad) {
+    point_telescope_az_el_phi(iscope, az_rad, el_rad, 0.0);
+  }
+
+  void point_all_telescopes_az_el(double az_rad, double el_rad) {
+    point_all_telescopes_az_el_phi(az_rad, el_rad, 0.0);
   }
 
 #ifndef SWIG
