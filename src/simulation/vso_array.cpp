@@ -205,7 +205,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
 
       VSOTelescope* telescope =
       	new VSOTelescope(fTelescopes.size(), pos,
-      			 param.reflector_frame().delta_y()*M_PI/180.0,
+      			 param.reflector_frame().fp_offset()*M_PI/180.0,
              param.reflector_frame().alpha_x()*M_PI/180.0,
              param.reflector_frame().alpha_y()*M_PI/180.0,
              param.reflector_frame().altaz().altitude()*M_PI/180.0,

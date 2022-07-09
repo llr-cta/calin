@@ -205,7 +205,7 @@ public:
   double                 altitude() const { return fPos.z(); }
   const Eigen::Vector3d& pos() const { return fPos; }
   const Eigen::Vector3d& position() const { return fPos; }
-  double                 deltaY() const { return fDeltaY; }
+  double                 fpOffset() const { return fFPOffset; }
   double                 alphaX() const { return fAlphaX; }
   double                 alphaY() const { return fAlphaY; }
   double                 azimuth() const { return fAzimuth; }
@@ -298,7 +298,7 @@ private:
   // ************************************************************************
   unsigned        fID;                //!< Sequential ID (starting at 0)
   Eigen::Vector3d fPos;               //!< Position of the telescope
-  double          fDeltaY;            //!< Nonorthogonality of rotation planes
+  double          fFPOffset;            //!< Nonorthogonality of rotation planes
   double          fAlphaX;            //!< Alignment angles(?)
   double          fAlphaY;            //!< Alignment angles(?)
   double          fElevation;         //!< Elevation of the telescope -- angle to the x-y plane

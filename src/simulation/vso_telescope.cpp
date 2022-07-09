@@ -38,7 +38,7 @@ using calin::math::special::SQR;
 
 VSOTelescope::VSOTelescope():
     fID(), fPos(),
-    fDeltaY(), fAlphaX(), fAlphaY(),
+    fFPOffset(), fAlphaX(), fAlphaY(),
     fElevation(), fAzimuth(),
     fTranslation(), fCurvatureRadius(), fAperture(),
     fFacetSpacing(), fFacetSize(),
@@ -60,7 +60,7 @@ VSOTelescope::VSOTelescope():
 
 VSOTelescope::
 VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
-	     double DY, double AX, double AY, double EL, double AZ,
+	     double FPO, double AX, double AY, double EL, double AZ,
 	     const Eigen::Vector3d& T, double CR, double A, double FSP, double FS,
 	     double RR, double FGSX, double FGSZ,
        unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
@@ -73,7 +73,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
        const std::vector<VSOObscuration*>& OBSVEC_CAM
 	     ):
     fID(TID), /*fTelescopeHexID(THID),*/ fPos(P),
-    fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
+    fFPOffset(FPO), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
     fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
     fFacetSize(FS),
     fReflectorRotation(RR), fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
@@ -96,7 +96,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 
 VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fID(o.fID),
-    fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
+    fPos(o.fPos), fFPOffset(o.fFPOffset), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
     fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
     fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture),
     fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize),
@@ -168,7 +168,7 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 {
   fID                = o.fID;
   fPos               = o.fPos;
-  fDeltaY            = o.fDeltaY;
+  fFPOffset          = o.fFPOffset;
   fAlphaX            = o.fAlphaX;
   fAlphaY            = o.fAlphaY;
   fElevation         = o.fElevation;
@@ -319,23 +319,14 @@ void VSOTelescope::calculateRotationVector()
     Eigen::AngleAxisd(fAlphaY,     Eigen::Vector3d::UnitX()) *
     Eigen::AngleAxisd(fAlphaX,     Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(-fAzimuth,   Eigen::Vector3d::UnitZ()) *
-    Eigen::AngleAxisd(fDeltaY,     Eigen::Vector3d::UnitY()) *
-    Eigen::AngleAxisd(fElevation,  Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd(fElevation,  Eigen::Vector3d::UnitX()) *
+    Eigen::AngleAxisd(fFPOffset,   Eigen::Vector3d::UnitZ());
   rot_global_to_reflector_ = rot_reflector_to_global_.transpose();
   off_global_to_reflector_ = fPos - rot_reflector_to_global_ * fTranslation;
 
   rot_camera_to_global_ = rot_reflector_to_global_ * rot_camera_to_reflector_;
   off_global_to_camera_ =
     fPos - rot_reflector_to_global_ * (fTranslation - fFPTranslation);
-
-#if 0
-  rot_reflector_to_global_ =
-      Eigen::Vector3d(1,0,0)*fElevation &
-      Eigen::Vector3d(0,1,0)*fDeltaY &
-      Eigen::Vector3d(0,0,-1)*fAzimuth &
-      Eigen::Vector3d(0,1,0)*fAlphaX &
-      Eigen::Vector3d(1,0,0)*fAlphaY;
-#endif
 }
 
 // ****************************************************************************
@@ -640,7 +631,7 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->Clear();
   d->set_id(fID);
   calin::math::vector3d_util::dump_as_proto(fPos, d->mutable_pos());
-  d->set_delta_y(fDeltaY/M_PI*180.0);
+  d->set_fp_offset(fFPOffset/M_PI*180.0);
   d->set_alpha_x(fAlphaX/M_PI*180.0);
   d->set_alpha_y(fAlphaY/M_PI*180.0);
   d->mutable_alt_az()->set_altitude(fElevation/M_PI*180.0);
@@ -694,7 +685,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
   VSOTelescope* scope = new VSOTelescope(
     d.id(), // TID
     calin::math::vector3d_util::from_proto(d.pos()), // P
-    d.delta_y()*M_PI/180.0, // DY
+    d.fp_offset()*M_PI/180.0, // DY
     d.alpha_x()*M_PI/180.0, // AX
     d.alpha_y()*M_PI/180.0, // AY
     d.alt_az().altitude()*M_PI/180.0, // EL

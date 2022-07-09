@@ -234,10 +234,11 @@ message VSOTelescopeData {
   common_types.Vector3D pos                                = 3
     [(CFO).desc = "Position of the reflector center in the array frame. ",
      (CFO).units = "cm" ];
-  double delta_y                                           = 4
-    [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
-     "planes. Specifies rotation of the elevation axis around the y-axis of "
-     "the azimuth plane.",
+  double fp_offset                                           = 4
+    [(CFO).desc = "Pointing offset perperndicular to elevation, allowing "
+     "focal plane to be offset from nominal position in \"X\" direction. "
+     "This offset cannot generally be done on an alt-az telescope but it "
+     "can be useful in simulations.",
      (CFO).units = "deg"];
   double alpha_x                                           = 5
     [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
@@ -424,7 +425,7 @@ message ReflectorFrameParameters
 {
   common_types.HorizontalCoordinates altaz                 = 1
     [(CFO).desc = "Altitude and elevation of telescope"];
-  double delta_y                                           = 2
+  double fp_offset                                           = 2
     [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
      "planes. Specifies rotation of the elevation axis around the y-axis of "
      "the azimuth plane.",
