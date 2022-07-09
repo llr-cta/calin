@@ -92,6 +92,11 @@ public:
   virtual void finish_propagating() {
     // nothing to see here
   }
+
+  virtual void point_telescope_az_el_phi_deg(unsigned iscope,
+      double az_deg, double el_deg, double phi_deg=0.0) {
+    // nothing to see here
+  }
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) DaviesCottonVCLFocalPlaneRayPropagator:
@@ -149,23 +154,14 @@ public:
     // nothing to see here
   }
 
-  void point_telescope_az_el_phi(unsigned iscope, double az_rad, double el_rad, double phi_rad) {
-    array_->telescope(iscope)->pointTelescopeAzElPhi(az_rad, el_rad, phi_rad);
-    ray_tracer_[iscope]->point_telescope(array_->telescope(iscope));
-  }
-
-  void point_all_telescopes_az_el_phi(double az_rad, double el_rad, double phi_rad) {
-    for(unsigned iscope=0;iscope<array_->numTelescopes();++iscope) {
-      point_telescope_az_el_phi(iscope, az_rad, el_rad, phi_rad);
+  void point_telescope_az_el_phi_deg(unsigned iscope,
+      double az_deg, double el_deg, double phi_deg=0.0) final {
+    if(iscope >= array_->numTelescopes()) {
+      throw std::out_of_range("Telescope number out of range");
     }
-  }
-
-  void point_telescope_az_el(unsigned iscope, double az_rad, double el_rad) {
-    point_telescope_az_el_phi(iscope, az_rad, el_rad, 0.0);
-  }
-
-  void point_all_telescopes_az_el(double az_rad, double el_rad) {
-    point_all_telescopes_az_el_phi(az_rad, el_rad, 0.0);
+    array_->telescope(iscope)->pointTelescopeAzElPhi(
+      az_deg/180.0*M_PI, el_deg/180.0*M_PI, phi_deg/180.0*M_PI);
+    ray_tracer_[iscope]->point_telescope(array_->telescope(iscope));
   }
 
 #ifndef SWIG
