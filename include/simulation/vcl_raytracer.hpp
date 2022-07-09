@@ -152,7 +152,7 @@ public:
     using calin::simulation::vs_optics::VSOAlignedCircularAperture;
     using calin::simulation::vs_optics::VSOTubeObscuration;
 
-    scope_pos_               = scope->pos().cast<real_t>();
+    global_to_reflector_off_ = scope->translationGlobalToReflector().cast<real_t>();
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
     ref_index_               = refractive_index;
 
@@ -272,10 +272,15 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
+  void point_telescope(const calin::simulation::vs_optics::VSOTelescope* scope) {
+    global_to_reflector_off_ = scope->translationGlobalToReflector().cast<real_t>();
+    global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
+  }
+
   static void transform_to_scope_reflector_frame(Ray& ray,
       const calin::simulation::vs_optics::VSOTelescope* scope)
   {
-    ray.translate_origin(scope->pos().cast<real_vt>());
+    ray.translate_origin(scope->translationGlobalToReflector().cast<real_vt>());
     ray.rotate(scope->rotationGlobalToReflector().cast<real_vt>());
   }
 
@@ -286,12 +291,12 @@ public:
     // ********************** RAY STARTS IN GLOBAL FRAME ***********************
     // *************************************************************************
 
-    ray.translate_origin(scope_pos_.template cast<real_vt>());
+    ray.translate_origin(global_to_reflector_off_.template cast<real_vt>());
     ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
     mask = trace_reflector_frame(mask, ray, info);
     if(do_derotation) {
       ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
-      ray.untranslate_origin(scope_pos_.template cast<real_vt>());
+      ray.untranslate_origin(global_to_reflector_off_.template cast<real_vt>());
     }
     return mask;
   }
@@ -632,7 +637,7 @@ private:
     }
   }
 
-  vec3_t          scope_pos_;
+  vec3_t          global_to_reflector_off_;
   mat3_t          global_to_reflector_rot_;
   real_t          ref_index_;
 
