@@ -107,6 +107,8 @@ public:
     return detector_efficiency_spline_;
   }
 
+  unsigned num_scopes() const { return detector_.size(); }
+
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
   void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
