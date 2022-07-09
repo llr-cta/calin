@@ -149,6 +149,17 @@ public:
     // nothing to see here
   }
 
+  void point_telescope(unsigned iscope, double az_rad, double dec_rad, double phi_rad=0.0) {
+    array_->telescope(iscope)->pointTelescopeAzElPhi(az_rad, dec_rad, phi_rad);
+    ray_tracer_[iscope]->point_telescope(array_->telescope(iscope));
+  }
+
+  void point_all_telescopes(double az_rad, double dec_rad, double phi_rad=0) {
+    for(unsigned iscope=0;iscope<array_->numTelescopes();++iscope) {
+      point_telescope(iscope, az_rad, dec_rad, phi_rad);
+    }
+  }
+
 #ifndef SWIG
   double_bvt propagate_rays_to_focal_plane(
       unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
@@ -172,6 +183,8 @@ public:
   void finish_propagating() final {
     // nothing to see here
   }
+
+  const calin::simulation::vs_optics::VSOArray* array() const { return array_; }
 
 #ifndef SWIG
 private:
