@@ -95,6 +95,17 @@ pointTelescopesAzEl(const double az_rad, const double el_rad)
   return good;
 }
 
+bool VSOArray::
+pointTelescopesAzElPhi(const double az_rad, const double el_rad, const double phi_rad)
+{
+  bool good = true;
+  for(std::vector<VSOTelescope*>::iterator i = fTelescopes.begin();
+      i!=fTelescopes.end(); i++)
+    good &= (*i)->pointTelescopeAzElPhi(az_rad,el_rad,phi_rad);
+  return good;
+}
+
+
 // ****************************************************************************
 // Array creation
 // ****************************************************************************

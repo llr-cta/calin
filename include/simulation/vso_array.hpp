@@ -85,6 +85,7 @@ class VSOArray
   // ************************************************************************
   bool pointTelescopesAzEl(const double az_rad, const double el_rad);
   bool pointTelescopes(const Eigen::Vector3d& v);
+  bool pointTelescopesAzElPhi(const double az_rad, const double el_rad, const double phi_rad);
 
   // ************************************************************************
   // Accessors
