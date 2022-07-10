@@ -40,3 +40,6 @@
 %import "math/interpolation_1d.i"
 
 %include "simulation/detector_efficiency.hpp"
+
+%template(CherenkovBandwidthTaylorCoefficientsVector) \
+  std::vector<calin::simulation::detector_efficiency::CherenkovBandwidthTaylorCoefficients>;
