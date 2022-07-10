@@ -574,7 +574,7 @@ double CubicMultiSpline::integral(double x, unsigned ispline) const
   double t = (x-s_.x[i])*dx_inv;
   double I0 = 0;
   for(unsigned j=0;j<i;j++) {
-    I0 = cubic_integral(s_.x[i+1], dx, dx_inv, y_[ispline][j], y_[ispline][j+1],
+    I0 = cubic_integral(1.0, dx, dx_inv, y_[ispline][j], y_[ispline][j+1],
       dy_dx_[ispline][j], dy_dx_[ispline][j+1], I0);
   }
   return cubic_integral(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
