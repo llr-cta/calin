@@ -29,7 +29,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
 	regular_grid.cpp lomb_scargle.cpp
 	b_spline.cpp
-	spline_interpolation.cpp least_squares.cpp nspace.cpp)
+spline_interpolation.cpp spline_interpolation_2d.cpp least_squares.cpp nspace.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util

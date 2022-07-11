@@ -229,9 +229,10 @@ template<typename VCLReal> inline typename VCLReal::int_vt
 vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& intervals,
   typename VCLReal::real_vt& x0, typename VCLReal::real_vt& dx, typename VCLReal::real_vt& dx_inv)
 {
-  typename VCLReal::int_vt ireg =
-    VCLReal::round_to_int(vcl::floor((x-intervals.xmin)*intervals.regular_dx_inv));
-  ireg = vcl::max(ireg, 0);
+  x0 = vcl::floor((x-intervals.xmin)*intervals.regular_dx_inv);
+  x0 = vcl::max(x0, 0.0);
+  typename VCLReal::int_vt ireg = VCLReal::round_to_int(x0);
+  // ireg = vcl::max(ireg, 0);
   unsigned iregmax = intervals.x.size()-2;
   if(intervals.irregular_begin <= iregmax)
   {
@@ -249,15 +250,16 @@ vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& int
         }
       }
       ireg.load_a(ireg_array);
-      x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
-      dx = vcl::lookup<0x40000000>(ireg, intervals.dx.data());
-      dx_inv = vcl::lookup<0x40000000>(ireg, intervals.dx_inv.data());
     }
+    x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
+    dx = vcl::lookup<0x40000000>(ireg, intervals.dx.data());
+    dx_inv = vcl::lookup<0x40000000>(ireg, intervals.dx_inv.data());
   } else {
     ireg = vcl::min(ireg, iregmax);
-    x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
+    // x0 = vcl::lookup<0x40000000>(ireg, intervals.x.data());
     dx = intervals.regular_dx;
     dx_inv = intervals.regular_dx_inv;
+    x0 = x0 * dx + intervals.xmin;
   }
   return ireg;
 }
@@ -284,8 +286,21 @@ public:
 
   double xmin() const { return s_.xmax; }
   double xmax() const { return s_.xmin; }
-  const std::vector<double> xknot() const { return s_.x; }
-  const std::vector<double> yknot() const { return s_.y; }
+
+  const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
+  const std::vector<double>& yknot_as_stdvec() const { return s_.y; }
+  const std::vector<double>& dydxknot_as_stdvec() const { return s_.dy_dx; }
+
+  Eigen::VectorXd xknot_as_eigen() const { return calin::std_to_eigenvec(s_.x); }
+  Eigen::VectorXd yknot_as_eigen() const { return calin::std_to_eigenvec(s_.y); }
+  Eigen::VectorXd dydxknot_as_eigen() const { return calin::std_to_eigenvec(s_.dy_dx); }
+
+#ifndef SWIG
+  const std::vector<double>& xknot() const { return s_.x; }
+  const std::vector<double>& yknot() const { return s_.y; }
+  const std::vector<double>& dydxknot() const { return s_.dy_dx; }
+#endif
+
   double value(double x) const;
   double derivative(double x) const;
   double derivative_and_value(double x, double& value) const;
@@ -324,10 +339,10 @@ public:
   double xmin() const { return s_.xmax; }
   double xmax() const { return s_.xmin; }
 
-  const std::vector<double> xknot_as_stdvec() const { return s_.x; }
+  const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   Eigen::VectorXd xknot_as_eigen() const { return calin::std_to_eigenvec(s_.x); }
 #ifndef SWIG
-  const std::vector<double> xknot() const { return s_.x; }
+  const std::vector<double>& xknot() const { return s_.x; }
 #endif
 
   unsigned num_spline() const { return y_.size(); };
@@ -348,8 +363,8 @@ public:
       dx = s_.regular_dx;
       dx_inv = s_.regular_dx_inv;
     } else {
-      dx = s_.x[iinterval+1]-x0;
-      dx_inv = 1.0/dx;
+      dx = s_.dx[iinterval];
+      dx_inv = s_.dx_inv[iinterval];
     }
   }
 
@@ -677,5 +692,84 @@ CubicMultiSpline::vcl_derivative_and_value(
 }
 
 #undef VCALC_SPLINE
+
+class TwoDimensionalCubicSpline
+{
+public:
+  TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+    const Eigen::MatrixXd& z);
+
+  double xmin() const { return sx_.xmax; }
+  double xmax() const { return sx_.xmin; }
+
+  double ymin() const { return sy_.xmax; }
+  double ymax() const { return sy_.xmin; }
+
+  const std::vector<double>& xknot_as_stdvec() const { return sx_.x; }
+  Eigen::VectorXd xknot_as_eigen() const { return calin::std_to_eigenvec(sx_.x); }
+#ifndef SWIG
+  const std::vector<double>& xknot() const { return sx_.x; }
+#endif
+
+  const std::vector<double>& yknot_as_stdvec() const { return sy_.x; }
+  Eigen::VectorXd yknot_as_eigen() const { return calin::std_to_eigenvec(sy_.x); }
+#ifndef SWIG
+  const std::vector<double>& yknot() const { return sy_.x; }
+#endif
+
+  const InterpolationIntervals& xintervals() const { return sx_; }
+  const InterpolationIntervals& yintervals() const { return sy_; }
+
+  inline unsigned get_xinterval(double x) const {
+    return find_interval(x, sx_);
+  }
+
+  inline unsigned get_yinterval(double y) const {
+    return find_interval(y, sy_);
+  }
+
+  inline void get_xsupport(unsigned ixinterval,
+    double& x0, double& dx, double& dx_inv)
+  {
+    x0 = sx_.x[ixinterval];
+    if(ixinterval < sx_.irregular_begin) {
+      dx = sx_.regular_dx;
+      dx_inv = sx_.regular_dx_inv;
+    } else {
+      dx = sx_.dx[ixinterval];
+      dx_inv = sx_.dx_inv[ixinterval];
+    }
+  }
+
+  inline void get_ysupport(unsigned iyinterval,
+    double& y0, double& dy, double& dy_inv)
+  {
+    y0 = sy_.x[iyinterval];
+    if(iyinterval < sy_.irregular_begin) {
+      dy = sy_.regular_dx;
+      dy_inv = sy_.regular_dx_inv;
+    } else {
+      dy = sy_.dx[iyinterval];
+      dy_inv = sy_.dx_inv[iyinterval];
+    }
+  }
+
+  Eigen::MatrixXd zknot_as_eigen() const { return z_; }
+  Eigen::MatrixXd dzdxknot_as_eigen() const { return dz_dx_; }
+  Eigen::MatrixXd dzdyknot_as_eigen() const { return dz_dy_; }
+  Eigen::MatrixXd d2zdxdyknot_as_eigen() const { return d2z_dx_dy_; }
+
+  double value(double x, double y) const;
+
+private:
+  InterpolationIntervals sx_;
+  InterpolationIntervals sy_;
+  Eigen::MatrixXd z_;
+  Eigen::MatrixXd dz_dx_;
+  Eigen::MatrixXd dz_dy_;
+  Eigen::MatrixXd d2z_dx_dy_;
+};
+
+
 
 } } } // namespace calin::math::spline_interpolation
