@@ -433,9 +433,6 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
   this->insert_from_2column_file_with_filter(filename,
     [](double& theta_in_w_out, double& eff) {
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
-  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
-  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 void AngularEfficiency::scaleEff(const InterpLinear1D& eff)
