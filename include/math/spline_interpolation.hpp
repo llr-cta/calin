@@ -66,6 +66,11 @@ std::vector<double> generate_cubic_spline_interpolation(
   BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
   BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
+Eigen::VectorXd generate_cubic_spline_interpolation_eigen(
+  const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+  BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+
 // The core cubic calculation functions are templates so they can be used for
 // scalar or vector types.
 

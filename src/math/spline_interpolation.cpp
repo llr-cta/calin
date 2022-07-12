@@ -167,7 +167,7 @@ generate_cubic_spline_interpolation(
   case BC_CLAMPED_SLOPE:
     b[np-1] = 1;
     a[np-1] = 0;
-    d[0] = bc_rhs_val;
+    d[np-1] = bc_rhs_val;
     break;
   case BC_NOT_A_KNOT:
     if((np==3)and(bc_lhs==BC_NOT_A_KNOT)) {
@@ -205,6 +205,16 @@ generate_cubic_spline_interpolation(
   // ypp[np-1] = -6*dy[np-2]*SQR(dx_inv[np-2]) + (2*m[np-2]+4*m[np-1])*dx_inv[np-2];
   //
   // return ypp;
+}
+
+Eigen::VectorXd calin::math::spline_interpolation::generate_cubic_spline_interpolation_eigen(
+  const Eigen::VectorXd& x, const Eigen::VectorXd& y,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val)
+{
+  return std_to_eigenvec(
+    generate_cubic_spline_interpolation(eigen_to_stdvec(x), eigen_to_stdvec(y),
+      bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
 }
 
 double calin::math::spline_interpolation::
