@@ -28,7 +28,9 @@
 
 #include <math/spline_interpolation.hpp>
 #include <math/special.hpp>
+#include <util/log.hpp>
 
+using namespace calin::util::log;
 using namespace calin::math::spline_interpolation;
 
 using calin::math::special::SQR;
@@ -40,8 +42,11 @@ TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
   const Eigen::MatrixXd& z):
   sx_(make_intervals(calin::eigen_to_stdvec(x))),
   sy_(make_intervals(calin::eigen_to_stdvec(y))),
-  z_(z), dz_dx_(z*0), dz_dy_(z*0), d2z_dx_dy_(z*0)
+  u_(z), p_(z*0), q_(z*0), r_(z*0)
 {
+  // Implement algorithm from "Two Dimensional Spline Intepolation Algorithms"
+  // H. Spath, 1995, Chapter
+
   if(z.cols() != x.size()) {
     throw std::range_error("Z matrix must have same number of columns as x vector");
   }
@@ -49,22 +54,24 @@ TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
     throw std::range_error("Z matrix must have same number of rows as y vector");
   }
 
+  // Solve equation 4.9 of Spath, 1995
   for(unsigned irow=0;irow<y.size();++irow) {
-    Eigen::VectorXd zrow = z_.row(irow);
-    CubicSpline xspline(sx_.x, calin::eigen_to_stdvec(zrow));
-    dz_dx_.row(irow) = xspline.dydxknot_as_eigen();
+    p_.row(irow) = generate_cubic_spline_interpolation_eigen(x, u_.row(irow));
   }
 
+  // Solve equation 4.10 of Spath, 1995
   for(unsigned icol=0;icol<x.size();++icol) {
-    Eigen::VectorXd zcol = z_.col(icol);
-    CubicSpline yspline(sy_.x, calin::eigen_to_stdvec(zcol));
-    dz_dy_.col(icol) = yspline.dydxknot_as_eigen();
+    q_.col(icol) = generate_cubic_spline_interpolation_eigen(y, u_.col(icol));
   }
 
+  // Solve equation 4.13 of Spath, 1995
+  r_.row(0) = generate_cubic_spline_interpolation_eigen(x, q_.row(0));
+  r_.row(y.size()-1) = generate_cubic_spline_interpolation_eigen(x, q_.row(y.size()-1));
+
+  // Solve equation 4.14 of Spath, 1995
   for(unsigned icol=0;icol<x.size();++icol) {
-    Eigen::VectorXd dz_dx_col = dz_dx_.col(icol);
-    CubicSpline dz_dx_spline(sy_.x, calin::eigen_to_stdvec(dz_dx_col));
-    d2z_dx_dy_.col(icol) = dz_dx_spline.dydxknot_as_eigen();
+    r_.col(icol) = generate_cubic_spline_interpolation_eigen(y, p_.col(icol),
+      BC_CLAMPED_SLOPE, r_(0,icol), BC_CLAMPED_SLOPE, r_(y.size()-1,icol));
   }
 }
 
@@ -74,18 +81,57 @@ double TwoDimensionalCubicSpline::value(double x, double y) const
   double dx_inv;
   unsigned ix = find_interval(x, sx_, dx, dx_inv);
 
+  double dx_inv2 = dx_inv*dx_inv;
+  double dx_inv3 = dx_inv2*dx_inv;
+  Eigen::Matrix4d Vx_inv;
+  Vx_inv << 1,                  0,          0,       0,
+            0,                  1,          0,       0,
+            -3*dx_inv2, -2*dx_inv,  3*dx_inv2, -dx_inv,
+            2*dx_inv3,    dx_inv2, -2*dx_inv3, dx_inv2;
+
+  // LOG(INFO) << "Vx_inv\n" << Vx_inv << '\n';
+
   double dy;
   double dy_inv;
   unsigned iy = find_interval(y, sy_, dy, dy_inv);
 
-  double tx = (x-sx_.x[ix])*dx_inv;
-  double ty = (y-sy_.x[iy])*dy_inv;
+  double dy_inv2 = dy_inv*dy_inv;
+  double dy_inv3 = dy_inv2*dy_inv;
+  Eigen::Matrix4d Vy_inv;
+  Vy_inv << 1,                  0,          0,       0,
+            0,                  1,          0,       0,
+            -3*dy_inv2, -2*dy_inv,  3*dy_inv2, -dy_inv,
+            2*dy_inv3,    dy_inv2, -2*dy_inv3, dy_inv2;
 
-  double z0 = cubic_value(ty, dy, dy_inv, z_(iy,ix), z_(iy+1,ix), dz_dy_(iy,ix), dz_dy_(iy+1,ix));
-  double z1 = cubic_value(ty, dy, dy_inv, z_(iy,ix+1), z_(iy+1,ix+1), dz_dy_(iy,ix+1), dz_dy_(iy+1,ix+1));
+  // LOG(INFO) << "Vy_inv\n" << Vy_inv << '\n';
 
-  double dz_dx_0 = cubic_value(ty, dy, dy_inv, dz_dx_(iy,ix), dz_dx_(iy+1,ix), d2z_dx_dy_(iy,ix), d2z_dx_dy_(iy+1,ix));
-  double dz_dx_1 = cubic_value(ty, dy, dy_inv, dz_dx_(iy,ix+1), dz_dx_(iy+1,ix+1), d2z_dx_dy_(iy,ix+1), d2z_dx_dy_(iy+1,ix+1));
+  Eigen::Matrix4d C;
+  C << u_(iy,ix),   q_(iy,ix),   u_(iy+1,ix),   q_(iy+1,ix),
+       p_(iy,ix),   r_(iy,ix),   p_(iy+1,ix),   r_(iy+1,ix),
+       u_(iy,ix+1), q_(iy,ix+1), u_(iy+1,ix+1), q_(iy+1,ix+1),
+       p_(iy,ix+1), r_(iy,ix+1), p_(iy+1,ix+1), r_(iy+1,ix+1);
 
-  return cubic_value(tx, dx, dx_inv, z0, z1, dz_dx_0, dz_dx_1);
+ // LOG(INFO) << "C\n" << C << '\n';
+
+  x -= sx_.x[ix];
+  y -= sy_.x[iy];
+
+  double x2 = x*x;
+  double x3 = x2*x;
+  Eigen::Vector4d gx;
+  gx << 1, x, x2, x3;
+
+  // LOG(INFO) << "gx\n" << gx << '\n';
+
+  double y2 = y*y;
+  double y3 = y2*y;
+  Eigen::Vector4d gy;
+  gy << 1, y, y2, y3;
+
+  // LOG(INFO) << "gy\n" << gx << '\n';
+
+  // LOG(INFO) << "Vy_inv * gy\n" << Vy_inv.transpose() * gy << '\n';
+
+
+  return gx.transpose() * Vx_inv * C * Vy_inv.transpose() * gy;
 }

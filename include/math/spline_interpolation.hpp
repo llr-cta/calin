@@ -759,20 +759,20 @@ public:
     }
   }
 
-  Eigen::MatrixXd zknot_as_eigen() const { return z_; }
-  Eigen::MatrixXd dzdxknot_as_eigen() const { return dz_dx_; }
-  Eigen::MatrixXd dzdyknot_as_eigen() const { return dz_dy_; }
-  Eigen::MatrixXd d2zdxdyknot_as_eigen() const { return d2z_dx_dy_; }
+  Eigen::MatrixXd zknot_as_eigen() const { return u_; }
+  Eigen::MatrixXd dzdxknot_as_eigen() const { return p_; }
+  Eigen::MatrixXd dzdyknot_as_eigen() const { return q_; }
+  Eigen::MatrixXd d2zdxdyknot_as_eigen() const { return r_; }
 
   double value(double x, double y) const;
 
 private:
   InterpolationIntervals sx_;
   InterpolationIntervals sy_;
-  Eigen::MatrixXd z_;
-  Eigen::MatrixXd dz_dx_;
-  Eigen::MatrixXd dz_dy_;
-  Eigen::MatrixXd d2z_dx_dy_;
+  Eigen::MatrixXd u_; // z_;
+  Eigen::MatrixXd p_; // dz_dx_;
+  Eigen::MatrixXd q_; // dz_dy_;
+  Eigen::MatrixXd r_; // d2z_dx_dy_;
 };
 
 
