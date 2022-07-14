@@ -75,7 +75,7 @@ TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
   }
 }
 
-double TwoDimensionalCubicSpline::value(double x, double y) const
+double TwoDimensionalCubicSpline::value_old(double x, double y) const
 {
   double dx;
   double dx_inv;
@@ -134,4 +134,59 @@ double TwoDimensionalCubicSpline::value(double x, double y) const
 
 
   return gx.transpose() * Vx_inv * C * Vy_inv.transpose() * gy;
+}
+
+double TwoDimensionalCubicSpline::value(double x, double y) const
+{
+  double dx;
+  double dx_inv;
+  unsigned ix = find_interval(x, sx_, dx, dx_inv);
+
+  x = (x - sx_.x[ix])*dx_inv;
+  double xn = x;
+
+  Eigen::Vector4d gx;
+  gx(0) = 1;
+  gx(1) = xn;
+  xn *= x;
+  gx(1) -= 2*xn;
+  gx(2) = 3*xn;
+  gx(3) = -xn;
+  xn *= x;
+  gx(1) += xn;
+  gx(2) -= 2*xn;
+  gx(3) += xn;
+  gx(0) -= gx(2);
+  gx(1) *= dx;
+  gx(3) *= dx;
+
+  double dy;
+  double dy_inv;
+  unsigned iy = find_interval(y, sy_, dy, dy_inv);
+
+  y = (y - sy_.x[iy])*dy_inv;
+  double yn = y;
+
+  Eigen::Vector4d gy;
+  gy(0) = 1;
+  gy(1) = yn;
+  yn *= y;
+  gy(1) -= 2*yn;
+  gy(2) = 3*yn;
+  gy(3) = -yn;
+  yn *= y;
+  gy(1) += yn;
+  gy(2) -= 2*yn;
+  gy(3) += yn;
+  gy(0) -= gy(2);
+  gy(1) *= dy;
+  gy(3) *= dy;
+
+  Eigen::Matrix4d C;
+  C << u_(iy,ix),   q_(iy,ix),   u_(iy+1,ix),   q_(iy+1,ix),
+       p_(iy,ix),   r_(iy,ix),   p_(iy+1,ix),   r_(iy+1,ix),
+       u_(iy,ix+1), q_(iy,ix+1), u_(iy+1,ix+1), q_(iy+1,ix+1),
+       p_(iy,ix+1), r_(iy,ix+1), p_(iy+1,ix+1), r_(iy+1,ix+1);
+
+  return gx.transpose() * C * gy;
 }
