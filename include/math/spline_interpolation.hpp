@@ -309,6 +309,8 @@ public:
   double value(double x) const;
   double derivative(double x) const;
   double derivative_and_value(double x, double& value) const;
+  double second_derivative(double x) const;
+  double third_derivative(double x) const;
   double integral(double x) const;
   double invert(double y) const;
 private:
@@ -765,6 +767,7 @@ public:
   Eigen::MatrixXd d2zdxdyknot_as_eigen() const { return r_; }
 
   double value(double x, double y) const;
+  double value_old(double x, double y) const;
 
 private:
   InterpolationIntervals sx_;

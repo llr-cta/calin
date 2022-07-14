@@ -326,6 +326,24 @@ double CubicSpline::derivative_and_value(double x, double& value) const
   return cubic_1st_derivative_and_value(value, t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
+double CubicSpline::second_derivative(double x) const
+{
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_2nd_derivative(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
+double CubicSpline::third_derivative(double x) const
+{
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_3rd_derivative(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
 double CubicSpline::integral(double x) const
 {
   double dx;
