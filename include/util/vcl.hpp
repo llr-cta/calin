@@ -156,6 +156,20 @@ typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 3> Matrix3_4d;
 typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 1> Vector3_8d;
 typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
 
+typedef Eigen::Matrix< ::vcl::Vec4f , 4 , 1> Vector4_4f;
+typedef Eigen::Matrix< ::vcl::Vec4f , 4 , 4> Matrix4_4f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 4 , 1> Vector4_8f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 4 , 4> Matrix4_8f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 4 , 1> Vector4_16f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 4 , 4> Matrix4_16f;
+
+typedef Eigen::Matrix< ::vcl::Vec2d , 4 , 1> Vector4_2d;
+typedef Eigen::Matrix< ::vcl::Vec2d , 4 , 4> Matrix4_2d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 4 , 1> Vector4_4d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 4 , 4> Matrix4_4d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 4 , 1> Vector4_8d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 4 , 4> Matrix4_8d;
+
 } // namespace Eigen
 
 namespace vcl {
@@ -368,6 +382,9 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
 
+  typedef typename VCLArchitecture::Vector4f_vt   vec4_vt;
+  typedef typename VCLArchitecture::Matrix4f_vt   mat4_vt;
+
   static inline int_vt truncate_to_int_limited(real_vt x) {
     return vcl::truncate_to_int(x);
   }
@@ -423,6 +440,9 @@ template<typename VCLArchitecture> struct VCLDoubleReal
 
   typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+
+  typedef typename VCLArchitecture::Vector4d_vt   vec4_vt;
+  typedef typename VCLArchitecture::Matrix4d_vt   mat4_vt;
 
   static inline int_vt truncate_to_int_limited(real_vt x) {
     return vcl::truncate_to_int64_limited(x);
@@ -503,6 +523,12 @@ struct VCL128Architecture
   typedef Eigen::Vector3_2d  Vector3d_vt;
   typedef Eigen::Matrix3_2d  Matrix3d_vt;
 
+  typedef Eigen::Vector4_4f Vector4f_vt;
+  typedef Eigen::Matrix4_4f Matrix4f_vt;
+
+  typedef Eigen::Vector4_2d  Vector4d_vt;
+  typedef Eigen::Matrix4_2d  Matrix4d_vt;
+
   typedef VCLFloatReal<VCL128Architecture> float_real;
   typedef VCLDoubleReal<VCL128Architecture> double_real;
 
@@ -575,6 +601,12 @@ struct VCL256Architecture
   typedef Eigen::Vector3_4d  Vector3d_vt;
   typedef Eigen::Matrix3_4d  Matrix3d_vt;
 
+  typedef Eigen::Vector4_8f Vector4f_vt;
+  typedef Eigen::Matrix4_8f Matrix4f_vt;
+
+  typedef Eigen::Vector4_4d  Vector4d_vt;
+  typedef Eigen::Matrix4_4d  Matrix4d_vt;
+
   typedef VCLFloatReal<VCL256Architecture> float_real;
   typedef VCLDoubleReal<VCL256Architecture> double_real;
 
@@ -646,6 +678,12 @@ struct VCL512Architecture
 
   typedef Eigen::Vector3_8d  Vector3d_vt;
   typedef Eigen::Matrix3_8d  Matrix3d_vt;
+
+  typedef Eigen::Vector4_16f Vector4f_vt;
+  typedef Eigen::Matrix4_16f Matrix4f_vt;
+
+  typedef Eigen::Vector4_8d  Vector4d_vt;
+  typedef Eigen::Matrix4_8d  Matrix4d_vt;
 
   typedef VCLFloatReal<VCL512Architecture> float_real;
   typedef VCLDoubleReal<VCL512Architecture> double_real;
