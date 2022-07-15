@@ -190,3 +190,63 @@ double TwoDimensionalCubicSpline::value(double x, double y) const
 
   return gx.transpose() * C * gy;
 }
+
+double TwoDimensionalCubicSpline::test_value(unsigned n, double x, double y) const
+{
+  volatile double z;
+  while(n--) {
+    z = value(x,y);
+  }
+  return z;
+}
+
+double TwoDimensionalCubicSpline::test_value_old(unsigned n, double x, double y) const
+{
+  volatile double z;
+  while(n--) {
+    z = value_old(x,y);
+  }
+  return z;
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_128(double x, double y) const
+{
+  return vcl_value<calin::util::vcl::VCL128Architecture>(x, y)[0];
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_128(unsigned n, double x, double y) const
+{
+  typename calin::util::vcl::VCL128Architecture::double_vt z;
+  while(n--) {
+    z = vcl_value<calin::util::vcl::VCL128Architecture>(x, y);
+  }
+  return z[0];
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_256(double x, double y) const
+{
+  return vcl_value<calin::util::vcl::VCL256Architecture>(x, y)[0];
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_256(unsigned n, double x, double y) const
+{
+  typename calin::util::vcl::VCL256Architecture::double_vt z;
+  while(n--) {
+    z = vcl_value<calin::util::vcl::VCL256Architecture>(x, y);
+  }
+  return z[0];
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_512(double x, double y) const
+{
+  return vcl_value<calin::util::vcl::VCL512Architecture>(x, y)[0];
+}
+
+double TwoDimensionalCubicSpline::test_vcl_value_512(unsigned n, double x, double y) const
+{
+  typename calin::util::vcl::VCL512Architecture::double_vt z;
+  while(n--) {
+    z = vcl_value<calin::util::vcl::VCL512Architecture>(x, y);
+  }
+  return z[0];
+}

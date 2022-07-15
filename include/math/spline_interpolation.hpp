@@ -769,6 +769,19 @@ public:
   double value(double x, double y) const;
   double value_old(double x, double y) const;
 
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_value(typename VCLArchitecture::double_vt x, typename VCLArchitecture::double_vt y) const;
+
+  double test_value(unsigned n, double x, double y) const;
+  double test_value_old(unsigned n, double x, double y) const;
+
+  double test_vcl_value_128(double x, double y) const;
+  double test_vcl_value_128(unsigned n, double x, double y) const;
+  double test_vcl_value_256(double x, double y) const;
+  double test_vcl_value_256(unsigned n, double x, double y) const;
+  double test_vcl_value_512(double x, double y) const;
+  double test_vcl_value_512(unsigned n, double x, double y) const;
+
 private:
   InterpolationIntervals sx_;
   InterpolationIntervals sy_;
@@ -778,6 +791,91 @@ private:
   Eigen::MatrixXd r_; // d2z_dx_dy_;
 };
 
+#ifndef SWIG
+template<typename VCLArchitecture> typename VCLArchitecture::double_vt
+TwoDimensionalCubicSpline::vcl_value(typename VCLArchitecture::double_vt x, typename VCLArchitecture::double_vt y) const
+{
+  typedef typename VCLArchitecture::int64_vt int64_vt;
+  typedef typename VCLArchitecture::double_vt double_vt;
+  typedef typename VCLArchitecture::Vector4d_vt Vector4d_vt;
+  typedef typename VCLArchitecture::Matrix4d_vt Matrix4d_vt;
 
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt ix = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, sx_, x0, dx, dx_inv);
+  x = (x-x0)*dx_inv;
+  double_vt xn = x;
+
+  Vector4d_vt gx;
+  gx(0) = 1;
+  gx(1) = xn;
+  xn *= x;
+  gx(1) -= 2*xn;
+  gx(2) = 3*xn;
+  gx(3) = -xn;
+  xn *= x;
+  gx(1) += xn;
+  gx(2) -= 2*xn;
+  gx(3) += xn;
+  gx(0) -= gx(2);
+  gx(1) *= dx;
+  gx(3) *= dx;
+
+  double_vt y0;
+  double_vt dy;
+  double_vt dy_inv;
+  int64_vt iy = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(y, sy_, y0, dy, dy_inv);
+  y = (y-y0)*dy_inv;
+  double_vt yn = y;
+
+  Vector4d_vt gy;
+  gy(0) = 1;
+  gy(1) = yn;
+  yn *= y;
+  gy(1) -= 2*yn;
+  gy(2) = 3*yn;
+  gy(3) = -yn;
+  yn *= y;
+  gy(1) += yn;
+  gy(2) -= 2*yn;
+  gy(3) += yn;
+  gy(0) -= gy(2);
+  gy(1) *= dy;
+  gy(3) *= dy;
+
+  // Note Eigen matrices are stored in column-major order by default
+  int64_vt ix0y0 = iy     + ix     * sy_.x.size();
+  int64_vt ix1y0 = iy     + (ix+1) * sy_.x.size();
+  int64_vt ix0y1 = (iy+1) + ix     * sy_.x.size();
+  int64_vt ix1y1 = (iy+1) + (ix+1) * sy_.x.size();
+
+  Matrix4d_vt C;
+
+  // C << u_(iy,ix),   q_(iy,ix),   u_(iy+1,ix),   q_(iy+1,ix),
+  //      p_(iy,ix),   r_(iy,ix),   p_(iy+1,ix),   r_(iy+1,ix),
+  //      u_(iy,ix+1), q_(iy,ix+1), u_(iy+1,ix+1), q_(iy+1,ix+1),
+  //      p_(iy,ix+1), r_(iy,ix+1), p_(iy+1,ix+1), r_(iy+1,ix+1);
+
+  C(0,0) = vcl::lookup<0x40000000>(ix0y0, u_.data());
+  C(0,1) = vcl::lookup<0x40000000>(ix0y0, q_.data());
+  C(0,2) = vcl::lookup<0x40000000>(ix0y1, u_.data());
+  C(0,3) = vcl::lookup<0x40000000>(ix0y1, q_.data());
+  C(1,0) = vcl::lookup<0x40000000>(ix0y0, p_.data());
+  C(1,1) = vcl::lookup<0x40000000>(ix0y0, r_.data());
+  C(1,2) = vcl::lookup<0x40000000>(ix0y1, p_.data());
+  C(1,3) = vcl::lookup<0x40000000>(ix0y1, r_.data());
+  C(2,0) = vcl::lookup<0x40000000>(ix1y0, u_.data());
+  C(2,1) = vcl::lookup<0x40000000>(ix1y0, q_.data());
+  C(2,2) = vcl::lookup<0x40000000>(ix1y1, u_.data());
+  C(2,3) = vcl::lookup<0x40000000>(ix1y1, q_.data());
+  C(3,0) = vcl::lookup<0x40000000>(ix1y0, p_.data());
+  C(3,1) = vcl::lookup<0x40000000>(ix1y0, r_.data());
+  C(3,2) = vcl::lookup<0x40000000>(ix1y1, p_.data());
+  C(3,3) = vcl::lookup<0x40000000>(ix1y1, r_.data());
+
+  return gx.transpose() * C * gy;
+}
+#endif
 
 } } } // namespace calin::math::spline_interpolation
