@@ -35,14 +35,14 @@ struct RayProcessorDetectorSphere
   RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
     r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
   RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius,
-      const Eigen::Vector3d& obs_dir_, double field_of_view_, unsigned iobs_ = 0):
+      const Eigen::Vector3d& obs_dir_, double field_of_view_radius_, unsigned iobs_ = 0):
     r0(r0_), radius(radius), iobs(iobs_),
-    obs_dir(obs_dir_), field_of_view(field_of_view_) { /* nothing to see here */ }
+    obs_dir(obs_dir_), field_of_view_radius(field_of_view_radius_) { /* nothing to see here */ }
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
   double radius = 0;         // Radius of sphere  [cm^2]
   unsigned iobs = 0;         // Observation layer associated with this detector
   Eigen::Vector3d obs_dir = Eigen::Vector3d::UnitY(); // Pointing direction of detector
-  double field_of_view = M_PI; // Field of view of detector [radians]
+  double field_of_view_radius = M_PI; // Field of view of detector [radians]
 };
 
 class RayProcessor
