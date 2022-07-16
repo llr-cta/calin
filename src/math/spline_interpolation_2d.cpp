@@ -1,8 +1,8 @@
 /*
 
-   calin/math/spline_interpolation.hpp -- Stephen Fegan -- 2018-12-17
+   calin/math/spline_interpolation.hpp -- Stephen Fegan -- 2022-07-11
 
-   Spline interpolation functions.
+   Two dimensional spline interpolation functions.
 
    Some of this code from my Fermi tools code "RegularSpline.hpp",
    These portions are copyright Stephen Fegan, 2010.
@@ -45,7 +45,7 @@ TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
   u_(z), p_(z*0), q_(z*0), r_(z*0)
 {
   // Implement algorithm from "Two Dimensional Spline Intepolation Algorithms"
-  // H. Spath, 1995, Chapter
+  // H. Spath, 1995, Chapter 4
 
   if(z.cols() != x.size()) {
     throw std::range_error("Z matrix must have same number of columns as x vector");
@@ -77,6 +77,9 @@ TwoDimensionalCubicSpline(const Eigen::VectorXd& x, const Eigen::VectorXd& y,
 
 double TwoDimensionalCubicSpline::value_old(double x, double y) const
 {
+  // Calculate spline at x,y using equations 4.1, 4.7 (corrected), 4.8
+  // of Spath 1995, retained as reference implementation
+
   double dx;
   double dx_inv;
   unsigned ix = find_interval(x, sx_, dx, dx_inv);
@@ -138,6 +141,9 @@ double TwoDimensionalCubicSpline::value_old(double x, double y) const
 
 double TwoDimensionalCubicSpline::value(double x, double y) const
 {
+  // Calculate spline at x,y by multiplying out two of the matrix-vector
+  // products of Spath 1995, Chapter 4
+
   double dx;
   double dx_inv;
   unsigned ix = find_interval(x, sx_, dx, dx_inv);
