@@ -163,17 +163,23 @@ VSORayProcessor::~VSORayProcessor()
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
-VSORayProcessor::detector_spheres()
+VSORayProcessor::detector_spheres_for_array(const calin::simulation::vs_optics::VSOArray* array)
 {
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
-  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
+  for(unsigned iscope=0; iscope<array->numTelescopes(); iscope++)
   {
-    auto* scope = array_->telescope(iscope);
+    auto* scope = array->telescope(iscope);
     Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
     scope->reflectorToGlobal_pos(sphere_center);
     s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
   }
   return s;
+}
+
+std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
+VSORayProcessor::detector_spheres()
+{
+  return detector_spheres_for_array(array_);
 }
 
 void VSORayProcessor::start_processing()

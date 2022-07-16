@@ -129,6 +129,9 @@ public:
 
   uint64_t nhit() { return nhit_; }
 
+  static std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
+    detector_spheres_for_array(const calin::simulation::vs_optics::VSOArray* array);
+
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;

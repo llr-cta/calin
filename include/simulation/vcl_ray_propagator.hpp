@@ -32,6 +32,7 @@
 #include <simulation/vso_array.hpp>
 #include <simulation/vcl_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
+#include <simulation/vso_ray_processor.hpp>
 #include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_ray_propagator {
@@ -138,16 +139,7 @@ public:
   }
 
   virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
-    // Copied from VSORayProcessor::detector_spheres() - Ugh!
-    std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
-    for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
-    {
-      auto* scope = array_->telescope(iscope);
-      Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
-      scope->reflectorToGlobal_pos(sphere_center);
-      s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
-    }
-    return s;
+    return calin::simulation::vso_ray_processor::VSORayProcessor::detector_spheres_for_array(array_);
   }
 
   void start_propagating() final {
