@@ -625,6 +625,11 @@ message FocalPlaneParameters {
      "reflector frame if desired. Focal plane rotation around x-axis of "
      "the reflector frame.",
      (CFO).units = "deg" ];
+  double field_of_view                                     = 4
+    [(CFO).desc = "Field of view of camera, defining twice the maximum field "
+      "angle that a ray can have and have a non-zero detection probability. If "
+      "zero this is approximated from camera_diameter and translation.",
+     (CFO).units = "deg"];
 };
 
 message HexPixelArrayParameters

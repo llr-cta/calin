@@ -178,6 +178,10 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       2.0*atan(param.focal_plane().camera_diameter()/
                (2.0*camera_fp_trans.norm()))*180.0/M_PI;
 
+  if(param.focal_plane().field_of_view() > 0) {
+    FoV = param.focal_plane().field_of_view();
+  }
+
   for(unsigned i=0; i<scope_pos.size(); i++)
     {
       // Position
