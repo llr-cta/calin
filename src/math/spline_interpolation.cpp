@@ -398,6 +398,23 @@ unsigned CubicMultiSpline::add_spline(const std::vector<double>& y,
   return ispline;
 }
 
+void CubicMultiSpline::replace_spline(unsigned ispline,
+  const std::vector<double>& y, const std::string& name,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val)
+{
+  if(ispline >= y_.size()) {
+    throw std::out_of_range("replace_spline: ispline out of range");
+  }
+  y_[ispline] = y;
+  dy_dx_[ispline] = generate_cubic_spline_interpolation(s_.x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  if(not name.empty()) { info_[ispline].name = name; }
+  info_[ispline].bc_lhs = bc_lhs;
+  info_[ispline].bc_lhs_val = bc_lhs_val;
+  info_[ispline].bc_rhs = bc_rhs;
+  info_[ispline].bc_rhs_val = bc_rhs_val;
+}
+
 CubicMultiSpline* CubicMultiSpline::new_regularized_multi_spline(double dx) const
 {
   std::vector<double> x_knots;

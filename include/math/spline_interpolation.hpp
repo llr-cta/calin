@@ -343,6 +343,11 @@ public:
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
     BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
+  void replace_spline(unsigned ispline,
+    const std::vector<double>& y, const std::string& name = "",
+    BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+    BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+
   double xmin() const { return s_.xmax; }
   double xmax() const { return s_.xmin; }
 
