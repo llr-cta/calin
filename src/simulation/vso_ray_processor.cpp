@@ -171,7 +171,11 @@ VSORayProcessor::detector_spheres_for_array(const calin::simulation::vs_optics::
     auto* scope = array->telescope(iscope);
     Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
     scope->reflectorToGlobal_pos(sphere_center);
-    s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
+
+    Eigen::Vector3d obs_dir = Eigen::Vector3d::UnitY();
+    scope->reflectorToGlobal_mom(obs_dir);
+
+    s.emplace_back(sphere_center, 0.5*scope->reflectorIP(), obs_dir, 0.5*scope->fov()*M_PI/180.0);
   }
   return s;
 }
