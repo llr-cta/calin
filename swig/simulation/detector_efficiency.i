@@ -41,5 +41,7 @@
 
 %include "simulation/detector_efficiency.hpp"
 
+%newobject integrate_bandwidth_to_spline;
+
 %template(CherenkovBandwidthTaylorCoefficientsVector) \
   std::vector<calin::simulation::detector_efficiency::CherenkovBandwidthTaylorCoefficients>;

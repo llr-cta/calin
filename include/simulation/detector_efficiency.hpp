@@ -37,6 +37,7 @@
 #include <ostream>
 
 #include <math/interpolation_1d.hpp>
+#include <math/spline_interpolation.hpp>
 
 namespace calin { namespace simulation { namespace detector_efficiency {
 
@@ -239,9 +240,15 @@ public:
     const DetectionEfficiency& eff) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff, double emin, double emax) const;
+  calin::math::spline_interpolation::TwoDimensionalCubicSpline* integrate_bandwidth_to_spline(
+    double h0, const DetectionEfficiency& eff, std::vector<double> h = { },
+    std::vector<double> w = { 0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0 }, double emin=0, double emax=0) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
   void set_zref(double zref);
+  const calin::math::interpolation_1d::InterpLinear1D& absorption(unsigned ie) {
+    return absorption_.at(ie);
+  }
 private:
   std::vector<double>                                        e_ev_;
   std::vector<calin::math::interpolation_1d::InterpLinear1D> absorption_;

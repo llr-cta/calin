@@ -350,6 +350,54 @@ integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff,
   return bandwidth;
 }
 
+calin::math::spline_interpolation::TwoDimensionalCubicSpline*
+AtmosphericAbsorption::integrate_bandwidth_to_spline(
+  double h0, const DetectionEfficiency& eff,
+  std::vector<double> h, std::vector<double> w, double emin, double emax) const
+{
+  if(emin == 0 and emax == 0) {
+    emin = std::numeric_limits<double>::infinity();
+    for(auto e : eff.all_xi()) {
+      emin = std::min(emin, e);
+      emax = std::max(emax, e);
+    }
+  }
+
+  if(h.empty()) {
+    for(double ih=h0; ih<=levels_cm().back(); ih+=1e5) {
+      h.push_back(ih);
+    }
+  }
+
+  Eigen::VectorXd hh = calin::std_to_eigenvec(h);
+  Eigen::VectorXd ww = calin::std_to_eigenvec(w);
+  Eigen::MatrixXd bw(ww.size(), hh.size());
+
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
+
+  for(unsigned ih=0;ih<hh.size();ih++)
+  {
+    double h = hh(ih);
+    std::vector<InterpLinear1D> Y0(w.size());
+    for(unsigned ie=0;ie<e_ev_.size();ie++)
+  	{
+  	  double e = e_ev_[ie];
+  	  double od = std::max(absorption_[ie](h)-abs0(e), 0.0);
+      for(unsigned iw=0;iw<w.size();iw++) {
+	      double abs = std::exp(-od/w[iw]);
+	      Y0[iw].insert(e, abs);
+      }
+  	}
+
+    for(unsigned iw=0;iw<w.size();iw++) {
+      Y0[iw] *= eff;
+      bw(iw,ih) = Y0[iw].integrate(emin,emax);
+    }
+  }
+
+  return new calin::math::spline_interpolation::TwoDimensionalCubicSpline(hh,ww,bw);
+}
+
 std::vector<double> AtmosphericAbsorption::levels_cm() const
 {
   return absorption_.front().all_xi();
