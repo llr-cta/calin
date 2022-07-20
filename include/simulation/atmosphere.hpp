@@ -307,7 +307,7 @@ public:
   bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
     bool time_reversal_ok=true);
 
-  double refraction_safety_radius(double theta_rad, unsigned iobs=0);
+  double refraction_safety_radius(double zenith_rad, unsigned iobs=0);
 
   template<typename VCLArchitecture> inline void
   vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
