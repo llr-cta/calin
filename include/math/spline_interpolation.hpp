@@ -348,8 +348,8 @@ public:
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
     BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
-  double xmin() const { return s_.xmax; }
-  double xmax() const { return s_.xmin; }
+  double xmin() const { return s_.xmin; }
+  double xmax() const { return s_.xmax; }
 
   const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   Eigen::VectorXd xknot_as_eigen() const { return calin::std_to_eigenvec(s_.x); }
