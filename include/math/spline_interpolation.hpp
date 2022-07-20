@@ -358,8 +358,8 @@ public:
 #endif
 
   unsigned num_spline() const { return y_.size(); };
-  const CubicSplineInfo& dataset_info(unsigned ispline) { return info_[ispline]; }
-  const std::string& dataset_name(unsigned ispline) { return info_[ispline].name; }
+  const CubicSplineInfo& dataset_info(unsigned ispline) const { return info_[ispline]; }
+  const std::string& dataset_name(unsigned ispline) const { return info_[ispline].name; }
 
   const InterpolationIntervals& intervals() const { return s_; }
 
