@@ -25,8 +25,10 @@
 #pragma once
 
 #include <vector>
+#include <sstream>
 
 #include <util/log.hpp>
+#include <util/string.hpp>
 #include <math/special.hpp>
 #include <simulation/vcl_iact.hpp>
 #include <simulation/vcl_ray_propagator.hpp>
@@ -109,12 +111,15 @@ public:
 
   unsigned num_scopes() const { return detector_.size(); }
 
+  std::string banner() const;
+
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
   void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
   // void leave_event() final;
 
 protected:
+  void update_detector_efficiencies();
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
   std::vector<double> detector_efficiency_energy_knots();
@@ -159,6 +164,8 @@ protected:
   std::vector<DetectionEfficiency> detector_efficiency_;
   calin::math::spline_interpolation::CubicMultiSpline detector_efficiency_spline_;
   double zobs_;
+  double wmax_ = 1.0;
+  double wmin_ = 0.0;
   double ref_index_;
   double ref_index_correction_;
   double safety_radius_;
@@ -283,14 +290,14 @@ add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const st
     [detector_efficiency](double e) { return detector_efficiency(e); });
 
   detector_efficiency_spline_.add_spline(detector_efficiency_yknot, name);
+
+  update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 point_telescope_az_el_phi_deg(unsigned iscope,
   double az_deg, double el_deg, double phi_deg)
 {
-  using calin::math::special::SQR;
-
   if(iscope >= detector_.size()) {
     throw std::out_of_range("Telescope ID out of range");
   }
@@ -302,18 +309,7 @@ point_telescope_az_el_phi_deg(unsigned iscope,
   ipropagator.propagator->point_telescope_az_el_phi_deg(
     propagator_isphere, az_deg, el_deg, phi_deg);
 
-  auto spheres = ipropagator.propagator->detector_spheres();
-  if(spheres.size() != ipropagator.ndetector) {
-    // this should never happen
-    throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
-  }
-  const auto& isphere = spheres[propagator_isphere];
-  if(isphere.iobs != config_.observation_level()) {
-      throw std::runtime_error("Detector observation level does not match configured value.");
-    }
-  idetector.sphere = isphere;
-  idetector.squared_radius         = SQR(isphere.radius);
-  idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+  update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -326,8 +322,6 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
   const Eigen::VectorXd&  el_deg, const Eigen::VectorXd&  phi_deg)
 {
-  using calin::math::special::SQR;
-
   for(auto& ipropagator : propagator_) {
     for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
         ++propagator_isphere) {
@@ -336,23 +330,8 @@ point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
         propagator_isphere, az_deg[isphere], el_deg[isphere],
         phi_deg[isphere]);
     }
-    auto spheres = ipropagator.propagator->detector_spheres();
-    if(spheres.size() != ipropagator.ndetector) {
-      // this should never happen
-      throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
-    }
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
-      ++propagator_isphere) {
-      const auto& isphere(spheres[propagator_isphere]);
-      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
-      if(isphere.iobs != config_.observation_level()) {
-        throw std::runtime_error("Detector observation level does not match configured value.");
-      }
-      idetector.sphere = isphere;
-      idetector.squared_radius         = SQR(isphere.radius);
-      idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
-    }
   }
+  update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -378,6 +357,44 @@ point_all_telescopes_az_el_deg(double az_deg, double el_deg)
     Eigen::VectorXd::Constant(detector_.size(), az_deg),
     Eigen::VectorXd::Constant(detector_.size(), el_deg),
     Eigen::VectorXd::Constant(detector_.size(), 0.0));
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+update_detector_efficiencies()
+{
+  using calin::math::special::SQR;
+
+  double znmin = M_PI_2;
+  double znmax = 0;
+  for(auto& ipropagator : propagator_) {
+    auto spheres = ipropagator.propagator->detector_spheres();
+    if(spheres.size() != ipropagator.ndetector) {
+      // this should never happen
+      throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
+    }
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
+      ++propagator_isphere) {
+      const auto& isphere(spheres[propagator_isphere]);
+      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
+      if(isphere.iobs != config_.observation_level()) {
+        throw std::runtime_error("Detector observation level does not match configured value.");
+      }
+      idetector.sphere = isphere;
+      double zn = std::atan2(std::sqrt(SQR(isphere.obs_dir.x())+SQR(isphere.obs_dir.y())), isphere.obs_dir.z());
+      znmin = std::min(znmin, std::max(zn - isphere.field_of_view_radius, 0.0));
+      znmax = std::max(znmax, std::min(zn + isphere.field_of_view_radius, M_PI_2));
+    }
+    wmax_ = std::cos(znmax);
+    wmin_ = std::cos(znmin);
+    safety_radius_ = this->atm_->refraction_safety_radius(znmax, config_.observation_level());
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
+      ++propagator_isphere) {
+      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
+      const auto& isphere(idetector.sphere);
+      idetector.squared_radius         = SQR(isphere.radius);
+      idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+    }
+  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -566,6 +583,22 @@ VCLIACTArray<VCLArchitecture>::detector_efficiency_energy_knots()
     knots.push_back(e);
   }
   return knots;
+}
+
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
+{
+  std::ostringstream stream;
+  stream
+    << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
+    << "Number of focal-plane propagators : " << propagator_.size() << ", with "
+    << detector_.size() << " detectors.\n"
+    << "Detector zenith range : "
+    << calin::util::string::double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1)
+    << " to "
+    << calin::util::string::double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
+    << " degrees.\n"
+    << "Refraction safety radius : " << safety_radius_ << " cm.\n";
+  return stream.str();
 }
 
 #endif // not defined SWIG
