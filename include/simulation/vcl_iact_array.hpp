@@ -251,6 +251,8 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info.nrays_to_propagate     = 0;
     detector_.emplace_back(detector_info);
   }
+
+  update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture>
@@ -311,8 +313,6 @@ add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const st
 
   detector_bandwidth_spline_.push_back(
     atm_abs_.integrate_bandwidth_to_spline(zobs_, detector_efficiency));
-
-  update_detector_efficiencies();
 
   return iefficiency;
 }
@@ -627,7 +627,11 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
       stream
         << "- " << detector_efficiency_spline_.dataset_name(ispline) << " : "
-        << detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline) << " eV\n";
+        << detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline) << " eV\n"
+        << "  Absorbed from 10 km : " << detector_bandwidth_spline_[ispline]->value(10e5,wmax_)
+        << " to " << detector_bandwidth_spline_[ispline]->value(10e5,wmin_) << " eV\n"
+        << "  Absorbed from 20 km : " << detector_bandwidth_spline_[ispline]->value(20e5,wmax_)
+        << " to " << detector_bandwidth_spline_[ispline]->value(20e5,wmin_) << " eV\n";
     }
   }
   return stream.str();
