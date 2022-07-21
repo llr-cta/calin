@@ -313,6 +313,10 @@ public:
   double third_derivative(double x) const;
   double integral(double x) const;
   double invert(double y) const;
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_value(typename VCLArchitecture::double_vt x) const;
+
 private:
   void init();
   CubicSplineIntervals s_;
@@ -320,6 +324,25 @@ private:
   bool y_is_monotonic_inc_ = true;
   bool y_is_monotonic_dec_ = true;
 };
+
+template<typename VCLArchitecture> typename VCLArchitecture::double_vt
+CubicSpline::vcl_value(typename VCLArchitecture::double_vt x) const
+{
+  typedef typename VCLArchitecture::int64_vt int64_vt;
+  typedef typename VCLArchitecture::double_vt double_vt;
+
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
+  double_vt t = (x-x0)*dx_inv;
+
+  return cubic_value(t, dx, dx_inv,
+    vcl::lookup<0x40000000>(iinterval, s_.y.data()),
+    vcl::lookup<0x40000000>(iinterval, s_.y.data()+1),
+    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()),
+    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()+1));
+}
 
 struct CubicSplineInfo {
   std::string name;
