@@ -284,8 +284,19 @@ public:
   LayeredRefractiveAtmosphere(const std::vector<Level>& levels,
     const std::vector<double>& obs_levels = {},
     const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
+  LayeredRefractiveAtmosphere(const LayeredRefractiveAtmosphere& o) : Atmosphere(),
+    levels_(o.levels_), s_(new calin::math::spline_interpolation::CubicMultiSpline(*o.s_)),
+    zobs_(o.zobs_), thickness_to_toa_(o.thickness_to_toa_), obs_level_data_(o.obs_level_data_),
+    high_accuracy_mode_(o.high_accuracy_mode_), test_ray_emi_zn_(o.test_ray_emi_zn_),
+    test_ray_emi_z_(o.test_ray_emi_z_), test_ray_emi_x_(o.test_ray_emi_x_),
+    test_ray_emi_ct_(o.test_ray_emi_ct_), test_ray_obs_x_(o.test_ray_obs_x_),
+    test_ray_obs_ct_(o.test_ray_obs_ct_), test_ray_boa_x_(o.test_ray_boa_x_),
+    test_ray_boa_ct_(o.test_ray_boa_ct_), model_ray_obs_x_(o.model_ray_obs_x_),
+    model_ray_obs_ct_(o.model_ray_obs_ct_) { }
 
   virtual ~LayeredRefractiveAtmosphere();
+
+  LayeredRefractiveAtmosphere* clone() const { return new LayeredRefractiveAtmosphere(*this); }
 
   unsigned num_obs_levels() const { return zobs_.size(); }
   double zobs(unsigned iground) const { return zobs_[iground]; }
