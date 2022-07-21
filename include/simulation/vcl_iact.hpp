@@ -111,7 +111,10 @@ protected:
   uint64_t num_steps_ = 0;
   uint64_t num_rays_ = 0;
 
-  double bandwidth_ = 3.0;
+  double min_cherenkov_energy_ = 1.5;
+  double fixed_bandwidth_ = 3.0;
+  calin::math::spline_interpolation::CubicSpline* variable_bandwidth_spline_ = nullptr;
+  double adopt_variable_bandwidth_spline_ = false;
   double forced_sin2theta_ = -1.0;
 #endif // not defined SWIG
 };
@@ -128,7 +131,7 @@ VCLIACTTrackVisitor(
   atm_(atm), adopt_atm_(adopt_atm),
   rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
   adopt_rng_(rng ? adopt_rng : true),
-  bandwidth_(config.bandwidth()),
+  fixed_bandwidth_(config.bandwidth()),
   forced_sin2theta_(config.enable_forced_cherenkov_angle_mode()?
     calin::math::special::SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
 {
@@ -184,7 +187,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   ++num_tracks_;
 
   int unused_track_count =
-    insert_track(track.x0, track.t0, g[0], bandwidth_*YIELD_CONST*SQR(track.q),
+    insert_track(track.x0, track.t0, g[0], fixed_bandwidth_*YIELD_CONST*SQR(track.q),
       track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv);
 
   if(unused_track_count == 1)
