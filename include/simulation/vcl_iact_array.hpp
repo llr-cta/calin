@@ -75,6 +75,7 @@ public:
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
 
   VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config = default_config(),
     calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
     bool adopt_atm = false, bool adopt_rng = false);
@@ -123,7 +124,7 @@ protected:
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
   std::vector<double> detector_efficiency_energy_knots();
-  void add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name);
+  unsigned add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name);
 
   struct PropagatorInfo {
     FocalPlaneRayPropagator* propagator;
@@ -160,10 +161,12 @@ protected:
   void do_refract_rays_for_detector(DetectorInfo& idetector);
 
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config_;
+  calin::simulation::detector_efficiency::AtmosphericAbsorption atm_abs_;
   std::vector<PropagatorInfo> propagator_;
   std::vector<DetectorInfo> detector_;
   std::vector<DetectionEfficiency> detector_efficiency_;
   calin::math::spline_interpolation::CubicMultiSpline detector_efficiency_spline_;
+  std::vector<calin::math::spline_interpolation::TwoDimensionalCubicSpline*> detector_bandwidth_spline_;
   double zobs_;
   double wmax_ = 1.0;
   double wmin_ = 0.0;
@@ -178,11 +181,12 @@ protected:
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 VCLIACTArray(
     calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config,
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
   VCLIACTTrackVisitor<VCLArchitecture>(atm, base_config(config), rng, adopt_atm, adopt_rng),
-  config_(config), detector_efficiency_spline_(detector_efficiency_energy_knots())
+  config_(config), atm_abs_(atm_abs), detector_efficiency_spline_(detector_efficiency_energy_knots())
 {
   if(config_.observation_level() >= this->atm_->num_obs_levels()) {
     throw std::out_of_range("Request observation level out of range.");
@@ -199,6 +203,9 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
   for(auto& ipropagator : propagator_) {
     if(ipropagator.adopt_propagator)delete ipropagator.propagator;
     if(ipropagator.adopt_pe_processor)delete ipropagator.pe_processor;
+  }
+  for(auto* ispline : detector_bandwidth_spline_) {
+    delete ispline;
   }
 }
 
@@ -222,6 +229,13 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   propagator_info.name               = propagator_name;
   propagator_.emplace_back(propagator_info);
 
+  std::string name = propagator_name;
+  if(name.empty()) {
+    name = "propagator "+std::to_string(propagator_info.ipropagator);
+  }
+
+  unsigned iefficiency = add_detector_efficiency(detector_efficiency, name);
+
   for(unsigned isphere=0; isphere<sphere.size(); ++isphere) {
     DetectorInfo detector_info;
     detector_info.sphere                 = sphere[isphere];
@@ -232,18 +246,11 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info.propagator_iscope      = isphere;
     detector_info.global_iscope          = detector_.size();
     detector_info.pe_processor           = pe_processor;
-    detector_info.idetector_efficiency   = detector_efficiency_.size();
+    detector_info.idetector_efficiency   = iefficiency;
     detector_info.nrays_to_refract       = 0;
     detector_info.nrays_to_propagate     = 0;
     detector_.emplace_back(detector_info);
   }
-
-  std::string name = propagator_name;
-  if(name.empty()) {
-    name = "propagator "+std::to_string(propagator_info.ipropagator);
-  }
-
-  add_detector_efficiency(detector_efficiency, name);
 }
 
 template<typename VCLArchitecture>
@@ -277,9 +284,11 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
     /* adopt_array= */ true, adopt_pe_processor);
 }
 
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+template<typename VCLArchitecture> unsigned VCLIACTArray<VCLArchitecture>::
 add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name)
 {
+  unsigned iefficiency = detector_efficiency_.size();
+
   detector_efficiency_.push_back(detector_efficiency);
   std::vector<double> detector_efficiency_xknot =
     detector_efficiency_spline_.xknot_as_stdvec();
@@ -300,7 +309,12 @@ add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const st
 
   detector_efficiency_spline_.add_spline(detector_efficiency_yknot, name);
 
+  detector_bandwidth_spline_.push_back(
+    atm_abs_.integrate_bandwidth_to_spline(zobs_, detector_efficiency));
+
   update_detector_efficiencies();
+
+  return iefficiency;
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
