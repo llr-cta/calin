@@ -610,28 +610,26 @@ VCLIACTArray<VCLArchitecture>::detector_efficiency_energy_knots()
 
 template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
 {
+  using calin::util::string::double_to_string_with_commas;
   std::ostringstream stream;
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
     << detector_.size() << " detectors.\n"
-    << "Detector zenith range : "
-    << calin::util::string::double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1)
-    << " to "
-    << calin::util::string::double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
-    << " degrees.\n"
-    << "Refraction safety radius : "
-    << calin::util::string::double_to_string_with_commas(safety_radius_/100,2) << " m.\n";
+    << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1)
+    << " to " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1) << " degrees.\n"
+    << "Observation level : " << double_to_string_with_commas(zobs_/1e5,3) << " km, refraction safety radius : "
+    << double_to_string_with_commas(safety_radius_/100,2) << " m.\n";
   if(detector_efficiency_spline_.num_spline() > 0) {
     stream << "Detector efficiency bandwidths :\n";
     for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
       stream
         << "- " << detector_efficiency_spline_.dataset_name(ispline) << " : "
         << detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline) << " eV\n"
-        << "  Absorbed from 10 km : " << detector_bandwidth_spline_[ispline]->value(10e5,wmax_)
-        << " to " << detector_bandwidth_spline_[ispline]->value(10e5,wmin_) << " eV\n"
-        << "  Absorbed from 20 km : " << detector_bandwidth_spline_[ispline]->value(20e5,wmax_)
-        << " to " << detector_bandwidth_spline_[ispline]->value(20e5,wmin_) << " eV\n";
+        << "  Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmax_),3)
+        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmin_),3) << " eV\n"
+        << "  Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmax_),3)
+        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmin_),3) << " eV\n";
     }
   }
   return stream.str();
