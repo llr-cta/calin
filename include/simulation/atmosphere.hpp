@@ -320,7 +320,7 @@ public:
 
   double refraction_safety_radius(double zenith_rad, unsigned iobs=0);
 
-  template<typename VCLArchitecture> inline void
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
   {
     return vcl::exp(s_->vcl_value<VCLArchitecture>(z, 2));
