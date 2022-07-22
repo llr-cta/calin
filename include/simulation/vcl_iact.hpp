@@ -155,7 +155,7 @@ template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 set_fixed_pe_bandwidth_mode(double bandwidth)
 {
   delete(variable_bandwidth_spline_);
-  variable_bandwidth_spline_ = false;
+  variable_bandwidth_spline_ = nullptr;
   fixed_bandwidth_ = bandwidth;
   do_color_photons_ = false;
 }
@@ -164,7 +164,7 @@ template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 set_fixed_photon_bandwidth_mode(double bandwidth, double min_cherenkov_energy)
 {
   delete(variable_bandwidth_spline_);
-  variable_bandwidth_spline_ = false;
+  variable_bandwidth_spline_ = nullptr;
   fixed_bandwidth_ = bandwidth;
   min_cherenkov_energy_ = min_cherenkov_energy;
   do_color_photons_ = true;
