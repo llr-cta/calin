@@ -114,12 +114,19 @@ public:
 
   std::string banner() const;
 
+  calin::math::spline_interpolation::CubicSpline* new_height_dependent_pe_bandwidth_spline() const;
+  double fixed_pe_bandwidth() const;
+
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
   void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
   // void leave_event() final;
 
 protected:
+  using VCLIACTTrackVisitor<VCLArchitecture>::set_fixed_pe_bandwidth_mode;
+  using VCLIACTTrackVisitor<VCLArchitecture>::set_fixed_photon_bandwidth_mode;
+  using VCLIACTTrackVisitor<VCLArchitecture>::set_height_dependent_pe_bandwidth_mode;
+
   void update_detector_efficiencies();
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
@@ -407,8 +414,8 @@ update_detector_efficiencies()
       znmin = std::min(znmin, std::max(zn - isphere.field_of_view_radius, 0.0));
       znmax = std::max(znmax, std::min(zn + isphere.field_of_view_radius, M_PI_2));
     }
-    wmax_ = std::cos(znmax);
-    wmin_ = std::cos(znmin);
+    wmax_ = std::cos(znmin);
+    wmin_ = std::cos(znmax);
     safety_radius_ = this->atm_->refraction_safety_radius(znmax, config_.observation_level());
     for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
       ++propagator_isphere) {
@@ -418,6 +425,49 @@ update_detector_efficiencies()
       idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
     }
   }
+
+  switch(config_.cherenkov_mode()) {
+  case calin::ix::simulation::vcl_iact::PHOTON_MODE:
+  default:
+    this->set_fixed_photon_bandwidth_mode(
+      config_.detector_energy_hi()-config_.detector_energy_lo(),
+      config_.detector_energy_lo());
+    break;
+  case calin::ix::simulation::vcl_iact::FIXED_BANDWIDTH_PE_MODE:
+    this->set_fixed_pe_bandwidth_mode(fixed_pe_bandwidth());
+    break;
+  case calin::ix::simulation::vcl_iact::VARIABLE_BANDWIDTH_PE_MODE:
+    this->set_height_dependent_pe_bandwidth_mode(new_height_dependent_pe_bandwidth_spline(), true);
+    break;
+  }
+}
+
+template<typename VCLArchitecture> double VCLIACTArray<VCLArchitecture>::
+fixed_pe_bandwidth() const
+{
+  double bandwidth = 0;
+  for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
+    bandwidth = std::max(bandwidth, detector_efficiency_spline_.integral(
+      detector_efficiency_spline_.xmax(), ispline));
+  }
+  return bandwidth;
+}
+
+template<typename VCLArchitecture> calin::math::spline_interpolation::CubicSpline*
+VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
+{
+  if(detector_bandwidth_spline_.size() == 0) {
+    return nullptr;
+  }
+  std::vector<double> heights = detector_bandwidth_spline_[0]->xknot_as_stdvec();
+  std::vector<double> bandwidths(heights.size(), 0.0);
+  for(unsigned ispline=0; ispline<detector_bandwidth_spline_.size(); ++ispline) {
+    for(unsigned iheight=0; iheight<heights.size(); ++iheight) {
+      bandwidths[iheight] = std::max(bandwidths[iheight],
+        detector_bandwidth_spline_[ispline]->value(heights[iheight], wmax_));
+    }
+  }
+  return new calin::math::spline_interpolation::CubicSpline(heights, bandwidths);
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -581,7 +631,8 @@ template<typename VCLArchitecture> calin::ix::simulation::vcl_iact::VCLIACTArray
 VCLIACTArray<VCLArchitecture>::default_config()
 {
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config;
-  config.set_detector_energy_lo(1.5);
+  config.set_cherenkov_mode(calin::ix::simulation::vcl_iact::VARIABLE_BANDWIDTH_PE_MODE);
+  config.set_detector_energy_lo(1.25);
   config.set_detector_energy_hi(4.8);
   config.set_detector_energy_bin_width(0.05);
   return config;
@@ -610,26 +661,48 @@ VCLIACTArray<VCLArchitecture>::detector_efficiency_energy_knots()
 
 template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
 {
+  constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
   using calin::util::string::double_to_string_with_commas;
   std::ostringstream stream;
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
     << detector_.size() << " detectors.\n"
-    << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1)
-    << " to " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1) << " degrees.\n"
+    << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
+    << " to " << double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1) << " degrees.\n"
     << "Observation level : " << double_to_string_with_commas(zobs_/1e5,3) << " km, refraction safety radius : "
     << double_to_string_with_commas(safety_radius_/100,2) << " m.\n";
+  if(this->variable_bandwidth_spline_) {
+    stream << "Cherenkov ray mode : PEs, with height-dependent bandwidth\n"
+      << "- " << double_to_string_with_commas(zobs_/1e5,3) << ", 10, 20, 30, "
+      << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5, 0) << " km : "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(zobs_),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(10e5),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(20e5),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(30e5),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(this->atm_->top_of_atmosphere()),3) << " eV\n";
+  } else if (this->do_color_photons_) {
+    stream << "Cherenkov ray mode : photons, with bandwidth "
+      << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n"
+      << "- Energy range "
+      << double_to_string_with_commas(this->min_cherenkov_energy_,3) << " - "
+      << double_to_string_with_commas(this->min_cherenkov_energy_+this->fixed_bandwidth_,3) << " eV ("
+      << double_to_string_with_commas(EV_NM/(this->min_cherenkov_energy_+this->fixed_bandwidth_),0) << " - "
+      << double_to_string_with_commas(EV_NM/this->min_cherenkov_energy_,0) << " nm)\n";
+  } else {
+    stream << "Cherenkov ray mode : PEs, with fixed bandwidth "
+      << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n";
+  }
   if(detector_efficiency_spline_.num_spline() > 0) {
     stream << "Detector efficiency bandwidths :\n";
     for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
       stream
         << "- " << detector_efficiency_spline_.dataset_name(ispline) << " : "
-        << detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline) << " eV\n"
-        << "  Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmax_),3)
-        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmin_),3) << " eV\n"
-        << "  Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmax_),3)
-        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmin_),3) << " eV\n";
+        << double_to_string_with_commas(detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline),3) << " eV\n"
+        << "  Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmin_),3)
+        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmax_),3) << " eV\n"
+        << "  Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmin_),3)
+        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmax_),3) << " eV\n";
     }
   }
   return stream.str();

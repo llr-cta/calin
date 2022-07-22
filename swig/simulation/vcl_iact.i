@@ -47,8 +47,13 @@
 
 %import "simulation/ray_propagator.i"
 
+%import "simulation/vcl_iact.pb.i"
+
 %include "simulation/vcl_iact.hpp"
 %include "simulation/vcl_iact_ground_map.hpp"
+
+%newobject new_height_dependent_pe_bandwidth_spline;
+
 %include "simulation/vcl_iact_array.hpp"
 
 %template (VCLIACTTrackVisitor128)

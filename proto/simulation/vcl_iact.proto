@@ -47,6 +47,12 @@ enum RefractionMode {
   REFRACT_ONLY_CLOSE_RAYS = 2;
 };
 
+enum CherenkovMode {
+  PHOTON_MODE                = 0;
+  FIXED_BANDWIDTH_PE_MODE    = 1;
+  VARIABLE_BANDWIDTH_PE_MODE = 2;
+};
+
 message VCLIACTArrayConfiguration
 {
   double detector_energy_lo                                = 1
@@ -59,11 +65,15 @@ message VCLIACTArrayConfiguration
     [(CFO).desc = "Size of energy intervals of detector efficiency spline.",
      (CFO).units = "eV" ];
 
-  bool enable_forced_cherenkov_angle_mode                  = 10
+  CherenkovMode cherenkov_mode                             = 10
+    [(CFO).desc = "Set Cherenkov ray mode, either generating photons in a "
+      "fixed bandwidth window, generate PEs with a fixed bandwidth, or "
+      "generating PEs with a variable (height-dependent) bandwidth." ];
+  bool enable_forced_cherenkov_angle_mode                  = 11
     [(CFO).desc = "Force the Cherenkov angle for all particles to have same "
        "prescribed value. Useful for testing certain models where angle is a "
        "parameter (e.g. muons)." ];
-  double forced_cherenkov_angle                            = 11
+  double forced_cherenkov_angle                            = 12
     [(CFO).desc = "Cherenkov angle for all particles in forced mode.",
      (CFO).units = "deg" ];
 
