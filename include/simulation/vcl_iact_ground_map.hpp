@@ -65,7 +65,8 @@ public:
 
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
-  void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
+  void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+    double_vt bandwidth, double_vt ray_weight) final;
 
 protected:
   std::vector<double> xgnd_;
@@ -106,7 +107,8 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 }
 
 template<typename VCLArchitecture> void VCLIACTGroundMap<VCLArchitecture>::
-propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight)
+propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+  double_vt bandwidth, double_vt ray_weight)
 {
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
     VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);

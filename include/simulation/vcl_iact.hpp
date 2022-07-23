@@ -82,7 +82,8 @@ public:
   }
 
 #ifndef SWIG
-  virtual void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight);
+  virtual void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+    double_vt bandwidth, double_vt weight);
 
   void set_fixed_pe_bandwidth_mode(double bandwidth);
   void set_fixed_photon_bandwidth_mode(double bandwidth, double min_cherenkov_energy);
@@ -92,7 +93,7 @@ public:
 protected:
   inline int insert_track(const Eigen::Vector3d& x, const double t, const double g,
     const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
-    const double dg_dx, bool valid = true);
+    const double dg_dx, const double weight, bool valid = true);
   void generate_mc_rays(bool drain_tracks = false);
 
   calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
@@ -112,6 +113,8 @@ protected:
   double_vt track_dt_dx_; // track : rate of change of time per unit track length
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
+  double_vt track_weight_; // track : weight for thinning
+
   uint64_t num_tracks_ = 0;
   uint64_t num_steps_ = 0;
   uint64_t num_rays_ = 0;
@@ -122,6 +125,7 @@ protected:
   calin::math::spline_interpolation::CubicSpline* variable_bandwidth_spline_ = nullptr;
   double adopt_variable_bandwidth_spline_ = false;
   double forced_sin2theta_ = -1.0;
+  double cherenkov_weight_ = 1.0;
 #endif // not defined SWIG
 };
 
@@ -227,8 +231,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   ++num_tracks_;
 
   int unused_track_count =
-    insert_track(track.x0, track.t0, g[0], fixed_bandwidth_*YIELD_CONST*SQR(track.q),
-      track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv);
+    insert_track(track.x0, track.t0, g[0], YIELD_CONST*SQR(track.q),
+      track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv, track.weight);
 
   if(unused_track_count == 1)
   {
@@ -240,7 +244,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 template<typename VCLArchitecture> inline int VCLIACTTrackVisitor<VCLArchitecture>::
 insert_track(const Eigen::Vector3d& x, const double t, const double g,
   const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
-  const double dg_dx, bool valid)
+  const double dg_dx, const double weight, bool valid)
 {
   using calin::util::vcl::insert_into_vec3_with_mask;
   using calin::util::vcl::insert_into_with_mask;
@@ -270,6 +274,8 @@ insert_track(const Eigen::Vector3d& x, const double t, const double g,
   insert_into_with_mask<double_real>(track_dx_, dx, insert_mask);
   insert_into_with_mask<double_real>(track_dt_dx_, dt_dx, insert_mask);
   insert_into_with_mask<double_real>(track_dg_dx_, dg_dx, insert_mask);
+
+  insert_into_with_mask<double_real>(track_weight_, weight * cherenkov_weight_, insert_mask);
 
   return vcl::horizontal_count(unused_tracks);
 }
@@ -319,14 +325,15 @@ generate_mc_rays(bool drain_tracks)
       sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
     }
 
-    double_vt yield = track_yield_const_ * sin2thetac;
+    double_vt bandwidth;
     if(variable_bandwidth_spline_) {
-      yield *= variable_bandwidth_spline_->vcl_value<VCLArchitecture>(track_x_.z());
+      bandwidth = variable_bandwidth_spline_->vcl_value<VCLArchitecture>(track_x_.z());
     } else {
-      yield *= fixed_bandwidth_;
+      bandwidth = fixed_bandwidth_;
     }
 
-    double_vt mfp = 1.0/yield;
+    double_vt yield = bandwidth * track_yield_const_ * sin2thetac;
+    double_vt mfp = 1.0/yield*track_weight_;
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
 
     track_dx_ -= dx_emission;
@@ -352,14 +359,15 @@ generate_mc_rays(bool drain_tracks)
 
       calin::math::ray::VCLRay<double_real> rays(track_x_, v, track_t_);
 
-      propagate_rays(rays, track_valid_, 1.0);
+      propagate_rays(rays, track_valid_, bandwidth, track_weight_);
     }
   } while(vcl::horizontal_and(track_valid_) or
       (drain_tracks and vcl::horizontal_or(track_valid_)));
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
-propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight)
+propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+  double_vt bandwidth, double_vt weight)
 {
   // default does nothing
 }

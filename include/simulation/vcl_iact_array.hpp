@@ -119,7 +119,8 @@ public:
 
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
-  void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight) final;
+  void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+    double_vt bandwidth, double_vt ray_weight) final;
   // void leave_event() final;
 
 protected:
@@ -158,11 +159,13 @@ protected:
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
     double_at ray_weights_to_refract;
+    double_at bandwidths_to_refract;
 
     RayArray rays_to_propagate;
     unsigned nrays_to_propagate;
     double_at ray_weights_to_propagate;
-  };
+    double_at bandwidths_to_propagate;
+};
 
   void do_propagate_rays_for_detector(DetectorInfo& idetector);
   void do_refract_rays_for_detector(DetectorInfo& idetector);
@@ -493,7 +496,8 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, double_vt ray_weight)
+propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+  double_vt bandwidth, double_vt ray_weight)
 {
   ray_mask &= (ray.z()>zobs_) & (ray.uz()<0);
 
@@ -515,7 +519,9 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
   }
 
   RayArray ray_array { ray };
+  double_at bandwidth_array;
   double_at ray_weight_array;
+  bandwidth.store(bandwidth_array);
   ray_weight.store(ray_weight_array);
 
   for(auto& idetector : detector_) {
@@ -528,6 +534,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
           case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
           case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
             idetector.rays_to_propagate.insert_one_ray(idetector.nrays_to_propagate, ray_array.extract_one_ray(iray));
+            idetector.bandwidths_to_propagate[idetector.nrays_to_propagate] = bandwidth_array[iray];
             idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = ray_weight_array[iray];
             ++idetector.nrays_to_propagate;
             if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
@@ -537,6 +544,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask, d
           case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
           default:
             idetector.rays_to_refract.insert_one_ray(idetector.nrays_to_refract, ray_array.extract_one_ray(iray));
+            idetector.bandwidths_to_refract[idetector.nrays_to_refract] = bandwidth_array[iray];
             idetector.ray_weights_to_refract[idetector.nrays_to_refract] = ray_weight_array[iray];
             ++idetector.nrays_to_refract;
             if(idetector.nrays_to_refract == VCLArchitecture::num_double) {
@@ -575,6 +583,7 @@ do_refract_rays_for_detector(DetectorInfo& idetector)
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(intersecting_rays_bitmask & 1) {
         idetector.rays_to_propagate.insert_one_ray(idetector.nrays_to_propagate, idetector.rays_to_refract.extract_one_ray(iray));
+        idetector.bandwidths_to_propagate[idetector.nrays_to_propagate] = idetector.bandwidths_to_refract[iray];
         idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = idetector.ray_weights_to_refract[iray];
         ++idetector.nrays_to_propagate;
         if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
