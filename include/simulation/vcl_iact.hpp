@@ -275,7 +275,7 @@ insert_track(const Eigen::Vector3d& x, const double t, const double g,
   insert_into_with_mask<double_real>(track_dt_dx_, dt_dx, insert_mask);
   insert_into_with_mask<double_real>(track_dg_dx_, dg_dx, insert_mask);
 
-  insert_into_with_mask<double_real>(track_weight_, weight * cherenkov_weight_, insert_mask);
+  insert_into_with_mask<double_real>(track_weight_, weight, insert_mask);
 
   return vcl::horizontal_count(unused_tracks);
 }
@@ -333,7 +333,7 @@ generate_mc_rays(bool drain_tracks)
     }
 
     double_vt yield = bandwidth * track_yield_const_ * sin2thetac;
-    double_vt mfp = 1.0/yield*track_weight_;
+    double_vt mfp = cherenkov_weight_/yield;
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
 
     track_dx_ -= dx_emission;
@@ -359,7 +359,7 @@ generate_mc_rays(bool drain_tracks)
 
       calin::math::ray::VCLRay<double_real> rays(track_x_, v, track_t_);
 
-      propagate_rays(rays, track_valid_, bandwidth, track_weight_);
+      propagate_rays(rays, track_valid_, bandwidth, cherenkov_weight_*track_weight_);
     }
   } while(vcl::horizontal_and(track_valid_) or
       (drain_tracks and vcl::horizontal_or(track_valid_)));
