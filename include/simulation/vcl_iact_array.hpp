@@ -484,6 +484,20 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
 }
 
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_event()
+{
+  VCLIACTTrackVisitor<VCLArchitecture>::leave_event();
+
+  for(auto& idetector : detector_) {
+    if(idetector.nrays_to_refract) {
+      do_refract_rays_for_detector(idetector);
+    }
+    if(idetector.nrays_to_propagate) {
+      do_propagate_rays_for_detector(idetector);
+    }
+  }
+}
+
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   double_vt bandwidth, double_vt ray_weight)
@@ -549,20 +563,6 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
     VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
-}
-
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_event()
-{
-  VCLIACTTrackVisitor<VCLArchitecture>::leave_event();
-
-  for(auto& idetector : detector_) {
-    if(idetector.nrays_to_refract) {
-      do_refract_rays_for_detector(idetector);
-    }
-    if(idetector.nrays_to_propagate) {
-      do_propagate_rays_for_detector(idetector);
-    }
-  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
