@@ -121,7 +121,7 @@ public:
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
   void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
     double_vt bandwidth, double_vt ray_weight) final;
-  // void leave_event() final;
+  void leave_event() final;
 
 protected:
   using VCLIACTTrackVisitor<VCLArchitecture>::set_fixed_pe_bandwidth_mode;
@@ -476,20 +476,9 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  for(const auto& ipropoagator : propagator_) {
-    auto spheres = ipropoagator.propagator->detector_spheres();
-    if(spheres.size() != ipropoagator.ndetector) {
-      // this should never happen
-      throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
-    }
-    for(unsigned isphere=0; isphere<spheres.size(); ++isphere) {
-      if(spheres[isphere].iobs != config_.observation_level()) {
-        throw std::runtime_error("Detector observation level does not match configured value.");
-      }
-      detector_[ipropoagator.detector0+isphere].sphere = spheres[isphere];
-      detector_[ipropoagator.detector0+isphere].nrays_to_refract = 0;
-      detector_[ipropoagator.detector0+isphere].nrays_to_propagate = 0;
-    }
+  for(auto& idetector : detector_) {
+    idetector.nrays_to_refract = 0;
+    idetector.nrays_to_propagate = 0;
   }
 
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
@@ -560,6 +549,20 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
     VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_event()
+{
+  VCLIACTTrackVisitor<VCLArchitecture>::leave_event();
+
+  for(auto& idetector : detector_) {
+    if(idetector.nrays_to_refract) {
+      do_refract_rays_for_detector(idetector);
+    }
+    if(idetector.nrays_to_propagate) {
+      do_propagate_rays_for_detector(idetector);
+    }
+  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
