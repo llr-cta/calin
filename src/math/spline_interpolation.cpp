@@ -264,7 +264,7 @@ CubicSpline::
 CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
     BoundaryConitions bc_lhs, double bc_lhs_val,
     BoundaryConitions bc_rhs, double bc_rhs_val):
-  s_(), I_()
+  s_(), I_(), bc_lhs_(bc_lhs), bc_lhs_val_(bc_lhs_val), bc_rhs_(bc_rhs), bc_rhs_val_(bc_rhs_val)
 {
   *static_cast<InterpolationIntervals*>(&s_) = make_intervals(x);
   s_.y = y;
@@ -281,6 +281,10 @@ CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
   s_.y = y;
   s_.dy_dx = dy_dx;
   init();
+  bc_lhs_ = BC_CLAMPED_SLOPE;
+  bc_lhs_val_ = derivative(xmin());
+  bc_rhs_ = BC_CLAMPED_SLOPE;
+  bc_rhs_val_ = derivative(xmax());
 }
 
 void CubicSpline::init()
@@ -297,6 +301,26 @@ void CubicSpline::init()
     if(s_.y[iy]<s_.y[iy-1])y_is_monotonic_inc_ = false;
     if(s_.y[iy]>s_.y[iy-1])y_is_monotonic_dec_ = false;
   }
+}
+
+CubicSpline* CubicSpline::new_regularized_spline(double dx) const
+{
+  std::vector<double> x_knots;
+  if(dx <= 0.0) {
+    throw std::out_of_range("CubicSpline::new_regularized_spline: dx must be positive");
+  }
+  for(double x=s_.xmin; x<s_.xmax+dx*0.01; x+=dx) {
+    x_knots.push_back(x);
+  }
+
+  std::vector<double> y_knots(x_knots.size());
+  std::transform(x_knots.begin(), x_knots.end(), y_knots.begin(),
+    [this](double x){ return this->value(x); });
+
+  CubicSpline* new_spline = new CubicSpline(x_knots, y_knots,
+    bc_lhs_, bc_lhs_val_, bc_rhs_, bc_rhs_val_);
+
+  return new_spline;
 }
 
 double CubicSpline::value(double x) const

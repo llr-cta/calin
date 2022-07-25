@@ -287,10 +287,18 @@ public:
   CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
     const std::vector<double>& dy_dx);
 
+  CubicSpline* new_regularized_spline(double dx) const;
+  CubicSpline* new_regularized_spline_extend_regular() const {
+    return new_regularized_spline(s_.regular_dx);
+  }
+  CubicSpline* new_regularized_spline_points_multiplier(double multiplier = 1.0) const {
+    return new_regularized_spline((s_.xmax-s_.xmin)/std::round((s_.x.size()-1)*multiplier));
+  }
+
   const CubicSplineIntervals& intervals() const { return s_; }
 
-  double xmin() const { return s_.xmax; }
-  double xmax() const { return s_.xmin; }
+  double xmin() const { return s_.xmin; }
+  double xmax() const { return s_.xmax; }
 
   const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   const std::vector<double>& yknot_as_stdvec() const { return s_.y; }
@@ -321,6 +329,10 @@ private:
   void init();
   CubicSplineIntervals s_;
   std::vector<double> I_;
+  BoundaryConitions bc_lhs_;
+  double bc_lhs_val_;
+  BoundaryConitions bc_rhs_;
+  double bc_rhs_val_;
   bool y_is_monotonic_inc_ = true;
   bool y_is_monotonic_dec_ = true;
 };
