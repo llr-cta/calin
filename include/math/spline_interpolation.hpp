@@ -312,6 +312,8 @@ public:
     return new_regularized_spline((s_.xmax-s_.xmin)/std::round((s_.x.size()-1)*multiplier));
   }
 
+  void rescale(double scale);
+
   const CubicSplineIntervals& intervals() const { return s_; }
 
   double xmin() const { return s_.xmin; }
