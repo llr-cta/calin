@@ -284,6 +284,10 @@ public:
     return Interpolation1D(*this, o, BinDivOp());
   }
 
+  bool operator== (const Interpolation1D& o) const {
+    return m_xy == o.m_xy;
+  }
+
 #ifndef SWIG
   template<typename XYFilter>
   void insert_from_2column_file_with_filter(const std::string& filename,

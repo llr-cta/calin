@@ -113,6 +113,10 @@ struct CherenkovBandwidthTaylorCoefficients
   bool operator< (const CherenkovBandwidthTaylorCoefficients o) const {
     return false; // All coefficients equal in sort
   }
+
+  bool operator== (const CherenkovBandwidthTaylorCoefficients o) const {
+    return n==o.n and dn_dw==o.dn_dw and d2n_dw2==o.d2n_dw2;
+  }
 };
 
 inline std::ostream& operator<<(std::ostream& stream, const CherenkovBandwidthTaylorCoefficients& c)
@@ -151,6 +155,10 @@ public:
   void scaleEffFromFile(const std::string& filename);
   void scaleEffFromOldStyleFile(const std::string& filename,
 		double lambda0_nm=180.0, double dlambda_nm=5.0);
+  bool operator==(const DetectionEfficiency& o) const {
+    return static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(*this) ==
+      static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(o);
+  }
 };
 
 class AngularEfficiency: public calin::math::interpolation_1d::InterpLinear1D
@@ -161,6 +169,10 @@ public:
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffByConst(double c);
   void scaleEffFromFile(const std::string& filename);
+  bool operator==(const AngularEfficiency& o) const {
+    return static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(*this) ==
+      static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(o);
+  }
 };
 
 #if 0
