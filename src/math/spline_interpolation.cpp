@@ -28,7 +28,9 @@
 
 #include <math/spline_interpolation.hpp>
 #include <math/special.hpp>
+#include <util/log.hpp>
 
+using namespace calin::util::log;
 using namespace calin::math::spline_interpolation;
 
 using calin::math::special::SQR;
@@ -321,6 +323,54 @@ CubicSpline* CubicSpline::new_regularized_spline(double dx) const
     bc_lhs_, bc_lhs_val_, bc_rhs_, bc_rhs_val_);
 
   return new_spline;
+}
+
+double CubicSpline::ymax() const
+{
+  double ymax = s_.y.front();
+  for(unsigned iknot=0; iknot<s_.y.size()-1; ++iknot) {
+    double dx = s_.dx[iknot];
+    double dx_inv = 1.0/dx;
+    double y0 = s_.y[iknot];
+    double y1 = s_.y[iknot + 1];
+    double D0 = s_.dy_dx[iknot];
+    double D1 = s_.dy_dx[iknot + 1];
+    double t0;
+    double t1;
+    cubic_extrema(t0, t1, dx, dx_inv, y0, y1, D0, D1);
+    if(not std::isnan(t0) and t0>0 and t0 <1) {
+      ymax = std::max(ymax, cubic_value(t0, dx, dx_inv, y0, y1, D0, D1));
+    }
+    if(not std::isnan(t1) and t1>0 and t1<1) {
+      ymax = std::max(ymax, cubic_value(t1, dx, dx_inv, y0, y1, D0, D1));
+    }
+    ymax = std::max(ymax, y1);
+  }
+  return ymax;
+}
+
+double CubicSpline::ymin() const
+{
+  double ymin = s_.y.front();
+  for(unsigned iknot=0; iknot<s_.y.size()-1; ++iknot) {
+    double dx = s_.dx[iknot];
+    double dx_inv = 1.0/dx;
+    double y0 = s_.y[iknot];
+    double y1 = s_.y[iknot + 1];
+    double D0 = s_.dy_dx[iknot];
+    double D1 = s_.dy_dx[iknot + 1];
+    double t0;
+    double t1;
+    cubic_extrema(t0, t1, dx, dx_inv, y0, y1, D0, D1);
+    if(not std::isnan(t0) and t0>0 and t0 <1) {
+      ymin = std::min(ymin, cubic_value(t0, dx, dx_inv, y0, y1, D0, D1));
+    }
+    if(not std::isnan(t1) and t1>0 and t1<1) {
+      ymin = std::min(ymin, cubic_value(t1, dx, dx_inv, y0, y1, D0, D1));
+    }
+    ymin = std::min(ymin, y1);
+  }
+  return ymin;
 }
 
 double CubicSpline::value(double x) const

@@ -97,6 +97,23 @@ R cubic_1st_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
+void cubic_extrema(R& t0, R& t1,
+  R dx, R dx_inv, R y0, R y1, R D0, R D1)
+{
+  using std::sqrt;
+  using vcl::sqrt;
+  D0 *= dx;
+  D1 *= dx;
+  R dy = y1-y0;
+  R c = 3*dy - (2*D0 + D1);
+  R d = -2*dy + (D0 + D1);
+  // dydt = t*t * 3*d + t * 2*c + D0;
+  R disc = sqrt(c*c - 3*D0*d);
+  t0 = (-c - disc)/(3*d);
+  t1 = (-c + disc)/(3*d);
+}
+
+template<typename R> inline
 R cubic_1st_derivative_and_value(R& value,
   R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
@@ -299,6 +316,9 @@ public:
 
   double xmin() const { return s_.xmin; }
   double xmax() const { return s_.xmax; }
+
+  double ymin() const;
+  double ymax() const;
 
   const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   const std::vector<double>& yknot_as_stdvec() const { return s_.y; }
