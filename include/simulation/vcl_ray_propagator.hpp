@@ -29,6 +29,7 @@
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
 #include <math/geometry_vcl.hpp>
+#include <math/spline_interpolation.hpp>
 #include <simulation/vso_array.hpp>
 #include <simulation/vcl_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
