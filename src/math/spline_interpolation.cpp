@@ -325,6 +325,12 @@ CubicSpline* CubicSpline::new_regularized_spline(double dx) const
   return new_spline;
 }
 
+void CubicSpline::rescale(double scale)
+{
+  for(auto& y : s_.y) { y *= scale; }
+  for(auto& dy_dx : s_.dy_dx) { dy_dx *= scale; }
+}
+
 double CubicSpline::ymax() const
 {
   double ymax = s_.y.front();
