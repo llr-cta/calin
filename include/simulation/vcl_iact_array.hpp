@@ -34,9 +34,150 @@
 #include <simulation/vcl_ray_propagator.hpp>
 #include <simulation/vcl_raytracer.hpp>
 #include <simulation/detector_efficiency.hpp>
+#include <simulation/vcl_detector_efficiency.hpp>
 #include <simulation/atmosphere.hpp>
 
 namespace calin { namespace simulation { namespace vcl_iact {
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLBandwidthManager
+{
+public:
+#ifndef SWIG
+  using double_vt   = typename VCLArchitecture::double_vt;
+#emdif
+
+  virtual ~VCLBandwidthManager() {
+    // nothing to see here
+  }
+
+  virtual double bandwidth() const {
+    return 0;
+  }
+
+  virtual std::vector<double> bandwidth_vs_height(const std::vector<double>& h, double w) const {
+    return std::vector<double>(h.size(), 0.0);
+  }
+
+  virtual const calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline() const
+  {
+    return nullptr;
+  }
+
+  virtual const calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response() const {
+    return nullptr;
+  }
+
+  virtual std::string banner(const std::string& name) const {
+    return "- " + name;
+  }
+
+#ifndef SWIG
+  virtual double_vt bandwidth_for_pe(const double_vt z_emission, const double_vt uz_emission,
+    const double_vt ux_fp, const double_vt uy_fp, const double_vt uz_fp) const
+  {
+    return 0;
+  }
+#endif
+
+protected:
+  static calin::math::spline_interpolation::CubicSpline* new_detector_efficiency_spline(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    double e_lo, double e_hi, double delta_e)
+  {
+    std::vector<double> xknot;
+    for(double e=e_lo; e<e_hi; e+=delta_e) { xknot.push_back(e); }
+
+    double full_integral = detector_efficiency.integrate();
+    double partial_integral = detector_efficiency.integrate(e_lo, e_hi);
+
+    if(partial_integral < 0.99*full_integral) {
+      calin::util::log::LOG(calin::util::log::WARNING)
+        << "Configured detector energy range does contains less than 99% of detector efficiency curve.";
+    }
+
+    std::vector<double> yknot(xknot.size());
+    std::transform(xknot.begin(), xknot.end(), yknot.begin(),
+      [detector_efficiency](double e) { return detector_efficiency(e); });
+
+    return new calin::math::spline_interpolation::CubicSpline(xknot, yknot);
+  }
+
+  static calin::math::spline_interpolation::CubicSpline* new_detector_bandwidth_spline(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
+    double zobs)
+  {
+    return atm_abs.integrate_bandwidth_to_spline(zobs, detector_efficiency);
+  }
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLDCBandwidthManager:
+  public VCLBandwidthManager<VCLArchitecture>
+{
+public:
+  VCLDCBandwidthManager(
+      const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
+      const calin::simulation::detector_efficiency::DetectorEfficiency& detector_efficiency,
+      const calin::simulation::detector_efficiency::AngularResponse& fp_angular_response,
+      double zobs, double e_lo, double e_hi, double delta_e):
+    VCLBandwidthManager<VCLArchitecture>(), atm_abs_(atm_abs),
+    detector_efficiency_(detector_efficiency),
+  {
+    fp_angular_response_ =
+      new VCLUY1DSplineDirectionResponse(fp_angular_response, true, 1.0);
+    detector_efficiency_ *= 1.0/fp_angular_response_->scale();
+    detector_efficiency_spline_ =
+      new_detector_efficiency_spline(detector_efficiency_, elo, ehi, delta_e);
+    detector_bandwidth_spline_ =
+      new_detector_bandwidth_spline(detector_efficiency_, *atm_abs_, zobs);
+  }
+
+  virtual ~VCLDCBandwidthManager() {
+    delete detector_efficiency_spline_;
+    delete detector_bandwidth_spline_;
+    delete fp_angular_response_;
+  }
+
+  double bandwidth() const final {
+    return 0;
+  }
+
+  std::vector<double> bandwidth_vs_height(const std::vector<double>& h, double w) const final {
+    return std::vector<double>(h.size(), 0.0);
+  }
+
+  const calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline() const final {
+    return detector_efficiency_spline_;
+  }
+
+  const calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline() const final {
+    return detector_bandwidth_spline_;
+  }
+
+  const calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response() const final {
+    return fp_angular_response_;
+  }
+
+  std::string banner(const std::string& name) const final {
+    return "- " + name;
+  }
+
+#ifndef SWIG
+  double_vt bandwidth_for_pe(const double_vt z_emission, const double_vt uz_emission,
+    const double_vt ux_fp, const double_vt uy_fp, const double_vt uz_fp) const final
+  {
+    double_vt pe_bandwidth =
+      detector_bandwidth_spline_->template vcl_value<VCLArchitecture>(z_emission, uz_emission);
+  }
+#endif
+
+private:
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_ = nullptr;
+  calin::simulation::detector_efficiency::DetectorEfficiency detector_efficiency_;
+  calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline_ = nullptr;
+  calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline_ = nullptr;
+  calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response_ = nullptr;
+};
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLIACTArray:
   public VCLIACTTrackVisitor<VCLArchitecture>
@@ -66,10 +207,13 @@ public:
   using FocalPlaneParameters = calin::simulation::vcl_ray_propagator::VCLFocalPlaneParameters<VCLArchitecture>;
 
   using RayProcessorDetectorSphere = calin::simulation::ray_processor::RayProcessorDetectorSphere;
+
+  using VCLBandwidthManager = VCLBandwidthManager<VCLArchitecture>;
 #endif // not defined SWIG
 
   CALIN_TYPEALIAS(PEProcessor, calin::simulation::pe_processor::PEProcessor);
   CALIN_TYPEALIAS(DetectionEfficiency, calin::simulation::detector_efficiency::DetectionEfficiency);
+  CALIN_TYPEALIAS(AngularEfficiency, calin::simulation::detector_efficiency::AngularEfficiency);
 
   CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
@@ -81,16 +225,16 @@ public:
     bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTArray();
 
-  void add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-    const DetectionEfficiency& detector_efficiency, const std::string& propagator_name = "",
-    bool adopt_propagator = false, bool adopt_pe_processor = false);
-
-  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(calin::simulation::vs_optics::VSOArray* array,
-    PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency, const std::string& propagator_name = "",
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
+    calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const std::string& propagator_name = "",
     bool adopt_array = false, bool adopt_pe_processor = false);
 
-  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
-    PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency, const std::string& propagator_name = "",
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
+    const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const std::string& propagator_name = "",
     bool adopt_pe_processor = false);
 
   void point_telescope_az_el_phi_deg(unsigned iscope, double az_deg, double el_deg, double phi_deg);
@@ -110,6 +254,7 @@ public:
     return detector_efficiency_spline_;
   }
 
+  unsigned num_propagators() const { return propagator_.size(); }
   unsigned num_scopes() const { return detector_.size(); }
 
   std::string banner() const;
@@ -128,11 +273,15 @@ protected:
   using VCLIACTTrackVisitor<VCLArchitecture>::set_fixed_photon_bandwidth_mode;
   using VCLIACTTrackVisitor<VCLArchitecture>::set_height_dependent_pe_bandwidth_mode;
 
+  void add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
+    VCLBandwidthManager* bandwidth_manager, const std::string& propagator_name = "",
+    bool adopt_propagator = false, bool adopt_pe_processor = false);
+
   void update_detector_efficiencies();
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
-  std::vector<double> detector_efficiency_energy_knots();
-  unsigned add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name);
+
+  struct DetectorInfo;
 
   struct PropagatorInfo {
     FocalPlaneRayPropagator* propagator;
@@ -140,12 +289,16 @@ protected:
     PEProcessor* pe_processor;
     unsigned detector0;
     unsigned ndetector;
+
     bool adopt_propagator;
     bool adopt_pe_processor;
     std::string name;
+    std::vector<DetectorInfo*> detector_infos;
   };
 
   struct DetectorInfo {
+    PropagatorInfo* propagator_info;
+
     RayProcessorDetectorSphere sphere;
     double squared_radius;
     double squared_safety_radius;
@@ -154,7 +307,6 @@ protected:
     unsigned propagator_iscope;
     unsigned global_iscope;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
-    unsigned idetector_efficiency;
 
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
@@ -165,18 +317,16 @@ protected:
     unsigned nrays_to_propagate;
     double_at ray_weights_to_propagate;
     double_at bandwidths_to_propagate;
-};
+  };
 
-  void do_propagate_rays_for_detector(DetectorInfo& idetector);
-  void do_refract_rays_for_detector(DetectorInfo& idetector);
+  void do_propagate_rays_for_detector(DetectorInfo* idetector);
+  void do_refract_rays_for_detector(DetectorInfo* idetector);
 
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config_;
   calin::simulation::detector_efficiency::AtmosphericAbsorption atm_abs_;
-  std::vector<PropagatorInfo> propagator_;
-  std::vector<DetectorInfo> detector_;
-  std::vector<DetectionEfficiency> detector_efficiency_;
-  calin::math::spline_interpolation::CubicMultiSpline detector_efficiency_spline_;
-  std::vector<calin::math::spline_interpolation::TwoDimensionalCubicSpline*> detector_bandwidth_spline_;
+  std::vector<PropagatorInfo*> propagator_;
+  std::vector<DetectorInfo*> detector_;
+
   double zobs_;
   double wmax_ = 1.0;
   double wmin_ = 0.0;
@@ -196,7 +346,7 @@ VCLIACTArray(
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
   VCLIACTTrackVisitor<VCLArchitecture>(atm, base_config(config), rng, adopt_atm, adopt_rng),
-  config_(config), atm_abs_(atm_abs), detector_efficiency_spline_(detector_efficiency_energy_knots())
+  config_(config), atm_abs_(atm_abs)
 {
   if(config_.observation_level() >= this->atm_->num_obs_levels()) {
     throw std::out_of_range("Request observation level out of range.");
@@ -210,56 +360,54 @@ VCLIACTArray(
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
-  for(auto& ipropagator : propagator_) {
-    if(ipropagator.adopt_propagator)delete ipropagator.propagator;
-    if(ipropagator.adopt_pe_processor)delete ipropagator.pe_processor;
+  for(auto* ipropagator : propagator_) {
+    if(ipropagator->adopt_propagator)delete ipropagator->propagator;
+    if(ipropagator->adopt_pe_processor)delete ipropagator->pe_processor;
+    delete ipropagator;
   }
-  for(auto* ispline : detector_bandwidth_spline_) {
-    delete ispline;
+  for(auto* idetector : detector_) {
+    delete idetector;
   }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-  const DetectionEfficiency& detector_efficiency, const std::string& propagator_name,
+  const std::string& propagator_name,
   bool adopt_propagator, bool adopt_pe_processor)
 {
   using calin::math::special::SQR;
 
   auto sphere = propagator->detector_spheres();
 
-  PropagatorInfo propagator_info;
-  propagator_info.propagator         = propagator;
-  propagator_info.ipropagator        = propagator_.size();
-  propagator_info.pe_processor       = pe_processor;
-  propagator_info.detector0          = detector_.size();
-  propagator_info.ndetector          = sphere.size();
-  propagator_info.adopt_propagator   = adopt_propagator;
-  propagator_info.adopt_pe_processor = adopt_pe_processor;
-  propagator_info.name               = propagator_name;
-  propagator_.emplace_back(propagator_info);
-
+  auto* propagator_info = new PropagatorInfo;
+  propagator_info->propagator          = propagator;
+  propagator_info->ipropagator         = propagator_.size();
+  propagator_info->pe_processor        = pe_processor;
+  propagator_info->detector0           = detector_.size();
+  propagator_info->ndetector           = sphere.size();
+  propagator_info->adopt_propagator    = adopt_propagator;
+  propagator_info->adopt_pe_processor  = adopt_pe_processor;
   std::string name = propagator_name;
   if(name.empty()) {
-    name = "propagator "+std::to_string(propagator_info.ipropagator);
+    name = "propagator "+std::to_string(propagator_info->ipropagator);
   }
-
-  unsigned iefficiency = add_detector_efficiency(detector_efficiency, name);
+  propagator_info->name                = name;
+  propagator_.emplace_back(propagator_info);
 
   for(unsigned isphere=0; isphere<sphere.size(); ++isphere) {
-    DetectorInfo detector_info;
-    detector_info.sphere                 = sphere[isphere];
-    detector_info.squared_radius         = SQR(sphere[isphere].radius);
-    detector_info.squared_safety_radius  = SQR(sphere[isphere].radius + safety_radius_);
-    detector_info.propagator             = propagator;
-    detector_info.ipropagator            = propagator_.size()-1;
-    detector_info.propagator_iscope      = isphere;
-    detector_info.global_iscope          = detector_.size();
-    detector_info.pe_processor           = pe_processor;
-    detector_info.idetector_efficiency   = iefficiency;
-    detector_info.nrays_to_refract       = 0;
-    detector_info.nrays_to_propagate     = 0;
+    auto detector_info = new DetectorInfo;
+    detector_info->propagator_info        = propagator_info;
+    detector_info->sphere                 = sphere[isphere];
+    detector_info->squared_radius         = SQR(sphere[isphere].radius);
+    detector_info->squared_safety_radius  = SQR(sphere[isphere].radius + safety_radius_);
+    detector_info->propagator             = propagator;
+    detector_info->propagator_iscope      = isphere;
+    detector_info->global_iscope          = detector_.size();
+    detector_info->pe_processor           = pe_processor;
+    detector_info->nrays_to_refract       = 0;
+    detector_info->nrays_to_propagate     = 0;
     detector_.emplace_back(detector_info);
+    propagator_info->detector_infos.emplace_back(detector_info);
   }
 
   update_detector_efficiencies();
@@ -268,15 +416,18 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
 template<typename VCLArchitecture>
 calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
 VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
-  calin::simulation::vs_optics::VSOArray* array,
-  PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+  calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
   const std::string& propagator_name,
   bool adopt_array, bool adopt_pe_processor)
 {
   auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
-  add_propagator(propagator, pe_processor, detector_efficiency, propagator_name,
-    /* adopt_propagator= */ true, adopt_pe_processor);
+
+  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>();
+
+  add_propagator(propagator, pe_processor, detector_efficiency, bandwidth_manager,
+    propagator_name, /* adopt_propagator= */ true, adopt_pe_processor);
   return propagator;
 }
 
@@ -296,35 +447,32 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
     /* adopt_array= */ true, adopt_pe_processor);
 }
 
-template<typename VCLArchitecture> unsigned VCLIACTArray<VCLArchitecture>::
-add_detector_efficiency(const DetectionEfficiency& detector_efficiency, const std::string& name)
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+add_lightcone_angular_efficiency(FocalPlaneRayPropagator* propagator,
+  const AngularEfficiency& aeff)
 {
-  unsigned iefficiency = detector_efficiency_.size();
-
-  detector_efficiency_.push_back(detector_efficiency);
-  std::vector<double> detector_efficiency_xknot =
-    detector_efficiency_spline_.xknot_as_stdvec();
-
-  double full_integral = detector_efficiency.integrate();
-  double partial_integral =
-    detector_efficiency.integrate(config_.detector_energy_lo(), config_.detector_energy_hi());
-
-  if(partial_integral < 0.99*full_integral) {
-    calin::util::log::LOG(calin::util::log::WARNING)
-      << "Configured detector energy range does contains less than 99% of detector efficiency curve.";
+  VCLUY1DSplineDirectionResponse* direction_response = nullptr;
+  for(auto& idrar : detector_radial_angular_response_) {
+    if(idrar.first == aeff) {
+      direction_response = idrar.second;
+      break;
+    }
   }
-
-  std::vector<double> detector_efficiency_yknot(detector_efficiency_xknot.size());
-  std::transform(detector_efficiency_xknot.begin(), detector_efficiency_xknot.end(),
-    detector_efficiency_yknot.begin(),
-    [detector_efficiency](double e) { return detector_efficiency(e); });
-
-  detector_efficiency_spline_.add_spline(detector_efficiency_yknot, name);
-
-  detector_bandwidth_spline_.push_back(
-    atm_abs_.integrate_bandwidth_to_spline(zobs_, detector_efficiency));
-
-  return iefficiency;
+  bool propagator_found = false;
+  for(auto* ipropagator : propagator_) {
+    if(ipropagator->propagator == propagator) {
+      propagator_found = true;
+      if(direction_response == nullptr) {
+        direction_response = new VCLUY1DSplineDirectionResponse(aeff,
+          /* rescale_to_unity= */ true,  /* dx_multiplier = */ 1.0);
+        detector_radial_angular_response_.emplace_back(aeff, direction_response);
+      }
+      for(unsigned idetector=0; idetector<ipropagator->ndetector; ++idetector) {
+        detector_[ipropagator->detector0 + idetector].fp_direction_response =
+          direction_response;
+      }
+    }
+  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -335,11 +483,11 @@ point_telescope_az_el_phi_deg(unsigned iscope,
     throw std::out_of_range("Telescope ID out of range");
   }
 
-  DetectorInfo& idetector(detector_[iscope]);
-  PropagatorInfo& ipropagator(propagator_[idetector.ipropagator]);
-  unsigned propagator_isphere = iscope-ipropagator.detector0;
+  DetectorInfo* idetector(detector_[iscope]);
+  PropagatorInfo* ipropagator(idetector->propagator_info);
+  unsigned propagator_isphere = iscope-ipropagator->detector0;
 
-  ipropagator.propagator->point_telescope_az_el_phi_deg(
+  ipropagator->propagator->point_telescope_az_el_phi_deg(
     propagator_isphere, az_deg, el_deg, phi_deg);
 
   update_detector_efficiencies();
@@ -355,11 +503,11 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
   const Eigen::VectorXd&  el_deg, const Eigen::VectorXd&  phi_deg)
 {
-  for(auto& ipropagator : propagator_) {
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
+  for(auto* ipropagator : propagator_) {
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
         ++propagator_isphere) {
-      unsigned isphere = ipropagator.detector0 + propagator_isphere;
-      ipropagator.propagator->point_telescope_az_el_phi_deg(
+      unsigned isphere = ipropagator->detector0 + propagator_isphere;
+      ipropagator->propagator->point_telescope_az_el_phi_deg(
         propagator_isphere, az_deg[isphere], el_deg[isphere],
         phi_deg[isphere]);
     }
@@ -399,20 +547,20 @@ update_detector_efficiencies()
 
   double znmin = M_PI_2;
   double znmax = 0;
-  for(auto& ipropagator : propagator_) {
-    auto spheres = ipropagator.propagator->detector_spheres();
-    if(spheres.size() != ipropagator.ndetector) {
+  for(auto* ipropagator : propagator_) {
+    auto spheres = ipropagator->propagator->detector_spheres();
+    if(spheres.size() != ipropagator->ndetector) {
       // this should never happen
       throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
     }
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
-      ++propagator_isphere) {
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+        ++propagator_isphere) {
       const auto& isphere(spheres[propagator_isphere]);
-      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
+      auto* idetector(ipropagator->detector_infos[propagator_isphere]);
       if(isphere.iobs != config_.observation_level()) {
         throw std::runtime_error("Detector observation level does not match configured value.");
       }
-      idetector.sphere = isphere;
+      idetector->sphere = isphere;
       double zn = std::atan2(std::sqrt(SQR(isphere.obs_dir.x())+SQR(isphere.obs_dir.y())), isphere.obs_dir.z());
       znmin = std::min(znmin, std::max(zn - isphere.field_of_view_radius, 0.0));
       znmax = std::max(znmax, std::min(zn + isphere.field_of_view_radius, M_PI_2));
@@ -420,12 +568,12 @@ update_detector_efficiencies()
     wmax_ = std::cos(znmin);
     wmin_ = std::cos(znmax);
     safety_radius_ = this->atm_->refraction_safety_radius(znmax, config_.observation_level());
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator.ndetector;
-      ++propagator_isphere) {
-      auto& idetector(detector_[ipropagator.detector0 + propagator_isphere]);
-      const auto& isphere(idetector.sphere);
-      idetector.squared_radius         = SQR(isphere.radius);
-      idetector.squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+        ++propagator_isphere) {
+      auto* idetector(ipropagator->detector_infos[propagator_isphere]);
+      const auto& isphere(idetector->sphere);
+      idetector->squared_radius         = SQR(isphere.radius);
+      idetector->squared_safety_radius  = SQR(isphere.radius + safety_radius_);
     }
   }
 
@@ -476,9 +624,9 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  for(auto& idetector : detector_) {
-    idetector.nrays_to_refract = 0;
-    idetector.nrays_to_propagate = 0;
+  for(auto* idetector : detector_) {
+    idetector->nrays_to_refract = 0;
+    idetector->nrays_to_propagate = 0;
   }
 
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
@@ -488,11 +636,11 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_eve
 {
   VCLIACTTrackVisitor<VCLArchitecture>::leave_event();
 
-  for(auto& idetector : detector_) {
-    if(idetector.nrays_to_refract) {
+  for(auto* idetector : detector_) {
+    if(idetector->nrays_to_refract) {
       do_refract_rays_for_detector(idetector);
     }
-    if(idetector.nrays_to_propagate) {
+    if(idetector->nrays_to_propagate) {
       do_propagate_rays_for_detector(idetector);
     }
   }
@@ -527,8 +675,8 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   bandwidth.store(bandwidth_array);
   ray_weight.store(ray_weight_array);
 
-  for(auto& idetector : detector_) {
-    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector.sphere.r0.template cast<double_vt>()) < idetector.squared_safety_radius);
+  for(auto* idetector : detector_) {
+    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector->sphere.r0.template cast<double_vt>()) < idetector->squared_safety_radius);
     unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
     if(intersecting_rays_bitmask) {
       for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
@@ -536,21 +684,21 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
           switch(config_.refraction_mode()) {
           case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
           case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
-            idetector.rays_to_propagate.insert_one_ray(idetector.nrays_to_propagate, ray_array.extract_one_ray(iray));
-            idetector.bandwidths_to_propagate[idetector.nrays_to_propagate] = bandwidth_array[iray];
-            idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = ray_weight_array[iray];
-            ++idetector.nrays_to_propagate;
-            if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
+            idetector->rays_to_propagate.insert_one_ray(idetector->nrays_to_propagate, ray_array.extract_one_ray(iray));
+            idetector->bandwidths_to_propagate[idetector->nrays_to_propagate] = bandwidth_array[iray];
+            idetector->ray_weights_to_propagate[idetector->nrays_to_propagate] = ray_weight_array[iray];
+            ++idetector->nrays_to_propagate;
+            if(idetector->nrays_to_propagate == VCLArchitecture::num_double) {
               do_propagate_rays_for_detector(idetector);
             }
             break;
           case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
           default:
-            idetector.rays_to_refract.insert_one_ray(idetector.nrays_to_refract, ray_array.extract_one_ray(iray));
-            idetector.bandwidths_to_refract[idetector.nrays_to_refract] = bandwidth_array[iray];
-            idetector.ray_weights_to_refract[idetector.nrays_to_refract] = ray_weight_array[iray];
-            ++idetector.nrays_to_refract;
-            if(idetector.nrays_to_refract == VCLArchitecture::num_double) {
+            idetector->rays_to_refract.insert_one_ray(idetector->nrays_to_refract, ray_array.extract_one_ray(iray));
+            idetector->bandwidths_to_refract[idetector->nrays_to_refract] = bandwidth_array[iray];
+            idetector->ray_weights_to_refract[idetector->nrays_to_refract] = ray_weight_array[iray];
+            ++idetector->nrays_to_refract;
+            if(idetector->nrays_to_refract == VCLArchitecture::num_double) {
               do_refract_rays_for_detector(idetector);
             }
             break;
@@ -566,30 +714,30 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-do_refract_rays_for_detector(DetectorInfo& idetector)
+do_refract_rays_for_detector(DetectorInfo* idetector)
 {
   Ray ray;
-  idetector.rays_to_refract.get_rays(ray);
-  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector.nrays_to_refract;
-  idetector.nrays_to_refract = 0;
+  idetector->rays_to_refract.get_rays(ray);
+  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_refract;
+  idetector->nrays_to_refract = 0;
 
   double_vt dz = ray.z()-zobs_;
   this->atm_->template vcl_propagate_ray_with_refraction_and_mask<VCLArchitecture>(ray, ray_mask, config_.observation_level());
   // Note propagation backwards by distance since uz() is negative
   ray.propagate_dist_with_mask(ray_mask, dz/ray.uz(), ref_index_);
 
-  idetector.rays_to_refract.set_rays(ray);
+  idetector->rays_to_refract.set_rays(ray);
 
-  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector.sphere.r0.template cast<double_vt>()) < idetector.squared_radius);
+  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector->sphere.r0.template cast<double_vt>()) < idetector->squared_radius);
   unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
   if(intersecting_rays_bitmask) {
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(intersecting_rays_bitmask & 1) {
-        idetector.rays_to_propagate.insert_one_ray(idetector.nrays_to_propagate, idetector.rays_to_refract.extract_one_ray(iray));
-        idetector.bandwidths_to_propagate[idetector.nrays_to_propagate] = idetector.bandwidths_to_refract[iray];
-        idetector.ray_weights_to_propagate[idetector.nrays_to_propagate] = idetector.ray_weights_to_refract[iray];
-        ++idetector.nrays_to_propagate;
-        if(idetector.nrays_to_propagate == VCLArchitecture::num_double) {
+        idetector->rays_to_propagate.insert_one_ray(idetector->nrays_to_propagate, idetector->rays_to_refract.extract_one_ray(iray));
+        idetector->bandwidths_to_propagate[idetector->nrays_to_propagate] = idetector->bandwidths_to_refract[iray];
+        idetector->ray_weights_to_propagate[idetector->nrays_to_propagate] = idetector->ray_weights_to_refract[iray];
+        ++idetector->nrays_to_propagate;
+        if(idetector->nrays_to_propagate == VCLArchitecture::num_double) {
           do_propagate_rays_for_detector(idetector);
         }
       }
@@ -599,18 +747,30 @@ do_refract_rays_for_detector(DetectorInfo& idetector)
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-do_propagate_rays_for_detector(DetectorInfo& idetector)
+do_propagate_rays_for_detector(DetectorInfo* idetector)
 {
   Ray ray;
-  idetector.rays_to_propagate.get_rays(ray);
-  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector.nrays_to_propagate;
-  idetector.nrays_to_propagate = 0;
+  idetector->rays_to_propagate.get_rays(ray);
+  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_propagate;
+  idetector->nrays_to_propagate = 0;
+
+  double_vt emission_z = ray.z();
+  double_vt emission_uz = ray.uz();
 
   FocalPlaneParameters fp_parameters;
-  ray_mask = idetector.propagator->propagate_rays_to_focal_plane(
-    idetector.propagator_iscope, ray, ray_mask, fp_parameters);
+  ray_mask = idetector->propagator->propagate_rays_to_focal_plane(
+    idetector->propagator_iscope, ray, ray_mask, fp_parameters);
 
-  ray_mask &= this->rng_->uniform_double() < fp_parameters.detection_prob;
+  if(not this->do_color_photons_) {
+    double_vt emission_bandwidth;
+    emission_bandwidth.load(idetector->bandwidths_to_propagate);
+    double_vt ground_bandwidth =
+      detector_bandwidth_spline_[idetector->idetector_efficiency]->
+        template vcl_value<VCLArchitecture>(emission_z, -emission_uz);
+    double_vt bw_scaled_uniform_rand = emission_bandwidth * this->rng_->uniform_double();
+    double_vt bw_scaled_detection_prob = fp_parameters.detection_prob * ground_bandwidth;
+    ray_mask &= bw_scaled_uniform_rand < bw_scaled_detection_prob;
+  }
 
   unsigned fp_rays_bitmask = vcl::to_bits(ray_mask);
   if(fp_rays_bitmask) {
@@ -621,6 +781,10 @@ do_propagate_rays_for_detector(DetectorInfo& idetector)
     double_at fplane_t;
     int64_at pixel_id;
 
+    if(this->do_color_photons_) {
+
+    }
+
     fp_parameters.fplane_x.store(fplane_x);
     fp_parameters.fplane_z.store(fplane_y);
     fp_parameters.fplane_ux.store(fplane_ux);
@@ -630,9 +794,9 @@ do_propagate_rays_for_detector(DetectorInfo& idetector)
 
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(fp_rays_bitmask & 1) {
-        idetector.pe_processor->process_focal_plane_hit(idetector.propagator_iscope,
+        idetector->pe_processor->process_focal_plane_hit(idetector->propagator_iscope,
           pixel_id[iray], fplane_x[iray], fplane_y[iray], fplane_ux[iray], fplane_uy[iray],
-          fplane_t[iray], idetector.ray_weights_to_propagate[iray]);
+          fplane_t[iray], idetector->ray_weights_to_propagate[iray]);
       }
     }
     fp_rays_bitmask >>= 1;
