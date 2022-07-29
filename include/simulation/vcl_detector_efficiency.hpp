@@ -29,7 +29,6 @@ template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL
 public:
 #ifndef SWIG
   using double_vt   = typename VCLArchitecture::double_vt;
-  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
 #endif
 
   virtual ~VCLDirectionResponse() {
@@ -41,7 +40,9 @@ public:
   }
 
 #ifndef SWIG
-  virtual double_vt detection_probability(double_vt h_emission, const Vector3d_vt& u) const {
+  virtual double_vt detection_probability(const double_vt h_emission,
+    const double_vt ux, const double_vt uy, const double_vt uz) const
+  {
     return 1.0;
   }
 #endif
@@ -79,8 +80,9 @@ public:
   }
 
 #ifndef SWIG
-  double_vt detection_probability(double_vt h_emission, const Vector3d_vt& u) const final {
-    return spline_->vcl_value<VCLArchitecture>(vcl::abs(u.y()));
+  double_vt detection_probability(double_vt h_emission,
+      const double_vt ux, const double_vt uy, const double_vt uz) const final {
+    return spline_->vcl_value<VCLArchitecture>(vcl::abs(uy));
   }
 #endif
 
