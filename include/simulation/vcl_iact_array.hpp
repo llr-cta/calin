@@ -44,7 +44,7 @@ template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL
 public:
 #ifndef SWIG
   using double_vt   = typename VCLArchitecture::double_vt;
-#emdif
+#endif
 
   virtual ~VCLBandwidthManager() {
     // nothing to see here
@@ -63,7 +63,7 @@ public:
     return nullptr;
   }
 
-  virtual const calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response() const {
+  virtual const calin::simulation::detector_efficiency::VCLDirectionResponse<VCLArchitecture>* fp_angular_response() const {
     return nullptr;
   }
 
@@ -102,7 +102,7 @@ protected:
     return new calin::math::spline_interpolation::CubicSpline(xknot, yknot);
   }
 
-  static calin::math::spline_interpolation::CubicSpline* new_detector_bandwidth_spline(
+  static calin::math::spline_interpolation::TwoDimensionalCubicSpline* new_detector_bandwidth_spline(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
     double zobs)
@@ -115,21 +115,25 @@ template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL
   public VCLBandwidthManager<VCLArchitecture>
 {
 public:
+#ifndef SWIG
+  using double_vt   = typename VCLArchitecture::double_vt;
+#endif
+
   VCLDCBandwidthManager(
       const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
-      const calin::simulation::detector_efficiency::DetectorEfficiency& detector_efficiency,
-      const calin::simulation::detector_efficiency::AngularResponse& fp_angular_response,
+      const calin::simulation::detector_efficiency::DetectionEfficiency& detection_efficiency,
+      const calin::simulation::detector_efficiency::AngularEfficiency& fp_angular_efficiency,
       double zobs, double e_lo, double e_hi, double delta_e):
     VCLBandwidthManager<VCLArchitecture>(), atm_abs_(atm_abs),
-    detector_efficiency_(detector_efficiency),
+    detection_efficiency_(detection_efficiency)
   {
-    fp_angular_response_ =
-      new VCLUY1DSplineDirectionResponse(fp_angular_response, true, 1.0);
-    detector_efficiency_ *= 1.0/fp_angular_response_->scale();
+    fp_angular_response_ = new calin::simulation::detector_efficiency::
+      VCLUY1DSplineDirectionResponse<VCLArchitecture>(fp_angular_efficiency, true, 1.0);
+    detection_efficiency_ *= 1.0/fp_angular_response_->scale();
     detector_efficiency_spline_ =
-      new_detector_efficiency_spline(detector_efficiency_, elo, ehi, delta_e);
+      new_detector_efficiency_spline(detection_efficiency_, e_lo, e_hi, delta_e);
     detector_bandwidth_spline_ =
-      new_detector_bandwidth_spline(detector_efficiency_, *atm_abs_, zobs);
+      new_detector_bandwidth_spline(detection_efficiency_, *atm_abs_, zobs);
   }
 
   virtual ~VCLDCBandwidthManager() {
@@ -139,11 +143,14 @@ public:
   }
 
   double bandwidth() const final {
-    return 0;
+    return detector_efficiency_spline_->integral(detector_efficiency_spline_->xmax());
   }
 
   std::vector<double> bandwidth_vs_height(const std::vector<double>& h, double w) const final {
-    return std::vector<double>(h.size(), 0.0);
+    std::vector<double> bw(h.size());
+    std::transform(h.begin(), h.end(), bw.begin(),
+      [this,w](double hh) { return detector_bandwidth_spline_->value(hh,w); });
+    return bw;
   }
 
   const calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline() const final {
@@ -154,7 +161,7 @@ public:
     return detector_bandwidth_spline_;
   }
 
-  const calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response() const final {
+  const calin::simulation::detector_efficiency::VCLDirectionResponse<VCLArchitecture>* fp_angular_response() const final {
     return fp_angular_response_;
   }
 
@@ -173,10 +180,10 @@ public:
 
 private:
   const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_ = nullptr;
-  calin::simulation::detector_efficiency::DetectorEfficiency detector_efficiency_;
+  calin::simulation::detector_efficiency::DetectionEfficiency detection_efficiency_;
   calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline_ = nullptr;
   calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline_ = nullptr;
-  calin::simulation::detector_efficiency::VCLDirectionResponse* fp_angular_response_ = nullptr;
+  calin::simulation::detector_efficiency::VCLDirectionResponse<VCLArchitecture>* fp_angular_response_ = nullptr;
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLIACTArray:
@@ -215,6 +222,7 @@ public:
   CALIN_TYPEALIAS(DetectionEfficiency, calin::simulation::detector_efficiency::DetectionEfficiency);
   CALIN_TYPEALIAS(AngularEfficiency, calin::simulation::detector_efficiency::AngularEfficiency);
 
+
   CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
 
@@ -249,10 +257,6 @@ public:
   void point_all_telescopes_az_el_deg(double az_deg, double el_deg);
 
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
-
-  const calin::math::spline_interpolation::CubicMultiSpline& detector_efficiency_spline() const {
-    return detector_efficiency_spline_;
-  }
 
   unsigned num_propagators() const { return propagator_.size(); }
   unsigned num_scopes() const { return detector_.size(); }
@@ -326,6 +330,7 @@ protected:
   calin::simulation::detector_efficiency::AtmosphericAbsorption atm_abs_;
   std::vector<PropagatorInfo*> propagator_;
   std::vector<DetectorInfo*> detector_;
+  std::vector<VCLBandwidthManager*> bandwidth_manager_;
 
   double zobs_;
   double wmax_ = 1.0;
@@ -368,11 +373,14 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
   for(auto* idetector : detector_) {
     delete idetector;
   }
+  for(auto* ibandwidth_manager : bandwidth_manager_) {
+    delete ibandwidth_manager;
+  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-  const std::string& propagator_name,
+  VCLBandwidthManager* bandwidth_manager, const std::string& propagator_name,
   bool adopt_propagator, bool adopt_pe_processor)
 {
   using calin::math::special::SQR;
@@ -385,6 +393,7 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   propagator_info->pe_processor        = pe_processor;
   propagator_info->detector0           = detector_.size();
   propagator_info->ndetector           = sphere.size();
+  propagator_info->bandwidth_manager   = bandwidth_manager;
   propagator_info->adopt_propagator    = adopt_propagator;
   propagator_info->adopt_pe_processor  = adopt_pe_processor;
   std::string name = propagator_name;
@@ -404,11 +413,14 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info->propagator_iscope      = isphere;
     detector_info->global_iscope          = detector_.size();
     detector_info->pe_processor           = pe_processor;
+    detector_info->bandwidth_manager      = bandwidth_manager;
     detector_info->nrays_to_refract       = 0;
     detector_info->nrays_to_propagate     = 0;
     detector_.emplace_back(detector_info);
     propagator_info->detector_infos.emplace_back(detector_info);
   }
+
+  bandwidth_manager_.emplace_back(bandwidth_manager);
 
   update_detector_efficiencies();
 }
@@ -424,18 +436,22 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
 
-  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>();
+  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
+    atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
+    config_.detector_energy_lo(), config_.detector_energy_hi(),
+    config_.detector_energy_bin_width());
 
   add_propagator(propagator, pe_processor, detector_efficiency, bandwidth_manager,
     propagator_name, /* adopt_propagator= */ true, adopt_pe_processor);
+
   return propagator;
 }
 
 template<typename VCLArchitecture>
 calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
 VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
-  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
-  PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
   const std::string& propagator_name,
   bool adopt_pe_processor)
 {
@@ -445,34 +461,6 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   array->generateFromArrayParameters(param, scalar_rng);
   return add_davies_cotton_propagator(array, pe_processor, detector_efficiency, propagator_name,
     /* adopt_array= */ true, adopt_pe_processor);
-}
-
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-add_lightcone_angular_efficiency(FocalPlaneRayPropagator* propagator,
-  const AngularEfficiency& aeff)
-{
-  VCLUY1DSplineDirectionResponse* direction_response = nullptr;
-  for(auto& idrar : detector_radial_angular_response_) {
-    if(idrar.first == aeff) {
-      direction_response = idrar.second;
-      break;
-    }
-  }
-  bool propagator_found = false;
-  for(auto* ipropagator : propagator_) {
-    if(ipropagator->propagator == propagator) {
-      propagator_found = true;
-      if(direction_response == nullptr) {
-        direction_response = new VCLUY1DSplineDirectionResponse(aeff,
-          /* rescale_to_unity= */ true,  /* dx_multiplier = */ 1.0);
-        detector_radial_angular_response_.emplace_back(aeff, direction_response);
-      }
-      for(unsigned idetector=0; idetector<ipropagator->ndetector; ++idetector) {
-        detector_[ipropagator->detector0 + idetector].fp_direction_response =
-          direction_response;
-      }
-    }
-  }
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -597,9 +585,8 @@ template<typename VCLArchitecture> double VCLIACTArray<VCLArchitecture>::
 fixed_pe_bandwidth() const
 {
   double bandwidth = 0;
-  for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
-    bandwidth = std::max(bandwidth, detector_efficiency_spline_.integral(
-      detector_efficiency_spline_.xmax(), ispline));
+  for(const auto* ibandwidth_manager : bandwidth_manager_) {
+    bandwidth = std::max(bandwidth, ibandwidth_manager->bandwidth());
   }
   return bandwidth;
 }
@@ -607,16 +594,15 @@ fixed_pe_bandwidth() const
 template<typename VCLArchitecture> calin::math::spline_interpolation::CubicSpline*
 VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 {
-  if(detector_bandwidth_spline_.size() == 0) {
+  if(bandwidth_manager_.empty()) {
     return nullptr;
   }
-  std::vector<double> heights = detector_bandwidth_spline_[0]->xknot_as_stdvec();
+  std::vector<double> heights = bandwidth_manager_.front()->xknot_as_stdvec();
   std::vector<double> bandwidths(heights.size(), 0.0);
-  for(unsigned ispline=0; ispline<detector_bandwidth_spline_.size(); ++ispline) {
-    for(unsigned iheight=0; iheight<heights.size(); ++iheight) {
-      bandwidths[iheight] = std::max(bandwidths[iheight],
-        detector_bandwidth_spline_[ispline]->value(heights[iheight], wmax_));
-    }
+  for(const auto* ibandwidth_manager : bandwidth_manager_) {
+    auto ibandwidth = ibandwidth_manager->bandwidth_vs_height(heights, wmax_);
+    bandwidths = std::transform(bandwidths.begin(), bandwidths.end(), ibandwidth.begin(),
+      bandwidths.begin(), [](double a, double b) { return std::max(a,b); });
   }
   return new calin::math::spline_interpolation::CubicSpline(heights, bandwidths);
 }
