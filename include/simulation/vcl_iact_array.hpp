@@ -76,7 +76,7 @@ public:
     return nullptr;
   }
 
-  virtual std::string banner(const std::string& indent_1 = "", const std::string& indent_n = "") const {
+  virtual std::string banner(double wmin, double wmax, const std::string& indent_1 = "", const std::string& indent_n = "") const {
     return indent_1 + name_;
   }
 
@@ -176,8 +176,18 @@ public:
     return fp_angular_response_;
   }
 
-  virtual std::string banner(const std::string& indent_1 = "", const std::string& indent_n = "") const {
-    return indent_1 + this->name_;
+  virtual std::string banner(double wmin, double wmax, const std::string& indent_1 = "", const std::string& indent_n = "") const {
+    // constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
+    using calin::util::string::double_to_string_with_commas;
+    std::ostringstream stream;
+    stream
+      << indent_1 << this->name_ << " : "
+      << double_to_string_with_commas(detector_efficiency_spline_->integral(detector_efficiency_spline_->xmax()),3) << " eV\n"
+      << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
+      << indent_n << "Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmax),3) << " eV\n";
+    return stream.str();
   }
 
 #ifndef SWIG
@@ -861,8 +871,9 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     stream << "Cherenkov ray mode : PEs, with fixed bandwidth "
       << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n";
   }
+  stream << "Detector efficiency bandwidths :\n";
   for(const auto* ibwm : bandwidth_manager_) {
-    stream << ibwm->banner("- ", "  ");
+    stream << ibwm->banner(wmax_, wmin_, "- ", "  ");
   }
   return stream.str();
 }
