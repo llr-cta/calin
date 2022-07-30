@@ -146,4 +146,6 @@ void two_gaussian(double* vec, unsigned n, double mean, double sigma, double spl
 Eigen::VectorXd gaussian(unsigned n, double mean, double sigma, bool vcl = true);
 Eigen::VectorXd two_gaussian(unsigned n, double mean, double sigma, double split, bool vcl = true);
 
+unsigned solve_cubic_equation(double& x0, double&x1, double& x2, double a, double b, double c);
+
 } } } // namespace calin::math::special
