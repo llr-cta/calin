@@ -46,6 +46,10 @@ public:
   using double_vt   = typename VCLArchitecture::double_vt;
 #endif
 
+  VCLBandwidthManager(const std::string& name): name_(name) {
+    // nothing to see here
+  }
+
   virtual ~VCLBandwidthManager() {
     // nothing to see here
   }
@@ -63,12 +67,17 @@ public:
     return nullptr;
   }
 
+  virtual const calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline() const
+  {
+    return nullptr;
+  }
+
   virtual const calin::simulation::detector_efficiency::VCLDirectionResponse<VCLArchitecture>* fp_angular_response() const {
     return nullptr;
   }
 
-  virtual std::string banner(const std::string& name) const {
-    return "- " + name;
+  virtual std::string banner(const std::string& indent_1 = "", const std::string& indent_n = "") const {
+    return indent_1 + name_;
   }
 
 #ifndef SWIG
@@ -109,6 +118,8 @@ protected:
   {
     return atm_abs.integrate_bandwidth_to_spline(zobs, detector_efficiency);
   }
+
+  std::string name_;
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLDCBandwidthManager:
@@ -123,16 +134,16 @@ public:
       const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
       const calin::simulation::detector_efficiency::DetectionEfficiency& detection_efficiency,
       const calin::simulation::detector_efficiency::AngularEfficiency& fp_angular_efficiency,
-      double zobs, double e_lo, double e_hi, double delta_e):
-    VCLBandwidthManager<VCLArchitecture>(), atm_abs_(atm_abs),
+      double zobs, double e_lo, double e_hi, double delta_e, const std::string& name):
+    VCLBandwidthManager<VCLArchitecture>(name), atm_abs_(atm_abs),
     detection_efficiency_(detection_efficiency)
   {
     fp_angular_response_ = new calin::simulation::detector_efficiency::
       VCLUY1DSplineDirectionResponse<VCLArchitecture>(fp_angular_efficiency, true, 1.0);
-    detection_efficiency_ *= 1.0/fp_angular_response_->scale();
-    detector_efficiency_spline_ =
+    detection_efficiency_ *= fp_angular_response_->scale();
+    detector_efficiency_spline_ = VCLBandwidthManager<VCLArchitecture>::
       new_detector_efficiency_spline(detection_efficiency_, e_lo, e_hi, delta_e);
-    detector_bandwidth_spline_ =
+    detector_bandwidth_spline_ = VCLBandwidthManager<VCLArchitecture>::
       new_detector_bandwidth_spline(detection_efficiency_, *atm_abs_, zobs);
   }
 
@@ -165,16 +176,16 @@ public:
     return fp_angular_response_;
   }
 
-  std::string banner(const std::string& name) const final {
-    return "- " + name;
+  virtual std::string banner(const std::string& indent_1 = "", const std::string& indent_n = "") const {
+    return indent_1 + this->name_;
   }
 
 #ifndef SWIG
   double_vt bandwidth_for_pe(const double_vt z_emission, const double_vt uz_emission,
     const double_vt ux_fp, const double_vt uy_fp, const double_vt uz_fp) const final
   {
-    double_vt pe_bandwidth =
-      detector_bandwidth_spline_->template vcl_value<VCLArchitecture>(z_emission, uz_emission);
+    return detector_bandwidth_spline_->
+      template vcl_value<VCLArchitecture>(z_emission, vcl::abs(uz_emission));
   }
 #endif
 
@@ -293,6 +304,7 @@ protected:
     PEProcessor* pe_processor;
     unsigned detector0;
     unsigned ndetector;
+    VCLBandwidthManager* bandwidth_manager;
 
     bool adopt_propagator;
     bool adopt_pe_processor;
@@ -311,6 +323,7 @@ protected:
     unsigned propagator_iscope;
     unsigned global_iscope;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
+    VCLBandwidthManager* bandwidth_manager;
 
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
@@ -437,12 +450,12 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
 
   auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
-    atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
+    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
     config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width());
+    config_.detector_energy_bin_width(), propagator_name);
 
-  add_propagator(propagator, pe_processor, detector_efficiency, bandwidth_manager,
-    propagator_name, /* adopt_propagator= */ true, adopt_pe_processor);
+  add_propagator(propagator, pe_processor, bandwidth_manager, propagator_name,
+    adopt_pe_processor);
 
   return propagator;
 }
@@ -459,7 +472,8 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
   calin::math::rng::RNG scalar_rng(&scalar_core);
   array->generateFromArrayParameters(param, scalar_rng);
-  return add_davies_cotton_propagator(array, pe_processor, detector_efficiency, propagator_name,
+  return add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
+    fp_angular_efficiency, propagator_name,
     /* adopt_array= */ true, adopt_pe_processor);
 }
 
@@ -597,12 +611,15 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
   if(bandwidth_manager_.empty()) {
     return nullptr;
   }
-  std::vector<double> heights = bandwidth_manager_.front()->xknot_as_stdvec();
+  std::vector<double> heights = bandwidth_manager_.front()->
+    detector_bandwidth_spline()->xknot_as_stdvec();
   std::vector<double> bandwidths(heights.size(), 0.0);
   for(const auto* ibandwidth_manager : bandwidth_manager_) {
-    auto ibandwidth = ibandwidth_manager->bandwidth_vs_height(heights, wmax_);
-    bandwidths = std::transform(bandwidths.begin(), bandwidths.end(), ibandwidth.begin(),
-      bandwidths.begin(), [](double a, double b) { return std::max(a,b); });
+    std::vector<double> detector_bandwidths =
+      ibandwidth_manager->bandwidth_vs_height(heights, wmax_);
+    std::transform(bandwidths.begin(), bandwidths.end(),
+      detector_bandwidths.begin(), bandwidths.begin(),
+      [](double a, double b) { return std::max(a,b); });
   }
   return new calin::math::spline_interpolation::CubicSpline(heights, bandwidths);
 }
@@ -751,8 +768,8 @@ do_propagate_rays_for_detector(DetectorInfo* idetector)
     double_vt emission_bandwidth;
     emission_bandwidth.load(idetector->bandwidths_to_propagate);
     double_vt ground_bandwidth =
-      detector_bandwidth_spline_[idetector->idetector_efficiency]->
-        template vcl_value<VCLArchitecture>(emission_z, -emission_uz);
+      idetector->bandwidth_manager->bandwidth_for_pe(emission_z, emission_uz,
+        fp_parameters.fplane_ux, fp_parameters.fplane_uy, fp_parameters.fplane_uz);
     double_vt bw_scaled_uniform_rand = emission_bandwidth * this->rng_->uniform_double();
     double_vt bw_scaled_detection_prob = fp_parameters.detection_prob * ground_bandwidth;
     ray_mask &= bw_scaled_uniform_rand < bw_scaled_detection_prob;
@@ -810,17 +827,6 @@ VCLIACTArray<VCLArchitecture>::base_config(const calin::ix::simulation::vcl_iact
   return bconfig;
 }
 
-template<typename VCLArchitecture> std::vector<double>
-VCLIACTArray<VCLArchitecture>::detector_efficiency_energy_knots()
-{
-  std::vector<double> knots;
-  for(double e=config_.detector_energy_lo(); e<=config_.detector_energy_hi();
-      e+=config_.detector_energy_bin_width()) {
-    knots.push_back(e);
-  }
-  return knots;
-}
-
 template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
 {
   constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
@@ -855,17 +861,8 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     stream << "Cherenkov ray mode : PEs, with fixed bandwidth "
       << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n";
   }
-  if(detector_efficiency_spline_.num_spline() > 0) {
-    stream << "Detector efficiency bandwidths :\n";
-    for(unsigned ispline=0; ispline<detector_efficiency_spline_.num_spline(); ++ispline) {
-      stream
-        << "- " << detector_efficiency_spline_.dataset_name(ispline) << " : "
-        << double_to_string_with_commas(detector_efficiency_spline_.integral(detector_efficiency_spline_.xmax(), ispline),3) << " eV\n"
-        << "  Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmin_),3)
-        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(10e5,wmax_),3) << " eV\n"
-        << "  Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmin_),3)
-        << " to " << double_to_string_with_commas(detector_bandwidth_spline_[ispline]->value(20e5,wmax_),3) << " eV\n";
-    }
+  for(const auto* ibwm : bandwidth_manager_) {
+    stream << ibwm->banner("- ", "  ");
   }
   return stream.str();
 }
