@@ -379,6 +379,78 @@ double CubicSpline::ymin() const
   return ymin;
 }
 
+double CubicSpline::x_at_ymin() const
+{
+  double xmin = s_.x.front();
+  double ymin = s_.y.front();
+  for(unsigned iknot=0; iknot<s_.y.size()-1; ++iknot) {
+    double dx = s_.dx[iknot];
+    double dx_inv = 1.0/dx;
+    double y0 = s_.y[iknot];
+    double y1 = s_.y[iknot + 1];
+    double D0 = s_.dy_dx[iknot];
+    double D1 = s_.dy_dx[iknot + 1];
+    double t0;
+    double t1;
+    cubic_extrema(t0, t1, dx, dx_inv, y0, y1, D0, D1);
+    if(not std::isnan(t0) and t0>0 and t0<1) {
+      double yval = cubic_value(t0, dx, dx_inv, y0, y1, D0, D1);
+      if(yval < ymin) {
+        ymin = yval;
+        xmin = t0 * dx + s_.x[iknot];
+      }
+    }
+    if(not std::isnan(t1) and t1>0 and t1<1) {
+      double yval = cubic_value(t1, dx, dx_inv, y0, y1, D0, D1);
+      if(yval < ymin) {
+        ymin = yval;
+        xmin = t1 * dx + s_.x[iknot];
+      }
+    }
+    if(y1 < ymin) {
+      ymin = y1;
+      xmin = s_.x[iknot+1];
+    }
+  }
+  return xmin;
+}
+
+double CubicSpline::x_at_ymax() const
+{
+  double xmax = s_.x.front();
+  double ymax = s_.y.front();
+  for(unsigned iknot=0; iknot<s_.y.size()-1; ++iknot) {
+    double dx = s_.dx[iknot];
+    double dx_inv = 1.0/dx;
+    double y0 = s_.y[iknot];
+    double y1 = s_.y[iknot + 1];
+    double D0 = s_.dy_dx[iknot];
+    double D1 = s_.dy_dx[iknot + 1];
+    double t0;
+    double t1;
+    cubic_extrema(t0, t1, dx, dx_inv, y0, y1, D0, D1);
+    if(not std::isnan(t0) and t0>0 and t0<1) {
+      double yval = cubic_value(t0, dx, dx_inv, y0, y1, D0, D1);
+      if(yval > ymax) {
+        ymax = yval;
+        xmax = t0 * dx + s_.x[iknot];
+      }
+    }
+    if(not std::isnan(t1) and t1>0 and t1<1) {
+      double yval = cubic_value(t1, dx, dx_inv, y0, y1, D0, D1);
+      if(yval > ymax) {
+        ymax = yval;
+        xmax = t1 * dx + s_.x[iknot];
+      }
+    }
+    if(y1 > ymax) {
+      ymax = y1;
+      xmax = s_.x[iknot+1];
+    }
+  }
+  return xmax;
+}
+
 double CubicSpline::value(double x) const
 {
   double dx;

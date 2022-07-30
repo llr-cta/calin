@@ -322,6 +322,9 @@ public:
   double ymin() const;
   double ymax() const;
 
+  double x_at_ymin() const;
+  double x_at_ymax() const;
+
   const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   const std::vector<double>& yknot_as_stdvec() const { return s_.y; }
   const std::vector<double>& dydxknot_as_stdvec() const { return s_.dy_dx; }
