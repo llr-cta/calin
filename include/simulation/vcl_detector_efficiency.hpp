@@ -94,9 +94,10 @@ public:
     double emax = spline_->value(wmax);
     double whalf = spline_->find(0.5*emax);
     std::ostringstream stream;
-    stream << "100% efficiency at " << double_to_string_with_commas(std::acos(wmax)/M_PI*180,1)
+    stream << "100% at " << double_to_string_with_commas(std::acos(wmax)/M_PI*180,1)
       << " deg; 50% at " << double_to_string_with_commas(std::acos(whalf)/M_PI*180,1)
-      << " deg; at normal : " << double_to_string_with_commas(w0*100,1) << "%";
+      << " deg; at 0 deg " << double_to_string_with_commas(w0*100,1)
+      << "%; scale " << double_to_string_with_commas(scale_,3);
     return stream.str();
   }
 
