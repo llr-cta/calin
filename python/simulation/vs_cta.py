@@ -18,6 +18,52 @@
 import numpy
 import calin.math.hex_array
 import calin.simulation.vs_optics
+import calin.simulation.detector_efficiency
+import calin.provenance.system_info
+
+def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
+        mirror = 'ref_MST-North-MLT_2022_06_28.dat',
+        window = 'transmission_lst_window_No7-10_ave.dat',
+        degradation_factor = 0.9, quiet = False):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+    det_eff = calin.simulation.detector_efficiency.DetectionEfficiency()
+
+    # PMT quantum efficiency curve
+    if(qe):
+        det_eff.scaleEffFromFile(data_dir + qe)
+        if(not quiet):
+            print('Loading PMT QE curve :',qe,'[bandwidth = %.3f]'%det_eff.integrate())
+
+    # Mirror reflectivity curve
+    if(mirror):
+        det_eff.scaleEffFromFile(data_dir + mirror)
+        if(not quiet):
+            print('Scaling by mirror reflectivity :',mirror,'[bandwidth = %.3f]'%det_eff.integrate())
+
+    # Window transmission curve
+    if(window):
+        det_eff.scaleEffFromFile(data_dir + window)
+        if(not quiet):
+            print('Scaling by window transmission :',window,'[bandwidth = %.3f]'%det_eff.integrate())
+
+    # Optional constant degradation factor
+    if(degradation_factor < 1.0):
+        det_eff.scaleEffByConst(degradation_factor)
+        if(not quiet):
+            print('Scaling by degradation factor :',degradation_factor,'[bandwidth = %.3f]'%det_eff.integrate())
+
+    return det_eff
+
+def mstn_cone_efficiency(cone = 'NectarCAM_lightguide_efficiency_POP_131019.dat',
+        quiet = False):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+
+    if(cone):
+        cone_eff = calin.simulation.detector_efficiency.AngularEfficiency(data_dir + cone)
+        if(not quiet):
+            print('Loading light-cone curve :',cone)
+
+    return cone_eff
 
 def dms(d,m,s):
     # Note that "negative" d=0 (e.g. -00:30:00) must be specified as 00:-30:00 or 00:00:-30
