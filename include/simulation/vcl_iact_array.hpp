@@ -187,6 +187,10 @@ public:
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmax),3) << " eV\n";
+    std::string fp_banner = fp_angular_response_->banner();
+    if(not fp_banner.empty()) {
+      stream << indent_n << "Cone : " << fp_banner << '\n';
+    }
     return stream.str();
   }
 

@@ -19,7 +19,11 @@
 
 #pragma once
 
+#include <sstream>
+#include <cmath>
+
 #include <util/vcl.hpp>
+#include <util/string.hpp>
 #include <simulation/detector_efficiency.hpp>
 
 namespace calin { namespace simulation { namespace detector_efficiency {
@@ -37,6 +41,10 @@ public:
 
   virtual double scale() const {
     return 1.0;
+  }
+
+  virtual std::string banner() const {
+    return "";
   }
 
 #ifndef SWIG
@@ -77,6 +85,20 @@ public:
 
   double scale() const final {
     return scale_;
+  }
+
+  std::string banner() const final {
+    using calin::util::string::double_to_string_with_commas;
+    double w0 = spline_->value(1.0);
+    double wmax = spline_->x_at_ymax();
+    double emax = spline_->value(wmax);
+    double whalf = spline_->find(0.5*emax);
+    std::ostringstream stream;
+    stream << "E(max) " << double_to_string_with_commas(emax,3)
+      << "at max=" << double_to_string_with_commas(std::acos(wmax)/M_PI*180,1)
+      << " deg; E(half_max) at half_max=" << double_to_string_with_commas(std::acos(whalf)/M_PI*180,1)
+      << " deg; E(0)=" << double_to_string_with_commas(w0,3);
+    return stream.str();
   }
 
 #ifndef SWIG
