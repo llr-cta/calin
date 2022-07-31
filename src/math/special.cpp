@@ -91,7 +91,7 @@ solve_cubic_equation(double& x0, double&x1, double& x2, double a, double b, doub
     double A = -((R1<0)?-1.0:1.0) * std::cbrt(std::abs(R1) + std::sqrt(R2-Q3));
     double B = (A==0)?0:Q1/A;
     x0 = (A+B) - a_3;
-    if(std::fabs(A-B)/(std::fabs(A)+std::fabs(B)) < std::numeric_limits<double>::epsilon()) {
+    if(std::fabs(A-B) < (std::fabs(A)+std::fabs(B)) * std::numeric_limits<double>::epsilon()) {
       x1 = -0.5*(A+B) - a_3;
       x2 = std::numeric_limits<double>::quiet_NaN();
       return 2;
