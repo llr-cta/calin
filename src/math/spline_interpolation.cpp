@@ -532,6 +532,45 @@ double CubicSpline::invert(double y) const
   return t*dx + s_.x[i];
 }
 
+double CubicSpline::find(double y, double xmin) const
+{
+  double xfound = std::numeric_limits<double>::infinity();
+  for(unsigned i = find_interval(xmin, s_); i<s_.x.size()-1 and
+    xfound == std::numeric_limits<double>::infinity(); ++i)
+  {
+    double x0 = s_.x[i];
+    double x1 = s_.x[i+1];
+    double dx = x1-x0;
+    double y0 = s_.y[i];
+    double y1 = s_.y[i+1];
+    double dy = y1-y0;
+    double D0 = s_.dy_dx[i]*dx;
+    double D1 = s_.dy_dx[i+1]*dx;
+
+    double c = 3*dy - (2*D0 + D1);
+    double d = -2*dy + (D0 + D1);
+    double d_inv = 1/d;
+
+    double A = c * d_inv;
+    double B = D0 * d_inv;
+    double C = (y0-y) * d_inv;
+
+    double t0,t1,t2;
+    unsigned nroot = calin::math::special::solve_cubic_equation(t0,t1,t2,A,B,C);
+
+    if(t0>=0 and t0<=1 and t0*dx+x0>xmin) {
+      xfound = std::min(xfound, t0*dx+x0);
+    }
+    if(nroot>1 and t1>=0 and t1<=1 and t1*dx+x0>xmin) {
+      xfound = std::min(xfound, t1*dx+x0);
+    }
+    if(nroot>2 and t2>=0 and t2<=1 and t2*dx+x0>xmin) {
+      xfound = std::min(xfound, t2*dx+x0);
+    }
+  }
+  return xfound;
+}
+
 CubicMultiSpline::
 CubicMultiSpline(const std::vector<double>& x)
 {

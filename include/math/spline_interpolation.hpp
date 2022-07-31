@@ -347,6 +347,8 @@ public:
   double integral(double x) const;
   double invert(double y) const;
 
+  double find(double y, double xmin = -std::numeric_limits<double>::infinity()) const;
+
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_value(typename VCLArchitecture::double_vt x) const;
 
