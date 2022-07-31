@@ -239,14 +239,11 @@ public:
   using FocalPlaneParameters = calin::simulation::vcl_ray_propagator::VCLFocalPlaneParameters<VCLArchitecture>;
 
   using RayProcessorDetectorSphere = calin::simulation::ray_processor::RayProcessorDetectorSphere;
-
-  using VCLBandwidthManager = VCLBandwidthManager<VCLArchitecture>;
 #endif // not defined SWIG
 
   CALIN_TYPEALIAS(PEProcessor, calin::simulation::pe_processor::PEProcessor);
   CALIN_TYPEALIAS(DetectionEfficiency, calin::simulation::detector_efficiency::DetectionEfficiency);
   CALIN_TYPEALIAS(AngularEfficiency, calin::simulation::detector_efficiency::AngularEfficiency);
-
 
   CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
@@ -303,7 +300,7 @@ protected:
   using VCLIACTTrackVisitor<VCLArchitecture>::set_height_dependent_pe_bandwidth_mode;
 
   void add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-    VCLBandwidthManager* bandwidth_manager, const std::string& propagator_name = "",
+    VCLBandwidthManager<VCLArchitecture>* bandwidth_manager, const std::string& propagator_name = "",
     bool adopt_propagator = false, bool adopt_pe_processor = false);
 
   void update_detector_efficiencies();
@@ -318,7 +315,7 @@ protected:
     PEProcessor* pe_processor;
     unsigned detector0;
     unsigned ndetector;
-    VCLBandwidthManager* bandwidth_manager;
+    VCLBandwidthManager<VCLArchitecture>* bandwidth_manager;
 
     bool adopt_propagator;
     bool adopt_pe_processor;
@@ -337,7 +334,7 @@ protected:
     unsigned propagator_iscope;
     unsigned global_iscope;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
-    VCLBandwidthManager* bandwidth_manager;
+    VCLBandwidthManager<VCLArchitecture>* bandwidth_manager;
 
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
@@ -357,7 +354,7 @@ protected:
   calin::simulation::detector_efficiency::AtmosphericAbsorption atm_abs_;
   std::vector<PropagatorInfo*> propagator_;
   std::vector<DetectorInfo*> detector_;
-  std::vector<VCLBandwidthManager*> bandwidth_manager_;
+  std::vector<VCLBandwidthManager<VCLArchitecture>*> bandwidth_manager_;
 
   double zobs_;
   double wmax_ = 1.0;
@@ -407,7 +404,7 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-  VCLBandwidthManager* bandwidth_manager, const std::string& propagator_name,
+  VCLBandwidthManager<VCLArchitecture>* bandwidth_manager, const std::string& propagator_name,
   bool adopt_propagator, bool adopt_pe_processor)
 {
   using calin::math::special::SQR;
