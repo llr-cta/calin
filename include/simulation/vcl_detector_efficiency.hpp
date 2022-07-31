@@ -96,7 +96,7 @@ public:
     std::ostringstream stream;
     stream << "100% efficiency at " << double_to_string_with_commas(std::acos(wmax)/M_PI*180,1)
       << " deg; 50% at " << double_to_string_with_commas(std::acos(whalf)/M_PI*180,1)
-      << " deg; at normal : " << double_to_string_with_commas(w0,1)*100 << "%";
+      << " deg; at normal : " << double_to_string_with_commas(w0*100,1) << "%";
     return stream.str();
   }
 
