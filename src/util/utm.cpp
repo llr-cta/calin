@@ -147,13 +147,54 @@ void calin::util::utm::ps_to_geographic_sphere(double R, double k0,
     }
 }
 
+namespace {
+	inline double poly4(double x, double c0, double c1, double c2, double c3, double c4) {
+		return c0 + x*(c1 + x*(c2 + x*(c3 + x*c4)));
+	}
+}
+
+void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
+		      double lon_mer, double FN, double FE,
+		      double lat_rad, double lon_rad,
+		      double& N, double& E)
+{
+	double f = 1.-sqrt(1.-e2);
+	double n = f/(2.-f);
+	double A = a/(1.+n)*poly4(n*n, 1., 1./4, 1./64, 1./256, 25./16384);
+	double a1 = poly4(n, 0, 1./2,  -2./3,   5./16,       41./180);
+	double a2 = poly4(n, 0,    0, 13./48,   -3./5,     557./1440);
+	double a3 = poly4(n, 0,    0,      0, 61./240,     -103./140);
+	double a4 = poly4(n, 0,    0,      0,       0, 49561./161280);
+	// double b1 = n*(1/2 + n*(-2/3 * n*(37/96)));
+	// double b2 = n2*(1/48 + n*1/15);
+	// double b3 = n3*17/480;
+	// double d1 = n*(2 + n*(-2/3 - n*2));
+	// double d2 = n2*(7/3 + n*-8/5);
+	// double d3 = n3*56/15;
+	double sin_phi = std::sin(lat_rad);
+	double t_factor = 2.*std::sqrt(n)/(1.+n);
+	double t = std::sinh(std::atanh(sin_phi) - t_factor*std::atanh(t_factor*sin_phi));
+	double xi = std::atan(t/std::cos(lon_rad-lon_mer));
+	double eta = std::atanh(std::sin(lon_rad-lon_mer)/std::sqrt(1.+t*t));
+	// double sigma = 1 + 2*a1*std::cos(2*xi)*std::cosh(2*eta)
+	// 	+ 4*a2*std::cos(4*xi)*std::cosh(4*eta) + 6*a3*std::cos(6*xi)*std::cosh(6*eta);
+	// double tau = 2*a1*std::sin(2*xi)*std::sinh(2*eta)
+	// 	+ 4*a2*std::sin(4*xi)*std::sinh(4*eta) + 6*a1*std::sin(6*xi)*std::sinh(6*eta);
+	E = FE + k0*A*(eta + a1*std::cos(2*xi)*std::sinh(2*eta)
+		+ a2*std::cos(4*xi)*std::sinh(4*eta) + a3*std::cos(6*xi)*std::sinh(6*eta)
+		+ a4*std::cos(8*xi)*std::sinh(8*eta));
+	N = FN + k0*A*(xi + a1*std::sin(2*xi)*std::cosh(2*eta)
+		+ a2*std::sin(4*xi)*std::cosh(4*eta) + a3*std::sin(6*xi)*std::cosh(6*eta)
+		+ a4*std::sin(8*xi)*std::cosh(8*eta));
+}
+
 /*
    The approximate series expansion equations for an ellipsoid are from
    "The Universal Grids", Defense Mapping Agency Technical Manual
    (DMATM) 8358.2
 */
 
-void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
+void calin::util::utm::obsolete_geographic_to_tm(double a, double e2, double k0,
 		      double lon_mer, double FN, double FE,
 		      double lat_rad, double lon_rad,
 		      double& N, double& E)
@@ -199,6 +240,8 @@ void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
 
   double S = Ap*phi - Bp*s2phi + Cp*s4phi - Dp*s6phi + Ep*s8phi;
 
+	LOG(INFO) << Ap*phi << ' ' <<  Bp*s2phi << ' ' << Cp*s4phi << ' ' << Dp*s6phi << ' ' << Ep*s8phi;
+
   double sc = s*c;
   double nuck0 = nu*c*k0;
   double nusck0 = nu*sc*k0;
@@ -235,6 +278,8 @@ void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
   double dl4 = dl2*dl2;
   double dl6 = dl4*dl2;
   double dl8 = dl6*dl2;
+
+	LOG(INFO) << T1 << ' ' <<  dl2*T2 << ' ' << dl4*T3 << ' ' << dl6*T4 << ' ' << dl8*T5;
 
   N = FN + T1 + dl2*T2 + dl4*T3 + dl6*T4 + dl8*T5;
   E = FE + dl*(T6 + dl2*T7 + dl4*T8 + dl6*T9);

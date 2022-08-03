@@ -108,6 +108,11 @@ void ps_to_geographic_sphere(double R, double k0,
 
 /* FORWARD AND BACK TM/PS PROJECTIONS FOR AN ELLIPSOID */
 
+void obsolete_geographic_to_tm(double a, double e2, double k0,
+		      double lon_mer, double FN, double FE,
+		      double lat_rad, double lon_rad,
+		      double& N, double& E);
+
 void geographic_to_tm(double a, double e2, double k0,
 		      double lon_mer, double FN, double FE,
 		      double lat_rad, double lon_rad,
