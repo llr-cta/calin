@@ -62,7 +62,13 @@
 
 using namespace calin::util::utm;
 
-#define ECC2(f) (2.0*(1.0-1.0/(f))/(f)) /* Caution: Uses f twice! */
+// e = sqrt(f*(2-f))
+// e2 = f*(2-f)
+//    = 1/F * (2-1/F)
+//    =
+
+//#define ECC2(f) (2.0*(1.0-1.0/(f))/(f)) /* Caution: Uses f twice! */
+#define ECC2(f) ((2. - 1./(f))/(f)) /* Caution: Uses f twice! */
 #define NUMOF(x) (sizeof(x)/sizeof(*x))
 
 #define DATUM_NAD27   DATUM_NAS_C
