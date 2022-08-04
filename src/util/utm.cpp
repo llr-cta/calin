@@ -158,6 +158,11 @@ void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
 		      double lat_rad, double lon_rad,
 		      double& N, double& E)
 {
+	// See Karney 2011 and Kawase 2011, 2021
+	// https://arxiv.org/abs/1002.1417
+	// http://www.gsi.go.jp/common/000062452.pdf
+	// http://www.gsi.go.jp/common/000065826.pdf
+
 	double f = 1.-sqrt(1.-e2);
 	double n = f/(2.-f);
 	double A = a/(1.+n)*poly4(n*n, 1., 1./4, 1./64, 1./256, 25./16384);
@@ -186,6 +191,47 @@ void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
 	N = FN + k0*A*(xi + a1*std::sin(2*xi)*std::cosh(2*eta)
 		+ a2*std::sin(4*xi)*std::cosh(4*eta) + a3*std::sin(6*xi)*std::cosh(6*eta)
 		+ a4*std::sin(8*xi)*std::cosh(8*eta));
+}
+
+void calin::util::utm::tm_to_geographic(double a, double e2, double k0,
+		      double lon_mer, double FN, double FE,
+		      double N, double E,
+		      double& lat_rad, double& lon_rad)
+{
+	// See Karney 2011 and Kawase 2011, 2021
+	// https://arxiv.org/abs/1002.1417
+	// http://www.gsi.go.jp/common/000062452.pdf
+	// http://www.gsi.go.jp/common/000065826.pdf
+
+	double f = 1.-sqrt(1.-e2);
+	double n = f/(2.-f);
+	double A = a/(1.+n)*poly4(n*n, 1., 1./4, 1./64, 1./256, 25./16384);
+
+	double b1 = poly4(n, 0, 1./2,  -2./3,  37./96,       -1./360);
+	double b2 = poly4(n, 0,    0,  1./48,   1./15,    -437./1440);
+	double b3 = poly4(n, 0,    0,      0, 17./480,      -37./840);
+	double b4 = poly4(n, 0,    0,      0,       0,  4397./161280);
+
+	double xi = (N - FN)/(k0*A);
+	double eta = (E - FE)/(k0*A);
+
+	double xi_prime = xi - (b1*std::sin(2*xi)*std::cosh(2*eta)
+		+ b2*std::sin(4*xi)*std::cosh(4*eta) + b3*std::sin(6*xi)*std::cosh(6*eta)
+		+ b4*std::sin(8*xi)*std::cosh(8*eta));
+
+	double eta_prime = eta - (b1*std::cos(2*xi)*std::sinh(2*eta)
+		+ b2*std::cos(4*xi)*std::sinh(4*eta) + b3*std::cos(6*xi)*std::sinh(6*eta)
+		+ b4*std::cos(8*xi)*std::sinh(8*eta));
+
+	double d1 = poly4(n, 0,   2.,  -2./3,     -2.,       116./45);
+	double d2 = poly4(n, 0,    0,   7./3,   -8./5,      -227./45);
+	double d3 = poly4(n, 0,    0,      0,  56./15,      -136./35);
+	double d4 = poly4(n, 0,    0,      0,       0,     4279./630);
+
+	double chi = std::asin(std::sin(xi_prime)/cosh(eta_prime));
+
+	lat_rad = chi + d1*std::sin(2*chi) + d2*std::sin(4*chi) + d3*std::sin(6*chi) + d4*std::sin(8*chi);
+	lon_rad = lon_mer + std::atan(std::sinh(eta_prime)/std::cos(xi_prime));
 }
 
 /*
@@ -285,7 +331,7 @@ void calin::util::utm::obsolete_geographic_to_tm(double a, double e2, double k0,
   E = FE + dl*(T6 + dl2*T7 + dl4*T8 + dl6*T9);
 }
 
-void calin::util::utm::tm_to_geographic(double a, double e2, double k0,
+void calin::util::utm::obsolete_tm_to_geographic(double a, double e2, double k0,
 		      double lon_mer, double FN, double FE,
 		      double N, double E,
 		      double& lat_rad, double& lon_rad)

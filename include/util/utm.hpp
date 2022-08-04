@@ -118,6 +118,11 @@ void geographic_to_tm(double a, double e2, double k0,
 		      double lat_rad, double lon_rad,
 		      double& N, double& E);
 
+void obsolete_tm_to_geographic(double a, double e2, double k0,
+		      double lon_mer, double FN, double FE,
+		      double N, double E,
+		      double& lat_rad, double& lon_rad);
+
 void tm_to_geographic(double a, double e2, double k0,
 		      double lon_mer, double FN, double FE,
 		      double N, double E,
