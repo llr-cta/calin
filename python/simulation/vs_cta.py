@@ -18,8 +18,40 @@
 import numpy
 import calin.math.hex_array
 import calin.simulation.vs_optics
+import calin.simulation.atmosphere
 import calin.simulation.detector_efficiency
 import calin.provenance.system_info
+
+def ctan_observation_level(level_km = 2.156):
+    return level_km * 1e5
+
+def ctan_atmosphere(profile = 'ecmwf_intermediate', standard_profiles = {
+            'ecmwf_intermediate': 'atmprof_ecmwf_north_intermediate_fixed.dat',
+            'ecmwf_summer': 'atmprof_ecmwf_north_summer_fixed.dat',
+            'ecmwf_winter': 'atmprof_ecmwf_north_winter_fixed.dat' },
+        zobs = ctan_observation_level(), quiet=False):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+    cfg = calin.simulation.atmosphere.LayeredRefractiveAtmosphere.default_config()
+    cfg.set_angular_model_optimization_altitude(18e5)
+    cfg.set_zn_reference(45)
+    cfg.set_zn_optimize([5,10,15,20,25,30,35,40,50,55,60])
+    cfg.set_high_accuracy_mode(True)
+    profile = standard_profiles[profile] if profile in standard_profiles else profile
+    atm = calin.simulation.atmosphere.LayeredRefractiveAtmosphere(data_dir + profile, zobs, cfg)
+
+    if(not quiet):
+        print('Loading atmospheric profile :',profile)
+        print('Observation level : %.3f km, thickness %.1f g/cm^2'%(atm.zobs(0)*1e-5,
+            atm.thickness(atm.zobs(0))))
+        print('Cherenkov angle at %.3f, 10, 20 km : %.3f, %.3f, %.3f deg'%(atm.zobs(0)*1e-5,
+            numpy.arccos(1/(atm.n_minus_one(atm.zobs(0))+1))/numpy.pi*180,
+            numpy.arccos(1/(atm.n_minus_one(10e5)+1))/numpy.pi*180,
+            numpy.arccos(1/(atm.n_minus_one(20e5)+1))/numpy.pi*180))
+        prop_ct = atm.propagation_ct_correction(atm.top_of_atmosphere()) - atm.propagation_ct_correction(atm.zobs(0))
+        print('Vertical propagation delay from %d to %.3f km : %.2f ns (%.1f cm)'%(
+            atm.top_of_atmosphere()*1e-5, atm.zobs(0)*1e-5, prop_ct*0.03335641, prop_ct))
+
+    return atm
 
 def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
         mirror = 'ref_MST-North-MLT_2022_06_28.dat',
