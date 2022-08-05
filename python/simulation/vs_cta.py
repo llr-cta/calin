@@ -53,6 +53,19 @@ def ctan_atmosphere(profile = 'ecmwf_intermediate', standard_profiles = {
 
     return atm
 
+def ctan_atmospheric_absorption(absorption_model = 'navy_maritime', standard_models = {
+            'low_extinction': 'atm_trans_2156_1_3_2_0_0_0.1_0.1.dat',
+            'navy_maritime': 'atm_trans_2156_1_3_0_0_0.dat' },
+        quiet=False):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+    absorption_model = standard_models[absorption_model] if absorption_model in standard_models else absorption_model
+    atm_abs = calin.simulation.detector_efficiency.AtmosphericAbsorption(data_dir + absorption_model)
+
+    if(not quiet):
+        print('Loading atmospheric absoprtion model :',absorption_model)
+
+    return atm_abs
+
 def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
         mirror = 'ref_MST-North-MLT_2022_06_28.dat',
         window = 'transmission_lst_window_No7-10_ave.dat',
