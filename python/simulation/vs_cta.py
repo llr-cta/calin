@@ -260,7 +260,8 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
     return lst
 
-def make_array(cfg, rng = calin.math.rng.RNG('calin.simulation.vs_cta.make_array')):
+def make_array(cfg, rng = None):
+    rng = calin.math.rng.RNG('calin.simulation.vs_cta.make_array') if rng is None else rng
     array = calin.simulation.vs_optics.VSOArray()
     if(type(cfg) is list):
         for icfg in cfg:
