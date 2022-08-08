@@ -74,6 +74,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include <math/special.hpp>
 #include <util/utm.hpp>
 #include <util/log.hpp>
 
@@ -184,6 +185,54 @@ void calin::util::utm::geographic_to_tm(double a, double e2, double k0,
 	N = FN + k0*A*(xi + a1*std::sin(2*xi)*std::cosh(2*eta)
 		+ a2*std::sin(4*xi)*std::cosh(4*eta) + a3*std::sin(6*xi)*std::cosh(6*eta)
 		+ a4*std::sin(8*xi)*std::cosh(8*eta));
+}
+
+void calin::util::utm::geographic_to_tm_with_convergence_and_scale(
+					double a, double e2, double k0,
+		      double lon_mer, double FN, double FE,
+		      double lat_rad, double lon_rad,
+		      double& N, double& E, double& grid_convergence_rad, double& scale)
+{
+	using calin::math::special::SQR;
+
+	// See Karney 2011 and Kawase 2011, 2021
+	// https://arxiv.org/abs/1002.1417
+	// http://www.gsi.go.jp/common/000062452.pdf
+	// http://www.gsi.go.jp/common/000065826.pdf
+
+	double f = 1.-sqrt(1.-e2);
+	double n = f/(2.-f);
+	double A = a/(1.+n)*poly4(n*n, 1., 1./4, 1./64, 1./256, 25./16384);
+
+	double a1 = poly4(n, 0, 1./2,  -2./3,   5./16,       41./180);
+	double a2 = poly4(n, 0,    0, 13./48,   -3./5,     557./1440);
+	double a3 = poly4(n, 0,    0,      0, 61./240,     -103./140);
+	double a4 = poly4(n, 0,    0,      0,       0, 49561./161280);
+
+	double sin_phi = std::sin(lat_rad);
+	double t_factor = 2.*std::sqrt(n)/(1.+n);
+	double t = std::sinh(std::atanh(sin_phi) - t_factor*std::atanh(t_factor*sin_phi));
+	double xi = std::atan(t/std::cos(lon_rad-lon_mer));
+	double eta = std::atanh(std::sin(lon_rad-lon_mer)/std::sqrt(1.+t*t));
+
+	E = FE + k0*A*(eta + a1*std::cos(2*xi)*std::sinh(2*eta)
+		+ a2*std::cos(4*xi)*std::sinh(4*eta) + a3*std::cos(6*xi)*std::sinh(6*eta)
+		+ a4*std::cos(8*xi)*std::sinh(8*eta));
+	N = FN + k0*A*(xi + a1*std::sin(2*xi)*std::cosh(2*eta)
+		+ a2*std::sin(4*xi)*std::cosh(4*eta) + a3*std::sin(6*xi)*std::cosh(6*eta)
+		+ a4*std::sin(8*xi)*std::cosh(8*eta));
+
+	double sigma = 1 + 2*(a1*std::cos(2*xi)*std::cosh(2*eta)
+		+ 2.*a2*std::cos(4*xi)*std::cosh(4*eta) + 3.*a3*std::cos(6*xi)*std::cosh(6*eta)
+		+ 4.*a4*std::cos(8*xi)*std::cosh(8*eta));
+	double tau = 2*(a1*std::sin(2*xi)*std::sinh(2*eta)
+		+ 2.*a2*std::sin(4*xi)*std::sinh(4*eta) + 3.*a3*std::sin(6*xi)*std::sinh(6*eta)
+		+ 4.*a4*std::sin(8*xi)*std::sinh(8*eta));
+
+	grid_convergence_rad = std::atan((tau*std::sqrt(1+t*t)+sigma*t*std::tan(lon_rad-lon_mer))/
+		(sigma*std::sqrt(1+t*t)-tau*t*std::tan(lon_rad-lon_mer)));
+	scale = k0*A/a*std::sqrt((1 + SQR((1-n)/(1+n)*std::tan(lat_rad)))*(sigma*sigma+tau*tau)/
+		(t*t+SQR(std::cos(lon_rad-lon_mer))));
 }
 
 void calin::util::utm::tm_to_geographic(double a, double e2, double k0,
