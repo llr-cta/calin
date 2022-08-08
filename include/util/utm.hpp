@@ -150,6 +150,12 @@ bool geographic_to_grid(double a, double e2,
 		       double lat_rad, double lon_rad,
 		       GridZone& zone, Hemisphere& hemi, double& N, double& E);
 
+bool geographic_to_grid_with_convergence_and_scale(
+			     double a, double e2,
+           double lat_rad, double lon_rad,
+           GridZone& zone, Hemisphere& hemi,
+ 		       double& N, double& E, double& grid_convergence_rad, double& scale);
+
 bool grid_to_geographic(double a, double e2,
 		       GridZone zone, Hemisphere hemi, double N, double E,
 		       double& lat_rad, double& lon_rad);

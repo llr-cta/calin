@@ -40,6 +40,6 @@
 
 %apply double& OUTPUT { double& lat_rad, double& lon_rad, double& N, double& E,
   double& grid_convergence_rad, double& scale };
-%apply int& OUTPUT { calin::util::utm::GridZone& zone, calin::util::utm::Hemisphere& hemi };
+%apply int& INOUT { calin::util::utm::GridZone& zone, calin::util::utm::Hemisphere& hemi };
 
 %include "util/utm.hpp"

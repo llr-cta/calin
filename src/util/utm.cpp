@@ -688,6 +688,75 @@ bool calin::util::utm::geographic_to_grid(double a, double e2,
   return true;
 }
 
+bool calin::util::utm::geographic_to_grid_with_convergence_and_scale(
+   double a, double e2,
+   double lat_rad, double lon_rad,
+   GridZone& zone, Hemisphere& hemi,
+     double& N, double& E, double& grid_convergence_rad, double& scale)
+{
+	if((lat_rad>RAD(90))||(lat_rad<RAD(-90))) {
+ 		return false;
+ 	}
+	if((lon_rad>RAD(180))||(lon_rad<RAD(-180))) {
+		lon_rad = fmod(fmod(lon_rad,RAD(360))+RAD(360),RAD(360));
+		if(lon_rad>RAD(180)) {
+			lon_rad-=RAD(360);
+		}
+	}
+
+	if(zone == GRID_AUTO) {
+		if(lat_rad>=RAD(84))zone=UPS_NORTH;
+		else if(lat_rad<RAD(-80))zone=UPS_SOUTH;
+		else zone=UTM_ZONE_AUTO;
+	}
+
+	if((zone==UPS_NORTH)||(zone==UPS_SOUTH)) {
+		return false;
+ 	} else {
+   	unsigned izone = (unsigned)zone;
+
+   	double lon_mer;
+   	double fn;
+
+		if((izone<1)||(izone>60)) {
+			izone = (unsigned)((lon_rad+RAD(180))/RAD(6))+1;
+			if((lat_rad>=RAD(56))&&(lat_rad<RAD(64))&&
+		   		(lon_rad>=RAD(3))&&(lon_rad<RAD(12))) {
+				izone=32;
+			} else if((lat_rad>=RAD(72))&&(lat_rad<RAD(84))&&(lon_rad>=RAD(0))) {
+		    if(lon_rad<RAD(9)) {
+					izone=31;
+				} else if(lon_rad<RAD(21)) {
+					izone=33;
+		    } else if(lon_rad<RAD(33)) {
+					izone=35;
+		    } else if(lon_rad<RAD(42)) {
+					izone=37;
+				}
+		  }
+		}
+
+		zone = (GridZone)izone;
+
+		if((hemi!=HEMI_NORTH)&&(hemi!=HEMI_SOUTH)) {
+			hemi=lat_rad>=0?HEMI_NORTH:HEMI_SOUTH;
+		}
+
+		lon_mer = (double)(izone-1) * RAD(6) - RAD(180) + RAD(3);
+
+		if(hemi==HEMI_NORTH){
+			fn = UTM_FN_NH;
+		} else {
+			fn = UTM_FN_SH;
+		}
+
+		geographic_to_tm_with_convergence_and_scale(a, e2, UTM_K0, lon_mer, fn, UTM_FE,
+ 				lat_rad, lon_rad, N, E, grid_convergence_rad, scale);
+ 	}
+
+   return true;
+ }
+
 bool calin::util::utm::grid_to_geographic(double a, double e2,
 		       GridZone zone, Hemisphere hemi, double N, double E,
 		       double& lat_rad, double& lon_rad)
