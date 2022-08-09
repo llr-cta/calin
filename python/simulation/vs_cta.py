@@ -21,6 +21,101 @@ import calin.simulation.vs_optics
 import calin.simulation.atmosphere
 import calin.simulation.detector_efficiency
 import calin.provenance.system_info
+import calin.provenance.chronicle
+import calin.util.utm
+
+def load_assets(filename, utm_zone, utm_hemi,
+                desired_asset_types = set(['LSTN', 'MSTN', 'LSTS', 'MSTS', 'SSTS']),
+                refit_utm_positions = False, demand_ref_lon=None, demand_ref_lat=None,
+                set_demand_ref_from_header=False):
+    ellipse = calin.util.utm.wgs84_ellipse()
+    assets = []
+    with open(filename, 'r') as file:
+        file_record = calin.provenance.chronicle.register_file_open(filename,
+            calin.ix.provenance.chronicle.AT_READ, 'calin.simulation.vs_cta.load_assets')
+        comment = ""
+        for line in file.readlines():
+            if(line[0]=='#'):
+                if(set_demand_ref_from_header):
+                    if(line.find("center_lon:")>0):
+                        i0 = line.find(": \"")+3
+                        i1 = line.find(" deg")
+                        demand_ref_lon = float(line[i0:i1])/180.0*numpy.pi
+                    if(line.find("center_lat:")>0):
+                        i0 = line.find(": \"")+3
+                        i1 = line.find(" deg")
+                        demand_ref_lat = float(line[i0:i1])/180.0*numpy.pi
+                comment += line
+            else:
+                asset_data = line.split()
+                if(asset_data[0] in desired_asset_types):
+                    _,lat,lon = calin.util.utm.grid_to_geographic(ellipse.a,ellipse.e2,utm_zone,utm_hemi,
+                        float(asset_data[3]),float(asset_data[2]))
+                    assets.append([asset_data[0], asset_data[1],
+                        lon, lat, float(asset_data[4]), float(asset_data[2]), float(asset_data[3])])
+        file_record.set_comment(comment)
+        calin.provenance.chronicle.register_file_close(file_record)
+
+    mean_alt = numpy.mean([a[4] for a in assets])
+
+    if(demand_ref_lon is None or demand_ref_lat is None):
+        ref_E = 0.5*(numpy.min([a[5] for a in assets]) + numpy.max([a[5] for a in assets]))
+        ref_N = 0.5*(numpy.min([a[6] for a in assets]) + numpy.max([a[6] for a in assets]))
+        _,lat_ref,lon_ref = calin.util.utm.grid_to_geographic(ellipse.a,ellipse.e2,utm_zone,utm_hemi,ref_N,ref_E)
+    else:
+        lat_ref = demand_ref_lat
+        lon_ref = demand_ref_lon
+        _, _, _, ref_N, ref_E = calin.util.utm.geographic_to_grid(ellipse.a,ellipse.e2,lat_ref,lon_ref,utm_zone,utm_hemi)
+
+    if(refit_utm_positions):
+        for i in range(3 if demand_ref_lon is None or demand_ref_lat is None else 1):
+            assets_refit_NE = []
+            for a in assets:
+                N, E = calin.util.utm.geographic_to_tm(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,a[3],a[2])
+                assets_refit_NE.append([E,N])
+
+            if(demand_ref_lon is None or demand_ref_lat is None):
+                ref_E = 0.5*(numpy.min([a[0] for a in assets_refit_NE]) + numpy.max([a[0] for a in assets_refit_NE]))
+                ref_N = 0.5*(numpy.min([a[1] for a in assets_refit_NE]) + numpy.max([a[1] for a in assets_refit_NE]))
+                lat_ref,lon_ref = calin.util.utm.tm_to_geographic(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,ref_N,ref_E)
+            else:
+                ref_N, ref_E = calin.util.utm.geographic_to_tm(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,lat_ref,lon_ref)
+
+        assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],ne[0]-ref_E,ne[1]-ref_N] for (a,ne) in zip(assets, assets_refit_NE) ]
+    else:
+        _,_,_,_,_,grid_convergence_rad,scale = calin.util.utm.geographic_to_grid_with_convergence_and_scale(
+            ellipse.a,ellipse.e2,lat_ref,lon_ref,utm_zone,utm_hemi)
+
+        scale = (1 + mean_alt/ellipse.a)/scale
+
+        ct = numpy.cos(grid_convergence_rad)
+        st = numpy.sin(grid_convergence_rad)
+
+        X = numpy.asarray([a[5] for a in assets]) - ref_E
+        Y = numpy.asarray([a[6] for a in assets]) - ref_N
+
+        X, Y = ct*X+st*Y, ct*Y-st*X
+
+        if(demand_ref_lon is None or demand_ref_lat is None):
+            ref_X = 0.5*(numpy.min(X) + numpy.max(X))
+            ref_Y = 0.5*(numpy.min(Y) + numpy.max(Y))
+            assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],(x-ref_X)*scale,(y-ref_Y)*scale] for (a,x,y) in zip(assets,X,Y)]
+            ref_E, ref_N = ref_E+ct*ref_X-st*ref_Y, ref_N+ct*ref_Y+st*ref_X
+            _,lat_ref,lon_ref = calin.util.utm.grid_to_geographic(ellipse.a,ellipse.e2,utm_zone,utm_hemi,ref_N,ref_E)
+        else:
+            ref_X = 0
+            ref_Y = 0
+
+        assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],(x-ref_X)*scale,(y-ref_Y)*scale] for (a,x,y) in zip(assets,X,Y)]
+
+    return lat_ref,lon_ref,mean_alt,assets
+
+def ctan_assets(filename = 'CTAN_ArrayElements_Positions.ecsv',
+        utm_zone = calin.util.utm.UTM_ZONE_28, utm_hemi = calin.util.utm.HEMI_NORTH,
+        desired_asset_types = set(['MSTN', 'LSTN'])):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+    return load_assets(data_dir + filename, utm_zone, utm_hemi,
+        desired_asset_types=desired_asset_types)
 
 def ctan_observation_level(level_km = 2.156):
     return level_km * 1e5
