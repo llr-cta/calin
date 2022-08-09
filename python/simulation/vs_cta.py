@@ -26,7 +26,8 @@ import calin.util.utm
 
 def load_assets(filename, utm_zone, utm_hemi,
                 desired_asset_types = set(['LSTN', 'MSTN', 'LSTS', 'MSTS', 'SSTS']),
-                refit_utm_positions = False, demand_ref_lon=None, demand_ref_lat=None,
+                reproject_positions = False, apply_corrections = True,
+                demand_ref_lon=None, demand_ref_lat=None,
                 demand_ref_alt=None, set_demand_ref_from_header=False):
     ellipse = calin.util.utm.wgs84_ellipse()
     assets = []
@@ -74,7 +75,7 @@ def load_assets(filename, utm_zone, utm_hemi,
         lon_ref = demand_ref_lon
         _, _, _, ref_N, ref_E = calin.util.utm.geographic_to_grid(ellipse.a,ellipse.e2,lat_ref,lon_ref,utm_zone,utm_hemi)
 
-    if(refit_utm_positions):
+    if(reproject_positions):
         for i in range(3 if demand_ref_lon is None or demand_ref_lat is None else 1):
             assets_refit_NE = []
             for a in assets:
@@ -89,7 +90,7 @@ def load_assets(filename, utm_zone, utm_hemi,
                 ref_N, ref_E = calin.util.utm.geographic_to_tm(ellipse.a+ref_alt,ellipse.e2,1.0,lon_ref,0,0,lat_ref,lon_ref)
 
         assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],ne[0]-ref_E,ne[1]-ref_N] for (a,ne) in zip(assets, assets_refit_NE) ]
-    else:
+    elif apply_corrections:
         _,_,_,_,_,grid_convergence_rad,scale = calin.util.utm.geographic_to_grid_with_convergence_and_scale(
             ellipse.a,ellipse.e2,lat_ref,lon_ref,utm_zone,utm_hemi)
 
@@ -114,16 +115,22 @@ def load_assets(filename, utm_zone, utm_hemi,
             ref_Y = 0
 
         assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],(x-ref_X)*scale,(y-ref_Y)*scale] for (a,x,y) in zip(assets,X,Y)]
+    else:
+        assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[5]-ref_E,a[6]-ref_N] for a in assets]
 
     return lat_ref,lon_ref,ref_alt,assets
 
 def ctan_assets(filename = 'CTAN_ArrayElements_Positions.ecsv',
         utm_zone = calin.util.utm.UTM_ZONE_28, utm_hemi = calin.util.utm.HEMI_NORTH,
-        desired_asset_types = set(['MSTN', 'LSTN']),set_demand_ref_from_header=False):
+        **args):
     data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
-    return load_assets(data_dir + filename, utm_zone, utm_hemi,
-        desired_asset_types=desired_asset_types,
-        set_demand_ref_from_header=set_demand_ref_from_header)
+    return load_assets(data_dir + filename, utm_zone, utm_hemi, **args)
+
+def ctas_assets(filename = 'CTAS_ArrayElements_Positions.ecsv',
+        utm_zone = calin.util.utm.UTM_ZONE_19, utm_hemi = calin.util.utm.HEMI_SOUTH,
+        **args):
+    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+    return load_assets(data_dir + filename, utm_zone, utm_hemi, **args)
 
 def ctan_observation_level(level_km = 2.156):
     return level_km * 1e5
