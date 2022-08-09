@@ -24,6 +24,13 @@ import calin.provenance.system_info
 import calin.provenance.chronicle
 import calin.util.utm
 
+def ds_filename(filename):
+    if(filename.find('/') >= 0):
+        return filename
+    else:
+        data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
+        return data_dir + filename
+
 def load_assets(filename, utm_zone, utm_hemi,
                 desired_asset_types = set(['LSTN', 'MSTN', 'LSTS', 'MSTS', 'SSTS']),
                 reproject_positions = False, apply_corrections = True,
@@ -123,14 +130,12 @@ def load_assets(filename, utm_zone, utm_hemi,
 def ctan_assets(filename = 'CTAN_ArrayElements_Positions.ecsv',
         utm_zone = calin.util.utm.UTM_ZONE_28, utm_hemi = calin.util.utm.HEMI_NORTH,
         **args):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
-    return load_assets(data_dir + filename, utm_zone, utm_hemi, **args)
+    return load_assets(ds_filename(filename), utm_zone, utm_hemi, **args)
 
 def ctas_assets(filename = 'CTAS_ArrayElements_Positions.ecsv',
         utm_zone = calin.util.utm.UTM_ZONE_19, utm_hemi = calin.util.utm.HEMI_SOUTH,
         **args):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
-    return load_assets(data_dir + filename, utm_zone, utm_hemi, **args)
+    return load_assets(ds_filename(filename), utm_zone, utm_hemi, **args)
 
 def ctan_observation_level(level_km = 2.156):
     return level_km * 1e5
@@ -140,14 +145,13 @@ def ctan_atmosphere(profile = 'ecmwf_intermediate', standard_profiles = {
             'ecmwf_summer': 'atmprof_ecmwf_north_summer_fixed.dat',
             'ecmwf_winter': 'atmprof_ecmwf_north_winter_fixed.dat' },
         zobs = ctan_observation_level(), quiet=False):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
     cfg = calin.simulation.atmosphere.LayeredRefractiveAtmosphere.default_config()
     cfg.set_angular_model_optimization_altitude(18e5)
     cfg.set_zn_reference(45)
     cfg.set_zn_optimize([5,10,15,20,25,30,35,40,50,55,60])
     cfg.set_high_accuracy_mode(True)
     profile = standard_profiles[profile] if profile in standard_profiles else profile
-    atm = calin.simulation.atmosphere.LayeredRefractiveAtmosphere(data_dir + profile, zobs, cfg)
+    atm = calin.simulation.atmosphere.LayeredRefractiveAtmosphere(ds_filename(profile), zobs, cfg)
 
     if(not quiet):
         print('Loading atmospheric profile :',profile)
@@ -167,9 +171,8 @@ def ctan_atmospheric_absorption(absorption_model = 'navy_maritime', standard_mod
             'low_extinction': 'atm_trans_2156_1_3_2_0_0_0.1_0.1.dat',
             'navy_maritime': 'atm_trans_2156_1_3_0_0_0.dat' },
         quiet=False):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
     absorption_model = standard_models[absorption_model] if absorption_model in standard_models else absorption_model
-    atm_abs = calin.simulation.detector_efficiency.AtmosphericAbsorption(data_dir + absorption_model)
+    atm_abs = calin.simulation.detector_efficiency.AtmosphericAbsorption(ds_filename(absorption_model))
 
     if(not quiet):
         print('Loading atmospheric absoprtion model :',absorption_model)
@@ -180,24 +183,23 @@ def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
         mirror = 'ref_MST-North-MLT_2022_06_28.dat',
         window = 'transmission_lst_window_No7-10_ave.dat',
         degradation_factor = 0.9, quiet = False):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
     det_eff = calin.simulation.detector_efficiency.DetectionEfficiency()
 
     # PMT quantum efficiency curve
     if(qe):
-        det_eff.scaleEffFromFile(data_dir + qe)
+        det_eff.scaleEffFromFile(ds_filename(qe))
         if(not quiet):
             print('Loading PMT QE curve :',qe,'[bandwidth = %.3f]'%det_eff.integrate())
 
     # Mirror reflectivity curve
     if(mirror):
-        det_eff.scaleEffFromFile(data_dir + mirror)
+        det_eff.scaleEffFromFile(ds_filename(mirror))
         if(not quiet):
             print('Scaling by mirror reflectivity :',mirror,'[bandwidth = %.3f]'%det_eff.integrate())
 
     # Window transmission curve
     if(window):
-        det_eff.scaleEffFromFile(data_dir + window)
+        det_eff.scaleEffFromFile(ds_filename(window))
         if(not quiet):
             print('Scaling by window transmission :',window,'[bandwidth = %.3f]'%det_eff.integrate())
 
@@ -211,10 +213,9 @@ def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
 
 def mstn_cone_efficiency(cone = 'NectarCAM_lightguide_efficiency_POP_131019.dat',
         quiet = False):
-    data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
 
     if(cone):
-        cone_eff = calin.simulation.detector_efficiency.AngularEfficiency(data_dir + cone)
+        cone_eff = calin.simulation.detector_efficiency.AngularEfficiency(ds_filename(cone))
         if(not quiet):
             print('Loading light-cone curve :',cone)
 
