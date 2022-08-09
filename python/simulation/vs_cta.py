@@ -27,7 +27,7 @@ import calin.util.utm
 def load_assets(filename, utm_zone, utm_hemi,
                 desired_asset_types = set(['LSTN', 'MSTN', 'LSTS', 'MSTS', 'SSTS']),
                 refit_utm_positions = False, demand_ref_lon=None, demand_ref_lat=None,
-                set_demand_ref_from_header=False):
+                demand_ref_alt=None, set_demand_ref_from_header=False):
     ellipse = calin.util.utm.wgs84_ellipse()
     assets = []
     with open(filename, 'r') as file:
@@ -39,12 +39,16 @@ def load_assets(filename, utm_zone, utm_hemi,
                 if(set_demand_ref_from_header):
                     if(line.find("center_lon:")>0):
                         i0 = line.find(": \"")+3
-                        i1 = line.find(" deg")
+                        i1 = line.find("deg\"")
                         demand_ref_lon = float(line[i0:i1])/180.0*numpy.pi
                     if(line.find("center_lat:")>0):
                         i0 = line.find(": \"")+3
-                        i1 = line.find(" deg")
+                        i1 = line.find("deg\"")
                         demand_ref_lat = float(line[i0:i1])/180.0*numpy.pi
+                    if(line.find("center_alt:")>0):
+                        i0 = line.find(": \"")+3
+                        i1 = line.find("m\"")
+                        demand_ref_alt = float(line[i0:i1])
                 comment += line
             else:
                 asset_data = line.split()
@@ -56,7 +60,10 @@ def load_assets(filename, utm_zone, utm_hemi,
         file_record.set_comment(comment)
         calin.provenance.chronicle.register_file_close(file_record)
 
-    mean_alt = numpy.mean([a[4] for a in assets])
+    if(demand_ref_alt is None):
+        ref_alt = numpy.mean([a[4] for a in assets])
+    else:
+        ref_alt = demand_ref_alt
 
     if(demand_ref_lon is None or demand_ref_lat is None):
         ref_E = 0.5*(numpy.min([a[5] for a in assets]) + numpy.max([a[5] for a in assets]))
@@ -71,22 +78,22 @@ def load_assets(filename, utm_zone, utm_hemi,
         for i in range(3 if demand_ref_lon is None or demand_ref_lat is None else 1):
             assets_refit_NE = []
             for a in assets:
-                N, E = calin.util.utm.geographic_to_tm(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,a[3],a[2])
+                N, E = calin.util.utm.geographic_to_tm(ellipse.a+ref_alt,ellipse.e2,1.0,lon_ref,0,0,a[3],a[2])
                 assets_refit_NE.append([E,N])
 
             if(demand_ref_lon is None or demand_ref_lat is None):
                 ref_E = 0.5*(numpy.min([a[0] for a in assets_refit_NE]) + numpy.max([a[0] for a in assets_refit_NE]))
                 ref_N = 0.5*(numpy.min([a[1] for a in assets_refit_NE]) + numpy.max([a[1] for a in assets_refit_NE]))
-                lat_ref,lon_ref = calin.util.utm.tm_to_geographic(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,ref_N,ref_E)
+                lat_ref,lon_ref = calin.util.utm.tm_to_geographic(ellipse.a+ref_alt,ellipse.e2,1.0,lon_ref,0,0,ref_N,ref_E)
             else:
-                ref_N, ref_E = calin.util.utm.geographic_to_tm(ellipse.a+mean_alt,ellipse.e2,1.0,lon_ref,0,0,lat_ref,lon_ref)
+                ref_N, ref_E = calin.util.utm.geographic_to_tm(ellipse.a+ref_alt,ellipse.e2,1.0,lon_ref,0,0,lat_ref,lon_ref)
 
         assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],ne[0]-ref_E,ne[1]-ref_N] for (a,ne) in zip(assets, assets_refit_NE) ]
     else:
         _,_,_,_,_,grid_convergence_rad,scale = calin.util.utm.geographic_to_grid_with_convergence_and_scale(
             ellipse.a,ellipse.e2,lat_ref,lon_ref,utm_zone,utm_hemi)
 
-        scale = (1 + mean_alt/ellipse.a)/scale
+        scale = (1 + ref_alt/ellipse.a)/scale
 
         ct = numpy.cos(grid_convergence_rad)
         st = numpy.sin(grid_convergence_rad)
@@ -108,14 +115,15 @@ def load_assets(filename, utm_zone, utm_hemi,
 
         assets = [[a[0],a[1],a[2],a[3],a[4],a[5],a[6],(x-ref_X)*scale,(y-ref_Y)*scale] for (a,x,y) in zip(assets,X,Y)]
 
-    return lat_ref,lon_ref,mean_alt,assets
+    return lat_ref,lon_ref,ref_alt,assets
 
 def ctan_assets(filename = 'CTAN_ArrayElements_Positions.ecsv',
         utm_zone = calin.util.utm.UTM_ZONE_28, utm_hemi = calin.util.utm.HEMI_NORTH,
-        desired_asset_types = set(['MSTN', 'LSTN'])):
+        desired_asset_types = set(['MSTN', 'LSTN']),set_demand_ref_from_header=False):
     data_dir = calin.provenance.system_info.build_info().data_install_dir() + "/simulation/"
     return load_assets(data_dir + filename, utm_zone, utm_hemi,
-        desired_asset_types=desired_asset_types)
+        desired_asset_types=desired_asset_types,
+        set_demand_ref_from_header=set_demand_ref_from_header)
 
 def ctan_observation_level(level_km = 2.156):
     return level_km * 1e5
