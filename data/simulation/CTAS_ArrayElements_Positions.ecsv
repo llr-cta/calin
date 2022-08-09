@@ -1,4 +1,10 @@
 # %ECSV 0.9
+#
+# File: data/simulation/CTAS_ArrayElements_Positions.ecsv
+# Provinance: CTAO Array Elements Positions GitLab reposatory (retrieved 2022-08-08)
+# https://gitlab.cta-observatory.org/cta-science/array-element-positions
+# - URL: https://gitlab.cta-observatory.org/cta-science/array-element-positions/-/blob/f146c6c1e206bd512436247f1a692172037d200b/CTAS_ArrayElements_Positions.ecsv
+#
 # ---
 # datatype:
 # - {name: asset_code, datatype: string, description: operational asset code}
