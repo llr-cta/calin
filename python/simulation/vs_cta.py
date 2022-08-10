@@ -272,7 +272,10 @@ def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
     dc.set_facet_focal_length(1608.3)
     dc.set_facet_focal_length_dispersion(3.9)
     dc.set_facet_spot_size_probability(0.8)
-    dc.set_facet_spot_size(0.5 * 2.8) # Spot size of 28mm at 2F
+    # Updated 2022-08-10 so on-axis PSF could match value presented by DESY :
+    # https://indico.cta-observatory.org/event/3956/contributions/32824/attachments/20968/29502/220228_MST-PSF-MC-Feedback.pdf
+    # dc.set_facet_spot_size(0.5 * 2.8) # Spot size of 28mm at 2F
+    dc.set_facet_spot_size(0.5 * 2.0)
     dc.set_facet_spot_size_dispersion(0.5 * 0.02)
     dc.set_facet_labeling_parity(True)
     dc.set_weathering_factor(1.0)
