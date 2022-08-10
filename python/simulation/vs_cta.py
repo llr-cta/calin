@@ -258,7 +258,7 @@ def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
         scope.set_z(mst.array_origin().elevation())
     mst.mutable_reflector_frame().set_optic_axis_rotation(-90);
     # See https://gitlab.cta-observatory.org/cta-science/simulations/simulation-model/verification/verification-process/mst-structure/-/blob/146f5e633c7344fd3dddcd1b2f88028a75ebab47/meetings/Feb28_2022_call.md
-    mst.mutable_reflector_frame().mutable_translation().set_y(175);
+    mst.mutable_reflector_frame().mutable_translation().set_y(-175);
     # Taken from SCT (verified on MST Prod6 model)
     mst.mutable_reflector_frame().set_azimuth_elevation_axes_separation(160)
     dc = mst.mutable_reflector()
