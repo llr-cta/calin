@@ -264,78 +264,83 @@ message VSOTelescopeData {
      "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
      "+x points East and +z point up. ",
      (CFO).units = "cm" ];
-  double curvature_radius                                  = 9
+  double azimuth_elevation_axes_separation                 = 9 [
+    (CFO).desc = "Separation between the azimuth and elevation axes. Positive "
+      "values indicate that the elevation axis is at a positive value along the "
+      "y-axis (at zero azimuth).",
+    (CFO).units="cm" ];
+  double curvature_radius                                  = 10
     [(CFO).desc = "Radius of curvature of the reflector",
      (CFO).units = "cm"];
-  double aperture                                          = 10
+  double aperture                                          = 11
     [(CFO).desc = "Telescope aperture (diameter of reflector)",
      (CFO).units = "cm"];
-  double facet_spacing                                     = 11
+  double facet_spacing                                     = 12
     [(CFO).desc = "Facet spacing, center-to-center distance between mirror "
      "sites of reflector. The X and Z coordinates of the facets are on a "
      "regular hexagonal grid, the Y coordinate put the facet onto a sphere "
      "or radius \"curvature_radius\".",
      (CFO).units = "cm"];
-  double facet_size                                        = 12
+  double facet_size                                        = 13
     [(CFO).desc = "Edge-to-edge size of a single mirror facet of the "
      "reflector. It does not make sense to have facet_size > facet_spacing.",
      (CFO).units = "cm"];
-  double optic_axis_rotation                               = 13
+  double optic_axis_rotation                               = 14
     [(CFO).desc = "Reflector rotation about the optical axis",
      (CFO).units = "deg"];
-  double facet_grid_shift_x                                = 14
+  double facet_grid_shift_x                                = 15
     [(CFO).desc = "Refector grid shift with respect to optic axis in x.",
      (CFO).units = "cm"];
-  double facet_grid_shift_z                                = 15
+  double facet_grid_shift_z                                = 16
     [(CFO).desc = "Refector grid shift with respect to optic axis in z.",
      (CFO).units = "cm"];
-  uint32 hexagon_rings_n                                   = 16
+  uint32 hexagon_rings_n                                   = 17
     [(CFO).desc = "Number of hexagaonal rings of mirror facets." ];
-  double reflector_ip                                      = 17
+  double reflector_ip                                      = 18
     [(CFO).desc = "Diameter of minimum sphere embedding reflector.",
      (CFO).units = "cm"];
- common_types.Vector3D reflector_ip_center                 = 18
+ common_types.Vector3D reflector_ip_center                 = 19
    [(CFO).desc = "Center of minimum sphere embedding reflector in reflector r.f.",
     (CFO).units = "cm"];
-  bool facet_labeling_parity                               = 19
+  bool facet_labeling_parity                               = 20
     [(CFO).desc = "Mirrors are counted (on the hex. grid) in the direction of "
      "the +x-axis (east) when this flag is FALSE, and in the direction of the "
      "-x-axis (west) when this flag is TRUE (in the reflector r.f. -- home "
      "position of telescope."];
-  common_types.Vector3D fp_translation                     = 20
+  common_types.Vector3D fp_translation                     = 21
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the origin of the camera frame. ",
      (CFO).units = "cm" ];
-  double camera_diameter                                   = 21
+  double camera_diameter                                   = 22
     [(CFO).desc = "Diameter of camera.",
      (CFO).units = "cm"];
-  double field_of_view                                     = 22
+  double field_of_view                                     = 23
     [(CFO).desc = "Diameter of field of view.",
      (CFO).units = "deg"];
-  double cathode_diameter                                  = 23
+  double cathode_diameter                                  = 24
     [(CFO).desc = "Diameter of cathode of the PMT.",
      (CFO).units = "cm"];
-  double pixel_spacing                                     = 24
+  double pixel_spacing                                     = 25
     [(CFO).desc = "Spacing between pixels on the focal plane.",
      (CFO).units = "cm"];
-  double pixel_rotation                                    = 25
+  double pixel_rotation                                    = 26
     [(CFO).desc = "Pixel rotation about the normal to the focal plane.",
      (CFO).units = "deg"];
-  double pixel_grid_shift_x                                = 26
+  double pixel_grid_shift_x                                = 27
    [(CFO).desc = "Pixel grid shift with respect to optic axis in x.",
     (CFO).units = "cm"];
-  double pixel_grid_shift_z                                = 27
+  double pixel_grid_shift_z                                = 28
    [(CFO).desc = "Pixel grid shift with respect to optic axis in z.",
     (CFO).units = "cm"];
-  double conc_survival_prob                                = 28
+  double conc_survival_prob                                = 29
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-  common_types.Vector3D fp_rotation                        = 29
+  common_types.Vector3D fp_rotation                        = 30
     [(CFO).desc = "Camera rotation vector with respect to reflector frame. ",
      (CFO).units = "deg" ];
-  double camera_ip                                         = 30
+  double camera_ip                                         = 31
     [(CFO).desc = "Diameter of sphere embedding camera.",
      (CFO).units = "cm"];
-  bool pixel_labeling_parity                               = 31
+  bool pixel_labeling_parity                               = 32
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
@@ -426,9 +431,10 @@ message ReflectorFrameParameters
   common_types.HorizontalCoordinates altaz                 = 1
     [(CFO).desc = "Altitude and elevation of telescope"];
   double fp_offset                                           = 2
-    [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
-     "planes. Specifies rotation of the elevation axis around the y-axis of "
-     "the azimuth plane.",
+    [(CFO).desc = "Pointing offset perperndicular to elevation, allowing "
+     "focal plane to be offset from nominal position in \"X\" direction. "
+     "This offset cannot generally be done on an alt-az telescope but it "
+     "can be useful in simulations.",
      (CFO).units = "deg"];
   double alpha_x                                           = 3
     [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
@@ -455,6 +461,11 @@ message ReflectorFrameParameters
   double optic_axis_rotation                               = 6
     [(CFO).desc = "Reflector grid rotation about the optical axis.",
      (CFO).units = "deg"];
+  double azimuth_elevation_axes_separation                 = 7 [
+   (CFO).desc = "Separation between the azimuth and elevation axes. Positive "
+     "values indicate that the elevation axis is at a positive value along the "
+     "y-axis (at zero azimuth).",
+   (CFO).units="cm" ];
 };
 
 message ConcurrentNormalsAlignment

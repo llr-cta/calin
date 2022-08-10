@@ -80,7 +80,7 @@ public:
   VSOTelescope();
   VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
                double DY, double AX, double AY, double EL, double AZ,
-               const Eigen::Vector3d& T, double CR, double A,
+               const Eigen::Vector3d& T, double AZELSEP, double CR, double A,
                double FSP, double FS, double RR, double FGSX, double FGSY,
                unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
                const Eigen::Vector3d& FPT, double CD, double FOV, double D,
@@ -214,6 +214,7 @@ public:
   Eigen::Vector3d        opticalAxis() const;
 
   const Eigen::Vector3d& translation() const { return fTranslation; }
+  double                 azElSeparation() const { return fAzElSeparation; }
   double                 curvatureRadius() const { return fCurvatureRadius; }
   double                 aperture() const { return fAperture; }
   double                 facetSpacing() const { return  fFacetSpacing; }
@@ -309,6 +310,7 @@ private:
   // Reflector Parameters
   // ************************************************************************
   Eigen::Vector3d fTranslation;       //!< Vector in reflector r.f. to the intersection of the rotation axes
+  double          fAzElSeparation;    //!< Separation between azimuth and elevation axes
   double          fCurvatureRadius;   //!< Radius of curvature of reflector
   double          fAperture;          //!< Diameter of projection of reflector onto a plane
   double          fFacetSpacing;      //!< Size of mirror
