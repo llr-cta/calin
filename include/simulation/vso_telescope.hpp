@@ -310,7 +310,7 @@ private:
   // Reflector Parameters
   // ************************************************************************
   Eigen::Vector3d fTranslation;       //!< Vector in reflector r.f. to the intersection of the rotation axes
-  double          fAzElSeparation;    //!< Separation between azimuth and elevation axes
+  double          fAzElSeparation;    //!< Separation between azimuth and elevation axes (from El to Az along y-axis in global frame at Az=0)
   double          fCurvatureRadius;   //!< Radius of curvature of reflector
   double          fAperture;          //!< Diameter of projection of reflector onto a plane
   double          fFacetSpacing;      //!< Size of mirror

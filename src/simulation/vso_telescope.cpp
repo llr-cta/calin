@@ -335,11 +335,11 @@ void VSOTelescope::calculateRotationVector()
     Eigen::AngleAxisd(fFPOffset,   Eigen::Vector3d::UnitZ());
   rot_global_to_reflector_ = rot_reflector_to_global_.transpose();
   off_global_to_reflector_ = fPos
-    - fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
+    + fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
     - rot_reflector_to_global_ * fTranslation;
   rot_camera_to_global_ = rot_reflector_to_global_ * rot_camera_to_reflector_;
   off_global_to_camera_ = fPos
-    - fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
+    + fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
     - rot_reflector_to_global_ * (fTranslation - fFPTranslation);
 }
 
