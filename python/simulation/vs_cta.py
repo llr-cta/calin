@@ -33,9 +33,9 @@ def ds_filename(filename):
 
 def load_assets(filename, utm_zone, utm_hemi,
                 desired_asset_types = set(['LSTN', 'MSTN', 'LSTS', 'MSTS', 'SSTS']),
-                reproject_positions = False, apply_corrections = True,
+                reproject_positions = True, apply_corrections = True,
                 demand_ref_lon=None, demand_ref_lat=None,
-                demand_ref_alt=None, set_demand_ref_from_header=False):
+                demand_ref_alt=None, set_demand_ref_from_header=True):
     ellipse = calin.util.utm.wgs84_ellipse()
     assets = []
     with open(filename, 'r') as file:
@@ -127,7 +127,10 @@ def load_assets(filename, utm_zone, utm_hemi,
 
     return lat_ref,lon_ref,ref_alt,assets
 
-def ctan_assets(filename = 'CTAN_ArrayElements_Positions.ecsv',
+def ctan_default_assets_filename():
+    return 'CTAN_ArrayElements_Positions.ecsv'
+
+def ctan_assets(filename = ctan_default_assets_filename(),
         utm_zone = calin.util.utm.UTM_ZONE_28, utm_hemi = calin.util.utm.HEMI_NORTH,
         **args):
     return load_assets(ds_filename(filename), utm_zone, utm_hemi, **args)
@@ -235,40 +238,46 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0, include_window = False):
+def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
+        obscure_camera = True, include_window = False):
     mst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
-    mst.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
-    mst.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
-    mst.mutable_array_origin().set_elevation(2147 * 100.0)
+    mst.mutable_array_origin().set_latitude(array_lon/180*numpy.pi)
+    mst.mutable_array_origin().set_longitude(array_lon/180*numpy.pi)
+    mst.mutable_array_origin().set_elevation(array_alt)
     try:
-        for i in range(max(len(scope_x), len(scope_y))):
+        for i in range(numpy.max([len(scope_x), len(scope_y), len(scope_z)])):
             scope = mst.mutable_prescribed_array_layout().add_scope_positions();
             scope.set_x(scope_x[i])
             scope.set_y(scope_y[i])
-            scope.set_z(mst.array_origin().elevation())
+            # 900 cm offset from base to elevation axis : see https://gitlab.cta-observatory.org/cta-science/simulations/simulation-model/verification/verification-process/mst-structure/-/blob/146f5e633c7344fd3dddcd1b2f88028a75ebab47/meetings/Feb28_2022_call.md
+            scope.set_z(scope_z[i] + 900)
     except:
         scope = mst.mutable_prescribed_array_layout().add_scope_positions();
         scope.set_x(scope_x)
         scope.set_y(scope_y)
         scope.set_z(mst.array_origin().elevation())
     mst.mutable_reflector_frame().set_optic_axis_rotation(-90);
+    # See https://gitlab.cta-observatory.org/cta-science/simulations/simulation-model/verification/verification-process/mst-structure/-/blob/146f5e633c7344fd3dddcd1b2f88028a75ebab47/meetings/Feb28_2022_call.md
+    mst.mutable_reflector_frame().mutable_translation().set_y(175);
+    # Taken from SCT (verified on MST Prod6 model)
+    mst.mutable_reflector_frame().set_azimuth_elevation_axes_separation(160)
     dc = mst.mutable_reflector()
     dc.set_curvature_radius(1920)
-    dc.set_aperture(1230)
+    dc.set_aperture(1245)
     dc.set_facet_num_hex_rings(5)
     dc.mutable_psf_align().set_object_plane(numpy.inf) # 10 * 1e5);
     dc.set_alignment_image_plane(1600)
-    dc.set_facet_spacing(122)
+    dc.set_facet_spacing(124)
     dc.set_facet_size(120)
-    dc.set_facet_focal_length(1607)
-    dc.set_facet_focal_length_dispersion(1)
+    dc.set_facet_focal_length(1608.3)
+    dc.set_facet_focal_length_dispersion(3.9)
     dc.set_facet_spot_size_probability(0.8)
     dc.set_facet_spot_size(0.5 * 2.8) # Spot size of 28mm at 2F
     dc.set_facet_spot_size_dispersion(0.5 * 0.02)
     dc.set_facet_labeling_parity(True)
     dc.set_weathering_factor(1.0)
     #for id in [1,62,67,72,77,82,87]: dc.add_facet_missing_list(id-1) # 84 mirror
-    for id in [1,67,72,82,87]: dc.add_facet_missing_list(id-1) # 84 mirror
+    for id in [1,67,72,82,87]: dc.add_facet_missing_list(id-1) # 86 mirror
     mst.mutable_focal_plane().set_camera_diameter(235)
     mst.mutable_focal_plane().mutable_translation().set_y(1/(1.0/dc.alignment_image_plane()-1/(10 * 1e5)))
     mst.mutable_pixel().set_spacing(5)
@@ -312,6 +321,20 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0, include_window = F
         win.set_refractive_index(1.5)
 
     return mst
+
+def mstn1_config(obscure_camera = True, assets_file = ctan_default_assets_filename(),
+        include_window = False):
+    array_lat,array_lon,array_alt,all_assets = ctan_assets(filename = assets_file)
+    scope_x = []
+    scope_y = []
+    scope_z = []
+    for a in all_assets:
+        if(a[0]=='MSTN' and a[1]=='03'):
+            scope_x.append(a[7]*100)
+            scope_y.append(a[8]*100)
+            scope_z.append(a[4]*100)
+    return mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+        obscure_camera = obscure_camera, include_window = include_window)
 
 def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
