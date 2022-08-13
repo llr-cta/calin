@@ -294,7 +294,7 @@ def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
     rot = numpy.arctan2(-y1,x1)/numpy.pi*180 + 30
     mst.mutable_pixel().set_grid_rotation(rot)
 
-    if(obscure_camera):
+    if obscure_camera:
         obs_camera_box = mst.add_pre_reflection_obscuration()
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(2918.0/20)
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(2918.0/20)
@@ -303,18 +303,18 @@ def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
         obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-2918.0/20)
         obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y()-513.0/10)
 
-        obs_outer_aperture = mst.add_camera_obscuration()
-        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
-        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
-        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(-513.0/10)
-        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
-        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-50.0)/10)
-
-        obs_inner_aperture = mst.add_camera_obscuration()
-        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
-        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
-        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(-222.5/10)
-        obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
+        # obs_outer_aperture = mst.add_camera_obscuration()
+        # obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
+        # obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
+        # obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(-513.0/10)
+        # obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
+        # obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-50.0)/10)
+        #
+        # obs_inner_aperture = mst.add_camera_obscuration()
+        # obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
+        # obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
+        # obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(-222.5/10)
+        # obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
 
     if include_window:
         win = mst.mutable_spherical_window()
