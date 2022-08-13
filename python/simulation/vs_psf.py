@@ -17,7 +17,7 @@ import calin.math.geometry
 import scipy.optimize
 import calin.provenance.system_info
 
-def calc_d80(ns, m1=None):
+def calc_d80(ns, m1=None, d80_frac=0.8):
     xc = ns.axis_bin_centers(0)
     yc = ns.axis_bin_centers(1)
     ns_vals = ns.as_matrix().transpose()
@@ -57,7 +57,8 @@ def calc_d80(ns, m1=None):
 
     return opt.fun*2,opt.x
 
-def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = False, dx=0.1, image_resolution=0.01, d80_frac=0.8):
+def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = True, mc_sampling=False,
+        dx=0.1, image_resolution=0.01, d80_frac=0.8, rng=None):
     scope_cfg = vs_scope.dump_as_proto()
     if(refocus_at_infinity):
         scope_cfg.mutable_fp_translation().set_y(scope_cfg.fp_infinity_focal_distance())
@@ -88,7 +89,13 @@ def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = False, dx=0.1, 
     x00 = scope.reflectorIPCenter()
     scope.reflectorToGlobal_pos(x00)
 
-    pos_gen = calin.math.ray_generator.HexGridPlanePositionGenerator(R, dx)
+    pos_gen = None
+    if(mc_sampling):
+        if rng is None:
+            rng = calin.math.rng.RNG()
+        pos_gen = calin.math.ray_generator.MCPlanePositionGenerator(R, int(numpy.pi*(R/dx)**2), rng)
+    else:
+        pos_gen = calin.math.ray_generator.HexGridPlanePositionGenerator(R, dx)
     dir_gen = calin.math.ray_generator.SingleDirectionGenerator()
     ray_gen = calin.math.ray_generator.PositionNestedByDirectionRayGenerator(x00,
         calin.math.geometry.rotation_theta_phi((180-theta_deg)/180*numpy.pi,phi_deg/180*numpy.pi),
@@ -100,6 +107,6 @@ def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = False, dx=0.1, 
     ns = pe_imager.nspace()
     m2,m1,m0 = ns.covar_mean_and_total_weight()
 
-    d80, d80_center = calc_d80(ns,m1)
+    d80, d80_center = calc_d80(ns,m1,d80_frac=d80_frac)
 
     return m0,m1,m2,d80,d80_center,nray,nhit
