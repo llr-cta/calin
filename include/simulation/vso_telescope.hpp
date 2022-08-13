@@ -83,7 +83,7 @@ public:
                const Eigen::Vector3d& T, double AZELSEP, double CR, double A,
                double FSP, double FS, double RR, double FGSX, double FGSY,
                unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
-               const Eigen::Vector3d& FPT, double CD, double FOV, double D,
+               const Eigen::Vector3d& FPT, double FPINFFOCUS, double CD, double FOV, double D,
                double PS, double PR, double PGSX, double PGSZ,
                double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
@@ -230,6 +230,7 @@ public:
   bool                   mirrorParity() const { return fMirrorParity; }
 
   const Eigen::Vector3d& focalPlanePosition() const { return fFPTranslation; }
+  double                 infinityFocalDistance() const { return fInfinityFocalDistance; }
   double                 cameraDiameter() const { return fCameraDiameter; }
   double                 fov() const { return fFieldOfView; }
   double                 cathodeDiameter() const { return fCathodeDiameter; }
@@ -330,6 +331,7 @@ private:
   // Camera Parameters
   // ************************************************************************
   Eigen::Vector3d fFPTranslation;
+  double          fInfinityFocalDistance; //!< Translation for infinity focus
   double          fCameraDiameter;    //!< Dependent on the field of view
   double          fFieldOfView;       //!< Field of view
   double          fCathodeDiameter;   //!< Diameter of photocathode

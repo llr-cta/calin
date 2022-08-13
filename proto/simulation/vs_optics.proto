@@ -311,36 +311,40 @@ message VSOTelescopeData {
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the origin of the camera frame. ",
      (CFO).units = "cm" ];
-  double camera_diameter                                   = 22
+  double fp_infinity_focal_distance                        = 22
+    [(CFO).desc = "Focal distance for rays from infinity. Used by refocus "
+      "telescope to initinity if necessary, e.g. by code to calculate PSF.",
+     (CFO).units = "cm" ];
+  double camera_diameter                                   = 23
     [(CFO).desc = "Diameter of camera.",
      (CFO).units = "cm"];
-  double field_of_view                                     = 23
+  double field_of_view                                     = 24
     [(CFO).desc = "Diameter of field of view.",
      (CFO).units = "deg"];
-  double cathode_diameter                                  = 24
+  double cathode_diameter                                  = 25
     [(CFO).desc = "Diameter of cathode of the PMT.",
      (CFO).units = "cm"];
-  double pixel_spacing                                     = 25
+  double pixel_spacing                                     = 26
     [(CFO).desc = "Spacing between pixels on the focal plane.",
      (CFO).units = "cm"];
-  double pixel_rotation                                    = 26
+  double pixel_rotation                                    = 27
     [(CFO).desc = "Pixel rotation about the normal to the focal plane.",
      (CFO).units = "deg"];
-  double pixel_grid_shift_x                                = 27
+  double pixel_grid_shift_x                                = 28
    [(CFO).desc = "Pixel grid shift with respect to optic axis in x.",
     (CFO).units = "cm"];
-  double pixel_grid_shift_z                                = 28
+  double pixel_grid_shift_z                                = 29
    [(CFO).desc = "Pixel grid shift with respect to optic axis in z.",
     (CFO).units = "cm"];
-  double conc_survival_prob                                = 29
+  double conc_survival_prob                                = 30
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-  common_types.Vector3D fp_rotation                        = 30
+  common_types.Vector3D fp_rotation                        = 31
     [(CFO).desc = "Camera rotation vector with respect to reflector frame. ",
      (CFO).units = "deg" ];
-  double camera_ip                                         = 31
+  double camera_ip                                         = 32
     [(CFO).desc = "Diameter of sphere embedding camera.",
      (CFO).units = "cm"];
-  bool pixel_labeling_parity                               = 32
+  bool pixel_labeling_parity                               = 33
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];

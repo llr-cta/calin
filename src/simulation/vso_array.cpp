@@ -238,6 +238,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              0.0, Eigen::Vector3d::Zero(), /*param.reflector().reflector_ip(),*/
              param.reflector().facet_labeling_parity(),
 	           camera_fp_trans,
+             param.reflector().alignment_image_plane() <= 0 ? camera_fp_trans[1] : param.reflector().alignment_image_plane(),
              param.focal_plane().camera_diameter(),
              FoV,
              param.pixel().cone_inner_diameter(),
