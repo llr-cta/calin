@@ -17,12 +17,50 @@ import calin.math.geometry
 import scipy.optimize
 import calin.provenance.system_info
 
+def calc_d80(ns, m1=None):
+    xc = ns.axis_bin_centers(0)
+    yc = ns.axis_bin_centers(1)
+    ns_vals = ns.as_matrix().transpose()
+
+    ns_vals_px = numpy.sum(ns_vals, axis=0)
+    ix0 = numpy.min(numpy.where(ns_vals_px>0))
+    ix1 = numpy.max(numpy.where(ns_vals_px>0))
+
+    ns_vals_py = numpy.sum(ns_vals, axis=1)
+    iy0 = numpy.min(numpy.where(ns_vals_py>0))
+    iy1 = numpy.max(numpy.where(ns_vals_py>0))
+
+    xc = xc[ix0:ix1+1]
+    yc = yc[iy0:iy1+1]
+    Xc, Yc = numpy.meshgrid(xc,yc)
+
+    ns_vals = ns_vals[iy0:iy1+1,ix0:ix1+1]
+    ns_vals = ns_vals.flatten()
+
+    def d80_for_xy(xy0):
+        x0,y0 = xy0
+
+        X = Xc - x0
+        Y = Yc - y0
+
+        d80x = X.flatten()**2 + Y.flatten()**2
+        isort = numpy.argsort(d80x)
+        d80x = d80x[isort]
+        d80y = numpy.cumsum(ns_vals[isort])/numpy.sum(ns_vals)
+
+        d80 = numpy.interp(d80_frac, d80y, d80x)
+
+        return numpy.sqrt(d80)
+
+    m1 = ns.mean() if ns is None else m1
+    opt = scipy.optimize.minimize(d80_for_xy, m1, method='Nelder-Mead')
+
+    return opt.fun*2,opt.x
+
 def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = False, dx=0.1, image_resolution=0.01, d80_frac=0.8):
     scope_cfg = vs_scope.dump_as_proto()
-#     print(scope_cfg.DebugString())
     if(refocus_at_infinity):
-        raise NotImplementedError("refocus_at_infinity not yet implemented")
-        pass
+        scope_cfg.mutable_fp_translation().set_y(scope_cfg.fp_infinity_focal_distance())
     array_cfg = calin.ix.simulation.vs_optics.VSOArrayData()
     array_cfg.add_telescope().CopyFrom(scope_cfg)
     array = calin.simulation.vs_optics.VSOArray.create_from_proto(array_cfg)
@@ -62,40 +100,6 @@ def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = False, dx=0.1, 
     ns = pe_imager.nspace()
     m2,m1,m0 = ns.covar_mean_and_total_weight()
 
-    xc = ns.axis_bin_centers(0)
-    yc = ns.axis_bin_centers(1)
-    ns_vals = ns.as_matrix().transpose()
+    d80, d80_center = calc_d80(ns,m1)
 
-    ns_vals_px = numpy.sum(ns_vals, axis=0)
-    ix0 = numpy.min(numpy.where(ns_vals_px>0))
-    ix1 = numpy.max(numpy.where(ns_vals_px>0))
-
-    ns_vals_py = numpy.sum(ns_vals, axis=1)
-    iy0 = numpy.min(numpy.where(ns_vals_py>0))
-    iy1 = numpy.max(numpy.where(ns_vals_py>0))
-
-    xc = xc[ix0:ix1+1]
-    yc = yc[iy0:iy1+1]
-    Xc, Yc = numpy.meshgrid(xc,yc)
-
-    ns_vals = ns_vals[iy0:iy1+1,ix0:ix1+1]
-    ns_vals = ns_vals.flatten()
-
-    def d80_for_xy(xy0):
-        x0,y0 = xy0
-
-        X = Xc - x0
-        Y = Yc - y0
-
-        d80x = numpy.sqrt(X.flatten()**2 + Y.flatten()**2)
-        isort = numpy.argsort(d80x)
-        d80x = d80x[isort]
-        d80y = numpy.cumsum(ns_vals[isort])/numpy.sum(ns_vals)
-
-        d80 = numpy.interp(d80_frac, d80y, d80x)
-
-        return d80
-
-    opt = scipy.optimize.minimize(d80_for_xy, m1, method='Nelder-Mead')
-
-    return m0,m1,m2,opt.fun*2,opt.x,nray,nhit
+    return m0,m1,m2,d80,d80_center,nray,nhit
