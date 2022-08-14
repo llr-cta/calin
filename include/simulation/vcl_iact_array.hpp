@@ -648,6 +648,9 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
+  for(auto* ipropagator : propagator_) {
+    ipropagator->pe_processor->start_processing();
+  }
   for(auto* idetector : detector_) {
     idetector->nrays_to_refract = 0;
     idetector->nrays_to_propagate = 0;
@@ -669,6 +672,9 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_eve
     if(idetector->nrays_to_propagate) {
       do_propagate_rays_for_detector(idetector);
     }
+  }
+  for(auto* ipropagator : propagator_) {
+    ipropagator->pe_processor->finish_processing();
   }
 }
 
