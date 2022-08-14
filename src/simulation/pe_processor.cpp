@@ -89,10 +89,10 @@ process_focal_plane_hit(unsigned scope_id, int pixel_id,
   if(pixel_id<0)return;
   if(scope_id >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::process_focal_plane_hit: scope_id out "
-      "of range");
+      "of range, " + std::to_string(scope_id));
   if(unsigned(pixel_id) >= images_[scope_id].size())
     throw std::out_of_range("SimpleImagePEProcessor::process_focal_plane_hit: pixel_id out "
-      "of range");
+      "of range, " + std::to_string(pixel_id));
   images_[scope_id][pixel_id].accumulate(pe_weight);
 }
 
