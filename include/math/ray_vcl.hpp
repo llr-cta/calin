@@ -557,7 +557,7 @@ public:
   real_vt get_energies() const { real_vt energy; get_energies(energy); return energy; }
 
   void set_positions(const vec3_vt& pos) { pos.x().store(x_); pos.y().store(y_); pos.z().store(z_); }
-  void set_directions(const vec3_vt& dir) { dir.x().store(ux_); dir.y().store(uy_); dir.z().store(z_); }
+  void set_directions(const vec3_vt& dir) { dir.x().store(ux_); dir.y().store(uy_); dir.z().store(uz_); }
   void set_cts(const real_vt& ct) { ct.store(ct_); }
   void set_energies(const real_vt& energy) { energy.store(energy_); }
 
