@@ -283,6 +283,11 @@ public:
   unsigned num_propagators() const { return propagator_.size(); }
   unsigned num_scopes() const { return detector_.size(); }
 
+  uint64_t nrays_refracted_at_detector(unsigned idetector) const {
+    return detector_.at(idetector)->nrays_refracted; }
+  uint64_t nrays_propagated_at_detector(unsigned idetector) const {
+    return detector_.at(idetector)->nrays_propagated; }
+
   std::string banner() const;
 
   calin::math::spline_interpolation::CubicSpline* new_height_dependent_pe_bandwidth_spline() const;
@@ -345,6 +350,9 @@ protected:
     unsigned nrays_to_propagate;
     double_at ray_weights_to_propagate;
     double_at bandwidths_to_propagate;
+
+    uint64_t nrays_refracted;
+    uint64_t nrays_propagated;
   };
 
   void do_propagate_rays_for_detector(DetectorInfo* idetector);
@@ -440,6 +448,8 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info->bandwidth_manager      = bandwidth_manager;
     detector_info->nrays_to_refract       = 0;
     detector_info->nrays_to_propagate     = 0;
+    detector_info->nrays_refracted        = 0;
+    detector_info->nrays_propagated       = 0;
     detector_.emplace_back(detector_info);
     propagator_info->detector_infos.emplace_back(detector_info);
   }
@@ -641,6 +651,8 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   for(auto* idetector : detector_) {
     idetector->nrays_to_refract = 0;
     idetector->nrays_to_propagate = 0;
+    idetector->nrays_refracted = 0;
+    idetector->nrays_propagated = 0;
   }
 
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
@@ -722,9 +734,6 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
       }
     }
   }
-
-  ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
-    VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -733,6 +742,7 @@ do_refract_rays_for_detector(DetectorInfo* idetector)
   Ray ray;
   idetector->rays_to_refract.get_rays(ray);
   double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_refract;
+  idetector->nrays_refracted += idetector->nrays_to_refract;
   idetector->nrays_to_refract = 0;
 
   double_vt dz = ray.z()-zobs_;
@@ -766,6 +776,7 @@ do_propagate_rays_for_detector(DetectorInfo* idetector)
   Ray ray;
   idetector->rays_to_propagate.get_rays(ray);
   double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_propagate;
+  idetector->nrays_propagated += idetector->nrays_to_propagate;
   idetector->nrays_to_propagate = 0;
 
   double_vt emission_z = ray.z();
@@ -812,8 +823,8 @@ do_propagate_rays_for_detector(DetectorInfo* idetector)
           pixel_id[iray], fplane_x[iray], fplane_y[iray], fplane_ux[iray], fplane_uy[iray],
           fplane_t[iray], idetector->ray_weights_to_propagate[iray]);
       }
+      fp_rays_bitmask >>= 1;
     }
-    fp_rays_bitmask >>= 1;
   }
 }
 
