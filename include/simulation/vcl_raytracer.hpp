@@ -580,14 +580,14 @@ public:
         pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
         pixel_cw_);
 
-    // Test we have a valid mirror hexid
+    // Test we have a valid pixel hexid
     info.status = select(bool_int_vt(mask), STS_TS_NO_PIXEL, info.status);
     mask &= typename VCLReal::bool_vt(info.pixel_hexid < pixel_hexid_end_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    // Find the mirror ID
+    // Find the pixel ID
     info.pixel_id =
       vcl::lookup<0x40000000>(select(bool_int_vt(mask), info.pixel_hexid, pixel_hexid_end_),
         pixel_id_lookup_);
