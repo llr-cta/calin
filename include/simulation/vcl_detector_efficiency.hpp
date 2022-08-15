@@ -97,7 +97,7 @@ public:
     stream << double_to_string_with_commas(w0*100,1)
       << "% at 0 deg; 100% at " << double_to_string_with_commas(std::acos(wmax)/M_PI*180,1)
       << " deg; 50% at " << double_to_string_with_commas(std::acos(whalf)/M_PI*180,1)
-      << " deg; scale " << double_to_string_with_commas(scale_,3);
+      << " deg (scale " << double_to_string_with_commas(scale_,3) << ')';
     return stream.str();
   }
 
