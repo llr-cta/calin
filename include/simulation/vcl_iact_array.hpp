@@ -861,24 +861,61 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
 {
   constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
   using calin::util::string::double_to_string_with_commas;
+  using calin::math::special::SQR;
   std::ostringstream stream;
+  double prop_delay_ct =
+    this->atm_->propagation_ct_correction(this->atm_->top_of_atmosphere()) -
+    this->atm_->propagation_ct_correction(zobs_);
+  double thetac_zobs = std::acos(1/(this->atm_->n_minus_one(zobs_)+1));
+  double thetac_5 = std::acos(1/(this->atm_->n_minus_one(5e5)+1));
+  double thetac_10 = std::acos(1/(this->atm_->n_minus_one(10e5)+1));
+  double thetac_15 = std::acos(1/(this->atm_->n_minus_one(15e5)+1));
+  double yield_zobs = calin::simulation::air_cherenkov_tracker::YIELD_CONST*SQR(std::sin(thetac_zobs))*100;
+  double yield_5 = calin::simulation::air_cherenkov_tracker::YIELD_CONST*SQR(std::sin(thetac_5))*100;
+  double yield_10 = calin::simulation::air_cherenkov_tracker::YIELD_CONST*SQR(std::sin(thetac_10))*100;
+  double yield_15 = calin::simulation::air_cherenkov_tracker::YIELD_CONST*SQR(std::sin(thetac_15))*100;
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
     << detector_.size() << " detectors.\n"
     << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
     << " to " << double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1) << " degrees.\n"
-    << "Observation level : " << double_to_string_with_commas(zobs_/1e5,3) << " km, refraction safety radius : "
-    << double_to_string_with_commas(safety_radius_/100,2) << " m.\n";
+    << "Observation level : " << double_to_string_with_commas(zobs_/1e5,3) << " km, "
+    << "thickness " << double_to_string_with_commas(this->atm_->thickness(zobs_),1) << " g/cm^2\n"
+    << "- Cherenkov angle at " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15 km : "
+    << double_to_string_with_commas(thetac_zobs/M_PI*180,3) << ", "
+    << double_to_string_with_commas(thetac_5/M_PI*180,3) << ", "
+    << double_to_string_with_commas(thetac_10/M_PI*180,3) << ", "
+    << double_to_string_with_commas(thetac_15/M_PI*180,3) << " deg\n"
+    << "- Cherenkov yield at " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15 km : "
+    << double_to_string_with_commas(yield_zobs,2) << ", "
+    << double_to_string_with_commas(yield_5,2) << ", "
+    << double_to_string_with_commas(yield_10,2) << ", "
+    << double_to_string_with_commas(yield_15,2) <<  " ph/m/eV\n"
+    << " Vertical propagation delay from "
+    << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5,0)
+    << " to " << double_to_string_with_commas(zobs_/1e5,3) << " km : "
+    << double_to_string_with_commas(prop_delay_ct*0.03335641,2) <<  "ns ("
+    << double_to_string_with_commas(prop_delay_ct,1) << " cm)\n";
   if(this->variable_bandwidth_spline_) {
+    double bw_zobs = this->variable_bandwidth_spline_->value(zobs_);
+    double bw_5 = this->variable_bandwidth_spline_->value(5e5);
+    double bw_10 = this->variable_bandwidth_spline_->value(10e5);
+    double bw_15 = this->variable_bandwidth_spline_->value(15e5);
+    double bw_toa = this->variable_bandwidth_spline_->value(this->atm_->top_of_atmosphere());
     stream << "Cherenkov ray mode : PEs, with height-dependent bandwidth\n"
       << "- " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15, "
       << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5, 0) << " km : "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(zobs_),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(5e5),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(10e5),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(15e5),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(this->atm_->top_of_atmosphere()),3) << " eV\n";
+      << double_to_string_with_commas(bw_zobs,3) << ", "
+      << double_to_string_with_commas(bw_5,3) << ", "
+      << double_to_string_with_commas(bw_10,3) << ", "
+      << double_to_string_with_commas(bw_15,3) << ", "
+      << double_to_string_with_commas(bw_toa,3) << " eV\n"
+      << "- PE yield at " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15 km : "
+      << double_to_string_with_commas(yield_zobs*bw_zobs,2) << ", "
+      << double_to_string_with_commas(yield_5*bw_5,2) << ", "
+      << double_to_string_with_commas(yield_10*bw_10,2) << ", "
+      << double_to_string_with_commas(yield_15*bw_15,2) <<  " PE/m\n";
   } else if (this->do_color_photons_) {
     stream << "Cherenkov ray mode : photons, with bandwidth "
       << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n"
@@ -889,7 +926,12 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       << double_to_string_with_commas(EV_NM/this->min_cherenkov_energy_,0) << " nm)\n";
   } else {
     stream << "Cherenkov ray mode : PEs, with fixed bandwidth "
-      << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n";
+      << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n"
+      << "- PE yield at " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15 km : "
+      << double_to_string_with_commas(yield_zobs*this->fixed_bandwidth_,2) << ", "
+      << double_to_string_with_commas(yield_5*this->fixed_bandwidth_,2) << ", "
+      << double_to_string_with_commas(yield_10*this->fixed_bandwidth_,2) << ", "
+      << double_to_string_with_commas(yield_15*this->fixed_bandwidth_,2) <<  " PE/cm\n";
   }
   stream << "Detector efficiency bandwidths :\n";
   for(const auto* ibwm : bandwidth_manager_) {
