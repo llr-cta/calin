@@ -73,6 +73,10 @@ public:
   uint64_t num_steps() const { return num_steps_; }
   uint64_t num_rays() const { return num_rays_; }
 
+  double total_yield() const { return vcl::horizontal_add(sum_yield_); }
+  double total_yield_by_height() const { return vcl::horizontal_add(sum_yield_h_); }
+  double total_yield_by_height_squared() const { return vcl::horizontal_add(sum_yield_h2_); }
+
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration default_config() {
     calin::ix::simulation::vcl_iact::VCLIACTConfiguration config;
     config.set_bandwidth(3.0);
@@ -114,6 +118,10 @@ protected:
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
   double_vt track_weight_; // track : weight for thinning
+
+  double_vt sum_yield_;
+  double_vt sum_yield_h_;
+  double_vt sum_yield_h2_;
 
   uint64_t num_tracks_ = 0;
   uint64_t num_steps_ = 0;
@@ -197,6 +205,9 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   num_rays_ = 0;
   track_dx_ = 0.0;
   track_valid_ = false;
+  sum_yield_ = 0;
+  sum_yield_h_ = 0;
+  sum_yield_h2_ = 0;
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
@@ -332,9 +343,16 @@ generate_mc_rays(bool drain_tracks)
       bandwidth = fixed_bandwidth_;
     }
 
-    double_vt yield = bandwidth * track_yield_const_ * sin2thetac;
-    double_vt mfp = cherenkov_weight_/yield;
+    double_vt yield_per_ev = track_yield_const_ * sin2thetac;
+    double_vt mfp = cherenkov_weight_/(bandwidth * yield_per_ev);
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
+
+    double_vt sum_y = dx_emission*yield_per_ev;
+    sum_yield_ += sum_y;
+    sum_y *= track_x_.z();
+    sum_yield_h_ += sum_y;
+    sum_y *= track_x_.z();
+    sum_yield_h2_ += sum_y;
 
     track_dx_ -= dx_emission;
     track_valid_ &= track_dx_>0;
