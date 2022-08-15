@@ -183,10 +183,12 @@ public:
     stream
       << indent_1 << this->name_ << " : "
       << double_to_string_with_commas(detector_efficiency_spline_->integral(detector_efficiency_spline_->xmax()),3) << " eV\n"
+      << indent_n << "Absorbed from 5 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(5e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(5e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
-      << indent_n << "Absorbed from 20 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmin),3)
-      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(20e5,wmax),3) << " eV\n";
+      << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
     std::string fp_banner = fp_angular_response_->banner();
     if(not fp_banner.empty()) {
       stream << indent_n << "Cone : " << fp_banner << '\n';
@@ -870,12 +872,12 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     << double_to_string_with_commas(safety_radius_/100,2) << " m.\n";
   if(this->variable_bandwidth_spline_) {
     stream << "Cherenkov ray mode : PEs, with height-dependent bandwidth\n"
-      << "- " << double_to_string_with_commas(zobs_/1e5,3) << ", 10, 20, 30, "
+      << "- " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15, "
       << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5, 0) << " km : "
       << double_to_string_with_commas(this->variable_bandwidth_spline_->value(zobs_),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(5e5),3) << ", "
       << double_to_string_with_commas(this->variable_bandwidth_spline_->value(10e5),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(20e5),3) << ", "
-      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(30e5),3) << ", "
+      << double_to_string_with_commas(this->variable_bandwidth_spline_->value(15e5),3) << ", "
       << double_to_string_with_commas(this->variable_bandwidth_spline_->value(this->atm_->top_of_atmosphere()),3) << " eV\n";
   } else if (this->do_color_photons_) {
     stream << "Cherenkov ray mode : photons, with bandwidth "
@@ -891,7 +893,7 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
   }
   stream << "Detector efficiency bandwidths :\n";
   for(const auto* ibwm : bandwidth_manager_) {
-    stream << ibwm->banner(wmax_, wmin_, "- ", "  ");
+    stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
   }
   return stream.str();
 }
