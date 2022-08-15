@@ -347,12 +347,12 @@ generate_mc_rays(bool drain_tracks)
     double_vt mfp = cherenkov_weight_/(bandwidth * yield_per_ev);
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
 
-    double_vt sum_y = dx_emission*yield_per_ev;
-    sum_yield_ += sum_y;
-    sum_y *= track_x_.z();
-    sum_yield_h_ += sum_y;
-    sum_y *= track_x_.z();
-    sum_yield_h2_ += sum_y;
+    double_vt sum_yield_z_to_the_n = dx_emission*yield_per_ev;
+    sum_yield_ += sum_yield_z_to_the_n;
+    sum_yield_z_to_the_n *= track_x_.z();
+    sum_yield_h_ += sum_yield_z_to_the_n;
+    sum_yield_z_to_the_n *= track_x_.z();
+    sum_yield_h2_ += sum_yield_z_to_the_n;
 
     track_dx_ -= dx_emission;
     track_valid_ &= track_dx_>0;
