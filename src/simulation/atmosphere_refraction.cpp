@@ -675,7 +675,7 @@ double LayeredRefractiveAtmosphere::top_of_atmosphere()
   return s_->xknot().back();
 }
 
-double LayeredRefractiveAtmosphere::refraction_offset(double z, double theta_rad, unsigned iobs)
+double LayeredRefractiveAtmosphere::refraction_displacement(double z, double theta_rad, unsigned iobs)
 {
   Eigen::Vector3d u(-std::sin(theta_rad), 0, -std::cos(theta_rad));
   Eigen::Vector3d x(u[0]/u[2]*(z - zobs(iobs)), 0, z);
@@ -684,9 +684,18 @@ double LayeredRefractiveAtmosphere::refraction_offset(double z, double theta_rad
   return r.x()*std::cos(theta_rad);
 }
 
+double LayeredRefractiveAtmosphere::refraction_bending(double z, double theta_rad, unsigned iobs)
+{
+  Eigen::Vector3d u(-std::sin(theta_rad), 0, -std::cos(theta_rad));
+  Eigen::Vector3d x(u[0]/u[2]*(z - zobs(iobs)), 0, z);
+  calin::math::ray::Ray r(x,u);
+  propagate_ray_with_refraction(r, iobs);
+  return theta_rad-std::acos(-r.uz());
+}
+
 double LayeredRefractiveAtmosphere::refraction_safety_radius(double theta_rad, unsigned iobs)
 {
-  return refraction_offset(top_of_atmosphere(), theta_rad, iobs);
+  return refraction_displacement(top_of_atmosphere(), theta_rad, iobs);
 }
 
 LayeredRefractiveAtmosphere*

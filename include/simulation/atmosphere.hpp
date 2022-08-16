@@ -318,7 +318,8 @@ public:
   bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
     bool time_reversal_ok=true);
 
-  double refraction_offset(double z, double theta_rad, unsigned iobs=0);
+  double refraction_displacement(double z, double theta_rad, unsigned iobs=0);
+  double refraction_bending(double z, double theta_rad, unsigned iobs=0);
   double refraction_safety_radius(double zenith_rad, unsigned iobs=0);
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
