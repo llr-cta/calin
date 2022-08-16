@@ -295,6 +295,8 @@ public:
   const Eigen::Matrix3d& rotationReflectorToFP() const { return rot_reflector_to_camera_; }
   bool hasFPRotation() const { return fHasFPRotation; }
 
+  std::string banner() const;
+
 private:
   // ************************************************************************
   // Telescope Parameters

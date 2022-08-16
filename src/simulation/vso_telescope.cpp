@@ -24,6 +24,7 @@
 #include <algorithm>
 
 #include <util/log.hpp>
+#include <util/string.hpp>
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
 #include <math/regular_grid.hpp>
@@ -968,4 +969,35 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
   calin::iact_data::instrument_layout::compute_camera_and_module_outlines(c);
 
   return d;
+}
+
+std::string VSOTelescope::banner() const
+{
+  using calin::util::string::double_to_string_with_commas;
+  using calin::math::special::SQR;
+  std::ostringstream stream;
+  double A = this->numMirrors()*calin::math::hex_array::cell_area(this->facetSize())*1e-4;
+  //double D = 2*std::sqrt(this->numMirrors()*calin::math::hex_array::cell_area(this->facetSpacing())*1e-4/M_PI);
+  double D = 0;
+  for(const auto* m : fMirrors) {
+    D = std::max(D,0.02*std::sqrt(SQR(m->pos()[0])+SQR(m->pos()[2])));
+  }
+  double fov = 0;
+  for(const auto* m : fPixels) {
+    fov = std::max(fov,0.02*std::sqrt(SQR(m->pos()[0])+SQR(m->pos()[2])));
+  }
+
+  double F = this->infinityFocalDistance()*0.01;
+  double R = this->curvatureRadius()*0.01;
+  stream
+    << "Nf=" << this->numMirrors() << " f="
+    << double_to_string_with_commas(F/D,2) << " c="
+    << double_to_string_with_commas(F/R,2) << " A="
+    << double_to_string_with_commas(A,1) << "m2 D="
+    << double_to_string_with_commas(D,1) << "m F="
+    << double_to_string_with_commas(F,1) << "m Rc="
+    << double_to_string_with_commas(R,1) << "m FoV="
+    << double_to_string_with_commas(fov/F/M_PI*180,1) << "deg Dpix="
+    << double_to_string_with_commas(this->pixelSpacing()*0.01/F/M_PI*360*60,1) << "'";
+  return stream.str();
 }
