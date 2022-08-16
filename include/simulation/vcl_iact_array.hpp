@@ -903,7 +903,7 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     double bw_10 = this->variable_bandwidth_spline_->value(10e5);
     double bw_15 = this->variable_bandwidth_spline_->value(15e5);
     double bw_toa = this->variable_bandwidth_spline_->value(this->atm_->top_of_atmosphere());
-    stream << "Cherenkov ray mode : PEs, with height-dependent bandwidth\n"
+    stream << "Cherenkov ray mode : PEs WITH HEIGHT-DEPENDENT BANDWIDTH\n"
       << "- " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15, "
       << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5, 0) << " km : "
       << double_to_string_with_commas(bw_zobs,3) << ", "
@@ -917,7 +917,7 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       << double_to_string_with_commas(yield_10*bw_10,2) << ", "
       << double_to_string_with_commas(yield_15*bw_15,2) <<  " PE/m\n";
   } else if (this->do_color_photons_) {
-    stream << "Cherenkov ray mode : photons, with bandwidth "
+    stream << "Cherenkov ray mode : PHOTONS WITH FIXED BANDWIDTH "
       << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n"
       << "- Energy range "
       << double_to_string_with_commas(this->min_cherenkov_energy_,3) << " - "
@@ -925,7 +925,7 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       << double_to_string_with_commas(EV_NM/(this->min_cherenkov_energy_+this->fixed_bandwidth_),0) << " - "
       << double_to_string_with_commas(EV_NM/this->min_cherenkov_energy_,0) << " nm)\n";
   } else {
-    stream << "Cherenkov ray mode : PEs, with fixed bandwidth "
+    stream << "Cherenkov ray mode : PEs WITH FIXED BANDWIDTH "
       << double_to_string_with_commas(this->fixed_bandwidth_,3) << " eV\n"
       << "- PE yield at " << double_to_string_with_commas(zobs_/1e5,3) << ", 5, 10, 15 km : "
       << double_to_string_with_commas(yield_zobs*this->fixed_bandwidth_,2) << ", "
@@ -942,16 +942,6 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       << "- Refraction safety radius : " << double_to_string_with_commas(safety_radius_*0.01,2) << " m\n";
   }
   stream
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
     << "- Displacement from 5, 10, 15 km at Zn="
     << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
     << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
@@ -961,7 +951,17 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
     << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
     << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n";
+    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n"
+    << "- Bending from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
+    << "- Bending from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n";
   stream << "Detector efficiency bandwidths :\n";
   for(const auto* ibwm : bandwidth_manager_) {
     stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
