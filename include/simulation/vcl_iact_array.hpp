@@ -892,7 +892,7 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     << double_to_string_with_commas(yield_5,2) << ", "
     << double_to_string_with_commas(yield_10,2) << ", "
     << double_to_string_with_commas(yield_15,2) <<  " ph/m/eV\n"
-    << " Vertical propagation delay from "
+    << "- Vertical propagation delay from "
     << double_to_string_with_commas(this->atm_->top_of_atmosphere()/1e5,0)
     << " to " << double_to_string_with_commas(zobs_/1e5,3) << " km : "
     << double_to_string_with_commas(prop_delay_ct*0.03335641,2) <<  "ns ("
@@ -933,6 +933,35 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       << double_to_string_with_commas(yield_10*this->fixed_bandwidth_,2) << ", "
       << double_to_string_with_commas(yield_15*this->fixed_bandwidth_,2) <<  " PE/cm\n";
   }
+  if(config_.refraction_mode() == calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS) {
+    stream << "Refraction mode : DISABLED (NO REFRACTION APPLIED)\n";
+  } else if(config_.refraction_mode() == calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS) {
+    stream << "Refraction mode : REFRACT ALL RAYS\n";
+  } else { // config_.refraction_mode() == calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS
+    stream << "Refraction mode : REFRACT ONLY CLOSE RAYS\n"
+      << "- Refraction safety radius : " << double_to_string_with_commas(safety_radius_*0.01,2) << " m\n";
+  }
+  stream
+    << "- Bending from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
+    << "- Bending from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
+    << "- Displacement from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmin_), config_.observation_level())*0.01,2) << " m\n"
+    << "- Displacement from 5, 10, 15 km at Zn="
+    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n";
   stream << "Detector efficiency bandwidths :\n";
   for(const auto* ibwm : bandwidth_manager_) {
     stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
