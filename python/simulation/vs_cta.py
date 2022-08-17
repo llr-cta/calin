@@ -238,7 +238,7 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
+def mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
         obscure_camera = True, include_window = False):
     mst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
     mst.mutable_array_origin().set_latitude(array_lon/180*numpy.pi)
@@ -336,7 +336,21 @@ def mstn1_config(obscure_camera = True, assets_file = ctan_default_assets_filena
             scope_x.append(a[7]*100)
             scope_y.append(a[8]*100)
             scope_z.append(a[4]*100)
-    return mstn_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+    return mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+        obscure_camera = obscure_camera, include_window = include_window)
+
+def mstn_config(obscure_camera = True, assets_file = ctan_default_assets_filename(),
+        include_window = False):
+    array_lat,array_lon,array_alt,all_assets = ctan_assets(filename = assets_file)
+    scope_x = []
+    scope_y = []
+    scope_z = []
+    for a in all_assets:
+        if(a[0]=='MSTN'):
+            scope_x.append(a[7]*100)
+            scope_y.append(a[8]*100)
+            scope_z.append(a[4]*100)
+    return mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
         obscure_camera = obscure_camera, include_window = include_window)
 
 def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
