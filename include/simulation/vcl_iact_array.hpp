@@ -877,7 +877,11 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
-    << detector_.size() << " detectors.\n"
+    << detector_.size() << " detectors.\n";
+  for(const auto* ipropagator : propagator_) {
+    stream << ipropagator->propagator->banner("- "+ipropagator->name+": ", "  ");
+  }
+  stream
     << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
     << " to " << double_to_string_with_commas(std::acos(wmin_)/M_PI*180.0,1) << " degrees.\n"
     << "Observation level : " << double_to_string_with_commas(zobs_/1e5,3) << " km, "

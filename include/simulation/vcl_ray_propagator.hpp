@@ -99,6 +99,10 @@ public:
       double az_deg, double el_deg, double phi_deg=0.0) {
     // nothing to see here
   }
+
+  virtual std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const {
+    return {};
+  }
 };
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) DaviesCottonVCLFocalPlaneRayPropagator:
@@ -179,6 +183,10 @@ public:
 
   void finish_propagating() final {
     // nothing to see here
+  }
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const final {
+    return array_->banner(indent0, indentN);
   }
 
   const calin::simulation::vs_optics::VSOArray* array() const { return array_; }

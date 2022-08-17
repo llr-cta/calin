@@ -995,8 +995,8 @@ std::string VSOTelescope::banner() const
     << double_to_string_with_commas(F/R,2) << " A="
     << double_to_string_with_commas(A,1) << "m2 D="
     << double_to_string_with_commas(D,1) << "m F="
-    << double_to_string_with_commas(F,1) << "m Rc="
-    << double_to_string_with_commas(R,1) << "m FoV="
+    << double_to_string_with_commas(F,1) /* << "m Rc="
+    << double_to_string_with_commas(R,1) */ << "m FoV="
     << double_to_string_with_commas(fov/F/M_PI*180,1) << "deg Dpix="
     << double_to_string_with_commas(this->pixelSpacing()*0.01/F/M_PI*360*60,1) << "'";
   return stream.str();

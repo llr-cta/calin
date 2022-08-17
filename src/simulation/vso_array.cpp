@@ -39,9 +39,11 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <map>
 
 #include <math/hex_array.hpp>
 #include <math/vector3d_util.hpp>
+#include <util/string.hpp>
 #include <simulation/vso_array.hpp>
 
 using namespace calin::simulation::vs_optics;
@@ -337,4 +339,30 @@ calin::simulation::vs_optics::dc_parameters_to_array_layout(
     dc_parameters_to_telescope_layout(param, i, scope_pos[i], d->add_telescopes());
 
   return d;
+}
+
+std::string VSOArray::banner(const std::string& indent0, const std::string& indentN) const
+{
+  using calin::util::string::double_to_string_with_commas;
+  std::map<std::string, unsigned> scope_banners;
+  double xmin = std::numeric_limits<double>::infinity();
+  double xmax = -std::numeric_limits<double>::infinity();
+  double ymin = std::numeric_limits<double>::infinity();
+  double ymax = -std::numeric_limits<double>::infinity();
+  for(const auto* scope : fTelescopes) {
+    xmin = std::min(xmin, scope->pos()[0]);
+    xmax = std::max(xmax, scope->pos()[0]);
+    ymin = std::min(ymin, scope->pos()[1]);
+    ymax = std::max(ymax, scope->pos()[1]);
+    scope_banners[scope->banner()]++;
+  }
+  double A = (xmax-xmin)*(ymax-ymin)*1e-10;
+  std::ostringstream stream;
+  stream << indent0 << "Array of " << this->numTelescopes()
+    << " DC-like telescopes covering "
+    << double_to_string_with_commas(A,3) << " km^2.\n";
+  for(const auto& scope_banner : scope_banners) {
+    stream << indentN << scope_banner.second << " x " << scope_banner.first << '\n';
+  }
+  return stream.str();
 }

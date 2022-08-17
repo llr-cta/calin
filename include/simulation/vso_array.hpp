@@ -124,6 +124,8 @@ class VSOArray
   bool readFromShortDump(const std::string& filename);
 #endif
 
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const;
+
  private:
   double                     fLatitude;
   double                     fLongitude;
