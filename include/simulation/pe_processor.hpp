@@ -23,6 +23,8 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <stdexcept>
 
 #include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
@@ -37,6 +39,37 @@ public:
   virtual void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double ux, double uy, double t0, double pe_weight);
   virtual void finish_processing();
+};
+
+class RecordingPEProcessor: public PEProcessor
+{
+public:
+  RecordingPEProcessor(unsigned nmax = 0, bool auto_clear = true);
+  virtual ~RecordingPEProcessor();
+  void start_processing() override;
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+  void clear_all_pes();
+  unsigned npe() const { return x_.size(); }
+  unsigned scope_id(unsigned ipe) { return sid_.at(ipe); }
+  unsigned pixel_id(unsigned ipe) { return pid_.at(ipe); }
+  double x(unsigned ipe) { return x_.at(ipe); }
+  double y(unsigned ipe) { return y_.at(ipe); }
+  double ux(unsigned ipe) { return ux_.at(ipe); }
+  double uz(unsigned ipe) { return uy_.at(ipe); }
+  double t(unsigned ipe) { return t_.at(ipe); }
+  double w(unsigned ipe) { return w_.at(ipe); }
+private:
+  unsigned nmax_;
+  bool auto_clear_;
+  std::vector<unsigned> sid_;
+  std::vector<unsigned> pid_;
+  std::vector<double> x_;
+  std::vector<double> y_;
+  std::vector<double> ux_;
+  std::vector<double> uy_;
+  std::vector<double> t_;
+  std::vector<double> w_;
 };
 
 class SimpleImagePEProcessor: public PEProcessor
@@ -56,6 +89,37 @@ private:
   CALIN_TYPEALIAS(Accumulator, calin::math::accumulator::RecommendedAccumulator);
   bool auto_clear_ = false;
   std::vector<std::vector<Accumulator>> images_;
+};
+
+class WaveformPEProcessor: public PEProcessor
+{
+public:
+  WaveformPEProcessor(unsigned nscope, unsigned npix, unsigned nsamp, double delta_t,
+    bool auto_clear = true);
+  virtual ~WaveformPEProcessor();
+  void start_processing() override;
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+  const Eigen::MatrixXd& scope_traces(unsigned iscope) const { check_iscope(iscope); return traces_[iscope]; }
+  double scope_t0(unsigned iscope) const { check_iscope(iscope); return t0_(iscope); }
+  int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
+  int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
+  void clear_all_traces();
+private:
+  void check_iscope(unsigned iscope) const {
+    if(iscope >= traces_.size()) {
+      throw std::out_of_range("iscope out of range : " + std::to_string(iscope)
+        + " >= " + std::to_string(traces_.size()));
+    }
+  }
+  unsigned nsamp_;
+  double delta_t_inv_;
+  std::vector<Eigen::MatrixXd> traces_;
+  Eigen::VectorXd t0_;
+  Eigen::VectorXi nmin_;
+  Eigen::VectorXi nmax_;
+  bool auto_clear_ = false;
+  bool warning_sent_ = false;
 };
 
 class TelescopePSFCalcPEProcessor: public PEProcessor
