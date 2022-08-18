@@ -563,7 +563,7 @@ public:
     // We good, record position on focal plane etc
     info.fplane_x = select(mask, ray.x(), 0);
     info.fplane_z = select(mask, ray.z(), 0);
-    info.fplane_t = select(mask, ray.ct(), 0) * math::constants::cgs_1_c;
+    info.fplane_t = select(mask, ray.time(), 0);
     info.fplane_ux = select(mask, ray.ux(), 0);
     info.fplane_uy = select(mask, ray.uy(), 0);
     info.fplane_uz = select(mask, ray.uz(), 0);
