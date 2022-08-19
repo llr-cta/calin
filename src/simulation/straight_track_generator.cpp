@@ -72,7 +72,7 @@ void StraightTrackGenerator::generate_showers(
   const double dx = dz/track.u0(2);
   const double gamma = track.e0/track.mass;
   assert(gamma >= 1);
-  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::cgs_c;
+  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::g4_c;
   const double dt = dx/v;
 
   track.x1       = track.x0 + track.u0 * dx;

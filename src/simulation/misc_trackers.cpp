@@ -615,14 +615,14 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
     double n = atm_->n_minus_one(x.z()) + 1.0;
     double t_it = it*config.frame_advance_time();
     double t1 = t_it+t_exposure;
-    Eigen::Vector3d x1 = x + cherenkov_photon.u0*(t1-t)*calin::math::constants::cgs_c*1e-9/n;
+    Eigen::Vector3d x1 = x + cherenkov_photon.u0*(t1-t)*calin::math::constants::g4_c/n;
     if(x1.z() < z1)x1 -= (x1.z() - z1)/cherenkov_photon.u0.z() * cherenkov_photon.u0;
     Frame& frame = parent_->frames_[it];
     frame.cherenkov.emplace_back(x,x1);
     ++it;
     double t_new = std::max(cherenkov_photon.t0, it*config.frame_advance_time());
     double dt = t_new - t;
-    x += cherenkov_photon.u0*dt*calin::math::constants::cgs_c*1e-9/n;
+    x += cherenkov_photon.u0*dt*calin::math::constants::g4_c/n;
     t = t_new;
   }
 }

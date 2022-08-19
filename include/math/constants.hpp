@@ -428,6 +428,10 @@ constexpr double PC_SI_SUN_MASS      = 1.9891e+30;                     // solar 
 constexpr double PC_SI_SUN_RADIUS    = 6.96e+8;                        // solar radius                         [m]
 constexpr double PC_SI_SUN_LUMINOSITY= 3.9e+26;                        // solar luminosity                     [W]
 
+constexpr double PC_G4_L          = 1.0e+02;                           // G4 length     per SI unit
+constexpr double PC_G4_T          = 1.0e+09;                           // G4 time       per SI unit
+constexpr double PC_G4_V          = (PC_G4_L/PC_G4_T);                 // G4 velocity   per SI unit
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Some useful numerical constants
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,6 +461,10 @@ constexpr double cgs_E              = PC_CGS_E;                    // CGS energy
 constexpr double cgs_Q              = PC_CGS_Q;                    // CGS charge    per SI unit - |c/(m/s)|*10
 constexpr double cgs_FLUX           = PC_CGS_FLUX;                 // CGS flux      per SI unit - (i.e. 1/cm^2/s)
 constexpr double cgs_E_FLUX         = PC_CGS_E_FLUX;               // CGS energy fl per SI unit - (i.e. erg/cm^2/s)
+
+constexpr double g4_L               = PC_G4_L;                     // G4 length     per SI unit
+constexpr double g4_T               = PC_G4_T;                     // G4 time       per SI unit
+constexpr double g4_V               = PC_G4_V;                     // G4 velocity   per SI unit
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Constants and errors from NIST, Mohr and Taylor, 2002 (as included in comments above)
@@ -499,6 +507,9 @@ constexpr double cgs_k              = PC_SI_K*PC_CGS_E;            // Boltzmann 
 constexpr double cgs_k_err          = PC_SI_K_ERR*PC_CGS_E;        // Boltzmann                             [erg/K]
 constexpr double cgs_sigma          = PC_SI_SIGMA*PC_CGS_E/PC_CGS_L2; // Stefan-Boltzmann            [erg/cm^2/K^4]
 constexpr double cgs_sigma_err      = PC_SI_SIGMA_ERR*PC_CGS_E/PC_CGS_L2; // pi^2 k^4/60 hbar^3 c^2      [as above]
+
+constexpr double g4_c               = PC_SI_C*PC_G4_V;             // vacuum speed of light                  [cm/s]
+constexpr double g4_1_c             = 1.0/g4_c;                    // reciprocal of vacuum speed of light    [s/cm]
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Unit conversion constants

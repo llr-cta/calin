@@ -88,9 +88,9 @@ void BFieldTrackGenerator::generate_showers(calin::simulation::tracker::TrackVis
 
   const double gamma = track.e0/track.mass;
   assert(gamma >= 1);
-  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::cgs_c;
+  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::g4_c;
   const double dt = step_size_/v;
-  const double gyro = GYRO_CONST * track.q / track.e0 * dt;
+  const double gyro = GYRO_CONST * track.q / track.e0 * (dt*1e-9);
 
   track.dx       = step_size_;
   track.dt       = dt;

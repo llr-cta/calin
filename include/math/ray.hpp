@@ -34,8 +34,8 @@
 namespace calin { namespace math { namespace ray {
 
 #ifndef SWIG
-using calin::math::constants::cgs_c;
-using calin::math::constants::cgs_1_c;
+using calin::math::constants::g4_c;
+using calin::math::constants::g4_1_c;
 #endif
 
 class Ray
@@ -43,7 +43,7 @@ class Ray
 public:
   Ray() { /* nothing to see here */ }
   Ray(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir, double time = 0,
-      double energy = 0): pos_(pos), dir_(dir), ct_(time*cgs_c*1e-9), energy_(energy) {
+      double energy = 0): pos_(pos), dir_(dir), ct_(time*g4_c), energy_(energy) {
     /* nothing to see here */ }
 
 #ifndef SWIG
@@ -73,7 +73,7 @@ public:
   const Eigen::Vector3d& position() const { return pos_; }
   const Eigen::Vector3d& direction() const { return dir_; }
   double ct() const { return ct_; }
-  double time() const { return ct_*cgs_1_c*1e9; }
+  double time() const { return ct_*g4_1_c; }
   double energy() const { return energy_; }
   double x() const { return pos_.x(); }
   double y() const { return pos_.y(); }
@@ -85,7 +85,7 @@ public:
   void set_position(const Eigen::Vector3d& pos) { pos_ = pos; }
   void set_direction(const Eigen::Vector3d& dir) { dir_ = dir; }
   void set_ct(double ct) {  ct_ = ct; }
-  void set_time(double t) { ct_ = t*cgs_c*1e-9; }
+  void set_time(double t) { ct_ = t*g4_c; }
   void set_energy(double e) { energy_ = e; }
 
   void translate_origin(const Eigen::Vector3d& origin) { pos_ -= origin; }

@@ -35,8 +35,8 @@
 namespace calin { namespace math { namespace ray {
 
 #ifndef SWIG
-using calin::math::constants::cgs_c;
-using calin::math::constants::cgs_1_c;
+using calin::math::constants::g4_c;
+using calin::math::constants::g4_1_c;
 #endif
 
 template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRay: public VCLReal
@@ -52,7 +52,7 @@ public:
   VCLRay() { }
   VCLRay(const vec3_vt& pos, const vec3_vt& dir, const real_vt& time = 0,
       const real_vt& energy = 0):
-    pos_(pos), dir_(dir), ct_(time*cgs_c*1e-9), energy_(energy) {
+    pos_(pos), dir_(dir), ct_(time*g4_c), energy_(energy) {
     /* nothing to see here */
   }
   VCLRay(const Ray& ray) {
@@ -77,7 +77,7 @@ public:
   const vec3_vt& position() const { return pos_; }
   const vec3_vt& direction() const { return dir_; }
   const real_vt& ct() const { return ct_; }
-  const real_vt  time() const { return ct_*cgs_1_c*1e9; }
+  const real_vt time() const { return ct_*g4_1_c; }
   const real_vt& energy() const { return energy_; }
   const real_vt& x() const { return pos_.x(); }
   const real_vt& y() const { return pos_.y(); }
@@ -104,7 +104,7 @@ public:
   void set_position(const vec3_vt& pos) { pos_ = pos; }
   void set_direction(const vec3_vt& dir) { clear_dir_inv(); dir_ = dir; }
   void set_ct(const real_vt& ct) {  ct_ = ct; }
-  void set_time(const real_vt& t) { ct_ = t*cgs_c*1e-9; }
+  void set_time(const real_vt& t) { ct_ = t*g4_c; }
   void set_energy(const real_vt& e) { energy_ = e; }
 
   void translate_origin(const vec3_vt& origin) { pos_ -= origin; }
@@ -477,7 +477,7 @@ public:
       const real_vt& energy = 0) {
     set_positions(pos);
     set_directions(dir);
-    set_cts(t * cgs_c * 1e-9);
+    set_cts(t*g4_c);
     set_energies(energy);
   }
 

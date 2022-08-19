@@ -347,7 +347,7 @@ private:
             single_info.mirror_n_dot_u = mirror_n_dot_u[jray];
             single_info.fplane_x = fp_x[jray];
             single_info.fplane_z = fp_z[jray];
-            single_info.fplane_t = fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c*1e9;
+            single_info.fplane_t = fp_t[jray] + ray_ct_[iray+jray]*math::constants::g4_1_c;
             single_info.fplane_ux = fplane_ux[jray];
             single_info.fplane_uy = fplane_uy[jray];
             single_info.fplane_uz = fplane_uz[jray];
@@ -366,7 +366,7 @@ private:
             visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
               double(fp_x[jray]), double(fp_z[jray]),
               double(fplane_ux[jray]), double(fplane_uz[jray]),
-              double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
+              double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::g4_1_c,
               ray_w_[iray+jray]);
           }
         }
@@ -582,7 +582,7 @@ private:
           ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
             fp_x[jray], fp_z[jray], fp_ux[jray], fp_uz[jray],
-            fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c,
+            fp_t[jray] + ray_ct_[iray+jray]*math::constants::g4_1_c,
             ray_w_[iray+jray]);
         }
       }
