@@ -537,7 +537,6 @@ private:
       dbl_ray_hi.mutable_x().load(ray_x_.data() + iray);
       dbl_ray_hi.mutable_y().load(ray_y_.data() + iray);
       dbl_ray_hi.mutable_z().load(ray_z_.data() + iray);
-      double_vt ray_t;
       ray_t.load(ray_t_.data() + iray);
       dbl_ray_hi.set_time(ray_t);
       if(propagate_to_scope_environs_) {
