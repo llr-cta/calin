@@ -396,7 +396,7 @@ private:
   std::vector<double> ray_x_;
   std::vector<double> ray_y_;
   std::vector<double> ray_z_;
-  std::vector<double> ray_t;
+  std::vector<double> ray_t_;
   std::vector<double> ray_w_;
   uint64_t nhit_ = 0;
 };
