@@ -168,7 +168,7 @@ public:
     ray_x_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
     ray_y_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
     ray_z_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
-    ray_ct_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_t_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
     ray_w_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double)
   {
     for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
@@ -229,7 +229,7 @@ public:
     ray_x_[iray] = ray.x();
     ray_y_[iray] = ray.y();
     ray_z_[iray] = ray.z();
-    ray_ct_[iray] = ray.ct();
+    ray_t_[iray] = ray.time();
     ray_w_[iray] = pe_weight;
     if(nray_[scope_id] == buffer_depth_ * VCLArchitecture::num_double) {
       process_buffered_rays(scope_id);
@@ -347,7 +347,7 @@ private:
             single_info.mirror_n_dot_u = mirror_n_dot_u[jray];
             single_info.fplane_x = fp_x[jray];
             single_info.fplane_z = fp_z[jray];
-            single_info.fplane_t = fp_t[jray] + ray_ct_[iray+jray]*math::constants::g4_1_c;
+            single_info.fplane_t = fp_t[jray] + ray_t_[iray+jray];
             single_info.fplane_ux = fplane_ux[jray];
             single_info.fplane_uy = fplane_uy[jray];
             single_info.fplane_uz = fplane_uz[jray];
@@ -366,7 +366,7 @@ private:
             visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
               double(fp_x[jray]), double(fp_z[jray]),
               double(fplane_ux[jray]), double(fplane_uz[jray]),
-              double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::g4_1_c,
+              double(fp_t[jray]) + ray_t_[iray+jray],
               ray_w_[iray+jray]);
           }
         }
@@ -396,7 +396,7 @@ private:
   std::vector<double> ray_x_;
   std::vector<double> ray_y_;
   std::vector<double> ray_z_;
-  std::vector<double> ray_ct_;
+  std::vector<double> ray_t_;
   std::vector<double> ray_w_;
   uint64_t nhit_ = 0;
 };
@@ -434,7 +434,7 @@ public:
     ray_x_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
     ray_y_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
     ray_z_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
-    ray_ct_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
+    ray_t_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
     ray_w_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float)
   {
     for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
@@ -473,7 +473,7 @@ public:
     ray_x_[iray] = ray.x();
     ray_y_[iray] = ray.y();
     ray_z_[iray] = ray.z();
-    ray_ct_[iray] = ray.ct();
+    ray_t_[iray] = ray.time();
     ray_w_[iray] = pe_weight;
     if(nray_[scope_id] == buffer_depth_ * VCLArchitecture::num_float) {
       process_buffered_rays(scope_id);
@@ -517,12 +517,14 @@ private:
       dbl_ray_lo.mutable_x().load(ray_x_.data() + iray);
       dbl_ray_lo.mutable_y().load(ray_y_.data() + iray);
       dbl_ray_lo.mutable_z().load(ray_z_.data() + iray);
-      dbl_ray_lo.mutable_ct().load(ray_ct_.data() + iray);
+      double_vt ray_t;
+      ray_t.load(ray_t_.data() + iray);
+      dbl_ray_lo.set_time(ray_t);
       if(propagate_to_scope_environs_) {
         dbl_ray_lo.propagate_to_point_nearly_closest_approach_with_mask(/*mask=*/ true,
           scope->pos().cast<double_vt>(), -2*scope->focalPlanePosition().y(),
           /* time_reversal_ok = */ false, ref_index_);
-        dbl_ray_lo.ct().store(ray_ct_.data() + iray);
+        dbl_ray_lo.time().store(ray_t_.data() + iray);
       }
       DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_lo, scope);
       iray += VCLArchitecture::num_double;
@@ -535,12 +537,13 @@ private:
       dbl_ray_hi.mutable_x().load(ray_x_.data() + iray);
       dbl_ray_hi.mutable_y().load(ray_y_.data() + iray);
       dbl_ray_hi.mutable_z().load(ray_z_.data() + iray);
-      dbl_ray_hi.mutable_ct().load(ray_ct_.data() + iray);
+      ray_t.load(ray_t_.data() + iray);
+      dbl_ray_hi.set_time(ray_t);
       if(propagate_to_scope_environs_) {
         dbl_ray_hi.propagate_to_point_nearly_closest_approach_with_mask(/*mask=*/ true,
           scope->pos().cast<double_vt>(), -2*scope->focalPlanePosition().y(),
           /* time_reversal_ok = */ false, ref_index_);
-        dbl_ray_hi.ct().store(ray_ct_.data() + iray);
+        dbl_ray_hi.time().store(ray_t_.data() + iray);
       }
       DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_hi, scope);
       iray -= VCLArchitecture::num_double;
@@ -582,7 +585,7 @@ private:
           ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
             fp_x[jray], fp_z[jray], fp_ux[jray], fp_uz[jray],
-            fp_t[jray] + ray_ct_[iray+jray]*math::constants::g4_1_c,
+            fp_t[jray] + ray_t_[iray+jray],
             ray_w_[iray+jray]);
         }
       }
@@ -611,7 +614,7 @@ private:
   std::vector<double> ray_x_;
   std::vector<double> ray_y_;
   std::vector<double> ray_z_;
-  std::vector<double> ray_ct_;
+  std::vector<double> ray_t_;
   std::vector<double> ray_w_;
   uint64_t nhit_ = 0;
 };
