@@ -7,8 +7,8 @@ __calin__ is a calibration and analysis package for data from arrays
   is as a development platform for calibration algorithms for CTA and
   in particular for NectarCam.
 
-[![Build Status](https://travis-ci.org/sfegan/calin.svg?branch=master)](https://travis-ci.org/sfegan/calin)
-[![Build Status](https://dev.azure.com/stephenfegan/calin/_apis/build/status/sfegan.calin)](https://dev.azure.com/stephenfegan/calin/_build/latest?definitionId=1)
+[![Native build and test](https://github.com/sfegan/calin/actions/workflows/native-build-and-test.yml/badge.svg)](https://github.com/sfegan/calin/actions/workflows/native-build-and-test.yml)
+[![Singularity build and deploy](https://github.com/sfegan/calin/actions/workflows/singularity-build-and-deploy.yml/badge.svg)](https://github.com/sfegan/calin/actions/workflows/singularity-build-and-deploy.yml)
 
 ### The name ###
 
