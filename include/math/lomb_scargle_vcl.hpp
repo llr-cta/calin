@@ -149,8 +149,11 @@ typename VCLReal::vecX_t periodogram_vcl(
       c.load_a(vcf + iblock*VCLReal::num_real);
       s.load_a(vsf + iblock*VCLReal::num_real);
 
-#pragma GCC unroll 65534
+#if defined(__clang__)
 #pragma clang loop unroll(full)
+#else
+#pragma GCC unroll 65534
+#endif
       for(unsigned iroll=0; iroll<UNROLL; ++iroll) {
         CC[iroll] = vcl::mul_add(c,c,CC[iroll]);
         CS[iroll] = vcl::mul_add(c,s,CS[iroll]);
@@ -320,8 +323,11 @@ typename VCLReal::matX_t multi_periodogram_vcl(
       c.load_a(vxcf + ix);
       s.load_a(vxsf + ix);
 
-#pragma GCC unroll 65534
+#if defined(__clang__)
 #pragma clang loop unroll(full)
+#else
+#pragma GCC unroll 65534
+#endif
       for(unsigned iroll=0;iroll<UNROLL;++iroll) {
         CC[iroll] = vcl::mul_add(c,c,CC[iroll]);
         CS[iroll] = vcl::mul_add(c,s,CS[iroll]);
@@ -429,8 +435,11 @@ typename VCLReal::matX_t multi_periodogram_vcl(
         xc.load_a(vxcf + ix);
         xs.load_a(vxsf + ix);
 
-#pragma GCC unroll 65534
+#if defined(__clang__)
 #pragma clang loop unroll(full)
+#else
+#pragma GCC unroll 65534
+#endif
         for(unsigned iroll=0;iroll<UNROLL;++iroll) {
           XC[iroll] += xc;
           XS[iroll] += xs;
