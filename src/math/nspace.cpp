@@ -253,9 +253,9 @@ sum_x_to_the_n_along_axis(unsigned iaxis, unsigned n, unsigned axis_cell_lo, uns
       }
       if(qr_hi.rem >= axis_cell_lo and qr_hi.rem <= axis_cell_hi) {
         int64_t inew = qr_lo.rem + qr_hi.quot * div_lo;
-        newspace->bins_[inew] += i.second * x;
+        newspace->bins_[inew] += i.second * xn;
       } else {
-        newspace->bins_[-1] += i.second * x;
+        newspace->bins_[-1] += i.second * xn;
       }
     }
   }
