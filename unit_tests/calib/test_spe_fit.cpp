@@ -548,7 +548,7 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   //opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
+  opt.set_initial_values(std::vector<double>{ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);
@@ -591,7 +591,7 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   //opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 0.5, 3100.0, 20.0, 90.0, 0.35 });
+  opt.set_initial_values(std::vector<double>{ 0.5, 3100.0, 20.0, 90.0, 0.35 });
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);
@@ -653,7 +653,7 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   // opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 45.0 });
+  opt.set_initial_values(std::vector<double>{ 1.0, 3100.0, 20.0, 100.0, 45.0 });
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);
@@ -765,8 +765,8 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   // opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
-  opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
+  opt.set_initial_values(std::vector<double>{ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
+  opt.set_initial_values(std::vector<double>{ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
   opt.set_limits_lo({ 0.001, 3000.0,   1.0, 0.0,    1.0,  10.0,  10.0});
   opt.set_limits_hi({ 100.0, 3200.0, 100.0, 1.0, 1000.0, 300.0, 100.0});
   Eigen::VectorXd x_opt(7);
@@ -836,12 +836,16 @@ TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
   double off_sum_wx = 0;
   for(unsigned i=0; i<ped_spec.size(); i++)
     off_sum_w += off_spec[i], off_sum_wx += off_spec[i] * (double(i)+0.5);
-  // std::cout << ped_sum_wx/ped_sum_w << ' ' << off_sum_wx/off_sum_w << '\n';
+  std::cout << ped_sum_wx/ped_sum_w << ' ' << off_sum_wx/off_sum_w << '\n';
   Eigen::VectorXd grad(6);
   mes.pdf_gradient_mes(10.0, grad);
   // std::cout << grad.transpose() << '\n';
   mes.pdf_gradient_ped(10.0, grad);
   // std::cout << grad.transpose() << '\n';
+  assert(ped_sum_w > 0);
+  assert(ped_sum_wx > 0);
+  assert(off_sum_w > 0);
+  assert(off_sum_wx > 0);
 }
 
 TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)

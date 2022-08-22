@@ -49,7 +49,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
+  opt.set_initial_values(std::vector<double>{ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x(5);
   double f_val;
   opt.minimize(x, f_val);
