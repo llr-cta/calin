@@ -307,12 +307,15 @@ template<typename DataBinner> class basic_bin_accessor
 
 template<typename DataBinner,
          typename bin_accessor = basic_bin_accessor<DataBinner> >
-class basic_iterator:
-      public std::iterator<std::bidirectional_iterator_tag,
-                           bin_accessor, int, bin_accessor*, bin_accessor&>,
-      protected bin_accessor
+class basic_iterator: protected bin_accessor
 {
  public:
+   using iterator_category = std::bidirectional_iterator_tag;
+   using value_type = bin_accessor;
+   using difference_type = int;
+   using pointer = bin_accessor*;
+   using reference = bin_accessor&;
+
   CALIN_TYPEALIAS(bin_accessor_type, bin_accessor);
   CALIN_TYPEALIAS(data_binner_type, DataBinner);
   CALIN_TYPEALIAS(data_type, typename bin_accessor::data_type);
@@ -360,12 +363,15 @@ class basic_iterator:
 
 template<typename DataBinner,
          typename bin_accessor = basic_bin_accessor<DataBinner> >
-class basic_reverse_iterator:
-      public std::iterator<std::bidirectional_iterator_tag,
-                           bin_accessor, int, bin_accessor*, bin_accessor&>,
-      protected bin_accessor
+class basic_reverse_iterator: protected bin_accessor
 {
- public:
+public:
+  using iterator_category = std::bidirectional_iterator_tag;
+  using value_type = bin_accessor;
+  using difference_type = int;
+  using pointer = bin_accessor*;
+  using reference = bin_accessor&;
+
   CALIN_TYPEALIAS(bin_accessor_type, bin_accessor);
   CALIN_TYPEALIAS(data_binner_type, DataBinner);
   CALIN_TYPEALIAS(data_type, typename bin_accessor::data_type);
@@ -419,7 +425,7 @@ class basic_reverse_iterator:
 // ============================================================================
 
 template<typename Acc> class BasicHistogram1D:
-      public BinnedData1D<Acc, std::deque<Acc>>
+  public BinnedData1D<Acc, std::deque<Acc>>
 {
 #ifdef SWIG
   typedef BinnedData1D<Acc,std::deque<Acc>> Base;
