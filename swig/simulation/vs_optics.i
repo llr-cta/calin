@@ -61,6 +61,9 @@
 %template(VectorVSOMirror) std::vector<calin::simulation::vs_optics::VSOMirror*>;
 %include "simulation/vso_obscuration.hpp"
 %template(VectorVSOObscuration) std::vector<calin::simulation::vs_optics::VSOObscuration*>;
+
+%apply Eigen::Vector3d& INOUT { Eigen::Vector3d& v };
+
 %include "simulation/vso_telescope.hpp"
 %template(VectorVSOTelescope) std::vector<calin::simulation::vs_optics::VSOTelescope*>;
 %include "simulation/vso_array.hpp"

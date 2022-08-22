@@ -25,12 +25,12 @@
 #include <gsl/gsl_multimin.h>
 #include <gtest/gtest.h>
 #include "Eigen/Dense"
-#include "nlopt/nlopt.hpp"
+// #include "nlopt/nlopt.hpp"
 #include "calib/spe_fit.hpp"
 #include "karkar_data.hpp"
-#include "math/optimizer.hpp"
-#include "math/nlopt_optimizer.hpp"
-#include "math/cminpack_optimizer.hpp"
+// #include "math/optimizer.hpp"
+// #include "math/nlopt_optimizer.hpp"
+// #include "math/cminpack_optimizer.hpp"
 
 using namespace calin::math;
 using namespace calin::math::histogram;
@@ -534,6 +534,7 @@ TEST(TestSPELikelihood, Minimize_GSL_BFGS2)
 }
 #endif
 
+#if 0
 TEST(TestSPELikelihood, Optimize_NLOpt)
 {
   auto mes_data = karkar_data();
@@ -613,6 +614,7 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   // std::cout << std::fixed << std::setprecision(9) << err_mat << '\n';
 }
+#endif
 
 TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
@@ -635,6 +637,7 @@ TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
 #endif
 }
 
+#if 0
 TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
 {
   auto mes_data = karkar_data();
@@ -658,6 +661,7 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   double f_val;
   opt.minimize(x_opt, f_val);
 }
+#endif
 
 TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
 {
@@ -743,6 +747,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
             (int)all_grad.size());
 }
 
+#if 0
 TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 {
   double inf = std::numeric_limits<double>::infinity();
@@ -814,6 +819,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
          << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';
 #endif
 }
+#endif
 
 TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
