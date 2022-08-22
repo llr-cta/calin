@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <atomic>
 #include <thread>
 #include <cassert>
@@ -53,10 +54,11 @@ public:
   uint64_t seq_index = 0;
 };
 
-template<typename T> inline T* unpack_payload(const Payload<T>& payload,
+template<typename T> inline T* unpack_payload(Payload<T>& payload,
   uint64_t& seq_index_out, google::protobuf::Arena** arena,
   bool &warning_sent, const true_type&)
 {
+  using T_mutable = typename std::remove_const<T>::type;
   if(payload.ptr == nullptr)return nullptr;
   seq_index_out = payload.seq_index;
   if(arena == nullptr)
@@ -83,7 +85,7 @@ template<typename T> inline T* unpack_payload(const Payload<T>& payload,
         "pre-assigned arena, performing expensive copy";
       warning_sent = true;
     }
-    T* data = google::protobuf::Arena::CreateMessage<T>(*arena);
+    T_mutable* data = google::protobuf::Arena::CreateMessage<T_mutable>(*arena);
     data->CopyFrom(*payload.ptr);
     if(payload.arena)delete payload.arena;
     else delete payload.ptr;
@@ -91,7 +93,7 @@ template<typename T> inline T* unpack_payload(const Payload<T>& payload,
   }
 }
 
-template<typename T> inline T* unpack_payload(const Payload<T>& payload,
+template<typename T> inline T* unpack_payload(Payload<T>& payload,
   uint64_t& seq_index_out, google::protobuf::Arena** arena,
   bool &warning_sent, const false_type&)
 {
@@ -107,13 +109,14 @@ template<typename T> bool pack_payload(Payload<T>& payload,
   T* ptr, uint64_t seq_index, google::protobuf::Arena* arena, bool adopt_data,
   const true_type&)
 {
+  using T_mutable = typename std::remove_const<T>::type;
   payload.seq_index = seq_index;
   if(adopt_data) {
     payload.arena = arena;
     payload.ptr = ptr;
   } else if(ptr and arena) {
     payload.arena = new google::protobuf::Arena;
-    T* data = google::protobuf::Arena::CreateMessage<T>(*payload.arena);
+    T_mutable* data = google::protobuf::Arena::CreateMessage<T_mutable>(payload.arena);
     data->CopyFrom(*payload.ptr);
     payload.ptr = data;
   } else if(ptr) {
