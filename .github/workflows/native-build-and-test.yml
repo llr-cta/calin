@@ -26,6 +26,7 @@ on:
       - .github/workflows/singularity-build-and-deploy.yml
       - azure-pipelines.yml
       - Dockerfile
+      - README.md
   pull_request:
     branches:
       - main
@@ -34,6 +35,7 @@ on:
       - .github/workflows/singularity-build-and-deploy.yml
       - azure-pipelines.yml
       - Dockerfile
+      - README.md
 
 jobs:
   build:
