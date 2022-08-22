@@ -63,14 +63,24 @@ class Message
   //google::protobuf::Message* New() const;
   void CopyFrom(const Message & from);
   void MergeFrom(const Message & from);
-  int SpaceUsed() const;
+  uint64_t SpaceUsedLong() const;
+  %extend {
+    uint64_t SpaceUsed() {
+      return $self->SpaceUsedLong();
+    }
+  }
 
   std::string DebugString() const;
   std::string ShortDebugString() const;
   std::string GetTypeName() const;
   void Clear();
   bool IsInitialized();
-  int ByteSize();
+  uint64_t ByteSizeLong();
+  %extend {
+    uint64_t ByteSize() {
+      return $self->ByteSizeLong();
+    }
+  }
 
   bool ParseFromString(const std::string& CALIN_BYTES_IN);
   bool ParsePartialFromString(const std::string& CALIN_BYTES_IN);
@@ -111,8 +121,8 @@ class Arena
 {
 public:
   ~Arena();
-  uint64 SpaceUsed() const;
-  uint64 Reset();
+  uint64_t SpaceUsed() const;
+  uint64_t Reset();
 };
 
 } }
