@@ -105,6 +105,7 @@ public:
   double scope_t0(unsigned iscope) const { check_iscope(iscope); return t0_(iscope); }
   int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
   int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
+  Eigen::VectorXd scope_overflow(unsigned iscope) const { check_iscope(iscope); return overflow_.row(iscope); }
   void clear_all_traces();
   void add_nsb(double rate_ghz);
   void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz);
@@ -122,6 +123,7 @@ private:
   Eigen::VectorXd t0_;
   Eigen::VectorXi nmin_;
   Eigen::VectorXi nmax_;
+  Eigen::MatrixXd overflow_;
   bool auto_clear_ = false;
   bool warning_sent_ = false;
   calin::math::rng::RNG* rng_ = nullptr;

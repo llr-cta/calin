@@ -213,7 +213,8 @@ WaveformPEProcessor::WaveformPEProcessor(unsigned nscope, unsigned npix,
     unsigned nsamp, double delta_t, calin::math::rng::RNG* rng, bool auto_clear):
   PEProcessor(), nsamp_(nsamp), npix_(npix), delta_t_inv_(1.0/delta_t),
   traces_(nscope, { npix, nsamp }), t0_(nscope),
-  nmin_(nscope), nmax_(nscope), auto_clear_(auto_clear), rng_(rng)
+  nmin_(nscope), nmax_(nscope), overflow_(nscope, npix_),
+  auto_clear_(auto_clear), rng_(rng)
 {
   if(nsamp & (nsamp-1)) {
     throw std::runtime_error("nsamp must be power of two : "+std::to_string(nsamp));
@@ -259,13 +260,16 @@ void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_i
     traces_[scope_id](pixel_id, n) += pe_weight;
     nmin_[scope_id] = nmin;
     nmax_[scope_id] = nmax;
-  } else if(not warning_sent_) {
-    LOG(INFO)
-      << "WaveformPEProcessor::process_focal_plane_hit : Circular trace buffer overflow\n"
-      << "scope_id=" << scope_id << ", pixel_id=" << pixel_id << ", t=" << t0
-      << ", t0=" << t0_[scope_id] << ", n=" << n << ", nmin=" << nmin_[scope_id]
-      << ", nmax=" << nmax_[scope_id];
-    warning_sent_ = true;
+  } else {
+    overflow_(scope_id, pixel_id) += pe_weight;
+    if(not warning_sent_) {
+      LOG(INFO)
+        << "WaveformPEProcessor::process_focal_plane_hit : Circular trace buffer overflow\n"
+        << "scope_id=" << scope_id << ", pixel_id=" << pixel_id << ", t=" << t0
+        << ", t0=" << t0_[scope_id] << ", n=" << n << ", nmin=" << nmin_[scope_id]
+        << ", nmax=" << nmax_[scope_id];
+      warning_sent_ = true;
+    }
   }
 }
 
@@ -277,6 +281,7 @@ void WaveformPEProcessor::clear_all_traces()
   t0_.setConstant(std::numeric_limits<double>::quiet_NaN());
   nmin_.setZero();
   nmax_.setZero();
+  overflow_.setZero();
 }
 
 void WaveformPEProcessor::add_nsb(double rate_ghz)
