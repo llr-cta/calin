@@ -26,6 +26,7 @@
 #include <string>
 #include <stdexcept>
 
+#include <math/rng.hpp>
 #include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
 
@@ -95,7 +96,7 @@ class WaveformPEProcessor: public PEProcessor
 {
 public:
   WaveformPEProcessor(unsigned nscope, unsigned npix, unsigned nsamp, double delta_t,
-    bool auto_clear = true);
+    calin::math::rng::RNG* rng = nullptr, bool auto_clear = true);
   virtual ~WaveformPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
@@ -105,6 +106,8 @@ public:
   int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
   int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
   void clear_all_traces();
+  void add_nsb(double rate_ghz);
+  void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz);
 private:
   void check_iscope(unsigned iscope) const {
     if(iscope >= traces_.size()) {
@@ -113,6 +116,7 @@ private:
     }
   }
   unsigned nsamp_;
+  unsigned npix_;
   double delta_t_inv_;
   std::vector<Eigen::MatrixXd> traces_;
   Eigen::VectorXd t0_;
@@ -120,6 +124,7 @@ private:
   Eigen::VectorXi nmax_;
   bool auto_clear_ = false;
   bool warning_sent_ = false;
+  calin::math::rng::RNG* rng_ = nullptr;
 };
 
 class TelescopePSFCalcPEProcessor: public PEProcessor

@@ -210,10 +210,10 @@ process_focal_plane_hit(unsigned scope_id, int pixel_id,
 }
 
 WaveformPEProcessor::WaveformPEProcessor(unsigned nscope, unsigned npix,
-    unsigned nsamp, double delta_t, bool auto_clear):
-  PEProcessor(), nsamp_(nsamp), delta_t_inv_(1.0/delta_t),
+    unsigned nsamp, double delta_t, calin::math::rng::RNG* rng, bool auto_clear):
+  PEProcessor(), nsamp_(nsamp), npix_(npix), delta_t_inv_(1.0/delta_t),
   traces_(nscope, { npix, nsamp }), t0_(nscope),
-  nmin_(nscope), nmax_(nscope), auto_clear_(auto_clear)
+  nmin_(nscope), nmax_(nscope), auto_clear_(auto_clear), rng_(rng)
 {
   if(nsamp & (nsamp-1)) {
     throw std::runtime_error("nsamp must be power of two : "+std::to_string(nsamp));
@@ -238,9 +238,9 @@ void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_i
 {
   if(pixel_id < 0) {
     return;
-  } else if (pixel_id >= traces_.at(scope_id).rows()) {
+  } else if (pixel_id >= npix_) {
     throw std::out_of_range("WaveformPEProcessor::process_focal_plane_hit : pixel_id out of range : "
-      + std::to_string(pixel_id) + " >= " + std::to_string(traces_.at(scope_id).rows()));
+      + std::to_string(pixel_id) + " >= " + std::to_string(npix_));
   }
 
   double trel;
@@ -277,4 +277,44 @@ void WaveformPEProcessor::clear_all_traces()
   t0_.setConstant(std::numeric_limits<double>::quiet_NaN());
   nmin_.setZero();
   nmax_.setZero();
+}
+
+void WaveformPEProcessor::add_nsb(double rate_ghz)
+{
+  if(rng_ == nullptr) {
+    rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB photon time generator");
+  }
+  double delta_t_nsb = delta_t_inv_/rate_ghz;
+  for(auto& traces : traces_) {
+    double t_max = traces.cols();
+    for(unsigned ipix=0;ipix<npix_; ++ipix) {
+      double t = delta_t_nsb*rng_->exponential();
+      while(t < t_max) {
+        traces(ipix, unsigned(floor(t))) += 1.0;
+        t += delta_t_nsb*rng_->exponential();
+      }
+    }
+  }
+}
+
+void WaveformPEProcessor::add_nsb(const Eigen::VectorXd rate_per_pixel_ghz)
+{
+  if(rate_per_pixel_ghz.size() != npix_) {
+    throw std::runtime_error("WaveformPEProcessor::add_nsb : rate_per_pixel_ghz array must have "
+      + std::to_string(npix_) + " entries");
+  }
+  if(rng_ == nullptr) {
+    rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB photon time generator");
+  }
+  for(auto& traces : traces_) {
+    double t_max = traces.cols();
+    for(unsigned ipix=0;ipix<traces.rows(); ++ipix) {
+      double delta_t_nsb = delta_t_inv_/rate_per_pixel_ghz[ipix];
+      double t = delta_t_nsb*rng_->exponential();
+      while(t < t_max) {
+        traces(ipix, unsigned(floor(t))) += 1.0;
+        t += delta_t_nsb*rng_->exponential();
+      }
+    }
+  }
 }
