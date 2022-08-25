@@ -331,6 +331,22 @@ void CubicSpline::rescale(double scale)
   for(auto& dy_dx : s_.dy_dx) { dy_dx *= scale; }
 }
 
+void CubicSpline::extend_linear_rhs(double dx)
+{
+  if(dx<=0) {
+    dx = s_.regular_dx;
+  }
+  if(dx==s_.regular_dx and s_.regular_xmax==s_.xmax) {
+    s_.regular_xmax += dx;
+  }
+  s_.xmax += dx;
+  s_.x.push_back(s_.x.back() + dx);
+  s_.dx.push_back(dx);
+  s_.dx_inv.push_back(1/dx);
+  s_.y.push_back(s_.y.back() + s_.dy_dx.back()*dx);
+  s_.dy_dx.push_back(s_.dy_dx.back());
+}
+
 double CubicSpline::ymax() const
 {
   double ymax = s_.y.front();

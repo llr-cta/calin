@@ -313,6 +313,7 @@ public:
   }
 
   void rescale(double scale);
+  void extend_linear_rhs(double dx = 0);
 
   const CubicSplineIntervals& intervals() const { return s_; }
 
