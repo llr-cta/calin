@@ -40,6 +40,8 @@
 
 %import "math/interpolation_1d.i"
 
+%newobject make_spline;
+
 %include "simulation/detector_efficiency.hpp"
 
 %newobject integrate_bandwidth_to_spline;

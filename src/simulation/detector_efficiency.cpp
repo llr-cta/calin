@@ -35,6 +35,7 @@
 #include <sstream>
 #include <string>
 
+#include <calin_global_definitions.hpp>
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <provenance/chronicle.hpp>
@@ -519,4 +520,99 @@ double ACTEffectiveBandwidth::bandwidth(double h, double w) const
 #else
   return _y.n + dw*(_y.dn_dw + _y.d2n_dw2*dw);
 #endif
+}
+
+// ----------------------------------------------------------------------------
+// PEAmplitudeGenerator
+// ----------------------------------------------------------------------------
+
+PEAmplitudeGenerator::~PEAmplitudeGenerator()
+{
+  // nothing to see here
+}
+
+SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
+    const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq,
+    SplineMode spline_mode, calin::math::rng::RNG* rng, bool adopt_rng):
+  PEAmplitudeGenerator(),
+  spline_(make_spline(q, dp_dq, spline_mode)), spline_mode_(spline_mode),
+  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
+  adopt_rng_(rng==nullptr ? true : adopt_rng)
+{
+  // nothing to see here
+}
+
+calin::math::spline_interpolation::CubicSpline*
+SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
+    const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
+    bool regularize_spline, bool extend_linear_rhs)
+{
+  std::vector<double> x;
+  std::vector<double> y = calin::eigen_to_stdvec(q);
+  x.push_back(0);
+  double P = 0;
+  for(unsigned iq=0;iq<q.size()-1;++iq) {
+    P += 0.5*(dp_dq[iq] + dp_dq[iq+1]) * (q[iq+1] - q[iq]);
+    x.push_back(P);
+  }
+  if(P>1.0) {
+    LOG(WARNING) << "Normalization of probability distribution exceeds unity";
+  }
+  switch(spline_mode) {
+  case SM_LINEAR:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return x; });
+    break;
+  case SM_LOG:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return -std::log(1-x); });
+    break;
+  case SM_SQRT_LOG:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::sqrt(-std::log(1-x)); });
+    break;
+  }
+  auto* spline = new calin::math::spline_interpolation::CubicSpline(x, y,
+    calin::math::spline_interpolation::BC_NATURAL, 0,
+    calin::math::spline_interpolation::BC_NATURAL, 0);
+  if(regularize_spline) {
+    auto even_spline =
+      spline->new_regularized_spline((spline->xmax()-spline->xmin())/(x.size() - 1));
+    delete spline;
+    spline = even_spline;
+  }
+  if(extend_linear_rhs) {
+    spline->extend_linear_rhs();
+  }
+  return spline;
+}
+
+SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
+    const calin::math::spline_interpolation::CubicSpline& spline,
+    SplineMode spline_mode, calin::math::rng::RNG* rng, bool adopt_rng):
+  PEAmplitudeGenerator(),
+  spline_(new calin::math::spline_interpolation::CubicSpline(spline)),
+  spline_mode_(spline_mode),
+  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
+  adopt_rng_(rng==nullptr ? true : adopt_rng)
+{
+  // nothing to see here
+}
+
+SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
+{
+  if(adopt_rng_) { delete rng_; }
+}
+
+double SplinePEAmplitudeGenerator::generate_amplitude()
+{
+  double x = rng_->uniform_double();
+  switch(spline_mode_) {
+  case SM_LINEAR:
+    break;
+  case SM_LOG:
+    x = -std::log(x);
+    break;
+  case SM_SQRT_LOG:
+    x = std::sqrt(-std::log(x));
+    break;
+  }
+  return spline_->value(x);
 }

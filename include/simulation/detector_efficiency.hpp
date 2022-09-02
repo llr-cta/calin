@@ -36,6 +36,7 @@
 #include <tuple>
 #include <ostream>
 
+#include <math/rng.hpp>
 #include <math/interpolation_1d.hpp>
 #include <math/spline_interpolation.hpp>
 
@@ -264,6 +265,47 @@ public:
 private:
   std::vector<double>                                        e_ev_;
   std::vector<calin::math::interpolation_1d::InterpLinear1D> absorption_;
+};
+
+class PEAmplitudeGenerator
+{
+public:
+  virtual ~PEAmplitudeGenerator();
+  virtual double generate_amplitude() = 0;
+  Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0;i<n;i++) {
+      rvs(i) = this->generate_amplitude();
+    }
+    return rvs;
+  }
+};
+
+enum SplineMode {
+  SM_LINEAR,
+  SM_LOG,
+  SM_SQRT_LOG
+};
+
+class SplinePEAmplitudeGenerator: public PEAmplitudeGenerator
+{
+public:
+  SplinePEAmplitudeGenerator(const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq,
+    SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
+  SplinePEAmplitudeGenerator(const calin::math::spline_interpolation::CubicSpline& spline,
+    SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
+  virtual ~SplinePEAmplitudeGenerator();
+  double generate_amplitude() final;
+  const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
+  SplineMode spline_mode() const { return spline_mode_; }
+  static calin::math::spline_interpolation::CubicSpline* make_spline(
+    const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
+    bool regularize_spline = true, bool extend_linear_rhs = true);
+protected:
+  calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
+  SplineMode spline_mode_ = SM_LINEAR;
+  calin::math::rng::RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
 };
 
 } } } // namespace calin::simulation::detector_efficiency
