@@ -326,6 +326,9 @@ public:
   double x_at_ymin() const;
   double x_at_ymax() const;
 
+  double regular_xmax() const { return s_.regular_xmax; }
+  unsigned irregular_begin() const { return s_.irregular_begin; }
+
   const std::vector<double>& xknot_as_stdvec() const { return s_.x; }
   const std::vector<double>& yknot_as_stdvec() const { return s_.y; }
   const std::vector<double>& dydxknot_as_stdvec() const { return s_.dy_dx; }
