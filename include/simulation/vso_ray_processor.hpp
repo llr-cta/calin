@@ -129,6 +129,9 @@ public:
 
   uint64_t nhit() { return nhit_; }
 
+  static std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
+    detector_spheres_for_array(const calin::simulation::vs_optics::VSOArray* array);
+
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
@@ -145,6 +148,8 @@ private:
     calin::simulation::detector_efficiency::ACTEffectiveBandwidth effective_bandwidth = { 1.0 };
     double detector_bandwidth = 1.0;
     calin::math::interpolation_1d::InterpLinear1D cone_efficiency = { 1.0 };
+    calin::simulation::detector_efficiency::DetectionEfficiency detector_efficiency = { 1.0 };
+    calin::simulation::detector_efficiency::AtmosphericAbsorption atmospheric_absorption;
   };
 
   std::vector<ScopeResponse> scope_response_;

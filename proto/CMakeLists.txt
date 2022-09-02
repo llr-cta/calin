@@ -27,7 +27,7 @@ message(STATUS "PROTOBUF_LIBRARY: " ${PROTOBUF_LIBRARY})
 
 string(REPLACE " " ";" CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
 
-execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} -std=c++17 -Wall
 	-I ${PROTOBUF_INCLUDE_DIRS}
 	-o ${CMAKE_BINARY_DIR}/protoc-gen-swig_dep
 	${CMAKE_SOURCE_DIR}/tools/protoc-gen-swig_dep/protoc-gen-swig_dep.cpp
@@ -132,6 +132,10 @@ add_library(calin_proto_base SHARED calin.pb.cc)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(calin_proto_base ${PROTOBUF_LIBRARY})
 install(TARGETS calin_proto_base DESTINATION ${CALIN_LIB_INSTALL_DIR})
+
+add_library(calin_proto_base_native SHARED calin.pb.cc)
+target_link_libraries(calin_proto_base_native ${PROTOBUF_LIBRARY})
+target_compile_options(calin_proto_base_native PUBLIC -march=native)
 
 make_proto_modules(${CALIN_TARGET_LIBRARY} ""
 	${CALIN_SWIG_PROTO})

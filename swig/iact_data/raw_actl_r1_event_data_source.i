@@ -26,6 +26,7 @@
 #define CALIN_NO_ACTL_L0
 
 %{
+using std::streamoff;
 #include <ProtobufIFits.h>
 #include <R1.pb.h>
 #include <calin_global_definitions.hpp>

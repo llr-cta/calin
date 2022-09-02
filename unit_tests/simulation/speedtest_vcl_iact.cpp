@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 
 #include "simulation/geant4_shower_generator.hpp"
-#include "simulation/vcl_iact.hpp"
+#include "simulation/vcl_iact_ground_map.hpp"
 #include "simulation/atmosphere.hpp"
 #include "provenance/system_info.hpp"
 #include "util/vcl.hpp"
@@ -41,13 +41,13 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
   std::string datadir = calin::provenance::system_info::build_info()->data_install_dir();
   auto* atm = new LayeredRefractiveAtmosphere(datadir + "/simulation/atmprof36.dat");
 
-  auto config = calin::simulation::vcl_iact::VCLIACTTrackVisitor<
+  auto config = calin::simulation::vcl_iact::VCLIACTGroundMap<
     calin::util::vcl::VCL256Architecture>::default_config();
   if(global_argc > 1) {
     config.set_bandwidth(calin::util::string::double_from_string(global_argv[1]));
     std::cerr << "HELLO: " << global_argv[1] << ' ' << config.bandwidth() << '\n';
   }
-  auto* act = new calin::simulation::vcl_iact::VCLIACTTrackVisitor<
+  auto* act = new calin::simulation::vcl_iact::VCLIACTGroundMap<
     calin::util::vcl::VCL256Architecture>(atm, config);
 
   Geant4ShowerGenerator sim(atm,

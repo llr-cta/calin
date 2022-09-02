@@ -36,7 +36,9 @@
 #include <tuple>
 #include <ostream>
 
+#include <math/rng.hpp>
 #include <math/interpolation_1d.hpp>
+#include <math/spline_interpolation.hpp>
 
 namespace calin { namespace simulation { namespace detector_efficiency {
 
@@ -112,6 +114,10 @@ struct CherenkovBandwidthTaylorCoefficients
   bool operator< (const CherenkovBandwidthTaylorCoefficients o) const {
     return false; // All coefficients equal in sort
   }
+
+  bool operator== (const CherenkovBandwidthTaylorCoefficients o) const {
+    return n==o.n and dn_dw==o.dn_dw and d2n_dw2==o.d2n_dw2;
+  }
 };
 
 inline std::ostream& operator<<(std::ostream& stream, const CherenkovBandwidthTaylorCoefficients& c)
@@ -150,6 +156,10 @@ public:
   void scaleEffFromFile(const std::string& filename);
   void scaleEffFromOldStyleFile(const std::string& filename,
 		double lambda0_nm=180.0, double dlambda_nm=5.0);
+  bool operator==(const DetectionEfficiency& o) const {
+    return static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(*this) ==
+      static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(o);
+  }
 };
 
 class AngularEfficiency: public calin::math::interpolation_1d::InterpLinear1D
@@ -160,6 +170,10 @@ public:
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffByConst(double c);
   void scaleEffFromFile(const std::string& filename);
+  bool operator==(const AngularEfficiency& o) const {
+    return static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(*this) ==
+      static_cast<const calin::math::interpolation_1d::InterpLinear1D&>(o);
+  }
 };
 
 #if 0
@@ -228,20 +242,70 @@ struct OldStyleAtmObsFlag { };
 class AtmosphericAbsorption
 {
 public:
+  AtmosphericAbsorption();
   AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km = 0.0, double spacing_km=1.0);
   AtmosphericAbsorption(const std::string& filename,
     std::vector<double> levels_cm = {});
-  calin::math::interpolation_1d::InterpLinear1D opticalDepthForAltitude(double h) const;
+  calin::math::interpolation_1d::InterpLinear1D optical_depth_for_altitude(double h) const;
+  double optical_depth_for_altitude_and_energy(double h, double e) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff, double emin, double emax) const;
+  calin::math::spline_interpolation::TwoDimensionalCubicSpline* integrate_bandwidth_to_spline(
+    double h0, const DetectionEfficiency& eff, std::vector<double> h = { },
+    std::vector<double> w = { 0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0 }, double emin=0, double emax=0) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
+  void set_zref(double zref);
+  const calin::math::interpolation_1d::InterpLinear1D& absorption(unsigned ie) {
+    return absorption_.at(ie);
+  }
 private:
   std::vector<double>                                        e_ev_;
   std::vector<calin::math::interpolation_1d::InterpLinear1D> absorption_;
+};
+
+class PEAmplitudeGenerator
+{
+public:
+  virtual ~PEAmplitudeGenerator();
+  virtual double generate_amplitude() = 0;
+  Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0;i<n;i++) {
+      rvs(i) = this->generate_amplitude();
+    }
+    return rvs;
+  }
+};
+
+enum SplineMode {
+  SM_LINEAR,
+  SM_LOG,
+  SM_SQRT_LOG
+};
+
+class SplinePEAmplitudeGenerator: public PEAmplitudeGenerator
+{
+public:
+  SplinePEAmplitudeGenerator(const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq,
+    SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
+  SplinePEAmplitudeGenerator(const calin::math::spline_interpolation::CubicSpline& spline,
+    SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
+  virtual ~SplinePEAmplitudeGenerator();
+  double generate_amplitude() final;
+  const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
+  SplineMode spline_mode() const { return spline_mode_; }
+  static calin::math::spline_interpolation::CubicSpline* make_spline(
+    const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
+    bool regularize_spline = true, bool extend_linear_rhs = true);
+protected:
+  calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
+  SplineMode spline_mode_ = SM_LINEAR;
+  calin::math::rng::RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
 };
 
 } } } // namespace calin::simulation::detector_efficiency

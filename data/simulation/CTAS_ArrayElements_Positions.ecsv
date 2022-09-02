@@ -1,0 +1,112 @@
+# %ECSV 0.9
+#
+# File: data/simulation/CTAS_ArrayElements_Positions.ecsv
+# Provinance: CTAO Array Elements Positions GitLab reposatory (retrieved 2022-08-08)
+# https://gitlab.cta-observatory.org/cta-science/array-element-positions
+# - URL: https://gitlab.cta-observatory.org/cta-science/array-element-positions/-/blob/f146c6c1e206bd512436247f1a692172037d200b/CTAS_ArrayElements_Positions.ecsv
+#
+# ---
+# datatype:
+# - {name: asset_code, datatype: string, description: operational asset code}
+# - {name: sequence_number, datatype: string, description: sequence number}
+# - {name: utm_east, unit: m, datatype: float32}
+# - {name: utm_north, unit: m, datatype: float32}
+# - {name: alt, unit: m, datatype: float32, description: telescope position upwards relative to NNN}
+# - {name: geo_code, datatype: string, description: Geographical Position Code}
+# meta: !!omap
+# - data_type: positionfile
+# - description: "CTAO Southern Array Element Coordinates"
+# - center_lon: "-70.316345 deg"
+# - center_lat: "-24.683429 deg"
+# - center_alt: "2162.35 m"
+# - center_northing: "7269466.999 m"
+# - center_easting: "366822.017 m"
+# - EPSG: 32719
+# - UTM_zone: 19J
+# - comments: |
+#       see relase page for the most recent released versions
+#       of this document.
+asset_code sequence_number utm_east utm_north alt geo_code
+LSTS    01    366887.    7269446.   2165.0    A1A
+LSTS    02    366822.    7269546.   2160.0    B0A
+LSTS    03    366757.    7269446.   2162.0    A3A
+LSTS    04    366822.    7269346.   2164.0    Y0A
+MSTS    01    366822.    7269466.   2162.0    A0A
+MSTS    02    366671.    7269466.   2163.0    A4A
+MSTS    03    366973.    7269466.   2169.0    A3A
+MSTS    04    366747.    7269616.   2159.0    C2A
+MSTS    05    366897.    7269616.   2164.0    C1A
+MSTS    06    366582.    7269616.   2162.0    C4A
+MSTS    07    367062.    7269616.   2168.0    C3A
+MSTS    08    366822.    7269779.   2157.0    F0A
+MSTS    09    366897.    7269316.   2166.0    X1A
+MSTS    10    366747.    7269316.   2166.0    X2A
+MSTS    11    367062.    7269316.   2176.5    X3A
+MSTS    12    366582.    7269316.   2165.0    X4A
+MSTS    13    366984.    7269153.   2173.0    V1A
+MSTS    14    366660.    7269153.   2168.5    V2A
+SSTS    01    366822.    7269665.   2160.0    D0A
+SSTS    02    366822.    7269236.   2166.5    W0A
+SSTS    03    367147.    7269217.   2184.5    W1A
+SSTS    04    366497.    7269217.   2161.0    W2A
+SSTS    05    367399.    7269217.   2198.0    W3A
+SSTS    06    366245.    7269217.   2152.0    W4A
+SSTS    07    367619.    7269246.   2212.0    W5A
+SSTS    08    366025.    7269246.   2154.0    W6A
+SSTS    09    367321.    7269466.   2183.5    A7A
+SSTS    10    366323.    7269466.   2155.5    A8A
+SSTS    11    367571.    7269466.   2206.0    A9A
+SSTS    12    366073.    7269466.   2156.5    A2B
+SSTS    13    367147.    7269715.   2171.0    E1A
+SSTS    14    366497.    7269715.   2160.5    E2A
+SSTS    15    367399.    7269715.   2185.0    E3A
+SSTS    16    366245.    7269715.   2161.5    E4A
+SSTS    17    367619.    7269686.   2200.0    D1A
+SSTS    18    366025.    7269686.   2169.0    D2A
+SSTS    19    366952.    7268967.   2175.0    T1A
+SSTS    20    366692.    7268967.   2172.0    T2A
+SSTS    21    367321.    7268967.   2203.0    T3A
+SSTS    22    366323.    7268967.   2154.0    T4A
+SSTS    23    367626.    7269000.   2220.0    T5A
+SSTS    24    366018.    7269000.   2161.0    T6A
+SSTS    25    366952.    7269965.   2156.0    H1A
+SSTS    26    366692.    7269965.   2153.0    H2A
+SSTS    27    367321.    7269965.   2174.0    H3A
+SSTS    28    366323.    7269965.   2154.0    H4A
+SSTS    29    367626.    7269932.   2198.0    H7A
+SSTS    30    366018.    7269932.   2181.0    H8A
+SSTS    31    366822.    7268675.   2174.0    Q0A
+SSTS    32    366455.    7268718.   2161.0    Q2A
+SSTS    33    367189.    7268718.   2198.0    Q1A
+SSTS    34    366174.    7268649.   2154.0    Q4A
+SSTS    35    367470.    7268649.   2218.0    Q3A
+SSTS    36    366822.    7270256.   2148.0    M0A
+SSTS    37    367189.    7270214.   2148.0    M1A
+SSTS    38    366455.    7270214.   2150.0    M2A
+SSTS    39    367470.    7270282.   2185.0    M3A
+SSTS    40    366174.    7270282.   2162.5    M4A
+SSTS    41    365872.    7269466.   2172.0    A4B
+SSTS    42    367772.    7269466.   2219.0    A1B
+SSTS    43    367021.    7268511.   2183.0    P1A
+SSTS    44    366623.    7268511.   2166.5    P2A
+SSTS    45    367021.    7270421.   2151.5    N1A
+SSTS    46    366623.    7270421.   2149.0    N2A
+SSTS    47    367342.    7268446.   2203.0    P5A
+SSTS    48    366302.    7268446.   2157.0    P6A
+SSTS    49    367342.    7270486.   2175.0    N3A
+SSTS    50    366302.    7270486.   2169.0    N4A
+CEIS    01    366822.0   7268816.0  2175.0    R0A
+RLDS    01    366822.0   7269060.0  2169.0    U0A
+RLDS    02    366822.0   7269912.0  2155.0    G0A
+STPS    01    366822.0   7269060.0  2169.0    U0A
+STPS    02    366822.0   7269912.0  2155.0    G0A
+MSPS    01    Nan        Nan        Nan       Nan
+ILLS    01    Nan        Nan        Nan       Nan
+ILLS    02    Nan        Nan        Nan       Nan
+ILLS    03    Nan        Nan        Nan       Nan
+ILLS    04    Nan        Nan        Nan       Nan
+WSTS    01    366584.0   7269423.0  2163.0    Z2A
+WSTS    02    367060.0   7269423.0  2174.0    Z1A
+WSTS    03    366659.0   7269747.0  2157.0    F4A
+ASCS    01    366822.0   7268816.0  2175.0    R0A
+DUSS    01    Nan        Nan        Nan       Nan

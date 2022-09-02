@@ -47,6 +47,8 @@
 %template(NR3_EmulateSIMD_RNGCore_4) calin::math::rng::NR3_EmulateSIMD_RNGCore<4>;
 
 %include "math/rng_vcl.hpp"
+
+
 %template (VCLRNG128) calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>;
 %template (VCLRNG256) calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>;
 %template (VCLRNG512) calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>;
@@ -58,3 +60,15 @@
 %template (VCLRealRNGDouble128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128DoubleReal>;
 %template (VCLRealRNGDouble256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256DoubleReal>;
 %template (VCLRealRNGDouble512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512DoubleReal>;
+
+%template (VCLRNGCore128) calin::math::rng::VCLRNGCore<calin::util::vcl::VCL128Architecture>;
+%template (VCLRNGCore256) calin::math::rng::VCLRNGCore<calin::util::vcl::VCL256Architecture>;
+%template (VCLRNGCore512) calin::math::rng::VCLRNGCore<calin::util::vcl::VCL512Architecture>;
+
+%template (NR3_VCLRNGCore128) calin::math::rng::NR3_VCLRNGCore<calin::util::vcl::VCL128Architecture>;
+%template (NR3_VCLRNGCore256) calin::math::rng::NR3_VCLRNGCore<calin::util::vcl::VCL256Architecture>;
+%template (NR3_VCLRNGCore512) calin::math::rng::NR3_VCLRNGCore<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLToScalarRNGCore128) calin::math::rng::VCLToScalarRNGCore<calin::util::vcl::VCL128Architecture>;
+%template (VCLToScalarRNGCore256) calin::math::rng::VCLToScalarRNGCore<calin::util::vcl::VCL256Architecture>;
+%template (VCLToScalarRNGCore512) calin::math::rng::VCLToScalarRNGCore<calin::util::vcl::VCL512Architecture>;

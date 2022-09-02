@@ -42,5 +42,6 @@
 %apply int64_t &OUTPUT { int64_t& array_index, int64_t& block_index };
 
 %newobject project_along_axis;
+%newobject sum_x_to_the_n_along_axis;
 
 %include "math/nspace.hpp"

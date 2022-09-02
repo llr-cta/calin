@@ -42,6 +42,9 @@
   import_array();
 %}
 
+// alignas not supported by SWIG (yet)
+#define alignas(T)
+
 %template (VectorDouble)      std::vector<double>;
 %template (VectorFloat)       std::vector<float>;
 %template (VectorChar)        std::vector<char>;

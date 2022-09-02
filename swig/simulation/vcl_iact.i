@@ -27,6 +27,9 @@
 #include "simulation/tracker.hpp"
 #include "simulation/misc_trackers.hpp"
 #include "simulation/vcl_iact.hpp"
+#include "simulation/vcl_iact_ground_map.hpp"
+#include "simulation/vcl_iact_array.hpp"
+#include "simulation/nspace_pe_processor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -39,7 +42,37 @@
 
 %import "simulation/tracker.i"
 
-%include "simulation/vcl_iact.hpp"
+%import "atmosphere.i"
+%import "detector_efficiency.i"
 
+%import "simulation/ray_propagator.i"
+
+%import "simulation/vcl_iact.pb.i"
+
+%include "simulation/vcl_iact.hpp"
+%include "simulation/vcl_iact_ground_map.hpp"
+
+%newobject new_height_dependent_pe_bandwidth_spline;
+
+%include "simulation/vcl_iact_array.hpp"
+
+%template (VCLIACTTrackVisitor128)
+  calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL128Architecture>;
 %template (VCLIACTTrackVisitor256)
   calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL256Architecture>;
+%template (VCLIACTTrackVisitor512)
+  calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLIACTGroundMap128)
+  calin::simulation::vcl_iact::VCLIACTGroundMap<calin::util::vcl::VCL128Architecture>;
+%template (VCLIACTGroundMap256)
+  calin::simulation::vcl_iact::VCLIACTGroundMap<calin::util::vcl::VCL256Architecture>;
+%template (VCLIACTGroundMap512)
+  calin::simulation::vcl_iact::VCLIACTGroundMap<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLIACTArray128)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL128Architecture>;
+%template (VCLIACTArray256)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL256Architecture>;
+%template (VCLIACTArray512)
+  calin::simulation::vcl_iact::VCLIACTArray<calin::util::vcl::VCL512Architecture>;

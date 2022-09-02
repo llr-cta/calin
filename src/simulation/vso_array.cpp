@@ -39,9 +39,11 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <map>
 
 #include <math/hex_array.hpp>
 #include <math/vector3d_util.hpp>
+#include <util/string.hpp>
 #include <simulation/vso_array.hpp>
 
 using namespace calin::simulation::vs_optics;
@@ -52,6 +54,15 @@ VSOArray::VSOArray():
     fTelescopes() /* , fTelescopesByHexID() */
 {
   // nothing to see here
+}
+
+VSOArray::VSOArray(const VSOArray& array):
+  fLatitude(array.fLatitude), fLongitude(array.fLongitude), fAltitude(array.fAltitude),
+  fTelescopes(array.fTelescopes.size())
+{
+  for(unsigned iscope=0;iscope<array.fTelescopes.size();++iscope) {
+    fTelescopes[iscope] = new VSOTelescope(*array.fTelescopes[iscope]);
+  }
 }
 
 VSOArray::~VSOArray()
@@ -85,6 +96,17 @@ pointTelescopesAzEl(const double az_rad, const double el_rad)
     good &= (*i)->pointTelescopeAzEl(az_rad,el_rad);
   return good;
 }
+
+bool VSOArray::
+pointTelescopesAzElPhi(const double az_rad, const double el_rad, const double phi_rad)
+{
+  bool good = true;
+  for(std::vector<VSOTelescope*>::iterator i = fTelescopes.begin();
+      i!=fTelescopes.end(); i++)
+    good &= (*i)->pointTelescopeAzElPhi(az_rad,el_rad,phi_rad);
+  return good;
+}
+
 
 // ****************************************************************************
 // Array creation
@@ -158,6 +180,10 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       2.0*atan(param.focal_plane().camera_diameter()/
                (2.0*camera_fp_trans.norm()))*180.0/M_PI;
 
+  if(param.focal_plane().field_of_view() > 0) {
+    FoV = param.focal_plane().field_of_view();
+  }
+
   for(unsigned i=0; i<scope_pos.size(); i++)
     {
       // Position
@@ -196,12 +222,13 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
 
       VSOTelescope* telescope =
       	new VSOTelescope(fTelescopes.size(), pos,
-      			 param.reflector_frame().delta_y()*M_PI/180.0,
+      			 param.reflector_frame().fp_offset()*M_PI/180.0,
              param.reflector_frame().alpha_x()*M_PI/180.0,
              param.reflector_frame().alpha_y()*M_PI/180.0,
              param.reflector_frame().altaz().altitude()*M_PI/180.0,
              param.reflector_frame().altaz().azimuth()*M_PI/180.0,
       			 calin::math::vector3d_util::from_proto(param.reflector_frame().translation()),
+             param.reflector_frame().azimuth_elevation_axes_separation(),
       			 param.reflector().curvature_radius(),
              param.reflector().aperture(),
              param.reflector().facet_spacing(),
@@ -213,6 +240,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              0.0, Eigen::Vector3d::Zero(), /*param.reflector().reflector_ip(),*/
              param.reflector().facet_labeling_parity(),
 	           camera_fp_trans,
+             param.reflector().alignment_image_plane() <= 0 ? camera_fp_trans[1] : param.reflector().alignment_image_plane(),
              param.focal_plane().camera_diameter(),
              FoV,
              param.pixel().cone_inner_diameter(),
@@ -311,4 +339,30 @@ calin::simulation::vs_optics::dc_parameters_to_array_layout(
     dc_parameters_to_telescope_layout(param, i, scope_pos[i], d->add_telescopes());
 
   return d;
+}
+
+std::string VSOArray::banner(const std::string& indent0, const std::string& indentN) const
+{
+  using calin::util::string::double_to_string_with_commas;
+  std::map<std::string, unsigned> scope_banners;
+  double xmin = std::numeric_limits<double>::infinity();
+  double xmax = -std::numeric_limits<double>::infinity();
+  double ymin = std::numeric_limits<double>::infinity();
+  double ymax = -std::numeric_limits<double>::infinity();
+  for(const auto* scope : fTelescopes) {
+    xmin = std::min(xmin, scope->pos()[0]);
+    xmax = std::max(xmax, scope->pos()[0]);
+    ymin = std::min(ymin, scope->pos()[1]);
+    ymax = std::max(ymax, scope->pos()[1]);
+    scope_banners[scope->banner()]++;
+  }
+  double A = (xmax-xmin)*(ymax-ymin)*1e-10;
+  std::ostringstream stream;
+  stream << indent0 << "Array of " << this->numTelescopes()
+    << " DC-like telescopes covering "
+    << double_to_string_with_commas(A,3) << " km^2.\n";
+  for(const auto& scope_banner : scope_banners) {
+    stream << indentN << scope_banner.second << " x " << scope_banner.first << '\n';
+  }
+  return stream.str();
 }

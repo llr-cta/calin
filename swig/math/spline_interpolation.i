@@ -48,6 +48,7 @@
 %apply double &OUTPUT { double& value5 };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
+%newobject new_regularized_multi_spline(double dx);
 %include "math/spline_interpolation.hpp"
 
 %template(cubic_value) calin::math::spline_interpolation::cubic_value<double>;
@@ -56,3 +57,15 @@
 %template(cubic_2nd_derivative) calin::math::spline_interpolation::cubic_2nd_derivative<double>;
 %template(cubic_3rd_derivative) calin::math::spline_interpolation::cubic_3rd_derivative<double>;
 %template(cubic_integral) calin::math::spline_interpolation::cubic_integral<double>;
+
+%extend calin::math::spline_interpolation::CubicSpline {
+  Eigen::VectorXd xknot() const { return $self->xknot_as_eigen(); }
+  Eigen::VectorXd yknot() const { return $self->yknot_as_eigen(); }
+  Eigen::VectorXd dydxknot() const { return $self->dydxknot_as_eigen(); }
+};
+
+%extend calin::math::spline_interpolation::CubicMultiSpline {
+  Eigen::VectorXd xknot() const { return $self->xknot_as_eigen(); }
+  Eigen::VectorXd yknot(unsigned ispline) const { return $self->yknot_as_eigen(ispline); }
+  Eigen::VectorXd dydxknot(unsigned ispline) const { return $self->dydxknot_as_eigen(ispline); }
+};

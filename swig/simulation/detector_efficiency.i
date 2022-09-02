@@ -27,6 +27,7 @@
 
 %{
 #include "simulation/detector_efficiency.hpp"
+#include "simulation/vcl_detector_efficiency.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -39,4 +40,27 @@
 
 %import "math/interpolation_1d.i"
 
+%newobject make_spline;
+
 %include "simulation/detector_efficiency.hpp"
+
+%newobject integrate_bandwidth_to_spline;
+
+%template(CherenkovBandwidthTaylorCoefficientsVector) \
+  std::vector<calin::simulation::detector_efficiency::CherenkovBandwidthTaylorCoefficients>;
+
+%include "simulation/vcl_detector_efficiency.hpp"
+
+%template (VCLDirectionResponse128)
+  calin::simulation::detector_efficiency::VCLDirectionResponse<calin::util::vcl::VCL128Architecture>;
+%template (VCLDirectionResponse256)
+  calin::simulation::detector_efficiency::VCLDirectionResponse<calin::util::vcl::VCL256Architecture>;
+%template (VCLDirectionResponse512)
+  calin::simulation::detector_efficiency::VCLDirectionResponse<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLUY1DSplineDirectionResponse128)
+  calin::simulation::detector_efficiency::VCLUY1DSplineDirectionResponse<calin::util::vcl::VCL128Architecture>;
+%template (VCLUY1DSplineDirectionResponse256)
+  calin::simulation::detector_efficiency::VCLUY1DSplineDirectionResponse<calin::util::vcl::VCL256Architecture>;
+%template (VCLUY1DSplineDirectionResponse512)
+  calin::simulation::detector_efficiency::VCLUY1DSplineDirectionResponse<calin::util::vcl::VCL512Architecture>;

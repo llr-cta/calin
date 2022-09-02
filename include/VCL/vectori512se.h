@@ -40,7 +40,7 @@
 // check combination of header files
 #ifdef VECTORI512S_H
 #error Two different versions of vectorf256.h included
-#endif 
+#endif
 
 
 #ifdef VCL_NAMESPACE
@@ -118,7 +118,7 @@ public:
     }
     // Partial load. Load n elements and set the rest to 0
     Vec64c & load_partial(int n, void const * p) {
-        Vec32c lo, hi; 
+        Vec32c lo, hi;
         if ((uint32_t)n < 32) {
             lo = Vec32c().load_partial(n,p);
             hi = Vec32c(0);
@@ -149,7 +149,7 @@ public:
             get_low().store(p);
             get_high().store_partial(n-32, ((int8_t*)p)+32);
         }
-    } 
+    }
     // cut off vector to n elements. The last 64-n elements are set to zero
     Vec64c & cutoff(int n) {
         Vec32c lo, hi;
@@ -222,7 +222,7 @@ public:
     // Constructor to build from all elements: Not implemented
 
     // Constructor to convert from type __mmask64 used in intrinsics: not possible
-    // Vec64cb (__mmask64 x); 
+    // Vec64cb (__mmask64 x);
     // Constructor to broadcast single value:
     Vec64cb(bool b) {
         z0 = z1 = Vec32c(-int8_t(b));
@@ -254,9 +254,9 @@ public:
             z1 = get_high().insert(index-32, a);
         }
         return *this;
-    }    
+    }
     // Member function extract a single element from vector
-    bool extract(int index) const { 
+    bool extract(int index) const {
         if (index < 32) {
             return get_low().extract(index);
         }
@@ -493,7 +493,7 @@ static inline Vec64cb operator == (Vec64c const & a, Vec64c const & b) {
 static inline Vec64cb operator != (Vec64c const & a, Vec64c const & b) {
     return Vec64cb(a.get_low() != b.get_low(), a.get_high() != b.get_high());
 }
-  
+
 // vector operator > : returns true for elements for which a > b
 static inline Vec64cb operator > (Vec64c const & a, Vec64c const & b) {
     return Vec64cb(a.get_low() > b.get_low(), a.get_high() > b.get_high());
@@ -661,7 +661,7 @@ public:
     Vec64uc & operator = (Vec512b const & x) {
         return *this = Vec64uc(x);
     }
-#endif 
+#endif
     // Member function to load from array (unaligned)
     Vec64uc & load(void const * p) {
         Vec64c::load(p);
@@ -714,7 +714,7 @@ static inline Vec64uc operator - (Vec64uc const & a, Vec64uc const & b) {
 // vector operator ' : multiply element by element
 static inline Vec64uc operator * (Vec64uc const & a, Vec64uc const & b) {
     return Vec64uc(a.get_low() * b.get_low(), a.get_high() * b.get_high());
-} 
+}
 
 // vector operator / : divide
 // See bottom of file
@@ -731,7 +731,7 @@ static inline Vec64uc operator >> (Vec64uc const & a, int b) {
 static inline Vec64uc & operator >>= (Vec64uc & a, uint32_t b) {
     a = a >> b;
     return a;
-} 
+}
 
 // vector operator >>= : shift right logical (signed b)
 static inline Vec64uc & operator >>= (Vec64uc & a, int32_t b) {
@@ -760,7 +760,7 @@ static inline Vec64cb operator > (Vec64uc const & a, Vec64uc const & b) {
 // vector operator >= : returns true for elements for which a >= b (unsigned)
 static inline Vec64cb operator >= (Vec64uc const & a, Vec64uc const & b) {
     return Vec64cb(a.get_low() >= b.get_low(), a.get_high() >= b.get_high());
-}            
+}
 
 // vector operator <= : returns true for elements for which a <= b (unsigned)
 static inline Vec64cb operator <= (Vec64uc const & a, Vec64uc const & b) {
@@ -808,7 +808,7 @@ static inline Vec64uc if_sub (Vec64cb const & f, Vec64uc const & a, Vec64uc cons
 // Conditional mul: For all vector elements i: result[i] = f[i] ? (a[i] * b[i]) : a[i]
 static inline Vec64uc if_mul (Vec64cb const & f, Vec64uc const & a, Vec64uc const & b) {
     return Vec64uc(if_mul(f.get_low(), a.get_low(), b.get_low()), if_mul(f.get_high(), a.get_high(), b.get_high()));
-} 
+}
 
 // function add_saturated: add element by element, unsigned with saturation
 static inline Vec64uc add_saturated(Vec64uc const & a, Vec64uc const & b) {
@@ -847,10 +847,10 @@ public:
         z0 = z1 = Vec16s(i);
     }
     // Constructor to build from all elements:
-    Vec32s(int8_t i0, int8_t i1, int8_t i2, int8_t i3, int8_t i4, int8_t i5, int8_t i6, int8_t i7,
-        int8_t i8, int8_t i9, int8_t i10, int8_t i11, int8_t i12, int8_t i13, int8_t i14, int8_t i15,        
-        int8_t i16, int8_t i17, int8_t i18, int8_t i19, int8_t i20, int8_t i21, int8_t i22, int8_t i23,
-        int8_t i24, int8_t i25, int8_t i26, int8_t i27, int8_t i28, int8_t i29, int8_t i30, int8_t i31) {
+    Vec32s(int16_t i0, int16_t i1, int16_t i2, int16_t i3, int16_t i4, int16_t i5, int16_t i6, int16_t i7,
+        int16_t i8, int16_t i9, int16_t i10, int16_t i11, int16_t i12, int16_t i13, int16_t i14, int16_t i15,
+        int16_t i16, int16_t i17, int16_t i18, int16_t i19, int16_t i20, int16_t i21, int16_t i22, int16_t i23,
+        int16_t i24, int16_t i25, int16_t i26, int16_t i27, int16_t i28, int16_t i29, int16_t i30, int16_t i31) {
         Vec16s x0 = Vec16s(i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14, i15);
         Vec16s x1 = Vec16s(i16, i17, i18, i19, i20, i21, i22, i23, i24, i25, i26, i27, i28, i29, i30, i31);
         *this = Vec32s(x0,x1);
@@ -929,7 +929,7 @@ public:
             Vec16s(z0).store(p);
             Vec16s(z1).store_partial(n-16, (int16_t*)p + 16);
         }
-    } 
+    }
     // cut off vector to n elements. The last 32-n elements are set to zero
     Vec32s & cutoff(int n) {
         if (uint32_t(n) < 16) {
@@ -1017,12 +1017,12 @@ public:
     }
     Vec16sb get_high() const {
         return z1;
-    } 
+    }
     // Member function to change a single element in vector
     Vec32sb & insert(int index, bool a) {
         Vec32s::insert(index, -(int16_t)a);
         return *this;
-    }    
+    }
     // Member function extract a single element from vector
     bool extract(int index) const {
         return Vec32s::extract(index) != 0;
@@ -1378,7 +1378,7 @@ static inline Vec32s abs_saturated(Vec32s const & a) {
 // Use negative count to rotate right
 static inline Vec32s rotate_left(Vec32s const & a, int b) {
     return Vec32s(rotate_left(a.get_low(), b), rotate_left(a.get_high(), b));
-} 
+}
 
 
 /*****************************************************************************
@@ -1394,13 +1394,21 @@ public:
     }
     // Construct from Vec32s
     Vec32us(Vec32s const & a) {
-        z0 = a.get_low();  z1 = a.get_high(); 
+        z0 = a.get_low();  z1 = a.get_high();
     }
     // Constructor to broadcast the same value into all elements:
     Vec32us(uint16_t i) {
         z0 = z1 = Vec16us(i);
     }
-    // Constructor to build from all elements. Inherit from Vec32s
+    // Constructor to build from all elements:
+    Vec32us(uint16_t i0, uint16_t i1, uint16_t i2, uint16_t i3, uint16_t i4, uint16_t i5, uint16_t i6, uint16_t i7,
+        uint16_t i8, uint16_t i9, uint16_t i10, uint16_t i11, uint16_t i12, uint16_t i13, uint16_t i14, uint16_t i15,
+        uint16_t i16, uint16_t i17, uint16_t i18, uint16_t i19, uint16_t i20, uint16_t i21, uint16_t i22, uint16_t i23,
+        uint16_t i24, uint16_t i25, uint16_t i26, uint16_t i27, uint16_t i28, uint16_t i29, uint16_t i30, uint16_t i31) {
+        Vec16us x0 = Vec16us(i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14, i15);
+        Vec16us x1 = Vec16us(i16, i17, i18, i19, i20, i21, i22, i23, i24, i25, i26, i27, i28, i29, i30, i31);
+        *this = Vec32us(x0,x1);
+    }
 
     // Constructor to build from two Vec16us:
     Vec32us(Vec16us const & a0, Vec16us const & a1) {
@@ -1493,7 +1501,7 @@ static inline Vec32us operator >> (Vec32us const & a, int b) {
 static inline Vec32us & operator >>= (Vec32us & a, uint32_t b) {
     a = a >> b;
     return a;
-} 
+}
 
 // vector operator >>= : shift right logical (signed b)
 static inline Vec32us & operator >>= (Vec32us & a, int32_t b) {
@@ -1522,7 +1530,7 @@ static inline Vec32sb operator > (Vec32us const & a, Vec32us const & b) {
 // vector operator >= : returns true for elements for which a >= b (unsigned)
 static inline Vec32sb operator >= (Vec32us const & a, Vec32us const & b) {
     return Vec32sb(a.get_low() >= b.get_low(), a.get_high() >= b.get_high());
-}            
+}
 
 // vector operator <= : returns true for elements for which a <= b (unsigned)
 static inline Vec32sb operator <= (Vec32us const & a, Vec32us const & b) {
@@ -1697,7 +1705,7 @@ static inline Vec64c shift_bytes_down(Vec64c const & a) {
         return Vec64c().load(dat+b);
     }
     else return 0;
-} 
+}
 
 
 /*****************************************************************************
@@ -1868,7 +1876,7 @@ static inline Vec64uc & operator /= (Vec64uc & a, Divisor_us const & d) {
 *****************************************************************************/
 
 
-// Divide Vec32s by compile-time constant 
+// Divide Vec32s by compile-time constant
 template <int d>
 static inline Vec32s divide_by_i(Vec32s const & a) {
     return Vec32s(divide_by_i<d>(a.get_low()), divide_by_i<d>(a.get_high()));

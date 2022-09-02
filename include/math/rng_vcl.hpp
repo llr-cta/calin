@@ -31,7 +31,7 @@ namespace calin { namespace math { namespace rng {
 
 template<typename VCLArchitecture> class NR3_VCLRNGCore;
 
-template<typename VCLArchitecture> class VCLRNGCore
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRNGCore
 {
 public:
   CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
@@ -89,7 +89,7 @@ protected:
   calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
-template<typename VCLArchitecture> class VCLRNG
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRNG
 {
 public:
   CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
@@ -136,6 +136,8 @@ public:
   ~VCLRNG() {
     if(adopt_core_)delete core_;
   }
+
+  VCLRNGCore<VCLArchitecture>* core() { return core_; }
 
   //   void save_to_proto(ix::math::rng::RNGData* proto) const;
   //
@@ -760,7 +762,7 @@ private:
 //
 // =============================================================================
 
-template<typename VCLArchitecture> class NR3_VCLRNGCore:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
 #ifndef SWIG
@@ -890,22 +892,6 @@ public:
   static const ix_core_data_type& core_data(const ix::math::rng::VCLRNGCoreData& proto) {
     return proto.nr3_vcl_core(); }
 
-#ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    void* p = nullptr;
-    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
-      return p;
-    }
-    throw std::bad_alloc();
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    free(p);
-  }
-#endif
-
 private:
   void init()
   {
@@ -919,6 +905,37 @@ private:
   uint64_vt u_ = C_NR3_U_INIT;
   uint64_vt v_ = C_NR3_V_INIT;
   uint64_vt w_ = C_NR3_W_INIT;
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLToScalarRNGCore:
+  public RNGCore
+{
+public:
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
+
+  VCLToScalarRNGCore(VCLRNGCore<VCLArchitecture>* vcl_core, bool adopt_vcl_core = false):
+    RNGCore(), vcl_core_(vcl_core), adopt_vcl_core_(adopt_vcl_core)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VCLToScalarRNGCore()
+  {
+    if(adopt_vcl_core_)delete vcl_core_;
+  }
+
+  uint64_t uniform_uint64() final
+  {
+    return vcl_core_->uniform_uint64()[0];
+  }
+
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const final
+  {
+    // nothing to see here
+  }
+protected:
+  VCLRNGCore<VCLArchitecture>* vcl_core_ = nullptr;
+  bool adopt_vcl_core_ = false;
 };
 
 } } } // namespace calin::math::rng

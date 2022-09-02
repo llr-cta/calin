@@ -21,3 +21,4 @@
 */
 
 #include <simulation/vcl_iact.hpp>
+#include <simulation/vcl_iact_ground_map.hpp>

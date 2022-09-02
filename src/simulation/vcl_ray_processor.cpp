@@ -21,6 +21,7 @@
 */
 
 #include <simulation/vcl_ray_processor.hpp>
+#include <simulation/vso_ray_processor.hpp>
 
 using namespace calin::simulation::vcl_ray_processor;
 

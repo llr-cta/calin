@@ -29,19 +29,22 @@
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
 #include <util/vcl.hpp>
+#include <math/ray.hpp>
 #include <math/geometry_vcl.hpp>
 
 namespace calin { namespace math { namespace ray {
 
 #ifndef SWIG
-using calin::math::constants::cgs_c;
+using calin::math::constants::g4_c;
+using calin::math::constants::g4_1_c;
 #endif
 
-template<typename VCLReal> class VCLRay: public VCLReal
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRay: public VCLReal
 {
 public:
   using typename VCLReal::real_t;
   using typename VCLReal::real_vt;
+  using typename VCLReal::real_at;
   using typename VCLReal::bool_vt;
   using typename VCLReal::vec3_vt;
   using typename VCLReal::mat3_vt;
@@ -49,14 +52,32 @@ public:
   VCLRay() { }
   VCLRay(const vec3_vt& pos, const vec3_vt& dir, const real_vt& time = 0,
       const real_vt& energy = 0):
-    pos_(pos), dir_(dir), ct_(time*cgs_c), energy_(energy) {
+    pos_(pos), dir_(dir), ct_(time*g4_c), energy_(energy) {
     /* nothing to see here */
+  }
+  VCLRay(const Ray& ray) {
+    pos_ = ray.position().cast<real_vt>();
+    dir_ = ray.direction().cast<real_vt>();
+    ct_ = ray.ct();
+    energy_ = ray.energy();
+  }
+  Ray extract(unsigned i) const {
+    Ray ray;
+    ray.mutable_x() = x().extract(i);
+    ray.mutable_y() = y().extract(i);
+    ray.mutable_z() = z().extract(i);
+    ray.mutable_ux() = ux().extract(i);
+    ray.mutable_uy() = uy().extract(i);
+    ray.mutable_uz() = uz().extract(i);
+    ray.mutable_ct() = ct().extract(i);
+    ray.mutable_energy() = energy().extract(i);
+    return ray;
   }
 
   const vec3_vt& position() const { return pos_; }
   const vec3_vt& direction() const { return dir_; }
   const real_vt& ct() const { return ct_; }
-  const real_vt& time() const { return ct_/cgs_c; }
+  const real_vt time() const { return ct_*g4_1_c; }
   const real_vt& energy() const { return energy_; }
   const real_vt& x() const { return pos_.x(); }
   const real_vt& y() const { return pos_.y(); }
@@ -83,7 +104,7 @@ public:
   void set_position(const vec3_vt& pos) { pos_ = pos; }
   void set_direction(const vec3_vt& dir) { clear_dir_inv(); dir_ = dir; }
   void set_ct(const real_vt& ct) {  ct_ = ct; }
-  void set_time(const real_vt& t) { ct_ = t*cgs_c; }
+  void set_time(const real_vt& t) { ct_ = t*g4_c; }
   void set_energy(const real_vt& e) { energy_ = e; }
 
   void translate_origin(const vec3_vt& origin) { pos_ -= origin; }
@@ -313,6 +334,12 @@ public:
     return mask;
   }
 
+  //! Distance of closest approach with point
+  real_vt squared_distance_at_closest_approach(const vec3_vt& r0)
+  {
+    return (r0-pos_).cross(dir_).squaredNorm();
+  }
+
   //! Propagates free particle to the closest approach with point
   bool_vt propagate_to_point_closest_approach_with_mask(bool_vt mask,
     const vec3_vt& r0, bool time_reversal_ok, const real_vt& n = 1.0)
@@ -409,22 +436,6 @@ public:
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
 #endif
 
-#ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    void* p = nullptr;
-    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
-      return p;
-    }
-    throw std::bad_alloc();
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    free(p);
-  }
-#endif
-
 private:
   void calc_ux_inv() const {
     if(!has_ux_inv_) { has_ux_inv_ = true; ux_inv_ = 1.0/dir_.x(); } }
@@ -446,6 +457,120 @@ private:
   mutable real_vt ux_inv_ = 0;
   mutable real_vt uy_inv_ = 0;
   mutable real_vt uz_inv_ = 0;
+};
+
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLRayArray: public VCLReal
+{
+public:
+  using typename VCLReal::real_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::real_at;
+  using typename VCLReal::vec3_vt;
+
+  VCLRayArray() { }
+
+  VCLRayArray(const VCLRay<VCLReal>& ray) {
+    set_rays(ray);
+  }
+
+  VCLRayArray(const vec3_vt& pos, const vec3_vt& dir, const real_vt& t = 0,
+      const real_vt& energy = 0) {
+    set_positions(pos);
+    set_directions(dir);
+    set_cts(t*g4_c);
+    set_energies(energy);
+  }
+
+  const real_at& x() const { return x_; }
+  const real_at& y() const { return y_; }
+  const real_at& z() const { return z_; }
+  const real_at& ux() const { return ux_; }
+  const real_at& uy() const { return uy_; }
+  const real_at& uz() const { return uz_; }
+  const real_at& ct() const { return ct_; }
+  const real_at& energy() const { return energy_; }
+
+  real_at& mutable_x() { return x_; }
+  real_at& mutable_y() { return y_; }
+  real_at& mutable_z() { return z_; }
+  real_at& mutable_ux() { return ux_; }
+  real_at& mutable_uy() { return uy_; }
+  real_at& mutable_uz() { return uz_; }
+  real_at& mutable_ct() { return ct_; }
+  real_at& mutable_energy() { return energy_; }
+
+  void set_rays(const VCLRay<VCLReal>& ray) {
+    set_positions(ray.position());
+    set_directions(ray.direction());
+    set_cts(ray.ct());
+    set_energies(ray.energy());
+  }
+
+  void get_rays(VCLRay<VCLReal>& ray) const {
+    get_positions(ray.mutable_position());
+    get_directions(ray.mutable_direction());
+    get_cts(ray.mutable_ct());
+    get_energies(ray.mutable_energy());
+  }
+
+  VCLRayArray<VCLReal> get_rays() const {
+    VCLRayArray<VCLReal> ray;
+    get_rays(ray);
+    return ray;
+  }
+
+  void extract_one_ray(unsigned i, Ray& ray) const {
+    ray.mutable_x() = x_[i];
+    ray.mutable_y() = y_[i];
+    ray.mutable_z() = z_[i];
+    ray.mutable_ux() = ux_[i];
+    ray.mutable_uy() = uy_[i];
+    ray.mutable_uz() = uz_[i];
+    ray.mutable_ct() = ct_[i];
+    ray.mutable_energy() = energy_[i];
+  }
+
+  Ray extract_one_ray(unsigned i) const {
+    Ray ray;
+    extract_one_ray(i, ray);
+    return ray;
+  }
+
+  void insert_one_ray(unsigned i, const Ray& ray) {
+    x_[i] = ray.x();
+    y_[i] = ray.y();
+    z_[i] = ray.z();
+    ux_[i] = ray.ux();
+    uy_[i] = ray.uy();
+    uz_[i] = ray.uz();
+    ct_[i] = ray.ct();
+    energy_[i] = ray.energy();
+  }
+
+  void get_positions(vec3_vt& pos) const { pos.x().load(x_); pos.y().load(y_); pos.z().load(z_); }
+  void get_directions(vec3_vt& dir) const { dir.x().load(ux_); dir.y().load(uy_); dir.z().load(uz_); }
+  void get_cts(real_vt& ct) const { ct.load(ct_); }
+  void get_energies(real_vt& energy) const { energy.load(energy_); }
+
+  vec3_vt get_positions() const { vec3_vt pos; get_positions(pos); return pos; }
+  vec3_vt get_directions() const { vec3_vt dir; get_directions(dir); return dir; }
+  real_vt get_cts() const { real_vt ct; get_cts(ct); return ct; }
+  real_vt get_energies() const { real_vt energy; get_energies(energy); return energy; }
+
+  void set_positions(const vec3_vt& pos) { pos.x().store(x_); pos.y().store(y_); pos.z().store(z_); }
+  void set_directions(const vec3_vt& dir) { dir.x().store(ux_); dir.y().store(uy_); dir.z().store(uz_); }
+  void set_cts(const real_vt& ct) { ct.store(ct_); }
+  void set_energies(const real_vt& energy) { energy.store(energy_); }
+
+private:
+  real_at x_;
+  real_at y_;
+  real_at z_;
+  real_at ux_;
+  real_at uy_;
+  real_at uz_;
+  real_at ct_;
+  real_at energy_;
 };
 
 } } } // namespace calin::math::ray

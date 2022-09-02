@@ -35,6 +35,7 @@
 #include <sstream>
 #include <string>
 
+#include <calin_global_definitions.hpp>
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <provenance/chronicle.hpp>
@@ -55,6 +56,11 @@ using namespace calin::math::interpolation_1d;
 // ----------------------------------------------------------------------------
 // AtmosphericAbsorption
 // ----------------------------------------------------------------------------
+
+AtmosphericAbsorption::AtmosphericAbsorption()
+{
+  // nothing to see here
+}
 
 AtmosphericAbsorption::
 AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
@@ -199,7 +205,15 @@ next_header_line:
   calin::provenance::chronicle::register_file_close(file_record);
 }
 
-InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
+void AtmosphericAbsorption::set_zref(double zref)
+{
+  for(unsigned ie=0;ie<e_ev_.size();ie++) {
+    double tau0 = absorption_[ie](zref);
+    absorption_[ie] -= tau0;
+  }
+}
+
+InterpLinear1D AtmosphericAbsorption::optical_depth_for_altitude(double h) const
 {
   if(h < absorption_.front().xi(0))
     throw std::out_of_range("Altitude " + std::to_string(h) +
@@ -211,10 +225,35 @@ InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
   return abs;
 }
 
+double AtmosphericAbsorption::optical_depth_for_altitude_and_energy(double h, double e) const
+{
+  if(h < absorption_.front().xi(0))
+    throw std::out_of_range("Altitude " + std::to_string(h) +
+      " below lowest level available (" +
+      std::to_string(absorption_.front().xi(0)) + ")");
+  if(e > e_ev_[0])
+    throw std::out_of_range("Energy " + std::to_string(e) +
+      " below highest energy available (" +
+      std::to_string(e_ev_[0]) + ")");
+  auto e_below = std::upper_bound(e_ev_.begin(), e_ev_.end(), e, std::greater<double>());
+  if(e < *e_below)
+    throw std::out_of_range("Energy " + std::to_string(e) +
+      " below lowest energy available (" +
+      std::to_string(*e_below) + ")");
+
+  int ie_below = e_below - e_ev_.begin();
+  double tau_u = absorption_[ie_below-1](h);
+  double tau_l = absorption_[ie_below](h);
+
+  // std::cout << e << ' ' << *e_below << ' ' << *(e_below-1) << ' ' << tau_l << ' ' << tau_u << '\n';
+
+  return (tau_u*(e-*e_below) + tau_l*(*(e_below-1)-e))/(*(e_below-1)-*e_below);
+}
+
 ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
 {
-  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
 #if 1
@@ -268,7 +307,7 @@ ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff,
   double emin, double emax) const
 {
-  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
   bool obslevel = false;
@@ -310,6 +349,54 @@ integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff,
     bandwidth.insert(h, y);
   }
   return bandwidth;
+}
+
+calin::math::spline_interpolation::TwoDimensionalCubicSpline*
+AtmosphericAbsorption::integrate_bandwidth_to_spline(
+  double h0, const DetectionEfficiency& eff,
+  std::vector<double> h, std::vector<double> w, double emin, double emax) const
+{
+  if(emin == 0 and emax == 0) {
+    emin = std::numeric_limits<double>::infinity();
+    for(auto e : eff.all_xi()) {
+      emin = std::min(emin, e);
+      emax = std::max(emax, e);
+    }
+  }
+
+  if(h.empty()) {
+    for(double ih=h0; ih<=levels_cm().back(); ih+=1e5) {
+      h.push_back(ih);
+    }
+  }
+
+  Eigen::VectorXd hh = calin::std_to_eigenvec(h);
+  Eigen::VectorXd ww = calin::std_to_eigenvec(w);
+  Eigen::MatrixXd bw(ww.size(), hh.size());
+
+  InterpLinear1D abs0 = optical_depth_for_altitude(h0);
+
+  for(unsigned ih=0;ih<hh.size();ih++)
+  {
+    double h = hh(ih);
+    std::vector<InterpLinear1D> Y0(w.size());
+    for(unsigned ie=0;ie<e_ev_.size();ie++)
+  	{
+  	  double e = e_ev_[ie];
+  	  double od = std::max(absorption_[ie](h)-abs0(e), 0.0);
+      for(unsigned iw=0;iw<w.size();iw++) {
+	      double abs = std::exp(-od/w[iw]);
+	      Y0[iw].insert(e, abs);
+      }
+  	}
+
+    for(unsigned iw=0;iw<w.size();iw++) {
+      Y0[iw] *= eff;
+      bw(iw,ih) = Y0[iw].integrate(emin,emax);
+    }
+  }
+
+  return new calin::math::spline_interpolation::TwoDimensionalCubicSpline(hh,ww,bw);
 }
 
 std::vector<double> AtmosphericAbsorption::levels_cm() const
@@ -395,9 +482,6 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
   this->insert_from_2column_file_with_filter(filename,
     [](double& theta_in_w_out, double& eff) {
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
-  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
-  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 void AngularEfficiency::scaleEff(const InterpLinear1D& eff)
@@ -436,4 +520,99 @@ double ACTEffectiveBandwidth::bandwidth(double h, double w) const
 #else
   return _y.n + dw*(_y.dn_dw + _y.d2n_dw2*dw);
 #endif
+}
+
+// ----------------------------------------------------------------------------
+// PEAmplitudeGenerator
+// ----------------------------------------------------------------------------
+
+PEAmplitudeGenerator::~PEAmplitudeGenerator()
+{
+  // nothing to see here
+}
+
+SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
+    const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq,
+    SplineMode spline_mode, calin::math::rng::RNG* rng, bool adopt_rng):
+  PEAmplitudeGenerator(),
+  spline_(make_spline(q, dp_dq, spline_mode)), spline_mode_(spline_mode),
+  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
+  adopt_rng_(rng==nullptr ? true : adopt_rng)
+{
+  // nothing to see here
+}
+
+calin::math::spline_interpolation::CubicSpline*
+SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
+    const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
+    bool regularize_spline, bool extend_linear_rhs)
+{
+  std::vector<double> x;
+  std::vector<double> y = calin::eigen_to_stdvec(q);
+  x.push_back(0);
+  double P = 0;
+  for(unsigned iq=0;iq<q.size()-1;++iq) {
+    P += 0.5*(dp_dq[iq] + dp_dq[iq+1]) * (q[iq+1] - q[iq]);
+    x.push_back(P);
+  }
+  if(P>1.0) {
+    LOG(WARNING) << "Normalization of probability distribution exceeds unity";
+  }
+  switch(spline_mode) {
+  case SM_LINEAR:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return x; });
+    break;
+  case SM_LOG:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return -std::log(1-x); });
+    break;
+  case SM_SQRT_LOG:
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::sqrt(-std::log(1-x)); });
+    break;
+  }
+  auto* spline = new calin::math::spline_interpolation::CubicSpline(x, y,
+    calin::math::spline_interpolation::BC_NATURAL, 0,
+    calin::math::spline_interpolation::BC_NATURAL, 0);
+  if(regularize_spline) {
+    auto even_spline =
+      spline->new_regularized_spline((spline->xmax()-spline->xmin())/(x.size() - 1));
+    delete spline;
+    spline = even_spline;
+  }
+  if(extend_linear_rhs) {
+    spline->extend_linear_rhs();
+  }
+  return spline;
+}
+
+SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
+    const calin::math::spline_interpolation::CubicSpline& spline,
+    SplineMode spline_mode, calin::math::rng::RNG* rng, bool adopt_rng):
+  PEAmplitudeGenerator(),
+  spline_(new calin::math::spline_interpolation::CubicSpline(spline)),
+  spline_mode_(spline_mode),
+  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
+  adopt_rng_(rng==nullptr ? true : adopt_rng)
+{
+  // nothing to see here
+}
+
+SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
+{
+  if(adopt_rng_) { delete rng_; }
+}
+
+double SplinePEAmplitudeGenerator::generate_amplitude()
+{
+  double x = rng_->uniform_double();
+  switch(spline_mode_) {
+  case SM_LINEAR:
+    break;
+  case SM_LOG:
+    x = -std::log(x);
+    break;
+  case SM_SQRT_LOG:
+    x = std::sqrt(-std::log(x));
+    break;
+  }
+  return spline_->value(x);
 }

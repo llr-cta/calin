@@ -15,10 +15,7 @@
 
 add_subdirectory(util)
 add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
 add_subdirectory(chealpix)
-add_subdirectory(f2c)
 add_subdirectory(math)
 add_subdirectory(simulation)
 add_subdirectory(iact_data)

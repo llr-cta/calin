@@ -33,12 +33,12 @@ unsigned knot_index(double& x, double x0, double one_over_dx, unsigned n, unsign
 {
   if(x<x0)throw std::out_of_range("knot_index: x-value below start of spline knots: "
     + std::to_string(x) + " < " + std::to_string(x0));
-  double xknot = std::floor((x-x0)*one_over_dx);
-  unsigned ix = unsigned(xknot);
-  ix += k;
+  double t = (x-x0)*one_over_dx;
+  double t_round = std::floor(t);
+  unsigned ix = unsigned(t_round) + k;
   if(ix>=n)throw std::out_of_range("knot_index: x-value beyond end of spline knots: "
     + std::to_string(x) + " >= " + std::to_string(x0 + (n-k)/one_over_dx));
-  x -= xknot;
+  x = t-t_round;
   return ix;
 }
 

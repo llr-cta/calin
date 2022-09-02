@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i
+set(CALIN_SWIG_FILES function.i pdf_1d.i histogram.i
 	hessian.i special.i hex_array.i square_array.i rng.i ray.i vector3d_util.i
 	interpolation_1d.i healpix_array.i ray_generator.i geometry.i moments_calc.i
 	data_modeling.i fftw_util.i regular_grid.i lomb_scargle.i

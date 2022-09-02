@@ -24,6 +24,7 @@
 #include <algorithm>
 
 #include <util/log.hpp>
+#include <util/string.hpp>
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
 #include <math/regular_grid.hpp>
@@ -38,14 +39,14 @@ using calin::math::special::SQR;
 
 VSOTelescope::VSOTelescope():
     fID(), fPos(),
-    fDeltaY(), fAlphaX(), fAlphaY(),
+    fFPOffset(), fAlphaX(), fAlphaY(),
     fElevation(), fAzimuth(),
-    fTranslation(), fCurvatureRadius(), fAperture(),
+    fTranslation(), fAzElSeparation(), fCurvatureRadius(), fAperture(),
     fFacetSpacing(), fFacetSize(),
     fReflectorRotation(), fCosReflectorRotation(1.0), fSinReflectorRotation(),
     fFacetGridShiftX(), fFacetGridShiftZ(),
     fHexagonRingsN(), fReflectorIP(), fReflectorIPCenter(),
-    fMirrorParity(), fFPTranslation(), fCameraDiameter(),
+    fMirrorParity(), fFPTranslation(), fInfinityFocalDistance(), fCameraDiameter(),
     fFieldOfView(), fCathodeDiameter(), fPixelSpacing(),
     fPixelRotation(), fCosPixelRotation(1.0), fSinPixelRotation(0.0),
     fPixelGridShiftX(), fPixelGridShiftZ(), fConcSurvProb(),
@@ -60,11 +61,11 @@ VSOTelescope::VSOTelescope():
 
 VSOTelescope::
 VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
-	     double DY, double AX, double AY, double EL, double AZ,
-	     const Eigen::Vector3d& T, double CR, double A, double FSP, double FS,
+	     double FPO, double AX, double AY, double EL, double AZ,
+	     const Eigen::Vector3d& T, double AZELSEP, double CR, double A, double FSP, double FS,
 	     double RR, double FGSX, double FGSZ,
        unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
-	     const Eigen::Vector3d& FPT, double CD, double FOV,
+	     const Eigen::Vector3d& FPT, double FPINFFOCUS, double CD, double FOV,
        double D, double PS, double PR, double PGSX, double PGSZ,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
        double WIN_FRONT, double WIN_RAD, double WIN_THICK, double WIN_N,
@@ -73,13 +74,13 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
        const std::vector<VSOObscuration*>& OBSVEC_CAM
 	     ):
     fID(TID), /*fTelescopeHexID(THID),*/ fPos(P),
-    fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
-    fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
+    fFPOffset(FPO), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
+    fTranslation(T), fAzElSeparation(AZELSEP), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
     fFacetSize(FS),
     fReflectorRotation(RR), fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
     fFacetGridShiftX(FGSX), fFacetGridShiftZ(FGSZ),
     fHexagonRingsN(HRN), fReflectorIP(RIP), fReflectorIPCenter(RIPC), fMirrorParity(MP),
-    fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV),
+    fFPTranslation(FPT), fInfinityFocalDistance(FPINFFOCUS), fCameraDiameter(CD), fFieldOfView(FOV),
     fCathodeDiameter(D), fPixelSpacing(PS), fPixelRotation(PR),
     fCosPixelRotation(std::cos(PR)), fSinPixelRotation(std::sin(PR)),
     fPixelGridShiftX(PGSX), fPixelGridShiftZ(PGSZ),
@@ -96,10 +97,10 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 
 VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fID(o.fID),
-    fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
+    fPos(o.fPos), fFPOffset(o.fFPOffset), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
     fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
-    fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture),
-    fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize),
+    fAzElSeparation(o.fAzElSeparation), fCurvatureRadius(o.fCurvatureRadius),
+    fAperture(o.fAperture), fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize),
     fReflectorRotation(o.fReflectorRotation),
     fCosReflectorRotation(o.fCosReflectorRotation),
     fSinReflectorRotation(o.fSinReflectorRotation),
@@ -108,7 +109,8 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fHexagonRingsN(o.fHexagonRingsN),
     fReflectorIP(o.fReflectorIP), fReflectorIPCenter(o.fReflectorIPCenter),
     fMirrorParity(o.fMirrorParity),
-    fFPTranslation(o.fFPTranslation), fCameraDiameter(o.fCameraDiameter),
+    fFPTranslation(o.fFPTranslation), fInfinityFocalDistance(o.fInfinityFocalDistance),
+    fCameraDiameter(o.fCameraDiameter),
     fFieldOfView(o.fFieldOfView), fCathodeDiameter(o.fCathodeDiameter),
     fPixelSpacing(o.fPixelSpacing), fPixelRotation(o.fPixelRotation),
     fCosPixelRotation(o.fCosPixelRotation),
@@ -166,44 +168,46 @@ VSOTelescope::~VSOTelescope()
 // Stroustrup third edition sec 11.3.4 recommends default copy assignment
 const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 {
-  fID                = o.fID;
-  fPos               = o.fPos;
-  fDeltaY            = o.fDeltaY;
-  fAlphaX            = o.fAlphaX;
-  fAlphaY            = o.fAlphaY;
-  fElevation         = o.fElevation;
-  fAzimuth           = o.fAzimuth;
-  fTranslation       = o.fTranslation;
-  fCurvatureRadius   = o.fCurvatureRadius;
-  fAperture          = o.fAperture;
-  fFacetSpacing      = o.fFacetSpacing;
-  fFacetSize         = o.fFacetSize;
-  fReflectorRotation = o.fReflectorRotation;
-  fCosReflectorRotation = o.fCosReflectorRotation;
-  fSinReflectorRotation = o.fSinReflectorRotation;
-  fFacetGridShiftX   = o.fFacetGridShiftX;
-  fFacetGridShiftZ   = o.fFacetGridShiftZ;
-  fHexagonRingsN     = o.fHexagonRingsN;
-  fReflectorIP       = o.fReflectorIP;
-  fReflectorIPCenter = o.fReflectorIPCenter;
-  fMirrorParity      = o.fMirrorParity;
-  fFPTranslation     = o.fFPTranslation;
-  fCameraDiameter    = o.fCameraDiameter;
-  fFieldOfView       = o.fFieldOfView;
-  fCathodeDiameter   = o.fCathodeDiameter;
-  fPixelSpacing      = o.fPixelSpacing;
-  fPixelRotation     = o.fPixelRotation;
-  fCosPixelRotation  = o.fCosPixelRotation;
-  fSinPixelRotation  = o.fSinPixelRotation;
-  fPixelGridShiftX   = o.fPixelGridShiftX;
-  fPixelGridShiftZ   = o.fPixelGridShiftZ;
-  fConcSurvProb      = o.fConcSurvProb;
-  fFPRotation        = o.fFPRotation;
-  fCameraIP          = o.fCameraIP;
-  fPixelParity       = o.fPixelParity;
-  fWindowFront      = o.fWindowFront;
-  fWindowOuterRadius = o.fWindowOuterRadius;
-  fWindowThickness   = o.fWindowThickness;
+  fID                    = o.fID;
+  fPos                   = o.fPos;
+  fFPOffset              = o.fFPOffset;
+  fAlphaX                = o.fAlphaX;
+  fAlphaY                = o.fAlphaY;
+  fElevation             = o.fElevation;
+  fAzimuth               = o.fAzimuth;
+  fTranslation           = o.fTranslation;
+  fAzElSeparation        = o.fAzElSeparation;
+  fCurvatureRadius       = o.fCurvatureRadius;
+  fAperture              = o.fAperture;
+  fFacetSpacing          = o.fFacetSpacing;
+  fFacetSize             = o.fFacetSize;
+  fReflectorRotation     = o.fReflectorRotation;
+  fCosReflectorRotation  = o.fCosReflectorRotation;
+  fSinReflectorRotation  = o.fSinReflectorRotation;
+  fFacetGridShiftX       = o.fFacetGridShiftX;
+  fFacetGridShiftZ       = o.fFacetGridShiftZ;
+  fHexagonRingsN         = o.fHexagonRingsN;
+  fReflectorIP           = o.fReflectorIP;
+  fReflectorIPCenter     = o.fReflectorIPCenter;
+  fMirrorParity          = o.fMirrorParity;
+  fFPTranslation         = o.fFPTranslation;
+  fInfinityFocalDistance = o.fInfinityFocalDistance;
+  fCameraDiameter        = o.fCameraDiameter;
+  fFieldOfView           = o.fFieldOfView;
+  fCathodeDiameter       = o.fCathodeDiameter;
+  fPixelSpacing          = o.fPixelSpacing;
+  fPixelRotation         = o.fPixelRotation;
+  fCosPixelRotation      = o.fCosPixelRotation;
+  fSinPixelRotation      = o.fSinPixelRotation;
+  fPixelGridShiftX       = o.fPixelGridShiftX;
+  fPixelGridShiftZ       = o.fPixelGridShiftZ;
+  fConcSurvProb          = o.fConcSurvProb;
+  fFPRotation            = o.fFPRotation;
+  fCameraIP              = o.fCameraIP;
+  fPixelParity           = o.fPixelParity;
+  fWindowFront           = o.fWindowFront;
+  fWindowOuterRadius     = o.fWindowOuterRadius;
+  fWindowThickness       = o.fWindowThickness;
   fWindowRefractiveIndex = o.fWindowRefractiveIndex;
 
   for(std::vector<VSOMirror*>::iterator i=fMirrors.begin();
@@ -278,6 +282,7 @@ bool VSOTelescope::pointTelescope(const Eigen::Vector3d& v)
   if(v.squaredNorm()==0)return false;
   fElevation = atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y()));
   fAzimuth = fmod(atan2(v.x(),v.y())+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = 0;
   calculateRotationVector();
   return true;
 }
@@ -286,6 +291,16 @@ bool VSOTelescope::pointTelescopeAzEl(const double az_rad, const double el_rad)
 {
   fElevation = fmod(fmod(el_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
   fAzimuth = fmod(fmod(az_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = 0;
+  calculateRotationVector();
+  return true;
+}
+
+bool VSOTelescope::pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad)
+{
+  fElevation = fmod(fmod(el_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fAzimuth = fmod(fmod(az_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = fmod(fmod(phi_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
   calculateRotationVector();
   return true;
 }
@@ -319,23 +334,16 @@ void VSOTelescope::calculateRotationVector()
     Eigen::AngleAxisd(fAlphaY,     Eigen::Vector3d::UnitX()) *
     Eigen::AngleAxisd(fAlphaX,     Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(-fAzimuth,   Eigen::Vector3d::UnitZ()) *
-    Eigen::AngleAxisd(fDeltaY,     Eigen::Vector3d::UnitY()) *
-    Eigen::AngleAxisd(fElevation,  Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd(fElevation,  Eigen::Vector3d::UnitX()) *
+    Eigen::AngleAxisd(fFPOffset,   Eigen::Vector3d::UnitZ());
   rot_global_to_reflector_ = rot_reflector_to_global_.transpose();
-  off_global_to_reflector_ = fPos - rot_reflector_to_global_ * fTranslation;
-
+  off_global_to_reflector_ = fPos
+    + fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
+    - rot_reflector_to_global_ * fTranslation;
   rot_camera_to_global_ = rot_reflector_to_global_ * rot_camera_to_reflector_;
-  off_global_to_camera_ =
-    fPos - rot_reflector_to_global_ * (fTranslation - fFPTranslation);
-
-#if 0
-  rot_reflector_to_global_ =
-      Eigen::Vector3d(1,0,0)*fElevation &
-      Eigen::Vector3d(0,1,0)*fDeltaY &
-      Eigen::Vector3d(0,0,-1)*fAzimuth &
-      Eigen::Vector3d(0,1,0)*fAlphaX &
-      Eigen::Vector3d(1,0,0)*fAlphaY;
-#endif
+  off_global_to_camera_ = fPos
+    + fAzElSeparation*Eigen::Vector3d(std::sin(fAzimuth),std::cos(fAzimuth),0)
+    - rot_reflector_to_global_ * (fTranslation - fFPTranslation);
 }
 
 // ****************************************************************************
@@ -640,12 +648,13 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->Clear();
   d->set_id(fID);
   calin::math::vector3d_util::dump_as_proto(fPos, d->mutable_pos());
-  d->set_delta_y(fDeltaY/M_PI*180.0);
+  d->set_fp_offset(fFPOffset/M_PI*180.0);
   d->set_alpha_x(fAlphaX/M_PI*180.0);
   d->set_alpha_y(fAlphaY/M_PI*180.0);
   d->mutable_alt_az()->set_altitude(fElevation/M_PI*180.0);
   d->mutable_alt_az()->set_azimuth(fAzimuth/M_PI*180.0);
   calin::math::vector3d_util::dump_as_proto(fTranslation, d->mutable_translation());
+  d->set_azimuth_elevation_axes_separation(fAzElSeparation);
   d->set_curvature_radius(fCurvatureRadius);
   d->set_aperture(fAperture);
   d->set_facet_spacing(fFacetSpacing);
@@ -658,6 +667,7 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   calin::math::vector3d_util::dump_as_proto(fReflectorIPCenter, d->mutable_reflector_ip_center());
   d->set_facet_labeling_parity(fMirrorParity);
   calin::math::vector3d_util::dump_as_proto(fFPTranslation, d->mutable_fp_translation());
+  d->set_fp_infinity_focal_distance(fInfinityFocalDistance);
   d->set_camera_diameter(fCameraDiameter);
   d->set_field_of_view(fFieldOfView);
   d->set_cathode_diameter(fCathodeDiameter);
@@ -694,12 +704,13 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
   VSOTelescope* scope = new VSOTelescope(
     d.id(), // TID
     calin::math::vector3d_util::from_proto(d.pos()), // P
-    d.delta_y()*M_PI/180.0, // DY
+    d.fp_offset()*M_PI/180.0, // DY
     d.alpha_x()*M_PI/180.0, // AX
     d.alpha_y()*M_PI/180.0, // AY
     d.alt_az().altitude()*M_PI/180.0, // EL
     d.alt_az().azimuth()*M_PI/180.0,  // AZ
     calin::math::vector3d_util::from_proto(d.translation()), // T
+    d.azimuth_elevation_axes_separation(), // AZELSEP
     d.curvature_radius(),  // CR
     d.aperture(),  // A
     d.facet_spacing(), // FSP
@@ -712,6 +723,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     calin::math::vector3d_util::from_proto(d.reflector_ip_center()), // RIPC
     d.facet_labeling_parity(), // MP
     calin::math::vector3d_util::from_proto(d.fp_translation()), // FPT
+    d.fp_infinity_focal_distance(), // FPINFFOCUS
     d.camera_diameter(), // CD
     d.field_of_view(), // FOV
     d.cathode_diameter(), // D
@@ -957,4 +969,35 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
   calin::iact_data::instrument_layout::compute_camera_and_module_outlines(c);
 
   return d;
+}
+
+std::string VSOTelescope::banner() const
+{
+  using calin::util::string::double_to_string_with_commas;
+  using calin::math::special::SQR;
+  std::ostringstream stream;
+  double A = this->numMirrors()*calin::math::hex_array::cell_area(this->facetSize())*1e-4;
+  //double D = 2*std::sqrt(this->numMirrors()*calin::math::hex_array::cell_area(this->facetSpacing())*1e-4/M_PI);
+  double D = 0;
+  for(const auto* m : fMirrors) {
+    D = std::max(D,0.02*std::sqrt(SQR(m->pos()[0])+SQR(m->pos()[2])));
+  }
+  double fov = 0;
+  for(const auto* m : fPixels) {
+    fov = std::max(fov,0.02*std::sqrt(SQR(m->pos()[0])+SQR(m->pos()[2])));
+  }
+
+  double F = this->infinityFocalDistance()*0.01;
+  double R = this->curvatureRadius()*0.01;
+  stream
+    << "Nf=" << this->numMirrors() << " f="
+    << double_to_string_with_commas(F/D,2) << " c="
+    << double_to_string_with_commas(F/R,2) << " A="
+    << double_to_string_with_commas(A,1) << "m2 D="
+    << double_to_string_with_commas(D,1) << "m F="
+    << double_to_string_with_commas(F,1) /* << "m Rc="
+    << double_to_string_with_commas(R,1) */ << "m FoV="
+    << double_to_string_with_commas(fov/F/M_PI*180,1) << "deg Dpix="
+    << double_to_string_with_commas(this->pixelSpacing()*0.01/F/M_PI*360*60,1) << "'";
+  return stream.str();
 }

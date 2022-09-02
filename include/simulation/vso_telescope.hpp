@@ -80,10 +80,10 @@ public:
   VSOTelescope();
   VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
                double DY, double AX, double AY, double EL, double AZ,
-               const Eigen::Vector3d& T, double CR, double A,
+               const Eigen::Vector3d& T, double AZELSEP, double CR, double A,
                double FSP, double FS, double RR, double FGSX, double FGSY,
                unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
-               const Eigen::Vector3d& FPT, double CD, double FOV, double D,
+               const Eigen::Vector3d& FPT, double FPINFFOCUS, double CD, double FOV, double D,
                double PS, double PR, double PGSX, double PGSZ,
                double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
@@ -136,6 +136,7 @@ public:
   //! Points telescope along axis
   bool pointTelescope(const Eigen::Vector3d& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
+  bool pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad);
 
   //! Transform particle global to reflector
   inline void globalToReflector_pos(Eigen::Vector3d& v) const;
@@ -205,7 +206,7 @@ public:
   double                 altitude() const { return fPos.z(); }
   const Eigen::Vector3d& pos() const { return fPos; }
   const Eigen::Vector3d& position() const { return fPos; }
-  double                 deltaY() const { return fDeltaY; }
+  double                 fpOffset() const { return fFPOffset; }
   double                 alphaX() const { return fAlphaX; }
   double                 alphaY() const { return fAlphaY; }
   double                 azimuth() const { return fAzimuth; }
@@ -213,6 +214,7 @@ public:
   Eigen::Vector3d        opticalAxis() const;
 
   const Eigen::Vector3d& translation() const { return fTranslation; }
+  double                 azElSeparation() const { return fAzElSeparation; }
   double                 curvatureRadius() const { return fCurvatureRadius; }
   double                 aperture() const { return fAperture; }
   double                 facetSpacing() const { return  fFacetSpacing; }
@@ -228,6 +230,7 @@ public:
   bool                   mirrorParity() const { return fMirrorParity; }
 
   const Eigen::Vector3d& focalPlanePosition() const { return fFPTranslation; }
+  double                 infinityFocalDistance() const { return fInfinityFocalDistance; }
   double                 cameraDiameter() const { return fCameraDiameter; }
   double                 fov() const { return fFieldOfView; }
   double                 cathodeDiameter() const { return fCathodeDiameter; }
@@ -292,13 +295,15 @@ public:
   const Eigen::Matrix3d& rotationReflectorToFP() const { return rot_reflector_to_camera_; }
   bool hasFPRotation() const { return fHasFPRotation; }
 
+  std::string banner() const;
+
 private:
   // ************************************************************************
   // Telescope Parameters
   // ************************************************************************
   unsigned        fID;                //!< Sequential ID (starting at 0)
   Eigen::Vector3d fPos;               //!< Position of the telescope
-  double          fDeltaY;            //!< Nonorthogonality of rotation planes
+  double          fFPOffset;            //!< Nonorthogonality of rotation planes
   double          fAlphaX;            //!< Alignment angles(?)
   double          fAlphaY;            //!< Alignment angles(?)
   double          fElevation;         //!< Elevation of the telescope -- angle to the x-y plane
@@ -308,6 +313,7 @@ private:
   // Reflector Parameters
   // ************************************************************************
   Eigen::Vector3d fTranslation;       //!< Vector in reflector r.f. to the intersection of the rotation axes
+  double          fAzElSeparation;    //!< Separation between azimuth and elevation axes (from El to Az along y-axis in global frame at Az=0)
   double          fCurvatureRadius;   //!< Radius of curvature of reflector
   double          fAperture;          //!< Diameter of projection of reflector onto a plane
   double          fFacetSpacing;      //!< Size of mirror
@@ -327,6 +333,7 @@ private:
   // Camera Parameters
   // ************************************************************************
   Eigen::Vector3d fFPTranslation;
+  double          fInfinityFocalDistance; //!< Translation for infinity focus
   double          fCameraDiameter;    //!< Dependent on the field of view
   double          fFieldOfView;       //!< Field of view
   double          fCathodeDiameter;   //!< Diameter of photocathode

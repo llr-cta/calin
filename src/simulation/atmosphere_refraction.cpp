@@ -47,25 +47,6 @@ using namespace calin::math::special;
 */
 
 namespace {
-  template<typename R>
-  inline void calculate_refraction_angular_terms(
-    R sin_i, R sec_i, R n_i_over_n_r,
-    R& sin_r, R& cos_r, R& t1_x, R& t2_x, R& t1_ct, R& t2_ct)
-  {
-    using std::sqrt;
-    using vcl::sqrt;
-    sin_r = sin_i * n_i_over_n_r;
-    const R cos2_r = 1.0 - SQR(sin_r);
-    cos_r = sqrt(cos2_r);
-    const R sec2_i = SQR(sec_i);
-
-    t1_x = sin_i * sec2_i / cos_r;
-    t2_x = t1_x * SQR(sin_i) * sec2_i;
-
-    t1_ct = t1_x * sin_i;
-    t2_ct = t2_x * sin_i;
-  }
-
   void fit_refraction_angular_coefficients(
     double z_i, double z_r, double n_i, double n_r_inv, const std::vector<double>& zn,
     Eigen::VectorXd x_obs, Eigen::VectorXd ct_obs,
@@ -408,7 +389,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
 
   // Spline 3 - vertical propagation time correction to bottom of atmosphere
   for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
-    v[ilevel] = t[ilevel][0].total() - levels[ilevel].z;
+    v[ilevel] = test_ray_boa_ct_(ilevel,0) - levels[ilevel].z;
   }
   s_->add_spline(v, "vertical ct correction (boa) [cm]");
 
@@ -427,8 +408,8 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
       4 + iobs*5 : vertical time correction to observation level
       5 + iobs*5 : position (x) correction "a" coefficient - term in tan_i
       6 + iobs*5 : position (x) correction "b" coefficient - term in tan^3_i
-      5 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
-      6 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
+      7 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
+      8 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
 
       In "normal" mode only the first two are used, as the ratio of b/a is fixed
       and the ct and x corrections are both derived from the "a_x" spline
@@ -551,6 +532,13 @@ LayeredRefractiveAtmosphere::~LayeredRefractiveAtmosphere()
   delete s_;
 }
 
+void LayeredRefractiveAtmosphere::regularize_internal_spline(double dx)
+{
+  auto* new_spine = s_->new_regularized_multi_spline(dx);
+  delete s_;
+  s_ = new_spine;
+}
+
 double LayeredRefractiveAtmosphere::rho(double z)
 {
   return std::exp(s_->value(z, 0));
@@ -575,14 +563,19 @@ double LayeredRefractiveAtmosphere::dn_dz(double z, double& n_minus_one)
 
 double LayeredRefractiveAtmosphere::propagation_ct_correction(double z)
 {
-  return std::exp(s_->value(z, 3));
+  return s_->value(z, 3);
+}
+
+double LayeredRefractiveAtmosphere::propagation_ct_correction_to_iobs(double z, unsigned iobs)
+{
+  return s_->value(z, 4 + 5*iobs);
 }
 
 void LayeredRefractiveAtmosphere::cherenkov_parameters(double z,
   double& n_minus_one, double& propagation_ct_correction)
 {
-  n_minus_one = std::exp(s_->value(z, 2));
-  propagation_ct_correction = std::exp(s_->value(z, 3));
+  s_->value(z, 2, n_minus_one, 3, propagation_ct_correction);
+  n_minus_one = std::exp(n_minus_one);
 }
 
 bool LayeredRefractiveAtmosphere::
@@ -682,8 +675,43 @@ double LayeredRefractiveAtmosphere::top_of_atmosphere()
   return s_->xknot().back();
 }
 
+double LayeredRefractiveAtmosphere::refraction_displacement(double z, double theta_rad, unsigned iobs)
+{
+  Eigen::Vector3d u(-std::sin(theta_rad), 0, -std::cos(theta_rad));
+  Eigen::Vector3d x(u[0]/u[2]*(z - zobs(iobs)), 0, z);
+  calin::math::ray::Ray r(x,u);
+  propagate_ray_with_refraction(r, iobs);
+  return r.x()*std::cos(theta_rad);
+}
+
+double LayeredRefractiveAtmosphere::refraction_bending(double z, double theta_rad, unsigned iobs)
+{
+  Eigen::Vector3d u(-std::sin(theta_rad), 0, -std::cos(theta_rad));
+  Eigen::Vector3d x(u[0]/u[2]*(z - zobs(iobs)), 0, z);
+  calin::math::ray::Ray r(x,u);
+  propagate_ray_with_refraction(r, iobs);
+  return theta_rad-std::acos(-r.uz());
+}
+
+double LayeredRefractiveAtmosphere::refraction_safety_radius(double theta_rad, unsigned iobs)
+{
+  return refraction_displacement(top_of_atmosphere(), theta_rad, iobs);
+}
+
 LayeredRefractiveAtmosphere*
 LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76(const std::vector<double>& obs_levels)
 {
   return new LayeredRefractiveAtmosphere(us76_levels(), obs_levels);
+}
+
+bool LayeredRefractiveAtmosphere::test_vcl_propagate_ray_with_refraction_and_mask(
+  calin::math::ray::Ray& ray, bool ray_mask, unsigned iobs, bool time_reversal_ok)
+{
+  using VCLArchitecture = calin::util::vcl::VCL256Architecture;
+  calin::math::ray::VCLRay<VCLArchitecture::double_real> vray(ray);
+  VCLArchitecture::double_bvt vray_mask = ray_mask;
+  vray_mask = vcl_propagate_ray_with_refraction_and_mask<VCLArchitecture>(
+    vray, vray_mask, iobs, time_reversal_ok);
+  ray = vray.extract(0);
+  return vray_mask[0];
 }

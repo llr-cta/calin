@@ -34,7 +34,7 @@ using namespace calin::math::ray;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
 
-template<typename VCLArchitecture> class VCLRayTest :
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRayTest :
   public VCLArchitecture, public testing::Test
 {
 public:

@@ -35,7 +35,7 @@ using namespace calin::util::vcl;
 using namespace calin::math::hex_array;
 using namespace calin::math::rng;
 
-template<typename VCLArchitecture> class VCLHexArrayTest :
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLHexArrayTest :
   public VCLArchitecture, public testing::Test
 {
 public:
@@ -178,7 +178,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_EQ) {
 }
 
 
-template<typename VCLReal> class VCLHexArrayRealTest :
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLHexArrayRealTest :
   public VCLReal, public testing::Test
 {
 public:

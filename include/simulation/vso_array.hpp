@@ -70,6 +70,7 @@ class VSOArray
 {
  public:
   VSOArray();
+  VSOArray(const VSOArray& array);
   virtual ~VSOArray();
 
   // ************************************************************************
@@ -84,6 +85,7 @@ class VSOArray
   // ************************************************************************
   bool pointTelescopesAzEl(const double az_rad, const double el_rad);
   bool pointTelescopes(const Eigen::Vector3d& v);
+  bool pointTelescopesAzElPhi(const double az_rad, const double el_rad, const double phi_rad);
 
   // ************************************************************************
   // Accessors
@@ -121,6 +123,8 @@ class VSOArray
   bool readFromShortDump(std::istream& stream);
   bool readFromShortDump(const std::string& filename);
 #endif
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const;
 
  private:
   double                     fLatitude;

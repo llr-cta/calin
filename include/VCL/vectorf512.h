@@ -138,7 +138,7 @@ static inline __m256d _mm512_castpd512_pd256(__m512d x) {
     return u.b;
 }
 
-#endif 
+#endif
 
 
 /*****************************************************************************
@@ -363,6 +363,10 @@ static inline Vec8db & operator ^= (Vec8db & a, Vec8db b) {
     return a;
 }
 
+// vector function andnot
+static inline Vec8db andnot (Vec8db a, Vec8db b) {
+    return Vec8db(andnot(Vec16b(a), Vec16b(b)));
+}
 
 /*****************************************************************************
 *
@@ -384,7 +388,7 @@ public:
     // Constructor to build from all elements:
     Vec16f(float f0, float f1, float f2, float f3, float f4, float f5, float f6, float f7,
     float f8, float f9, float f10, float f11, float f12, float f13, float f14, float f15) {
-        zmm = _mm512_setr_ps(f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15); 
+        zmm = _mm512_setr_ps(f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15);
     }
     // Constructor to build from two Vec8f:
     Vec16f(Vec8f const & a0, Vec8f const & a1) {
@@ -448,7 +452,7 @@ public:
     float extract(int index) const {
 #if INSTRSET >= 10
         __m512 x = _mm512_maskz_compress_ps(__mmask16(1u << index), zmm);
-        return _mm512_cvtss_f32(x);        
+        return _mm512_cvtss_f32(x);
 #else
         float a[16];
         store(a);
@@ -727,12 +731,12 @@ static inline Vec16f min(Vec16f const & a, Vec16f const & b) {
 
 // same as max, NAN-safe
 static inline Vec16f maximum(Vec16f const & a, Vec16f const & b) {
-    return select(a != a, a, max(a,b)); 
+    return select(a != a, a, max(a,b));
 }
 
 // same as min, NAN-safe
 static inline Vec16f minimum(Vec16f const & a, Vec16f const & b) {
-    return select(a != a, a, min(a,b)); 
+    return select(a != a, a, min(a,b));
 }
 
 // function abs: absolute value
@@ -770,7 +774,7 @@ template <int n>
 static inline Vec16f pow(Vec16f const & a, Const_int_t<n>) {
     return pow_n<Vec16f, n>(a);
 }
- 
+
 // function round: round to nearest integer (even). (result as float vector)
 static inline Vec16f round(Vec16f const & a) {
     return _mm512_roundscale_ps(a, 0+8);
@@ -853,7 +857,7 @@ static inline Vec16f nmul_add(Vec16f const & a, Vec16f const & b, Vec16f const &
     return _mm512_fnmadd_ps(a, b, c);
 }
 
-// Multiply and subtract with extra precision on the intermediate calculations, 
+// Multiply and subtract with extra precision on the intermediate calculations,
 // Do not use mul_sub_x in general code because it is inaccurate in certain cases
 static inline Vec16f mul_sub_x(Vec16f const & a, Vec16f const & b, Vec16f const & c) {
     return _mm512_fmsub_ps(a, b, c);
@@ -876,7 +880,7 @@ static inline Vec16i exponent(Vec16f const & a) {
 
 // Extract the fraction part of a floating point number
 // a = 2^exponent(a) * fraction(a), except for a = 0
-// fraction(1.0f) = 1.0f, fraction(5.0f) = 1.25f 
+// fraction(1.0f) = 1.0f, fraction(5.0f) = 1.25f
 static inline Vec16f fraction(Vec16f const & a) {
     return _mm512_getmant_ps(a, _MM_MANT_NORM_1_2, _MM_MANT_SIGN_zero);
 }
@@ -918,7 +922,7 @@ static inline Vec16f sign_combine(Vec16f const & a, Vec16f const & b) {
     return a ^ (b & Vec16f(signmask.f));
 }
 
-// Function is_finite: gives true for elements that are normal, denormal or zero, 
+// Function is_finite: gives true for elements that are normal, denormal or zero,
 // false for INF and NAN
 // (the underscore in the name avoids a conflict with a macro in Intel's mathimf.h)
 static inline Vec16fb is_finite(Vec16f const & a) {
@@ -1016,7 +1020,7 @@ public:
     }
     // Constructor to build from all elements:
     Vec8d(double d0, double d1, double d2, double d3, double d4, double d5, double d6, double d7) {
-        zmm = _mm512_setr_pd(d0, d1, d2, d3, d4, d5, d6, d7); 
+        zmm = _mm512_setr_pd(d0, d1, d2, d3, d4, d5, d6, d7);
     }
     // Constructor to build from two Vec4d:
     Vec8d(Vec4d const & a0, Vec4d const & a1) {
@@ -1081,11 +1085,11 @@ public:
     double extract(int index) const {
 #if INSTRSET >= 10
         __m512d x = _mm512_maskz_compress_pd(__mmask8(1u << index), zmm);
-        return _mm512_cvtsd_f64(x);        
-#else 
+        return _mm512_cvtsd_f64(x);
+#else
         double a[8];
         store(a);
-        return a[index & 7];        
+        return a[index & 7];
 #endif
     }
     // Extract a single element. Use store function if extracting more than one element.
@@ -1360,12 +1364,12 @@ static inline Vec8d min(Vec8d const & a, Vec8d const & b) {
 
 // same as max, NAN-safe
 static inline Vec8d maximum(Vec8d const & a, Vec8d const & b) {
-    return select(a != a, a, max(a,b)); 
+    return select(a != a, a, max(a,b));
 }
 
 // same as min, NAN-safe
 static inline Vec8d minimum(Vec8d const & a, Vec8d const & b) {
-    return select(a != a, a, min(a,b)); 
+    return select(a != a, a, min(a,b));
 }
 
 
@@ -1385,7 +1389,7 @@ static inline Vec8d square(Vec8d const & a) {
 }
 
 // The purpose of this template is to prevent implicit conversion of a float
-// exponent to int when calling pow(vector, float) and vectormath_exp.h is not included 
+// exponent to int when calling pow(vector, float) and vectormath_exp.h is not included
 template <typename TT> static Vec8d pow(Vec8d const & a, TT const & n); // = delete;
 
 // pow(Vec8d, int):
@@ -1467,7 +1471,7 @@ static inline Vec8q round_to_int64(Vec8d const & a) {return roundi(a);} // depre
 
 // function to_double: convert integer vector elements to double vector (inefficient)
 static inline Vec8d to_double(Vec8q const & a) {
-#if INSTRSET >= 10 // __AVX512DQ__ 
+#if INSTRSET >= 10 // __AVX512DQ__
     return _mm512_cvtepi64_pd(a);
 #else
     int64_t aa[8];
@@ -1477,7 +1481,7 @@ static inline Vec8d to_double(Vec8q const & a) {
 }
 
 static inline Vec8d to_double(Vec8uq const & a) {
-#if INSTRSET >= 10 // __AVX512DQ__ 
+#if INSTRSET >= 10 // __AVX512DQ__
     return _mm512_cvtepu64_pd(a);
 #else
     uint64_t aa[8];
@@ -1526,7 +1530,7 @@ static inline Vec8d nmul_add(Vec8d const & a, Vec8d const & b, Vec8d const & c) 
     return _mm512_fnmadd_pd(a, b, c);
 }
 
-// Multiply and subtract with extra precision on the intermediate calculations, 
+// Multiply and subtract with extra precision on the intermediate calculations,
 static inline Vec8d mul_sub_x(Vec8d const & a, Vec8d const & b, Vec8d const & c) {
     return _mm512_fmsub_pd(a, b, c);
 }
@@ -1547,7 +1551,7 @@ static inline Vec8q exponent(Vec8d const & a) {
 
 // Extract the fraction part of a floating point number
 // a = 2^exponent(a) * fraction(a), except for a = 0
-// fraction(1.0) = 1.0, fraction(5.0) = 1.25 
+// fraction(1.0) = 1.0, fraction(5.0) = 1.25
 static inline Vec8d fraction(Vec8d const & a) {
     return _mm512_getmant_pd(a, _MM_MANT_NORM_1_2, _MM_MANT_SIGN_zero);
 }
@@ -1587,7 +1591,7 @@ static inline Vec8d sign_combine(Vec8d const & a, Vec8d const & b) {
     return a ^ (b & Vec8d(u.f));
 }
 
-// Function is_finite: gives true for elements that are normal, denormal or zero, 
+// Function is_finite: gives true for elements that are normal, denormal or zero,
 // false for INF and NAN
 static inline Vec8db is_finite(Vec8d const & a) {
 #if INSTRSET >= 10 // __AVX512DQ__
@@ -1734,7 +1738,7 @@ static inline Vec8d nan8d(int n = 0x10) {
 ******************************************************************************
 *
 * These permute functions can reorder the elements of a vector and optionally
-* set some elements to zero. 
+* set some elements to zero.
 *
 * The indexes are inserted as template parameters in <>. These indexes must be
 * constants. Each template parameter is an index to the element you want to select.
@@ -1798,7 +1802,7 @@ static inline Vec8d permute8(Vec8d const & a) {
         }
         // different permute patterns in each lane. It's faster to do a full permute than four masked permutes within lanes
     }
-    if ((((m1 ^ 0x10101010) & 0x11111111 & mz) == 0) 
+    if ((((m1 ^ 0x10101010) & 0x11111111 & mz) == 0)
     &&  ((m1 ^ (m1 >> 4)) & 0x06060606 & mz & (mz >> 4)) == 0) {
         // permute lanes only. no permutation within each lane
         const int m3 = m2 | (m2 >> 4);
@@ -1818,7 +1822,7 @@ static inline Vec8d permute8(Vec8d const & a) {
         // full permute and zeroing
         return _mm512_maskz_permutexvar_pd(z, pmask, a);
     }
-    else {    
+    else {
         return _mm512_permutexvar_pd(pmask, a);
     }
 }
@@ -1835,7 +1839,7 @@ static inline Vec16f permute16(Vec16f const & a) {
         | (i8&15LL)<<32 | (i9&15LL)<<36 | (i10&15LL)<<40 | (i11&15LL)<<44 | (i12&15LL)<<48 | (i13&15LL)<<52 | (i14&15LL)<<56 | (i15&15LL)<<60;
 
     // Mask to zero out negative indexes
-    const uint64_t mz = (i0<0?0:0xF) | (i1<0?0:0xF0) | (i2<0?0:0xF00) | (i3<0?0:0xF000) | (i4<0?0:0xF0000) | (i5<0?0:0xF00000) | (i6<0?0:0xF000000) | (i7<0?0:0xF0000000ULL) | (i8<0?0:0xF00000000) 
+    const uint64_t mz = (i0<0?0:0xF) | (i1<0?0:0xF0) | (i2<0?0:0xF00) | (i3<0?0:0xF000) | (i4<0?0:0xF0000) | (i5<0?0:0xF00000) | (i6<0?0:0xF000000) | (i7<0?0:0xF0000000ULL) | (i8<0?0:0xF00000000)
         | (i9<0?0:0xF000000000) | (i10<0?0:0xF0000000000) | (i11<0?0:0xF00000000000) | (i12<0?0:0xF000000000000) | (i13<0?0:0xF0000000000000) | (i14<0?0:0xF00000000000000) | (i15<0?0:0xF000000000000000);
 
     const uint64_t m2 = m1 & mz;
@@ -1875,7 +1879,7 @@ static inline Vec16f permute16(Vec16f const & a) {
         // different permute patterns in each lane. It's faster to do a full permute than four masked permutes within lanes
     }
     const uint64_t lane = (m2 | m2 >> 4 | m2 >> 8 | m2 >> 12) & 0x000C000C000C000C;
-    if ((((m1 ^ 0x3210321032103210) & 0x3333333333333333 & mz) == 0) 
+    if ((((m1 ^ 0x3210321032103210) & 0x3333333333333333 & mz) == 0)
     &&  ((m1 ^ (lane * 0x1111)) & 0xCCCCCCCCCCCCCCCC & mz) == 0) {
         // permute lanes only. no permutation within each lane
         const uint64_t s = ((lane >> 2) & 3) | (((lane >> 18) & 3) << 2) | (((lane >> 34) & 3) << 4) | (((lane >> 50) & 3) << 6);
@@ -1894,7 +1898,7 @@ static inline Vec16f permute16(Vec16f const & a) {
         // full permute and zeroing
         return _mm512_maskz_permutexvar_ps(z, pmask, a);
     }
-    else {    
+    else {
         return _mm512_permutexvar_ps(pmask, a);
     }
 }
@@ -1911,13 +1915,13 @@ static inline Vec16f permute16(Vec16f const & a) {
 ******************************************************************************
 *
 * These blend functions can mix elements from two different vectors and
-* optionally set some elements to zero. 
+* optionally set some elements to zero.
 *
 * The indexes are inserted as template parameters in <>. These indexes must be
-* constants. Each template parameter is an index to the element you want to 
+* constants. Each template parameter is an index to the element you want to
 * select, where higher indexes indicate an element from the second source
 * vector. For example, if each vector has 8 elements, then indexes 0 - 7
-* will select an element from the first vector and indexes 8 - 15 will select 
+* will select an element from the first vector and indexes 8 - 15 will select
 * an element from the second vector. A negative index will generate zero.
 *
 * Example:
@@ -1933,8 +1937,8 @@ static inline Vec16f permute16(Vec16f const & a) {
 *****************************************************************************/
 
 
-template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7> 
-static inline Vec8d blend8(Vec8d const & a, Vec8d const & b) {  
+template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7>
+static inline Vec8d blend8(Vec8d const & a, Vec8d const & b) {
 
     // Combine indexes into a single bitfield, with 4 bits for each
     const int m1 = (i0&0xF) | (i1&0xF)<<4 | (i2&0xF)<< 8 | (i3&0xF)<<12 | (i4&0xF)<<16 | (i5&0xF)<<20 | (i6&0xF)<<24 | (i7&0xF)<<28;
@@ -1990,7 +1994,7 @@ static inline Vec8d blend8(Vec8d const & a, Vec8d const & b) {
             // This code generates two instructions instead of one, but we are avoiding the slow lane-crossing instruction,
             // and we are saving 64 bytes of data cache.
             // 1. Permute a, zero elements not from a (using _mm512_maskz_shuffle_epi32)
-            __m512d ta = permute8< (maz&0xF)?i0&7:-1, (maz&0xF0)?i1&7:-1, (maz&0xF00)?i2&7:-1, (maz&0xF000)?i3&7:-1, 
+            __m512d ta = permute8< (maz&0xF)?i0&7:-1, (maz&0xF0)?i1&7:-1, (maz&0xF00)?i2&7:-1, (maz&0xF000)?i3&7:-1,
                 (maz&0xF0000)?i4&7:-1, (maz&0xF00000)?i5&7:-1, (maz&0xF000000)?i6&7:-1, (maz&0xF0000000)?i7&7:-1> (a);
             // write mask for elements from b
             const __mmask16 sb = ((mbz&0xF)?3:0) | ((mbz&0xF0)?0xC:0) | ((mbz&0xF00)?0x30:0) | ((mbz&0xF000)?0xC0:0) | ((mbz&0xF0000)?0x300:0) | ((mbz&0xF00000)?0xC00:0) | ((mbz&0xF000000)?0x3000:0) | ((mbz&0xF0000000)?0xC000:0);
@@ -2012,9 +2016,9 @@ static inline Vec8d blend8(Vec8d const & a, Vec8d const & b) {
 }
 
 
-template <int i0,  int i1,  int i2,  int i3,  int i4,  int i5,  int i6,  int i7, 
-          int i8,  int i9,  int i10, int i11, int i12, int i13, int i14, int i15 > 
-static inline Vec16f blend16(Vec16f const & a, Vec16f const & b) {  
+template <int i0,  int i1,  int i2,  int i3,  int i4,  int i5,  int i6,  int i7,
+          int i8,  int i9,  int i10, int i11, int i12, int i13, int i14, int i15 >
+static inline Vec16f blend16(Vec16f const & a, Vec16f const & b) {
 
     // Combine indexes into a single bitfield, with 4 bits for each indicating shuffle, but not source
     const uint64_t m1 = (i0&0xF) | (i1&0xF)<<4 | (i2&0xF)<<8 | (i3&0xF)<<12 | (i4&0xF)<<16 | (i5&0xF)<<20 | (i6&0xF)<<24 | (i7&0xFLL)<<28
@@ -2033,7 +2037,7 @@ static inline Vec16f blend16(Vec16f const & a, Vec16f const & b) {
     const bool dozero = ((i0|i1|i2|i3|i4|i5|i6|i7|i8|i9|i10|i11|i12|i13|i14|i15) & 0x80) != 0;
 
     // mask for elements not zeroed
-    const __mmask16 z = __mmask16((i0>=0)<<0 | (i1>=0)<<1 | (i2>=0)<<2 | (i3>=0)<<3 | (i4>=0)<<4 | (i5>=0)<<5 | (i6>=0)<<6 | (i7>=0)<<7 
+    const __mmask16 z = __mmask16((i0>=0)<<0 | (i1>=0)<<1 | (i2>=0)<<2 | (i3>=0)<<3 | (i4>=0)<<4 | (i5>=0)<<5 | (i6>=0)<<6 | (i7>=0)<<7
         | (i8>=0)<<8 | (i9>=0)<<9 | (i10>=0)<<10 | (i11>=0)<<11 | (i12>=0)<<12 | (i13>=0)<<13 | (i14>=0)<<14 | (i15>=0)<<15);
 
     // special case: all zero
@@ -2078,12 +2082,12 @@ static inline Vec16f blend16(Vec16f const & a, Vec16f const & b) {
             // This code generates two instructions instead of one, but we are avoiding the slow lane-crossing instruction,
             // and we are saving 64 bytes of data cache.
             // 1. Permute a, zero elements not from a (using _mm512_maskz_shuffle_epi32)
-            __m512 ta = permute16< (maz&0xF)?i0&15:-1, (maz&0xF0)?i1&15:-1, (maz&0xF00)?i2&15:-1, (maz&0xF000)?i3&15:-1, 
+            __m512 ta = permute16< (maz&0xF)?i0&15:-1, (maz&0xF0)?i1&15:-1, (maz&0xF00)?i2&15:-1, (maz&0xF000)?i3&15:-1,
                 (maz&0xF0000)?i4&15:-1, (maz&0xF00000)?i5&15:-1, (maz&0xF000000)?i6&15:-1, (maz&0xF0000000)?i7&15:-1,
-                (maz&0xF00000000)?i8&15:-1, (maz&0xF000000000)?i9&15:-1, (maz&0xF0000000000)?i10&15:-1, (maz&0xF00000000000)?i11&15:-1, 
+                (maz&0xF00000000)?i8&15:-1, (maz&0xF000000000)?i9&15:-1, (maz&0xF0000000000)?i10&15:-1, (maz&0xF00000000000)?i11&15:-1,
                 (maz&0xF000000000000)?i12&15:-1, (maz&0xF0000000000000)?i13&15:-1, (maz&0xF00000000000000)?i14&15:-1, (maz&0xF000000000000000)?i15&15:-1> (a);
             // write mask for elements from b
-            const __mmask16 sb = ((mbz&0xF)?1:0) | ((mbz&0xF0)?0x2:0) | ((mbz&0xF00)?0x4:0) | ((mbz&0xF000)?0x8:0) | ((mbz&0xF0000)?0x10:0) | ((mbz&0xF00000)?0x20:0) | ((mbz&0xF000000)?0x40:0) | ((mbz&0xF0000000)?0x80:0) 
+            const __mmask16 sb = ((mbz&0xF)?1:0) | ((mbz&0xF0)?0x2:0) | ((mbz&0xF00)?0x4:0) | ((mbz&0xF000)?0x8:0) | ((mbz&0xF0000)?0x10:0) | ((mbz&0xF00000)?0x20:0) | ((mbz&0xF000000)?0x40:0) | ((mbz&0xF0000000)?0x80:0)
                 | ((mbz&0xF00000000)?0x100:0) | ((mbz&0xF000000000)?0x200:0) | ((mbz&0xF0000000000)?0x400:0) | ((mbz&0xF00000000000)?0x800:0) | ((mbz&0xF000000000000)?0x1000:0) | ((mbz&0xF0000000000000)?0x2000:0) | ((mbz&0xF00000000000000)?0x4000:0) | ((mbz&0xF000000000000000)?0x8000:0);
             // permute index for elements from b
             const int pi = (patb & 3) | (((patb >> 4) & 3) << 2) | (((patb >> 8) & 3) << 4) | (((patb >> 12) & 3) << 6);
@@ -2094,10 +2098,10 @@ static inline Vec16f blend16(Vec16f const & a, Vec16f const & b) {
     }
 
     // general case: full permute
-    const __m512i pmask = constant16i<i0&0x1F, i1&0x1F, i2&0x1F, i3&0x1F, i4&0x1F, i5&0x1F, i6&0x1F, i7&0x1F, 
+    const __m512i pmask = constant16i<i0&0x1F, i1&0x1F, i2&0x1F, i3&0x1F, i4&0x1F, i5&0x1F, i6&0x1F, i7&0x1F,
         i8&0x1F, i9&0x1F, i10&0x1F, i11&0x1F, i12&0x1F, i13&0x1F, i14&0x1F, i15&0x1F>();
     if (dozero) {
-        return _mm512_maskz_permutex2var_ps(z, a, pmask, b);        
+        return _mm512_maskz_permutex2var_ps(z, a, pmask, b);
     }
     else {
         return _mm512_permutex2var_ps(a, pmask, b);
@@ -2202,7 +2206,7 @@ static inline Vec8d lookup(Vec8q const & index, double const * table) {
 *
 *****************************************************************************/
 // Load elements from array a with indices i0,i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13,i14,i15
-template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7, 
+template <int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7,
 int i8, int i9, int i10, int i11, int i12, int i13, int i14, int i15>
 static inline Vec16f gather16f(void const * a) {
     Static_error_check<(i0|i1|i2|i3|i4|i5|i6|i7|i8|i9|i10|i11|i12|i13|i14|i15)>=0> Negative_array_index;  // Error message if index is negative
@@ -2252,7 +2256,7 @@ static inline Vec16f gather16f(void const * a) {
         }
     }
     if ((i0<imin+16  || i0>imax-16)  && (i1<imin+16  || i1>imax-16)  && (i2<imin+16  || i2>imax-16)  && (i3<imin+16  || i3>imax-16)
-    &&  (i4<imin+16  || i4>imax-16)  && (i5<imin+16  || i5>imax-16)  && (i6<imin+16  || i6>imax-16)  && (i7<imin+16  || i7>imax-16)    
+    &&  (i4<imin+16  || i4>imax-16)  && (i5<imin+16  || i5>imax-16)  && (i6<imin+16  || i6>imax-16)  && (i7<imin+16  || i7>imax-16)
     &&  (i8<imin+16  || i8>imax-16)  && (i9<imin+16  || i9>imax-16)  && (i10<imin+16 || i10>imax-16) && (i11<imin+16 || i11>imax-16)
     &&  (i12<imin+16 || i12>imax-16) && (i13<imin+16 || i13>imax-16) && (i14<imin+16 || i14>imax-16) && (i15<imin+16 || i15>imax-16) ) {
         // load two contiguous blocks and blend
@@ -2337,12 +2341,12 @@ static inline Vec8d gather8d(void const * a) {
 ******************************************************************************
 *
 * These functions write the elements of a vector to arbitrary positions in an
-* array in memory. Each vector element is written to an array position 
+* array in memory. Each vector element is written to an array position
 * determined by an index. An element is not written if the corresponding
 * index is out of range.
 * The indexes can be specified as constant template parameters or as an
 * integer vector.
-* 
+*
 * The scatter functions are useful if the data are distributed in a sparce
 * manner into the array. If the array is dense then it is more efficient
 * to permute the data into the right positions and then write the whole
@@ -2351,7 +2355,7 @@ static inline Vec8d gather8d(void const * a) {
 * Example:
 * Vec8d a(10,11,12,13,14,15,16,17);
 * double b[16] = {0};
-* scatter<0,2,14,10,1,-1,5,9>(a,b); 
+* scatter<0,2,14,10,1,-1,5,9>(a,b);
 * // Now, b = {10,14,11,0,0,16,0,0,0,17,13,0,0,0,12,0}
 *
 *****************************************************************************/

@@ -33,10 +33,23 @@ struct RayProcessorDetectorSphere
 {
   RayProcessorDetectorSphere() { /* nothing to see here */ }
   RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
-      r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
+    r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
+  RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius,
+      const Eigen::Vector3d& obs_dir_, double field_of_view_radius_, unsigned iobs_ = 0):
+    r0(r0_), radius(radius), iobs(iobs_),
+    obs_dir(obs_dir_), field_of_view_radius(field_of_view_radius_) { /* nothing to see here */ }
+
+  // Position of sphere around detector through which incoming ray must mast
+  // if it is to have any chance of being detected
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius = 0;         // Squared radius of sphere  [cm^2]
+  double radius = 0;         // Radius of sphere  [cm^2]
   unsigned iobs = 0;         // Observation layer associated with this detector
+
+  // Optional restriction on direction that incoming ray must have if it is to
+  // be detected. If incoming ray has direction u, then ray must have
+  // u.obs_dir <= -cos(field_of_view_radius) for it to be detected
+  Eigen::Vector3d obs_dir = Eigen::Vector3d::UnitY(); // Pointing direction of detector
+  double field_of_view_radius = M_PI; // Field of view of detector [radians]
 };
 
 class RayProcessor
@@ -60,7 +73,7 @@ public:
   virtual ~FederatedPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t0, double pe_weight) override;
   void finish_processing() override;
 protected:
   unsigned scope_id_base_ = 0;

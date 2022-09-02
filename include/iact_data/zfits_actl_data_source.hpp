@@ -35,6 +35,7 @@
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
+using std::streamoff;
 #include <ProtobufIFits.h>
 
 #ifndef CALIN_NO_ACTL_L0

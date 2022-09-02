@@ -62,7 +62,7 @@ TEST(NR3SpeedTestRNG, Scalar_1G_Double)
   EXPECT_GE(sum,0.0);
 }
 
-template<typename VCLArchitecture> class VCLSpeedTestRNG :
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLSpeedTestRNG :
   public testing::Test
 {
 public:

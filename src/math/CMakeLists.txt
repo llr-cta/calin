@@ -20,7 +20,6 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	pdf_1d.cpp pdf_1d_gaussian.cpp pdf_1d_limited_exponential.cpp
 	pdf_1d_two_component.cpp pdf_1d_binned_gaussian.cpp
   pdf_1d_two_component_constrained.cpp
-	optimizer.cpp nlopt_optimizer.cpp cminpack_optimizer.cpp
 	hessian.cpp brent.cpp
 	log_quadratic_spline_pdf_1d.cpp covariance_calc.cpp
 	special.cpp hex_array.cpp hex_array_vvv.cpp square_array.cpp
@@ -29,11 +28,11 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
 	regular_grid.cpp lomb_scargle.cpp
 	b_spline.cpp
-	spline_interpolation.cpp least_squares.cpp nspace.cpp)
+	spline_interpolation.cpp spline_interpolation_2d.cpp least_squares.cpp nspace.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util
-	calin_nlopt calin_cminpack calin_chealpix calin_f2c calin_io calin_provenance
+	calin_chealpix calin_io calin_provenance
 	calin_proto_math ${EXTRA_LIBS}) # -lblosc)
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

@@ -28,7 +28,6 @@
 #include "math/function.hpp"
 #include "math/pdf_1d.hpp"
 #include "math/m_estimate.hpp"
-#include "math/optimizer.hpp"
 
 namespace calin { namespace math { namespace data_modeling {
 

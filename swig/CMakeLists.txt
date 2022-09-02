@@ -30,7 +30,7 @@ set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_INSTALL_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For calin_config.i
 
-execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} -std=c++17 -Wall
 	-o ${CMAKE_BINARY_DIR}/gen-swig_dep
 	${CMAKE_SOURCE_DIR}/tools/gen-swig_dep/gen-swig_dep.cpp)
 

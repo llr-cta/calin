@@ -34,6 +34,7 @@
 #include <math/special.hpp>
 #include <math/ray.hpp>
 #include <util/vcl.hpp>
+#include <math/ray_vcl.hpp>
 #include <math/spline_interpolation.hpp>
 #include <simulation/atmosphere.pb.h>
 
@@ -283,10 +284,21 @@ public:
   LayeredRefractiveAtmosphere(const std::vector<Level>& levels,
     const std::vector<double>& obs_levels = {},
     const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
+  LayeredRefractiveAtmosphere(const LayeredRefractiveAtmosphere& o) : Atmosphere(),
+    levels_(o.levels_), s_(new calin::math::spline_interpolation::CubicMultiSpline(*o.s_)),
+    zobs_(o.zobs_), thickness_to_toa_(o.thickness_to_toa_), obs_level_data_(o.obs_level_data_),
+    high_accuracy_mode_(o.high_accuracy_mode_), test_ray_emi_zn_(o.test_ray_emi_zn_),
+    test_ray_emi_z_(o.test_ray_emi_z_), test_ray_emi_x_(o.test_ray_emi_x_),
+    test_ray_emi_ct_(o.test_ray_emi_ct_), test_ray_obs_x_(o.test_ray_obs_x_),
+    test_ray_obs_ct_(o.test_ray_obs_ct_), test_ray_boa_x_(o.test_ray_boa_x_),
+    test_ray_boa_ct_(o.test_ray_boa_ct_), model_ray_obs_x_(o.model_ray_obs_x_),
+    model_ray_obs_ct_(o.model_ray_obs_ct_) { }
 
   virtual ~LayeredRefractiveAtmosphere();
 
-  double num_obs_levels() const { return zobs_.size(); }
+  LayeredRefractiveAtmosphere* clone() const { return new LayeredRefractiveAtmosphere(*this); }
+
+  unsigned num_obs_levels() const { return zobs_.size(); }
   double zobs(unsigned iground) const { return zobs_[iground]; }
 
   double rho(double z) override;
@@ -295,6 +307,8 @@ public:
   double dn_dz(double z, double& n_minus_one) override;
 
   double propagation_ct_correction(double z) override;
+  double propagation_ct_correction_to_iobs(double z, unsigned iobs);
+
   void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction) override;
 
@@ -304,7 +318,11 @@ public:
   bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
     bool time_reversal_ok=true);
 
-  template<typename VCLArchitecture> inline void
+  double refraction_displacement(double z, double theta_rad, unsigned iobs=0);
+  double refraction_bending(double z, double theta_rad, unsigned iobs=0);
+  double refraction_safety_radius(double zenith_rad, unsigned iobs=0);
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
   {
     return vcl::exp(s_->vcl_value<VCLArchitecture>(z, 2));
@@ -330,11 +348,24 @@ public:
     return dlognmo_dz;
   }
 
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_propagation_ct_correction_to_iobs(typename VCLArchitecture::double_vt z, unsigned iobs=0) const
+  {
+    return s_->vcl_value<VCLArchitecture>(z, 4+iobs*5);
+  }
+
+  template<typename VCLArchitecture> typename VCLArchitecture::double_bvt
+  vcl_propagate_ray_with_refraction_and_mask(
+    calin::math::ray::VCLRay<typename VCLArchitecture::double_real>& ray,
+    typename VCLArchitecture::double_bvt ray_mask,
+    unsigned iobs=0, bool time_reversal_ok=true);
+
   const std::vector<Level>& get_levels() const { return levels_; }
 
   static LayeredRefractiveAtmosphere* us76(const std::vector<double>& obs_levels = {});
 
   const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
+  void regularize_internal_spline(double dx = 0);
 
   const Eigen::VectorXd& test_ray_emi_zn() { return test_ray_emi_zn_; }
   const Eigen::VectorXd& test_ray_emi_z() { return test_ray_emi_z_; }
@@ -349,6 +380,9 @@ public:
 
   const Eigen::MatrixXd& model_ray_obs_x(unsigned iobs) { return model_ray_obs_x_[iobs]; }
   const Eigen::MatrixXd& model_ray_obs_ct(unsigned iobs) { return model_ray_obs_ct_[iobs]; }
+
+  bool test_vcl_propagate_ray_with_refraction_and_mask(
+    calin::math::ray::Ray& ray, bool ray_mask, unsigned iobs=0, bool time_reversal_ok=true);
 
   static calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig default_config();
 
@@ -381,6 +415,116 @@ private:
   std::vector<Eigen::MatrixXd> model_ray_obs_x_;
   std::vector<Eigen::MatrixXd> model_ray_obs_ct_;
 };
+
+template<typename R>
+inline void calculate_refraction_angular_terms(
+  R sin_i, R sec_i, R n_i_over_n_r,
+  R& sin_r, R& cos_r, R& t1_x, R& t2_x, R& t1_ct, R& t2_ct)
+{
+  using std::sqrt;
+  using vcl::sqrt;
+  sin_r = sin_i * n_i_over_n_r;
+  const R cos2_r = 1.0 - calin::math::special::SQR(sin_r);
+  cos_r = sqrt(cos2_r);
+  const R sec2_i = calin::math::special::SQR(sec_i);
+
+  t1_x = sin_i * sec2_i / cos_r;
+  t2_x = t1_x * calin::math::special::SQR(sin_i) * sec2_i;
+
+  t1_ct = t1_x * sin_i;
+  t2_ct = t2_x * sin_i;
+}
+
+template<typename VCLArchitecture> typename VCLArchitecture::double_bvt
+LayeredRefractiveAtmosphere::vcl_propagate_ray_with_refraction_and_mask(
+  calin::math::ray::VCLRay<typename VCLArchitecture::double_real>& ray,
+  typename VCLArchitecture::double_bvt ray_mask,
+  unsigned iobs, bool time_reversal_ok)
+{
+  typename VCLArchitecture::double_vt dz = ray.z() - obs_level_data_[iobs].z;
+
+  const typename VCLArchitecture::double_vt cos_i = -ray.uz();
+
+  ray_mask &= cos_i>0;
+  if(not time_reversal_ok) {
+    ray_mask &= dz>0;
+  }
+
+  if(not vcl::horizontal_or(ray_mask)) {
+    // We outie ...
+    return ray_mask;
+  }
+
+  typename VCLArchitecture::double_vt n_i;
+  typename VCLArchitecture::double_vt v_ct;
+  typename VCLArchitecture::double_vt a_x;
+  typename VCLArchitecture::double_vt b_x;
+  typename VCLArchitecture::double_vt a_ct;
+  typename VCLArchitecture::double_vt b_ct;
+
+  unsigned ispline = 4+iobs*5;
+  if(high_accuracy_mode_) {
+    // 6 spline interpolations for all required data
+    s_->vcl_value<VCLArchitecture>(ray.z(),
+      /* 1 */ 2, n_i,
+      /* 2 */ ispline, v_ct,
+      /* 3 */ ispline+1, a_x,
+      /* 4 */ ispline+2, b_x,
+      /* 5 */ ispline+3, a_ct,
+      /* 6 */ ispline+4, b_ct);
+  } else {
+    // 3 spline interpolations for n, vertical ct and horizontal x corrections
+    s_->vcl_value<VCLArchitecture>(ray.z(),
+      /* 1 */ 2, n_i,
+      /* 2 */ ispline, v_ct,
+      /* 3 */ ispline+1, a_x);
+    b_x = obs_level_data_[iobs].x_ba_ratio * a_x;
+    a_ct = obs_level_data_[iobs].ct_x_ratio * a_x;
+    b_ct = obs_level_data_[iobs].ct_ba_ratio * a_ct;
+  }
+  n_i = 1.0 + vcl::exp(n_i);
+
+  const typename VCLArchitecture::double_vt n_r_inv = obs_level_data_[iobs].n_inv;
+  const typename VCLArchitecture::double_vt n_i_over_n_r = n_i * n_r_inv;
+
+  const typename VCLArchitecture::double_vt sec_i = 1.0/cos_i;
+  const typename VCLArchitecture::double_vt sin2_i = calin::math::special::SQR(ray.ux()) + calin::math::special::SQR(ray.uy());
+  const typename VCLArchitecture::double_vt sin_i = vcl::sqrt(sin2_i);
+
+  typename VCLArchitecture::double_vt sin_r;
+  typename VCLArchitecture::double_vt cos_r;
+  typename VCLArchitecture::double_vt t1_x;
+  typename VCLArchitecture::double_vt t2_x;
+  typename VCLArchitecture::double_vt t1_ct;
+  typename VCLArchitecture::double_vt t2_ct;
+
+  calculate_refraction_angular_terms(sin_i, sec_i, n_i_over_n_r,
+    sin_r, cos_r, t1_x, t2_x, t1_ct, t2_ct);
+
+  ray.propagate_dist_with_mask(ray_mask, dz*sec_i);
+
+  // Bend direction for Snell's law
+  ray.mutable_uz() = vcl::select(ray_mask, -cos_r, ray.uz());
+  ray.mutable_ux() *= vcl::select(ray_mask, n_i_over_n_r, 1.0);
+  ray.mutable_uy() *= vcl::select(ray_mask, n_i_over_n_r, 1.0);
+
+  typename VCLArchitecture::double_vt dx = a_x * t1_x + b_x * t2_x;
+  typename VCLArchitecture::double_vt dx_csc_r = vcl::select(sin_r == 0, 0, dx / vcl::abs(sin_r));
+
+  ray.mutable_x() -= vcl::select(ray_mask, dx_csc_r * ray.ux(), 0);
+  ray.mutable_y() -= vcl::select(ray_mask, dx_csc_r * ray.uy(), 0);
+
+  ray.mutable_ct() += vcl::select(ray_mask, v_ct * sec_i - (a_ct * t1_ct + b_ct * t2_ct), 0);
+
+#if 0
+  std::cout << v_ct << ' ' << a_x << ' ' << b_x << ' ' << a_ct << ' ' << b_ct << '\n';
+  std::cout << t1_x << ' ' << t2_x << ' ' << t1_ct << ' ' << t2_ct << '\n';
+  std::cout << sin_i << ' ' << cos_i << ' ' << calin::math::special::SQR(sin_i)+calin::math::special::SQR(cos_i) << ' '
+    << sin_r << ' ' << cos_r << ' ' << calin::math::special::SQR(sin_r)+calin::math::special::SQR(cos_r) << '\n';
+#endif
+
+  return ray_mask;
+}
 
 // Constant density "Atmosphere" - for doing some simple simulations in fixed
 // substances (such as Iron etc)

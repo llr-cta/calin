@@ -37,4 +37,6 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%apply double& OUTPUT { double& x0, double& x1, double& x2 };
+
 %include "math/special.hpp"

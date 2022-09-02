@@ -24,6 +24,7 @@
 
 #include <ostream>
 #include <string>
+#include <stdlib.h>
 
 #define MAX_VECTOR_SIZE 512
 #define VCL_NAMESPACE vcl
@@ -154,6 +155,20 @@ typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 1> Vector3_4d;
 typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 3> Matrix3_4d;
 typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 1> Vector3_8d;
 typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
+
+typedef Eigen::Matrix< ::vcl::Vec4f , 4 , 1> Vector4_4f;
+typedef Eigen::Matrix< ::vcl::Vec4f , 4 , 4> Matrix4_4f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 4 , 1> Vector4_8f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 4 , 4> Matrix4_8f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 4 , 1> Vector4_16f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 4 , 4> Matrix4_16f;
+
+typedef Eigen::Matrix< ::vcl::Vec2d , 4 , 1> Vector4_2d;
+typedef Eigen::Matrix< ::vcl::Vec2d , 4 , 4> Matrix4_2d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 4 , 1> Vector4_4d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 4 , 4> Matrix4_4d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 4 , 1> Vector4_8d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 4 , 4> Matrix4_8d;
 
 } // namespace Eigen
 
@@ -339,6 +354,8 @@ using namespace ::vcl;
 
 template<typename VCLArchitecture> struct VCLFloatReal
 {
+  constexpr static unsigned vec_bits              = VCLArchitecture::vec_bits;
+  constexpr static unsigned vec_bytes             = VCLArchitecture::vec_bytes;
   constexpr static unsigned num_real              = VCLArchitecture::num_float;
   typedef VCLArchitecture                         architecture;
 
@@ -365,6 +382,9 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
 
+  typedef typename VCLArchitecture::Vector4f_vt   vec4_vt;
+  typedef typename VCLArchitecture::Matrix4f_vt   mat4_vt;
+
   static inline int_vt truncate_to_int_limited(real_vt x) {
     return vcl::truncate_to_int(x);
   }
@@ -382,10 +402,19 @@ template<typename VCLArchitecture> struct VCLFloatReal
   }
 
   static real_vt iota() { return VCLArchitecture::float_iota(); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    return VCLArchitecture::aligned_malloc(nbytes);
+  }
+  static inline void aligned_free(void* p) {
+    VCLArchitecture::aligned_free(p);
+  }
 };
 
 template<typename VCLArchitecture> struct VCLDoubleReal
 {
+  constexpr static unsigned vec_bits              = VCLArchitecture::vec_bits;
+  constexpr static unsigned vec_bytes             = VCLArchitecture::vec_bytes;
   constexpr static unsigned num_real              = VCLArchitecture::num_double;
   typedef VCLArchitecture                         architecture;
 
@@ -412,6 +441,9 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
 
+  typedef typename VCLArchitecture::Vector4d_vt   vec4_vt;
+  typedef typename VCLArchitecture::Matrix4d_vt   mat4_vt;
+
   static inline int_vt truncate_to_int_limited(real_vt x) {
     return vcl::truncate_to_int64_limited(x);
   }
@@ -429,6 +461,13 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   }
 
   static real_vt iota() { return VCLArchitecture::double_iota(); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    return VCLArchitecture::aligned_malloc(nbytes);
+  }
+  static inline void aligned_free(void* p) {
+    VCLArchitecture::aligned_free(p);
+  }
 };
 
 struct VCL128Architecture
@@ -484,6 +523,12 @@ struct VCL128Architecture
   typedef Eigen::Vector3_2d  Vector3d_vt;
   typedef Eigen::Matrix3_2d  Matrix3d_vt;
 
+  typedef Eigen::Vector4_4f Vector4f_vt;
+  typedef Eigen::Matrix4_4f Matrix4f_vt;
+
+  typedef Eigen::Vector4_2d  Vector4d_vt;
+  typedef Eigen::Matrix4_2d  Matrix4d_vt;
+
   typedef VCLFloatReal<VCL128Architecture> float_real;
   typedef VCLDoubleReal<VCL128Architecture> double_real;
 
@@ -491,6 +536,16 @@ struct VCL128Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0); }
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 struct VCL256Architecture
@@ -546,6 +601,12 @@ struct VCL256Architecture
   typedef Eigen::Vector3_4d  Vector3d_vt;
   typedef Eigen::Matrix3_4d  Matrix3d_vt;
 
+  typedef Eigen::Vector4_8f Vector4f_vt;
+  typedef Eigen::Matrix4_8f Matrix4f_vt;
+
+  typedef Eigen::Vector4_4d  Vector4d_vt;
+  typedef Eigen::Matrix4_4d  Matrix4d_vt;
+
   typedef VCLFloatReal<VCL256Architecture> float_real;
   typedef VCLDoubleReal<VCL256Architecture> double_real;
 
@@ -553,6 +614,17 @@ struct VCL256Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 struct VCL512Architecture
@@ -607,6 +679,12 @@ struct VCL512Architecture
   typedef Eigen::Vector3_8d  Vector3d_vt;
   typedef Eigen::Matrix3_8d  Matrix3d_vt;
 
+  typedef Eigen::Vector4_16f Vector4f_vt;
+  typedef Eigen::Matrix4_16f Matrix4f_vt;
+
+  typedef Eigen::Vector4_8d  Vector4d_vt;
+  typedef Eigen::Matrix4_8d  Matrix4d_vt;
+
   typedef VCLFloatReal<VCL512Architecture> float_real;
   typedef VCLDoubleReal<VCL512Architecture> double_real;
 
@@ -614,6 +692,17 @@ struct VCL512Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0); }
+
+  static inline void* aligned_malloc(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  };
+  static inline void aligned_free(void* p) {
+    ::free(p);
+  }
 };
 
 typedef VCLFloatReal<VCL128Architecture> VCL128FloatReal;
@@ -840,17 +929,46 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
   inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
     return _mm512_mul_epu32(a, b);
   }
+
+  inline Vec16ui extend_16_to_32_low(const Vec32us x) {
+    return _mm512_cvtepu16_epi32(x.get_low());
+  }
+  inline Vec16ui extend_16_to_32_high(const Vec32us x) {
+    return _mm512_cvtepu16_epi32(x.get_high());
+  }
+  inline Vec16i extend_16_to_32_low(const Vec32s x) {
+    return _mm512_cvtepi16_epi32(x.get_low());
+  }
+  inline Vec16i extend_16_to_32_high(const Vec32s x) {
+    return _mm512_cvtepi16_epi32(x.get_high());
+  }
 #else // INSTRSET < 9
   inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
     return Vec8uq(mul_low32_packed64(a.get_low(), b.get_low()),
                   mul_low32_packed64(a.get_high(), b.get_high()));
+  }
+
+  inline Vec16ui extend_16_to_32_low(const Vec32us x) {
+    return Vec16ui(extend_16_to_32_low(x.get_low()),
+                  extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec16ui extend_16_to_32_high(const Vec32us x) {
+    return Vec16ui(extend_16_to_32_low(x.get_high()),
+                  extend_16_to_32_high(x.get_high()));
+  }
+  inline Vec16i extend_16_to_32_low(const Vec32s x) {
+    return Vec16i(extend_16_to_32_low(x.get_low()),
+                 extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec16i extend_16_to_32_high(const Vec32s x) {
+    return Vec16i(extend_16_to_32_low(x.get_high()),
+                 extend_16_to_32_high(x.get_high()));
   }
 #endif // INSTRSET < 9
 
   inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
     return a*b;
   }
-
 #endif // MAX_VECTOR_SIZE >= 512
 
 void transpose(Vec8s* x);
@@ -871,6 +989,17 @@ void transpose(Vec4uq* x);
 void transpose(Vec8f* x);
 void transpose(Vec4d* x);
 #endif
+#if MAX_VECTOR_SIZE >= 512
+void transpose(Vec32s* x);
+void transpose(Vec32us* x);
+void transpose(Vec16i* x);
+void transpose(Vec16ui* x);
+void transpose(Vec8q* x);
+void transpose(Vec8uq* x);
+void transpose(Vec16f* x);
+void transpose(Vec8d* x);
+#endif
+
 
 inline Vec8s reverse(Vec8s x) { return ::vcl::permute8s<7,6,5,4,3,2,1,0>(x); }
 inline Vec8us reverse(Vec8us x) { return ::vcl::permute8us<7,6,5,4,3,2,1,0>(x); }
@@ -892,7 +1021,7 @@ inline Vec4d reverse(Vec4d x) { return ::vcl::permute4d<3,2,1,0>(x); }
 #endif
 #if MAX_VECTOR_SIZE >= 512
 inline Vec16i reverse(Vec16i x) { return ::vcl::permute16i<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
-inline Vec16ui reverse(Vec16ui x) { return ::vcl::permute16ui<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec16ui reverse(Vec16ui x) { return Vec16ui(::vcl::permute16ui<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(Vec16i(x))); }
 inline Vec8q reverse(Vec8q x) { return ::vcl::permute8q<7,6,5,4,3,2,1,0>(x); }
 inline Vec8uq reverse(Vec8uq x) { return ::vcl::permute8uq<7,6,5,4,3,2,1,0>(x); }
 inline Vec16f reverse(Vec16f x) { return ::vcl::permute16f<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
@@ -948,8 +1077,8 @@ ADD_OSTREAM_OPERATOR(Vec4db);
 
 // ADD_OSTREAM_OPERATOR(Vec64c);
 // ADD_OSTREAM_OPERATOR(Vec64uc);
-// ADD_OSTREAM_OPERATOR(Vec32s);
-// ADD_OSTREAM_OPERATOR(Vec32us);
+ADD_OSTREAM_OPERATOR(Vec32s);
+ADD_OSTREAM_OPERATOR(Vec32us);
 ADD_OSTREAM_OPERATOR(Vec16i);
 ADD_OSTREAM_OPERATOR(Vec16ui);
 ADD_OSTREAM_OPERATOR(Vec8q);

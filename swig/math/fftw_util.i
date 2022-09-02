@@ -36,4 +36,8 @@
 %import "calin_global_definitions.i"
 
 %import "math/fftw_util.pb.i"
+
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& oivec };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& oqvec };
+
 %include "math/fftw_util.hpp"

@@ -38,7 +38,7 @@
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
-template<typename VCLArchitecture> class VCLIACTTrackVisitor:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLIACTTrackVisitor:
   public calin::simulation::tracker::TrackVisitor
 {
 public:
@@ -73,10 +73,9 @@ public:
   uint64_t num_steps() const { return num_steps_; }
   uint64_t num_rays() const { return num_rays_; }
 
-  const std::vector<double>& xgnd() const { return xgnd_; }
-  const std::vector<double>& ygnd() const { return ygnd_; }
-  const std::vector<double>& uxgnd() const { return uxgnd_; }
-  const std::vector<double>& uygnd() const { return uygnd_; }
+  double total_yield() const { return vcl::horizontal_add(sum_yield_); }
+  double total_yield_by_height() const { return vcl::horizontal_add(sum_yield_h_); }
+  double total_yield_by_height_squared() const { return vcl::horizontal_add(sum_yield_h2_); }
 
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration default_config() {
     calin::ix::simulation::vcl_iact::VCLIACTConfiguration config;
@@ -87,26 +86,19 @@ public:
   }
 
 #ifndef SWIG
-  static void* operator new(size_t nbytes) {
-    void* p = nullptr;
-    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
-      return p;
-    }
-    throw std::bad_alloc();
-  }
-  static void* operator new(size_t nbytes, void* p) {
-    return p;
-  }
-  static void operator delete(void *p) {
-    free(p);
-  }
+  virtual void propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+    double_vt bandwidth, double_vt weight);
 
-public:
+  void set_fixed_pe_bandwidth_mode(double bandwidth);
+  void set_fixed_photon_bandwidth_mode(double bandwidth, double min_cherenkov_energy);
+  void set_height_dependent_pe_bandwidth_mode(calin::math::spline_interpolation::CubicSpline* spline,
+    bool adopt_spline = false);
+
+protected:
   inline int insert_track(const Eigen::Vector3d& x, const double t, const double g,
     const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
-    const double dg_dx, bool valid = true);
-  void generate_mc_rays();
-  void propagate_rays(double_vt sin2thetac);
+    const double dg_dx, const double weight, bool valid = true);
+  void generate_mc_rays(bool drain_tracks = false);
 
   calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
@@ -125,17 +117,23 @@ public:
   double_vt track_dt_dx_; // track : rate of change of time per unit track length
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
+  double_vt track_weight_; // track : weight for thinning
+
+  double_vt sum_yield_;
+  double_vt sum_yield_h_;
+  double_vt sum_yield_h2_;
+
   uint64_t num_tracks_ = 0;
   uint64_t num_steps_ = 0;
   uint64_t num_rays_ = 0;
 
-  double bandwidth_ = 3.0;
+  double min_cherenkov_energy_ = 1.5;
+  double fixed_bandwidth_ = 3.0;
+  bool do_color_photons_ = true;
+  calin::math::spline_interpolation::CubicSpline* variable_bandwidth_spline_ = nullptr;
+  double adopt_variable_bandwidth_spline_ = false;
   double forced_sin2theta_ = -1.0;
-
-  std::vector<double> xgnd_;
-  std::vector<double> ygnd_;
-  std::vector<double> uxgnd_;
-  std::vector<double> uygnd_;
+  double cherenkov_weight_ = 1.0;
 #endif // not defined SWIG
 };
 
@@ -151,7 +149,7 @@ VCLIACTTrackVisitor(
   atm_(atm), adopt_atm_(adopt_atm),
   rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
   adopt_rng_(rng ? adopt_rng : true),
-  bandwidth_(config.bandwidth()),
+  fixed_bandwidth_(config.bandwidth()),
   forced_sin2theta_(config.enable_forced_cherenkov_angle_mode()?
     calin::math::special::SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
 {
@@ -166,6 +164,40 @@ template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
+set_fixed_pe_bandwidth_mode(double bandwidth)
+{
+  delete(variable_bandwidth_spline_);
+  variable_bandwidth_spline_ = nullptr;
+  fixed_bandwidth_ = bandwidth;
+  do_color_photons_ = false;
+}
+
+template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
+set_fixed_photon_bandwidth_mode(double bandwidth, double min_cherenkov_energy)
+{
+  delete(variable_bandwidth_spline_);
+  variable_bandwidth_spline_ = nullptr;
+  fixed_bandwidth_ = bandwidth;
+  min_cherenkov_energy_ = min_cherenkov_energy;
+  do_color_photons_ = true;
+}
+
+template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
+set_height_dependent_pe_bandwidth_mode(calin::math::spline_interpolation::CubicSpline* spline,
+  bool adopt_spline)
+{
+  delete(variable_bandwidth_spline_);
+  if(adopt_spline) {
+    variable_bandwidth_spline_ = spline;
+  } else {
+    variable_bandwidth_spline_ = new calin::math::spline_interpolation::CubicSpline(*spline);
+  }
+  fixed_bandwidth_ = 0;
+  min_cherenkov_energy_ = 0;
+  do_color_photons_ = false;
+}
+
+template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
   num_tracks_ = 0;
@@ -173,11 +205,9 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   num_rays_ = 0;
   track_dx_ = 0.0;
   track_valid_ = false;
-
-  xgnd_.clear();
-  ygnd_.clear();
-  uxgnd_.clear();
-  uygnd_.clear();
+  sum_yield_ = 0;
+  sum_yield_h_ = 0;
+  sum_yield_h2_ = 0;
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
@@ -212,8 +242,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   ++num_tracks_;
 
   int unused_track_count =
-    insert_track(track.x0, track.t0, g[0], bandwidth_*YIELD_CONST*SQR(track.q),
-      track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv);
+    insert_track(track.x0, track.t0, g[0], YIELD_CONST*SQR(track.q),
+      track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv, track.weight);
 
   if(unused_track_count == 1)
   {
@@ -225,7 +255,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 template<typename VCLArchitecture> inline int VCLIACTTrackVisitor<VCLArchitecture>::
 insert_track(const Eigen::Vector3d& x, const double t, const double g,
   const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
-  const double dg_dx, bool valid)
+  const double dg_dx, const double weight, bool valid)
 {
   using calin::util::vcl::insert_into_vec3_with_mask;
   using calin::util::vcl::insert_into_with_mask;
@@ -234,10 +264,11 @@ insert_track(const Eigen::Vector3d& x, const double t, const double g,
   double_bvt unused_tracks = track_dx_ <= 0;
   int insert_index = vcl::horizontal_find_first(unused_tracks);
 
-  if(insert_index == -1)
+  if(insert_index == -1) {
     throw std::logic_error(
       calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
       + "::insert_track: No free SIMD vector slot");
+  }
 
   double_bvt insert_mask = false;
   insert_mask.insert(insert_index, true);
@@ -254,6 +285,8 @@ insert_track(const Eigen::Vector3d& x, const double t, const double g,
   insert_into_with_mask<double_real>(track_dx_, dx, insert_mask);
   insert_into_with_mask<double_real>(track_dt_dx_, dt_dx, insert_mask);
   insert_into_with_mask<double_real>(track_dg_dx_, dg_dx, insert_mask);
+
+  insert_into_with_mask<double_real>(track_weight_, weight, insert_mask);
 
   return vcl::horizontal_count(unused_tracks);
 }
@@ -278,40 +311,48 @@ leave_event()
         u, track_dx_[index], track_dg_dx_[index], track_dg_dx_[index], false);
     }
 
-    generate_mc_rays();
+    generate_mc_rays(/* drain_tracks = */ true);
   }
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
-generate_mc_rays()
+generate_mc_rays(bool drain_tracks)
 {
   using calin::math::special::SQR;
   using namespace calin::util::log;
 
-  double_vt nmo; // n minus one
-  double_vt dlognmo_dx; // rate of change of log(n minus one) with track length
-  double_vt sin2thetac; // sin squared of the Cherenkov angle
-
-  if(forced_sin2theta_ > 0) {
-    nmo = 0.0;
-    dlognmo_dx = 0.0;
-    sin2thetac = forced_sin2theta_;
-  } else {
-    dlognmo_dx =
-      atm_->vcl_dlognmo_dz<VCLArchitecture>(track_x_.z(), nmo) * track_u_.z();
-    double_vt n2inv = 1.0/SQR(nmo + 1.0);
-    double_vt g2 = SQR(track_g_);
-    double_vt b2inv = g2/(g2-1.0);
-    sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
-  }
-
-  double max_loop = 10000;
   do {
     ++num_steps_;
 
-    double_vt yield = track_yield_const_ * sin2thetac;
-    double_vt mfp = 1.0/yield;
+    double_vt sin2thetac; // sin squared of the Cherenkov angle
+
+    if(forced_sin2theta_ > 0) {
+      sin2thetac = forced_sin2theta_;
+    } else {
+      double_vt nmo = atm_->vcl_n_minus_one<VCLArchitecture>(track_x_.z());
+      double_vt n2inv = 1.0/SQR(nmo + 1.0);
+      double_vt g2 = SQR(track_g_);
+      double_vt b2inv = g2/(g2-1.0);
+      sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
+    }
+
+    double_vt bandwidth;
+    if(variable_bandwidth_spline_) {
+      bandwidth = variable_bandwidth_spline_->vcl_value<VCLArchitecture>(track_x_.z());
+    } else {
+      bandwidth = fixed_bandwidth_;
+    }
+
+    double_vt yield_per_ev = track_yield_const_ * sin2thetac;
+    double_vt mfp = cherenkov_weight_/(bandwidth * yield_per_ev);
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
+
+    double_vt sum_yield_z_to_the_n = dx_emission*yield_per_ev;
+    sum_yield_ += sum_yield_z_to_the_n;
+    sum_yield_z_to_the_n *= track_x_.z();
+    sum_yield_h_ += sum_yield_z_to_the_n;
+    sum_yield_z_to_the_n *= track_x_.z();
+    sum_yield_h2_ += sum_yield_z_to_the_n;
 
     track_dx_ -= dx_emission;
     track_valid_ &= track_dx_>0;
@@ -320,78 +361,33 @@ generate_mc_rays()
     track_t_ += track_dt_dx_ * dx_emission;
     track_g_ += track_dg_dx_ * dx_emission;
 
-    nmo *= (1.0 + dlognmo_dx * dx_emission);
-
     unsigned nvalid = horizontal_count(track_valid_);
     if(nvalid) {
-      if(forced_sin2theta_ > 0) {
-        // nothing to see here
-      } else {
-        double_vt n2inv = 1.0/SQR(nmo + 1.0);
-        double_vt g2 = SQR(track_g_);
-        double_vt b2inv = g2/(g2-1.0);
-        sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
-      }
-
       num_rays_ += nvalid;
 
-      propagate_rays(sin2thetac);
-    }
+      double_vt cos_thetac = vcl::sqrt(1.0 - sin2thetac);
+      double_vt sin_thetac = vcl::sqrt(sin2thetac);
 
-    if(--max_loop == 0)
-    {
-      LOG(WARNING) << " valid: " << track_valid_ << '\n'
-                   << "     x: " << track_x_.x() << '\n'
-                   << "     y: " << track_x_.y() << '\n'
-                   << "     z: " << track_x_.z() << '\n'
-                   << "    ux: " << track_u_.x() << '\n'
-                   << "    uy: " << track_u_.y() << '\n'
-                   << "    uz: " << track_u_.z() << '\n'
-                   << "   n-1: " << nmo << '\n'
-                   << "    dx: " << track_dx_ << '\n'
-                   << "    Yc: " << track_yield_const_ << '\n'
-                   << " gamma: " << track_g_ << '\n'
-                   << " sin2c: " << sin2thetac << '\n'
-                   << "     Y: " << yield << '\n'
-                   << "   MFP: " << mfp;
-      throw std::runtime_error("Maximum loop exceeded");
+      double_vt cos_phi;
+      double_vt sin_phi;
+      rng_->sincos_double(sin_phi, cos_phi);
+
+      Vector3d_vt v(cos_phi*sin_thetac, sin_phi*sin_thetac,cos_thetac);
+      calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
+
+      calin::math::ray::VCLRay<double_real> rays(track_x_, v, track_t_);
+
+      propagate_rays(rays, track_valid_, bandwidth, cherenkov_weight_*track_weight_);
     }
-  } while(vcl::horizontal_and(track_dx_ > 0));
+  } while(vcl::horizontal_and(track_valid_) or
+      (drain_tracks and vcl::horizontal_or(track_valid_)));
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
-propagate_rays(double_vt sin2thetac)
+propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
+  double_vt bandwidth, double_vt weight)
 {
-  double_vt cos_thetac = vcl::sqrt(1.0 - sin2thetac);
-  double_vt sin_thetac = vcl::sqrt(sin2thetac);
-
-  double_vt cos_phi;
-  double_vt sin_phi;
-  rng_->sincos_double(sin_phi, cos_phi);
-
-  Vector3d_vt v(cos_phi*sin_thetac, sin_phi*sin_thetac,cos_thetac);
-  calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
-
-  calin::math::ray::VCLRay<double_real> ray(track_x_, v, track_t_);
-  double_bvt mask = ray.propagate_to_z_plane_with_mask(track_valid_, atm_->zobs(0), false);
-
-  double_at x;
-  double_at y;
-  double_at ux;
-  double_at uy;
-  ray.x().store(x);
-  ray.y().store(y);
-  ray.ux().store(ux);
-  ray.uy().store(uy);
-
-  for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
-    if(mask[iv]) {
-      xgnd_.push_back(x[iv]);
-      ygnd_.push_back(y[iv]);
-      uxgnd_.push_back(ux[iv]);
-      uygnd_.push_back(uy[iv]);
-    }
-  }
+  // default does nothing
 }
 
 #endif // not defined SWIG

@@ -90,7 +90,7 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     p_[1] = u[1];
     break;
   case calin::ix::simulation::ray_processor::T:
-    p_[0] = ray.time()*1e9;
+    p_[0] = ray.time();
     break;
   case calin::ix::simulation::ray_processor::XY_UXUY:
     p_[0] = x[0];
@@ -101,14 +101,14 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
   case calin::ix::simulation::ray_processor::XY_T:
     p_[0] = x[0];
     p_[1] = x[1];
-    p_[2] = ray.time()*1e9;
+    p_[2] = ray.time();
     break;
   case calin::ix::simulation::ray_processor::XY_UXUY_T:
     p_[0] = x[0];
     p_[1] = x[1];
     p_[2] = u[0];
     p_[3] = u[1];
-    p_[4] = ray.time()*1e9;
+    p_[4] = ray.time();
     break;
   };
   if(effective_bandwidth_) {

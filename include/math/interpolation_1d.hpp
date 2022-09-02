@@ -179,6 +179,10 @@ public:
     return vyi;
   }
 
+  const xy_vec_type& all_xyi() const {
+    return m_xy;
+  }
+
   double xmin() const { return m_xy.front().first; }
   double xmax() const { return m_xy.back().first; }
 
@@ -227,7 +231,7 @@ public:
     return sum;
   }
 
-  T integrate(double xlo, double xhi)
+  T integrate(double xlo, double xhi) const
   {
     assert(xlo <= xhi);
     if(m_xy.size() == 0)
@@ -278,6 +282,10 @@ public:
   }
   Interpolation1D operator/ (const Interpolation1D& o) {
     return Interpolation1D(*this, o, BinDivOp());
+  }
+
+  bool operator== (const Interpolation1D& o) const {
+    return m_xy == o.m_xy;
   }
 
 #ifndef SWIG

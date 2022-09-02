@@ -34,6 +34,7 @@
 #include <provenance/system_info.hpp>
 #include <util/log.hpp>
 #include <util/timestamp.hpp>
+#include <util/vcl.hpp>
 
 extern char **environ;
 
@@ -508,4 +509,100 @@ bool calin::provenance::system_info::has_avx512f()
     return b & bit_AVX512F;
   }
   return false;
+}
+
+unsigned calin::provenance::system_info::cpu_vector_size()
+{
+  if(has_avx512f()) {
+    return 512;
+  } else if(has_avx()) {
+    return 256;
+  } else {
+    return 128;
+  }
+}
+
+bool calin::provenance::system_info::cpu_supports_vcl_instrset()
+{
+  auto host_info = calin::provenance::system_info::the_host_info();
+#if INSTRSET==10
+  return host_info->cpu_has_avx512vl() && host_info->cpu_has_avx512bw() && host_info->cpu_has_avx512dq();
+#elif INSTRSET==9
+  return host_info->cpu_has_avx512f();
+#elif INSTRSET==8
+  return host_info->cpu_has_avx2();
+#elif INSTRSET==7
+  return host_info->cpu_has_avx();
+#elif INSTRSET==6
+  return host_info->cpu_has_sse4_2();
+#elif INSTRSET==5
+  return host_info->cpu_has_sse4_1();
+#elif INSTRSET==4
+  return host_info->cpu_has_ssse3();
+#elif INSTRSET==3
+  return host_info->cpu_has_sse3();
+#elif INSTRSET==2
+  return host_info->cpu_has_sse2();
+#elif INSTRSET==1
+  return host_info->cpu_has_sse();
+#else
+  return true;
+#endif
+}
+
+bool calin::provenance::system_info::vcl_uses_avx()
+{
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 7
+  return true;
+#endif
+#endif
+  return false;
+}
+
+bool calin::provenance::system_info::vcl_uses_avx2()
+{
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 8
+  return true;
+#endif
+#endif
+  return false;
+}
+
+bool calin::provenance::system_info::vcl_uses_avx512f()
+{
+#if MAX_VECTOR_SIZE >= 512
+#if INSTRSET >= 9
+  return true;
+#endif
+#endif
+  return false;
+}
+
+unsigned calin::provenance::system_info::vcl_max_vector_size()
+{
+#if MAX_VECTOR_SIZE >= 512
+  return 512;
+#elif MAX_VECTOR_SIZE >= 256
+  return 256;
+#else
+  return 128;
+#endif
+}
+
+unsigned calin::provenance::system_info::vcl_native_vector_size()
+{
+#if MAX_VECTOR_SIZE >= 512 && INSTRSET >= 9
+  return 512;
+#elif MAX_VECTOR_SIZE >= 256 && INSTRSET >= 7
+  return 256;
+#else
+  return 128;
+#endif
+}
+
+unsigned calin::provenance::system_info::vcl_instrset()
+{
+  return INSTRSET;
 }

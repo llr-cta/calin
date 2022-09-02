@@ -47,4 +47,6 @@
 %apply double &OUTPUT { double& n_minus_one };
 %apply double &OUTPUT { double& propagation_ct_correction };
 
+%newobject clone;
+
 %include "simulation/atmosphere.hpp"

@@ -77,10 +77,10 @@ process_traced_ray(unsigned scope_id,
   if(not trace.rayHitFocalPlane())return;
   if(trace.pixel != nullptr) {
     visitor_->process_focal_plane_hit(scope_id, trace.pixel->id(),
-      trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
+      trace.fplane_x, trace.fplane_z, trace.fplane_ux, trace.fplane_uz, trace.fplane_t, pe_weight);
   } else {
     visitor_->process_focal_plane_hit(scope_id, -1,
-      trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
+      trace.fplane_x, trace.fplane_z, trace.fplane_ux, trace.fplane_uz, trace.fplane_t, pe_weight);
   }
 }
 
@@ -163,17 +163,27 @@ VSORayProcessor::~VSORayProcessor()
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
-VSORayProcessor::detector_spheres()
+VSORayProcessor::detector_spheres_for_array(const calin::simulation::vs_optics::VSOArray* array)
 {
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
-  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
+  for(unsigned iscope=0; iscope<array->numTelescopes(); iscope++)
   {
-    auto* scope = array_->telescope(iscope);
+    auto* scope = array->telescope(iscope);
     Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
     scope->reflectorToGlobal_pos(sphere_center);
-    s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
+
+    Eigen::Vector3d obs_dir = Eigen::Vector3d::UnitY();
+    scope->reflectorToGlobal_mom(obs_dir);
+
+    s.emplace_back(sphere_center, 0.5*scope->reflectorIP(), obs_dir, 0.5*scope->fov()*M_PI/180.0);
   }
   return s;
+}
+
+std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
+VSORayProcessor::detector_spheres()
+{
+  return detector_spheres_for_array(array_);
 }
 
 void VSORayProcessor::start_processing()
@@ -187,6 +197,7 @@ void VSORayProcessor::process_ray(unsigned scope_id,
 {
   double z0 = ray.position().z();
   double w = ray.direction().z();
+  double e = ray.energy();
   auto* scope = array_->telescope(scope_id);
 
   calin::math::ray::Ray ray_copy(ray);
@@ -194,14 +205,28 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   ray_tracer_->trace(ray_copy, trace_info, scope);
 
   const ScopeResponse& scope_response { scope_response_[scope_id] };
-  if(scope_response.has_effective_bandwidth)
-    pe_weight *= scope_response.effective_bandwidth.bandwidth(z0, std::fabs(w));
-  else
-    pe_weight *= scope_response.detector_bandwidth;
+  if(e <= 0) {
+    if(scope_response.has_effective_bandwidth)
+      pe_weight *= scope_response.effective_bandwidth.bandwidth(z0, std::fabs(w));
+    else
+      pe_weight *= scope_response.detector_bandwidth;
 
-  if(trace_info.rayHitFocalPlane())
-    pe_weight *= scope_response.cone_efficiency.y(trace_info.fplane_uy);
+    if(trace_info.rayHitFocalPlane())
+      pe_weight *= scope_response.cone_efficiency.y(trace_info.fplane_uy);
+  } else {
+    double prob_detect = 1.0;
+    if(scope_response.has_effective_bandwidth) {
+      double tau = scope_response.atmospheric_absorption.optical_depth_for_altitude_and_energy(z0, e)
+        / std::fabs(w);
+      prob_detect *= std::exp(-tau);
+    }
+    prob_detect *= scope_response.detector_efficiency(e);
 
+    if(trace_info.rayHitFocalPlane())
+      prob_detect *= scope_response.cone_efficiency.y(trace_info.fplane_uy);
+
+    if(rng_->uniform() >= prob_detect)return;
+  }
 #if 0
   static unsigned counter = 0;
   if(counter++<10) {
@@ -292,6 +317,9 @@ void VSORayProcessor::set_scope_detection_efficiencies(unsigned iscope,
       scope->position().z(), std::fabs(w0), detector_efficiency);
   scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
   scope_response_[iscope].cone_efficiency = cone_efficiency;
+  scope_response_[iscope].detector_efficiency = detector_efficiency;
+  scope_response_[iscope].atmospheric_absorption = atmospheric_absorption;
+  scope_response_[iscope].atmospheric_absorption.set_zref(scope->position().z());
 }
 
 void VSORayProcessor::
@@ -305,6 +333,7 @@ set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
   scope_response_[iscope].effective_bandwidth =
     calin::simulation::detector_efficiency::ACTEffectiveBandwidth(1.0);
   scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
+  scope_response_[iscope].detector_efficiency = detector_efficiency;
 }
 
 void VSORayProcessor::
@@ -322,6 +351,8 @@ set_scope_detector_and_atmosphere_response(unsigned iscope,
     atmospheric_absorption.integrateBandwidth(
       scope->position().z(), std::fabs(w0), detector_efficiency);
   scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
+  scope_response_[iscope].detector_efficiency = detector_efficiency;
+  scope_response_[iscope].atmospheric_absorption = atmospheric_absorption;
 }
 
 void VSORayProcessor::set_scope_cone_angular_response(unsigned iscope,

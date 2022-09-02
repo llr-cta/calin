@@ -415,8 +415,10 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   info.fplane_z = ray.position().z();
   info.fplane_dx = info.fplane_x;
   info.fplane_dz = info.fplane_z;
-  info.fplane_t = ray.ct() / math::constants::cgs_c;
+  info.fplane_t = ray.time();
+  info.fplane_ux = ray.direction().x();
   info.fplane_uy = ray.direction().y();
+  info.fplane_uz = ray.direction().z();
 
   info.pixel_hexid =
     math::hex_array::xy_trans_to_hexid_with_remainder(

@@ -67,10 +67,8 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
 #if INSTRSET >= 9
   if(calin::provenance::system_info::has_avx512f()) {
     return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat);
+      calin::util::vcl::VCL512Architecture>(config, gain_channel_to_treat);
   }
-  bool has_avx512f();
-  if()
 #endif
 
 #if INSTRSET >= 8

@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ 'generic', 'ivybridge', 'broadwell' ]
+        arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
 
     runs-on: ubuntu-20.04
 
@@ -74,14 +74,14 @@ jobs:
     - name: Install calin
       shell: bash
       run: |
-        find /usr -print > /tmp/files_before.txt
+        sudo find /usr -print > /tmp/files_before.txt
         cd mybuild
         sudo make install
 
     - name: Package calin in TGZ file
       shell: bash
       run: |
-        find /usr -print > /tmp/files_after.txt
+        sudo find /usr -print > /tmp/files_after.txt
         cat /tmp/files_before.txt /tmp/files_after.txt | sort | uniq -u > /tmp/files_added.txt
         tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
         ls -l /tmp/calin_installed.tgz
@@ -123,7 +123,7 @@ jobs:
         singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
         diff calin-${{ matrix.arch }}.sif calin-pulled.sif
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: calin-${{ matrix.arch }}
-        path: calin-${{ matrix.arch }}.sif
+    # - uses: actions/upload-artifact@v2
+    #   with:
+    #     name: calin-${{ matrix.arch }}
+    #     path: calin-${{ matrix.arch }}.sif

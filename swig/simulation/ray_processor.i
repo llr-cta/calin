@@ -31,6 +31,7 @@
 #include "simulation/vso_ray_processor.hpp"
 #include "simulation/sct_ray_processor.hpp"
 #include "simulation/vcl_ray_processor.hpp"
+#include "simulation/nspace_pe_processor.hpp"
 #include "simulation/nspace_ray_processor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -46,6 +47,7 @@
 %import "math/ray_generator.i"
 %import "math/moments_calc.i"
 
+%import "simulation/pe_processor.pb.i"
 %include "simulation/pe_processor.hpp"
 %newobject *::add_processor_and_pe_visitor;
 
@@ -62,6 +64,7 @@
 %include "simulation/sct_ray_processor.hpp"
 
 %import "math/nspace.i"
+%include "simulation/nspace_pe_processor.hpp"
 %include "simulation/nspace_ray_processor.hpp"
 
 %include "simulation/vcl_ray_processor.hpp"

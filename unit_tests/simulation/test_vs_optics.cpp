@@ -208,7 +208,7 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
 #endif
   EXPECT_EQ(scope1.altitude(), scope2->altitude());
   EXPECT_EQ(scope1.pos(), scope2->pos());
-  EXPECT_NEAR(scope1.deltaY(), scope2->deltaY(), sqrt_eps);
+  EXPECT_NEAR(scope1.fpOffset(), scope2->fpOffset(), sqrt_eps);
   EXPECT_NEAR(scope1.alphaX(), scope2->alphaX(), sqrt_eps);
   EXPECT_NEAR(scope1.alphaY(), scope2->alphaY(), sqrt_eps);
   EXPECT_NEAR(scope1.azimuth(), scope2->azimuth(), sqrt_eps);

@@ -35,7 +35,7 @@ using namespace calin::util::log;
 
 namespace calin { namespace diagnostics { namespace waveform {
 
-template<typename VCLArchitecture> class VCL_WaveformPSDParallelVisitor:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL_WaveformPSDParallelVisitor:
   public WaveformPSDParallelVisitor
 {
 public:
