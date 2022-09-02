@@ -319,8 +319,12 @@ CubicSpline* CubicSpline::new_regularized_spline(double dx) const
   std::transform(x_knots.begin(), x_knots.end(), y_knots.begin(),
     [this](double x){ return this->value(x); });
 
+  // CubicSpline* new_spline = new CubicSpline(x_knots, y_knots,
+  //   bc_lhs_, bc_lhs_val_, bc_rhs_, bc_rhs_val_);
+
   CubicSpline* new_spline = new CubicSpline(x_knots, y_knots,
-    bc_lhs_, bc_lhs_val_, bc_rhs_, bc_rhs_val_);
+    BC_CLAMPED_SLOPE, this->derivative(x_knots.front()),
+    BC_CLAMPED_SLOPE, this->derivative(x_knots.back()));
 
   return new_spline;
 }
@@ -334,7 +338,7 @@ void CubicSpline::rescale(double scale)
 void CubicSpline::extend_linear_rhs(double dx)
 {
   if(dx<=0) {
-    dx = s_.regular_dx;
+    dx = s_.dx.back();
   }
   if(dx==s_.regular_dx and s_.regular_xmax==s_.xmax) {
     s_.regular_xmax += dx;
