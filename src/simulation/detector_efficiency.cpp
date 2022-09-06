@@ -545,7 +545,7 @@ SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
 calin::math::spline_interpolation::CubicSpline*
 SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
     const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
-    bool regularize_spline, bool extend_linear_rhs)
+    bool regularize_spline, bool extend_linear_rhs, unsigned regularize_ninterval, double norm)
 {
   std::vector<double> x;
   std::vector<double> y = calin::eigen_to_stdvec(q);
@@ -555,7 +555,11 @@ SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
     P += 0.5*(dp_dq[iq] + dp_dq[iq+1]) * (q[iq+1] - q[iq]);
     x.push_back(P);
   }
-  if(P>1.0) {
+  if(norm>1.0) {
+    LOG(WARNING) << "Renormalization of probability distribution exceeds unity";
+  } else if(norm>0.0) {
+    std::transform(x.begin(), x.end(), x.begin(), [P,norm](double x) { return x/P*norm; });
+  } else if(P>1.0) {
     LOG(WARNING) << "Normalization of probability distribution exceeds unity";
   }
   switch(spline_mode) {
@@ -563,23 +567,29 @@ SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
     std::transform(x.begin(), x.end(), x.begin(), [](double x) { return x; });
     break;
   case SM_LOG:
-    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return -std::log(1-x); });
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::max(0.0,-std::log(1-x)); });
     break;
   case SM_SQRT_LOG:
-    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::sqrt(-std::log(1-x)); });
+    std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::max(0.0,std::sqrt(-std::log(1-x))); });
     break;
   }
   auto* spline = new calin::math::spline_interpolation::CubicSpline(x, y,
     calin::math::spline_interpolation::BC_NATURAL, 0,
     calin::math::spline_interpolation::BC_NATURAL, 0);
   if(regularize_spline) {
-    auto even_spline =
-      spline->new_regularized_spline((spline->xmax()-spline->xmin())/(x.size() - 1));
+    if(regularize_ninterval <= 0) {
+      regularize_ninterval = x.size()-1;
+    }
+    auto even_spline = spline->new_regularized_spline_ninterval(regularize_ninterval);
     delete spline;
     spline = even_spline;
   }
   if(extend_linear_rhs) {
     spline->extend_linear_rhs();
+  }
+  if(spline->yknot()[1]-spline->yknot()[0] > 0.1) {
+    LOG(WARNING) << "First spline interval exceeds 0.1 PE : "
+      << spline->yknot()[0] << " PE to "<< spline->yknot()[1] << " PE";
   }
   return spline;
 }

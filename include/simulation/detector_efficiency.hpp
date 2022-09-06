@@ -300,7 +300,9 @@ public:
   SplineMode spline_mode() const { return spline_mode_; }
   static calin::math::spline_interpolation::CubicSpline* make_spline(
     const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
-    bool regularize_spline = true, bool extend_linear_rhs = true);
+    bool regularize_spline = true, bool extend_linear_rhs = true,
+    unsigned regularize_ninterval = 0,
+    double norm = 1.0-std::numeric_limits<double>::epsilon());
 protected:
   calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
   SplineMode spline_mode_ = SM_LINEAR;
