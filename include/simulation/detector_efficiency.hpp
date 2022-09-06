@@ -36,7 +36,9 @@
 #include <tuple>
 #include <ostream>
 
+#include <util/vcl.hpp>
 #include <math/rng.hpp>
+#include <math/rng_vcl.hpp>
 #include <math/interpolation_1d.hpp>
 #include <math/spline_interpolation.hpp>
 
@@ -296,6 +298,22 @@ public:
     SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
   virtual ~SplinePEAmplitudeGenerator();
   double generate_amplitude() final;
+  template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
+    calin::math::rng::VCLRNG<VCLArchitecture>& rng)
+  {
+    typename VCLArchitecture::double_vt x = rng->uniform_double();
+    switch(spline_mode_) {
+    case SM_LINEAR:
+      break;
+    case SM_LOG:
+      x = -vcl::log(x);
+      break;
+    case SM_SQRT_LOG:
+      x = vcl::sqrt(-vcl::log(x));
+      break;
+    }
+    return spline_->vcl_value(x);
+  }
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
   SplineMode spline_mode() const { return spline_mode_; }
   static calin::math::spline_interpolation::CubicSpline* make_spline(
