@@ -245,6 +245,9 @@ def mstn_spe_amplitude_generator(spe = "spe_nectarcam_lmp_run1512.dat", dpdq_min
         file_record.set_comment(comment)
         calin.provenance.chronicle.register_file_close(file_record)
 
+    if(not quiet):
+        print('Loading SPE spectrum :',spe)
+
     q = numpy.asarray(q)
     dpdq = numpy.asarray(dpdq)
     m = dpdq>0
