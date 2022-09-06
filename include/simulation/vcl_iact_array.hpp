@@ -246,6 +246,7 @@ public:
   CALIN_TYPEALIAS(PEProcessor, calin::simulation::pe_processor::PEProcessor);
   CALIN_TYPEALIAS(DetectionEfficiency, calin::simulation::detector_efficiency::DetectionEfficiency);
   CALIN_TYPEALIAS(AngularEfficiency, calin::simulation::detector_efficiency::AngularEfficiency);
+  CALIN_TYPEALIAS(SplinePEAmplitudeGenerator, calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator);
 
   CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
@@ -255,19 +256,37 @@ public:
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config = default_config(),
     calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
     bool adopt_atm = false, bool adopt_rng = false);
+
+  VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
+    const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config,
+    unsigned rng_seed, bool adopt_atm = false);
+
   virtual ~VCLIACTArray();
 
   DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
     calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
     const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
-    const std::string& propagator_name = "",
-    bool adopt_array = false, bool adopt_pe_processor = false);
+    SplinePEAmplitudeGenerator* pe_generator = nullptr, const std::string& propagator_name = "",
+    bool adopt_array = false, bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
   DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
     const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
     const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
-    const std::string& propagator_name = "",
-    bool adopt_pe_processor = false);
+    SplinePEAmplitudeGenerator* pe_generator = nullptr, const std::string& propagator_name = "",
+    bool adopt_pe_processor = false, bool adopt_pe_generator = false);
+
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
+    calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
+    bool adopt_array = false, bool adopt_pe_processor = false, bool adopt_pe_generator = false);
+
+  DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
+    const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
+    bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
   void point_telescope_az_el_phi_deg(unsigned iscope, double az_deg, double el_deg, double phi_deg);
   void point_telescope_az_el_deg(unsigned iscope, double az_deg, double el_deg);
@@ -307,8 +326,9 @@ protected:
   using VCLIACTTrackVisitor<VCLArchitecture>::set_height_dependent_pe_bandwidth_mode;
 
   void add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-    VCLBandwidthManager<VCLArchitecture>* bandwidth_manager, const std::string& propagator_name = "",
-    bool adopt_propagator = false, bool adopt_pe_processor = false);
+    VCLBandwidthManager<VCLArchitecture>* bandwidth_manager,
+    SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
+    bool adopt_propagator, bool adopt_pe_processor, bool adopt_pe_generator);
 
   void update_detector_efficiencies();
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
@@ -323,9 +343,11 @@ protected:
     unsigned detector0;
     unsigned ndetector;
     VCLBandwidthManager<VCLArchitecture>* bandwidth_manager;
+    SplinePEAmplitudeGenerator* pe_generator;
 
     bool adopt_propagator;
     bool adopt_pe_processor;
+    bool adopt_pe_generator;
     std::string name;
     std::vector<DetectorInfo*> detector_infos;
   };
@@ -342,6 +364,7 @@ protected:
     unsigned global_iscope;
     calin::simulation::pe_processor::PEProcessor* pe_processor;
     VCLBandwidthManager<VCLArchitecture>* bandwidth_manager;
+    SplinePEAmplitudeGenerator* pe_generator;
 
     RayArray rays_to_refract;
     unsigned nrays_to_refract;
@@ -397,6 +420,18 @@ VCLIACTArray(
 }
 
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
+VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
+  const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config,
+  unsigned rng_seed, bool adopt_atm):
+    VCLIACTArray(atm, atm_abs, config, new calin::math::rng::VCLRNG<VCLArchitecture>(rng_seed,
+        __PRETTY_FUNCTION__, "RNG for Cherenkov photon generation and propagation"),
+      adopt_atm, /* adopt_rng = */ true)
+{
+  // nothing to see here
+}
+
+template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
   for(auto* ipropagator : propagator_) {
@@ -414,8 +449,9 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
-  VCLBandwidthManager<VCLArchitecture>* bandwidth_manager, const std::string& propagator_name,
-  bool adopt_propagator, bool adopt_pe_processor)
+  VCLBandwidthManager<VCLArchitecture>* bandwidth_manager,
+  SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
+  bool adopt_propagator, bool adopt_pe_processor, bool adopt_pe_generator)
 {
   using calin::math::special::SQR;
 
@@ -428,8 +464,10 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   propagator_info->detector0           = detector_.size();
   propagator_info->ndetector           = sphere.size();
   propagator_info->bandwidth_manager   = bandwidth_manager;
+  propagator_info->pe_generator        = pe_generator;
   propagator_info->adopt_propagator    = adopt_propagator;
   propagator_info->adopt_pe_processor  = adopt_pe_processor;
+  propagator_info->adopt_pe_generator  = adopt_pe_generator;
   std::string name = propagator_name;
   if(name.empty()) {
     name = "propagator "+std::to_string(propagator_info->ipropagator);
@@ -448,6 +486,7 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     detector_info->global_iscope          = detector_.size();
     detector_info->pe_processor           = pe_processor;
     detector_info->bandwidth_manager      = bandwidth_manager;
+    detector_info->pe_generator           = pe_generator;
     detector_info->nrays_to_refract       = 0;
     detector_info->nrays_to_propagate     = 0;
     detector_info->nrays_refracted        = 0;
@@ -466,8 +505,8 @@ calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VC
 VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
   const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
-  const std::string& propagator_name,
-  bool adopt_array, bool adopt_pe_processor)
+  SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
+  bool adopt_array, bool adopt_pe_processor, bool adopt_pe_generator)
 {
   auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
@@ -477,8 +516,8 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
     config_.detector_energy_lo(), config_.detector_energy_hi(),
     config_.detector_energy_bin_width(), propagator_name);
 
-  add_propagator(propagator, pe_processor, bandwidth_manager, propagator_name,
-    adopt_pe_processor);
+  add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
+    /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
 
   return propagator;
 }
@@ -486,18 +525,44 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
 template<typename VCLArchitecture>
 calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
 VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
+  calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+  const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
+  bool adopt_array, bool adopt_pe_processor, bool adopt_pe_generator)
+{
+  return add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
+    fp_angular_efficiency, pe_generator, propagator_name, adopt_array, adopt_pe_processor,
+    adopt_pe_generator);
+}
+
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
   const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
-  const std::string& propagator_name,
-  bool adopt_pe_processor)
+  SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
+  bool adopt_pe_processor, bool adopt_pe_generator)
 {
   auto* array = new calin::simulation::vs_optics::VSOArray;
   calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
   calin::math::rng::RNG scalar_rng(&scalar_core);
   array->generateFromArrayParameters(param, scalar_rng);
   return add_davies_cotton_propagator(array, pe_processor, detector_efficiency,
-    fp_angular_efficiency, propagator_name,
-    /* adopt_array= */ true, adopt_pe_processor);
+    fp_angular_efficiency, pe_generator, propagator_name,
+    /* adopt_array= */ true, adopt_pe_processor, adopt_pe_generator);
+}
+
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+  const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
+  bool adopt_pe_processor, bool adopt_pe_generator)
+{
+  return add_davies_cotton_propagator(param, pe_processor, detector_efficiency,
+    fp_angular_efficiency, pe_generator, propagator_name, adopt_pe_processor,
+    adopt_pe_generator);
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -824,6 +889,14 @@ do_propagate_rays_for_detector(DetectorInfo* idetector)
     fp_parameters.fplane_uz.store(fplane_uy);
     fp_parameters.fplane_t.store(fplane_t);
     fp_parameters.pixel_id.store(pixel_id);
+
+    if(idetector->pe_generator != nullptr) {
+      double_vt weight;
+      weight.load(idetector->ray_weights_to_propagate);
+      weight *= idetector->pe_generator->
+        template vcl_generate_amplitude<VCLArchitecture>(*this->rng_);
+      weight.store(idetector->ray_weights_to_propagate);
+    }
 
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(fp_rays_bitmask & 1) {
