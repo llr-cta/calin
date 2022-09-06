@@ -611,7 +611,7 @@ SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
   if(adopt_rng_) { delete rng_; }
 }
 
-double SplinePEAmplitudeGenerator::generate_amplitude()
+double SplinePEAmplitudeGenerator::generate_amplitude() const
 {
   double x = rng_->uniform_double();
   switch(spline_mode_) {

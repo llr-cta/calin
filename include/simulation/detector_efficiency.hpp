@@ -273,7 +273,7 @@ class PEAmplitudeGenerator
 {
 public:
   virtual ~PEAmplitudeGenerator();
-  virtual double generate_amplitude() = 0;
+  virtual double generate_amplitude() const = 0;
   Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
     Eigen::VectorXd rvs(n);
     for(unsigned i=0;i<n;i++) {
@@ -297,11 +297,11 @@ public:
   SplinePEAmplitudeGenerator(const calin::math::spline_interpolation::CubicSpline& spline,
     SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
   virtual ~SplinePEAmplitudeGenerator();
-  double generate_amplitude() final;
+  double generate_amplitude() const final;
   template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
-    calin::math::rng::VCLRNG<VCLArchitecture>& rng)
+    calin::math::rng::VCLRNG<VCLArchitecture>& rng) const
   {
-    typename VCLArchitecture::double_vt x = rng->uniform_double();
+    typename VCLArchitecture::double_vt x = rng.uniform_double();
     switch(spline_mode_) {
     case SM_LINEAR:
       break;
@@ -312,7 +312,7 @@ public:
       x = vcl::sqrt(-vcl::log(x));
       break;
     }
-    return spline_->vcl_value(x);
+    return spline_->template vcl_value<VCLArchitecture>(x);
   }
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
   SplineMode spline_mode() const { return spline_mode_; }
