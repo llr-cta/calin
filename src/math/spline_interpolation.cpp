@@ -342,6 +342,7 @@ void CubicSpline::extend_linear_rhs(double dx)
   }
   if(dx==s_.regular_dx and s_.regular_xmax==s_.xmax) {
     s_.regular_xmax += dx;
+    s_.irregular_begin += 1;
   }
   s_.xmax += dx;
   s_.x.push_back(s_.x.back() + dx);

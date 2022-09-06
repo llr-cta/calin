@@ -308,14 +308,14 @@ public:
   CubicSpline* new_regularized_spline() const {
     return new_regularized_spline((s_.xmax-s_.xmin)/(s_.x.size()-1));
   }
-  CubicSpline* new_regularized_spline_extend_regular() const {
+  CubicSpline* new_regularized_spline_with_regular_dx() const {
     return new_regularized_spline(s_.regular_dx);
   }
   CubicSpline* new_regularized_spline_points_multiplier(double multiplier = 1.0) const {
     return new_regularized_spline((s_.xmax-s_.xmin)/std::round((s_.x.size()-1)*multiplier));
   }
-  CubicSpline* new_regularized_spline_points_nknot(unsigned nknot) const {
-    return new_regularized_spline((s_.xmax-s_.xmin)/(nknot-1));
+  CubicSpline* new_regularized_spline_ninterval(unsigned ninterval) const {
+    return new_regularized_spline((s_.xmax-s_.xmin)/ninterval);
   }
 
   void rescale(double scale);
