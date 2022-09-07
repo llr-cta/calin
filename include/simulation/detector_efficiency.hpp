@@ -281,6 +281,7 @@ public:
     }
     return rvs;
   }
+  virtual std::string banner(const std::string& indent0="", const std::string& indentN="") const = 0;
 };
 
 enum SplineMode {
@@ -314,8 +315,11 @@ public:
     }
     return spline_->template vcl_value<VCLArchitecture>(x);
   }
+  std::string banner(const std::string& indent0="", const std::string& indentN="") const final;
+
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
   SplineMode spline_mode() const { return spline_mode_; }
+
   static calin::math::spline_interpolation::CubicSpline* make_spline(
     const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
     bool regularize_spline = true, bool extend_linear_rhs = true,

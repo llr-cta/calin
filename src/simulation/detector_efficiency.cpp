@@ -626,3 +626,54 @@ double SplinePEAmplitudeGenerator::generate_amplitude() const
   }
   return spline_->value(x);
 }
+
+std::string SplinePEAmplitudeGenerator::banner(const std::string& indent0, const std::string& indentN) const
+{
+  using calin::util::string::double_to_string_with_commas;
+  std::ostringstream stream;
+  std::vector<double> q;
+  std::vector<double> p;
+  double dx = (spline_->xmax()-spline_->xmin())/10000.0;
+  for(double xi=spline_->xmin(); xi<spline_->xmax()+0.1*dx; xi+=dx) {
+    q.push_back(spline_->value(xi));
+    switch(spline_mode_) {
+    case SM_LINEAR:
+      p.push_back(std::max(1-xi,0.0));
+      break;
+    case SM_LOG:
+      p.push_back(std::max(std::exp(-xi),0.0));
+      break;
+    case SM_SQRT_LOG:
+      p.push_back(std::max(std::exp(-xi*xi),0.0));
+      break;
+    }
+  }
+  double p_last = p[0];
+  double q_last = q[0];
+  double PQ = 0.0;
+  double PQQ = 0.0;
+  double dp_dq_max = 0;
+  double q_dp_dq_max = 0;
+  for(unsigned ipq=1;ipq<p.size();++ipq) {
+    double p_i = p[ipq];
+    double q_i = q[ipq];
+    PQ += 0.5*(q_last + q_i) * std::abs(p_i - p_last);
+    PQQ += 0.5*(SQR(q_last) + SQR(q_i)) * std::abs(p_i - p_last);
+    double dp_dq = std::abs(p_i - p_last) / (q_i - q_last);
+    if(dp_dq > dp_dq_max) {
+      dp_dq_max = dp_dq;
+      q_dp_dq_max = 0.5*(q_last + q_i);
+    }
+    p_last = p_i;
+    q_last = q_i;
+  }
+  double P = 1.0-p.back();
+  auto iq20 = std::upper_bound(q.begin(), q.end(), 0.2*PQ/P);
+  stream << indent0 << "G=" << double_to_string_with_commas(PQ/P,3)
+    << " res=" << double_to_string_with_commas(std::sqrt(PQQ*P/SQR(PQ) - 1),3)
+    << " EVF=" << double_to_string_with_commas(PQQ*P/SQR(PQ),3)
+    << " ENF=" << double_to_string_with_commas(std::sqrt(PQQ*P/SQR(PQ)),3)
+    << " P(q<0.2PE)=" << double_to_string_with_commas(100-p[iq20-q.begin()]*100,2) << '%'
+    << " Peak=" << double_to_string_with_commas(q_dp_dq_max/(PQ/P),3) << " PE";
+  return stream.str();
+}
