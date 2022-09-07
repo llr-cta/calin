@@ -674,6 +674,6 @@ std::string SplinePEAmplitudeGenerator::banner(const std::string& indent0, const
     << " EVF=" << double_to_string_with_commas(PQQ*P/SQR(PQ),3)
     << " ENF=" << double_to_string_with_commas(std::sqrt(PQQ*P/SQR(PQ)),3)
     << " P(q<0.2PE)=" << double_to_string_with_commas(100-p[iq20-q.begin()]*100,2) << '%'
-    << " Peak=" << double_to_string_with_commas(q_dp_dq_max/(PQ/P),3) << " PE";
+    << " Peak@" << double_to_string_with_commas(q_dp_dq_max/(PQ/P),3) << " PE\n";
   return stream.str();
 }
