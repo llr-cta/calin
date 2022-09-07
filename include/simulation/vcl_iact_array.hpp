@@ -1043,6 +1043,16 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
   for(const auto* ibwm : bandwidth_manager_) {
     stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
   }
+  bool spe_logo_sent = false;
+  for(const auto* ipropagator : propagator_) {
+    if(ipropagator->pe_generator != nullptr) {
+      if(not spe_logo_sent) {
+        stream << "Single photo-electron spectra :\n";
+        spe_logo_sent = true;
+      }
+      stream << ipropagator->pe_generator->banner("- "+ipropagator->name+": ", "  ");
+    }
+  }
   return stream.str();
 }
 
