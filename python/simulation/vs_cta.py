@@ -228,7 +228,7 @@ def mstn_cone_efficiency(cone = 'NectarCAM_lightguide_efficiency_POP_131019.dat'
 def mstn_spe_amplitude_generator(spe = "spe_nectarcam_lmp_run1512.dat", dpdq_min=0,
         spline_mode = calin.simulation.detector_efficiency.SM_SQRT_LOG,
         spline_ninterval = 100, regularize_spline = True, extend_spline = False,
-        spline_normalization = None, rescale_gain_to_unity = True, quiet = False):
+        spline_normalization = None, rescale_gain_to_unity = False, quiet = False):
     q = []
     dpdq = []
     with open(ds_filename(spe), 'r') as file:
@@ -280,6 +280,8 @@ def mstn_spe_amplitude_generator(spe = "spe_nectarcam_lmp_run1512.dat", dpdq_min
 
 def mstn_spe_and_afterpulsing_amplitude_generator(spe = "spe_nectarcam_lmp_run1512_with_toy_ap_model.dat",
         spline_ninterval = 200, **args):
+    if 'rescale_gain_to_unity' not in args:
+        args['rescale_gain_to_unity'] = False
     return mstn_spe_amplitude_generator(spe = spe, spline_ninterval = spline_ninterval, **args)
 
 def dms(d,m,s):
