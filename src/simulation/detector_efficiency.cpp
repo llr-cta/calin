@@ -573,6 +573,16 @@ SplinePEAmplitudeGenerator::make_spline(const Eigen::VectorXd& q,
     std::transform(x.begin(), x.end(), x.begin(), [](double x) { return std::max(0.0,std::sqrt(-std::log(1-x))); });
     break;
   }
+  unsigned ibegin = 0;
+  while(ibegin<x.size()-1 and x[ibegin+1]==x[ibegin]) {
+    ++ibegin;
+  }
+  unsigned iend = ibegin;
+  while(iend<x.size()-1 and x[iend+1]!=x[iend]) {
+    ++iend;
+  }
+  x = std::vector<double>(x.begin()+ibegin, x.begin()+iend+1);
+  y = std::vector<double>(y.begin()+ibegin, y.begin()+iend+1);
   auto* spline = new calin::math::spline_interpolation::CubicSpline(x, y,
     calin::math::spline_interpolation::BC_NATURAL, 0,
     calin::math::spline_interpolation::BC_NATURAL, 0);
