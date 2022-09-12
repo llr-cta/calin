@@ -284,7 +284,8 @@ void WaveformPEProcessor::clear_all_traces()
   overflow_.setZero();
 }
 
-void WaveformPEProcessor::add_nsb(double rate_ghz)
+void WaveformPEProcessor::add_nsb(double rate_ghz,
+  calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen)
 {
   if(rng_ == nullptr) {
     rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB photon time generator");
@@ -295,14 +296,16 @@ void WaveformPEProcessor::add_nsb(double rate_ghz)
     for(unsigned ipix=0;ipix<npix_; ++ipix) {
       double t = delta_t_nsb*rng_->exponential();
       while(t < t_max) {
-        traces(ipix, unsigned(floor(t))) += 1.0;
+        double amp = pegen==nullptr? 1.0 : pegen->generate_amplitude();
+        traces(ipix, unsigned(floor(t))) += amp;
         t += delta_t_nsb*rng_->exponential();
       }
     }
   }
 }
 
-void WaveformPEProcessor::add_nsb(const Eigen::VectorXd rate_per_pixel_ghz)
+void WaveformPEProcessor::add_nsb(const Eigen::VectorXd rate_per_pixel_ghz,
+  calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen)
 {
   if(rate_per_pixel_ghz.size() != npix_) {
     throw std::runtime_error("WaveformPEProcessor::add_nsb : rate_per_pixel_ghz array must have "
@@ -317,7 +320,8 @@ void WaveformPEProcessor::add_nsb(const Eigen::VectorXd rate_per_pixel_ghz)
       double delta_t_nsb = delta_t_inv_/rate_per_pixel_ghz[ipix];
       double t = delta_t_nsb*rng_->exponential();
       while(t < t_max) {
-        traces(ipix, unsigned(floor(t))) += 1.0;
+        double amp = pegen==nullptr? 1.0 : pegen->generate_amplitude();
+        traces(ipix, unsigned(floor(t))) += amp;
         t += delta_t_nsb*rng_->exponential();
       }
     }

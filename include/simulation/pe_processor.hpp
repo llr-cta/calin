@@ -29,6 +29,7 @@
 #include <math/rng.hpp>
 #include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
+#include <simulation/detector_efficiency.hpp>
 
 namespace calin { namespace simulation { namespace pe_processor {
 
@@ -107,8 +108,10 @@ public:
   int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
   Eigen::VectorXd scope_overflow(unsigned iscope) const { check_iscope(iscope); return overflow_.row(iscope); }
   void clear_all_traces();
-  void add_nsb(double rate_ghz);
-  void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz);
+  void add_nsb(double rate_ghz,
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen = nullptr);
+  void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz,
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen = nullptr);
 private:
   void check_iscope(unsigned iscope) const {
     if(iscope >= traces_.size()) {
