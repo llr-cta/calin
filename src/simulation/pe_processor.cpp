@@ -41,7 +41,7 @@ void PEProcessor::start_processing()
 }
 
 void PEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight)
+    double x, double y, double ux, double uy, double t, double pe_weight)
 {
   // nothing to see here
 }
@@ -70,7 +70,7 @@ void RecordingPEProcessor::start_processing()
 }
 
 void RecordingPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight)
+    double x, double y, double ux, double uy, double t, double pe_weight)
 {
   if(nmax_==0 or x_.size()<nmax_) {
     sid_.push_back(scope_id);
@@ -79,7 +79,7 @@ void RecordingPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_
     y_.push_back(y);
     ux_.push_back(ux);
     uy_.push_back(uy);
-    t_.push_back(t0);
+    t_.push_back(t);
     w_.push_back(pe_weight);
   }
 }
@@ -123,13 +123,13 @@ void SimpleImagePEProcessor::start_processing()
 
 void SimpleImagePEProcessor::
 process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double ux, double uy, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t, double pe_weight)
 {
 #if 0
   static unsigned counter = 0;
   if(counter++ < 10)
     LOG(INFO) << scope_id << ' ' << pixel_id << ' ' << x << ' ' << y << ' '
-              << t0 << ' ' << pe_weight;
+              << t << ' ' << pe_weight;
 #endif
 
   if(pixel_id<0)return;
@@ -179,7 +179,7 @@ void TelescopePSFCalcPEProcessor::start_processing()
 }
 
 void TelescopePSFCalcPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double ux, double uy, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
 }
@@ -204,7 +204,7 @@ void TelescopePSFCalcThirdMomentPEProcessor::start_processing()
 
 void TelescopePSFCalcThirdMomentPEProcessor::
 process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double ux, double uy, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
 }
@@ -235,7 +235,7 @@ void WaveformPEProcessor::start_processing()
 }
 
 void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double ux, double uy, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t, double pe_weight)
 {
   if(pixel_id < 0) {
     return;
@@ -246,9 +246,9 @@ void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_i
 
   double trel;
   if(std::isfinite(t0_[scope_id])) {
-    trel = t0 - t0_[scope_id];
+    trel = t - t0_[scope_id];
   } else {
-    t0_[scope_id] = t0;
+    t0_[scope_id] = t;
     trel = 0;
   }
 
@@ -265,7 +265,7 @@ void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_i
     if(not warning_sent_) {
       LOG(INFO)
         << "WaveformPEProcessor::process_focal_plane_hit : Circular trace buffer overflow\n"
-        << "scope_id=" << scope_id << ", pixel_id=" << pixel_id << ", t=" << t0
+        << "scope_id=" << scope_id << ", pixel_id=" << pixel_id << ", t=" << t
         << ", t0=" << t0_[scope_id] << ", n=" << n << ", nmin=" << nmin_[scope_id]
         << ", nmax=" << nmax_[scope_id];
       warning_sent_ = true;
@@ -326,4 +326,106 @@ void WaveformPEProcessor::add_nsb(const Eigen::VectorXd rate_per_pixel_ghz,
       }
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
+//
+// UnbinnedWaveformPEProcessor
+//
+//
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+UnbinnedWaveformPEProcessor::
+UnbinnedWaveformPEProcessor(unsigned nscope, unsigned npix,
+  double scope_trace_delta_t, unsigned scope_trace_nsamp,
+  bool auto_clear): PEProcessor(), nscope_(nscope), npix_(npix),
+  scope_trace_nsamp_(scope_trace_nsamp),
+  scope_trace_delta_t_inv_(1.0/scope_trace_delta_t),
+  scope_trace_(nscope, scope_trace_nsamp), t0_(nscope), nmin_(nscope), nmax_(nscope),
+  scope_trace_overflow_(nscope)
+{
+  if(scope_trace_nsamp_ & (scope_trace_nsamp_-1)) {
+    throw std::runtime_error("UnbinnedWaveformPEProcessor : scope_trace_nsamp_ must be power of two : "+std::to_string(scope_trace_nsamp_));
+  }
+}
+
+UnbinnedWaveformPEProcessor::~UnbinnedWaveformPEProcessor()
+{
+  // nothing to see here
+}
+
+void UnbinnedWaveformPEProcessor::start_processing()
+{
+  if(auto_clear_) {
+    clear_all_traces();
+  }
+}
+
+void UnbinnedWaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
+  double x, double y, double ux, double uy, double t, double pe_weight)
+{
+  if(pixel_id < 0) {
+    return;
+  } else if (pixel_id >= npix_) {
+    throw std::out_of_range("UnbinnedWaveformPEProcessor::process_focal_plane_hit : pixel_id out of range : "
+      + std::to_string(pixel_id) + " >= " + std::to_string(npix_));
+  }
+
+  pe_iscope.push_back(scope_id);
+  pe_ipix.push_back(pixel_id);
+  pe_t.push_back(t);
+  pe_q.push_back(pe_weight);
+
+  double trel;
+  if(std::isfinite(t0_[scope_id])) {
+    trel = t - t0_[scope_id];
+  } else {
+    t0_[scope_id] = t;
+    trel = 0;
+  }
+
+  int n = std::round(trel * scope_trace_delta_t_inv_);
+  double nmin = std::min(nmin_[scope_id], n);
+  double nmax = std::max(nmax_[scope_id], n);
+  if(nmax - nmin < scope_trace_nsamp_) {
+    n &= (scope_trace_nsamp_-1);
+    scope_trace_(scope_id, n) += pe_weight;
+    nmin_[scope_id] = nmin;
+    nmax_[scope_id] = nmax;
+  } else {
+    scope_trace_overflow_(scope_id) += pe_weight;
+    if(not warning_sent_) {
+      LOG(INFO)
+        << "UnbinnedWaveformPEProcessor::process_focal_plane_hit : Circular trace buffer overflow\n"
+        << "scope_id=" << scope_id << ", pixel_id=" << pixel_id << ", t=" << t
+        << ", t0=" << t0_(scope_id) << ", n=" << n << ", nmin=" << nmin_(scope_id)
+        << ", nmax=" << nmax_(scope_id);
+      warning_sent_ = true;
+    }
+  }
+
+}
+
+Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(unsigned iscope,
+  double nsb_rate_ghz, calin::math::rng::RNG* rng_,
+  calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen) const
+{
+
+}
+
+void UnbinnedWaveformPEProcessor::clear_all_traces()
+{
+  pe_iscope.clear();
+  pe_ipix.clear();
+  pe_t.clear();
+  pe_q.clear();
+  scope_trace_.setZero();
+  t0_.setConstant(std::numeric_limits<double>::quiet_NaN());
+  nmin_.setZero();
+  nmax_.setZero();
+  scope_trace_overflow_.setZero();
+  warning_sent_ = false;
 }
