@@ -413,7 +413,7 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
   double& trace_t0, Eigen::VectorXd& trace_overflow,
   unsigned iscope,
   double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
-  double nsb_rate_ghz, calin::math::rng::RNG* rng_,
+  double nsb_rate_ghz, calin::math::rng::RNG* rng,
   calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen) const
 {
   check_iscope(iscope);
@@ -424,12 +424,20 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
     I += scope_trace_(iscope, n & (scope_trace_nsamp_-1));
   }
   pe_integral[nmax_(iscope) - nmin_(iscope) + 1] = I;
+
   auto nmedian = std::upper_bound(pe_integral.begin(), pe_integral.end(), I*0.5);
   double tfrac = (I*0.5 - *(nmedian-1))/(*nmedian - *(nmedian-1));
-  double tmedian = (nmedian-pe_integral.begin() + tfrac + t0_[iscope] - 0.5)/scope_trace_delta_t_inv_;
+  double tmedian = (t0_[iscope] + double(nmedian-pe_integral.begin()+nmin_(iscope)-1) + tfrac - 0.5)/scope_trace_delta_t_inv_;
 
   double trace_delta_t_inv = 1.0/trace_delta_t;
   double tstart = std::round((tmedian - trace_advance_time)*trace_delta_t_inv);
+
+#if 0
+  LOG(INFO) << "t0=" << t0_[iscope] << " nmin=" << nmin_(iscope)
+    << " nmedian=" << nmedian-pe_integral.begin() << " tfrac=" << tfrac
+    << " tmedian=" << tmedian << " tstart=" << tstart;
+#endif
+
   Eigen::MatrixXd pix_traces(npix_, trace_nsamp);
   Eigen::VectorXd pix_overflow(npix_);
   pix_traces.setZero();
@@ -446,6 +454,16 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
   }
   trace_t0 = tstart*trace_delta_t;
   trace_overflow = pix_overflow;
+  if(nsb_rate_ghz>0 and rng!=nullptr) {
+    double dx = trace_delta_t_inv/nsb_rate_ghz;
+    double xmax = pix_traces.size();
+    double x = dx*rng->exponential();
+    while(x < xmax) {
+      double amp = nsb_pegen==nullptr? 1.0 : nsb_pegen->generate_amplitude();
+      pix_traces.data()[unsigned(floor(x))] += amp;
+      x += dx*rng->exponential();
+    }
+  }
   return pix_traces;
 }
 
