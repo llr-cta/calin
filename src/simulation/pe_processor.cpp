@@ -219,6 +219,7 @@ WaveformPEProcessor::WaveformPEProcessor(unsigned nscope, unsigned npix,
   if(nsamp & (nsamp-1)) {
     throw std::runtime_error("nsamp must be power of two : "+std::to_string(nsamp));
   }
+  clear_all_traces();
 }
 
 WaveformPEProcessor::~WaveformPEProcessor()
@@ -345,11 +346,12 @@ UnbinnedWaveformPEProcessor(unsigned nscope, unsigned npix,
   scope_trace_nsamp_(scope_trace_nsamp),
   scope_trace_delta_t_inv_(1.0/scope_trace_delta_t),
   scope_trace_(nscope, scope_trace_nsamp), t0_(nscope), nmin_(nscope), nmax_(nscope),
-  scope_trace_overflow_(nscope)
+  scope_trace_overflow_(nscope), auto_clear_(auto_clear)
 {
   if(scope_trace_nsamp_ & (scope_trace_nsamp_-1)) {
     throw std::runtime_error("UnbinnedWaveformPEProcessor : scope_trace_nsamp_ must be power of two : "+std::to_string(scope_trace_nsamp_));
   }
+  clear_all_traces();
 }
 
 UnbinnedWaveformPEProcessor::~UnbinnedWaveformPEProcessor()
@@ -374,20 +376,18 @@ void UnbinnedWaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int
       + std::to_string(pixel_id) + " >= " + std::to_string(npix_));
   }
 
-  pe_iscope.push_back(scope_id);
-  pe_ipix.push_back(pixel_id);
-  pe_t.push_back(t);
-  pe_q.push_back(pe_weight);
+  pe_iscope_.push_back(scope_id);
+  pe_ipix_.push_back(pixel_id);
+  pe_t_.push_back(t);
+  pe_q_.push_back(pe_weight);
 
-  double trel;
-  if(std::isfinite(t0_[scope_id])) {
-    trel = t - t0_[scope_id];
-  } else {
-    t0_[scope_id] = t;
-    trel = 0;
+  if(not std::isfinite(t0_[scope_id])) {
+    t0_[scope_id] = std::round(t * scope_trace_delta_t_inv_);
   }
 
-  int n = std::round(trel * scope_trace_delta_t_inv_);
+  double trel = std::round(t * scope_trace_delta_t_inv_) - t0_[scope_id];
+
+  int n = trel;
   double nmin = std::min(nmin_[scope_id], n);
   double nmax = std::max(nmax_[scope_id], n);
   if(nmax - nmin < scope_trace_nsamp_) {
@@ -409,19 +409,52 @@ void UnbinnedWaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int
 
 }
 
-Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(unsigned iscope,
+Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
+  double& trace_t0, Eigen::VectorXd& trace_overflow,
+  unsigned iscope,
+  double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
   double nsb_rate_ghz, calin::math::rng::RNG* rng_,
   calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen) const
 {
+  check_iscope(iscope);
+  Eigen::VectorXd pe_integral(nmax_(iscope) - nmin_(iscope) + 2);
+  double I = 0;
+  for(int n=nmin_(iscope);n<=nmax_(iscope);++n) {
+    pe_integral[n - nmin_(iscope)] = I;
+    I += scope_trace_(iscope, n & (scope_trace_nsamp_-1));
+  }
+  pe_integral[nmax_(iscope) - nmin_(iscope) + 1] = I;
+  auto nmedian = std::upper_bound(pe_integral.begin(), pe_integral.end(), I*0.5);
+  double tfrac = (I*0.5 - *(nmedian-1))/(*nmedian - *(nmedian-1));
+  double tmedian = (nmedian-pe_integral.begin() + tfrac + t0_[iscope] - 0.5)/scope_trace_delta_t_inv_;
 
+  double trace_delta_t_inv = 1.0/trace_delta_t;
+  double tstart = std::round((tmedian - trace_advance_time)*trace_delta_t_inv);
+  Eigen::MatrixXd pix_traces(npix_, trace_nsamp);
+  Eigen::VectorXd pix_overflow(npix_);
+  pix_traces.setZero();
+  pix_overflow.setZero();
+  for(unsigned ipe=0;ipe<pe_iscope_.size();++ipe) {
+    if(pe_iscope_[ipe] == iscope) {
+      int n = std::round(pe_t_[ipe] * trace_delta_t_inv) - tstart;
+      if(n>=0 and n<=trace_nsamp) {
+        pix_traces(pe_ipix_[ipe], n) += pe_q_[ipe];
+      } else {
+        pix_overflow(pe_ipix_[ipe]) += pe_q_[ipe];
+      }
+    }
+  }
+  trace_t0 = tstart*trace_delta_t;
+  trace_overflow = pix_overflow;
+  return pix_traces;
 }
 
 void UnbinnedWaveformPEProcessor::clear_all_traces()
 {
-  pe_iscope.clear();
-  pe_ipix.clear();
-  pe_t.clear();
-  pe_q.clear();
+  pe_iscope_.clear();
+  pe_ipix_.clear();
+  pe_t_.clear();
+  pe_q_.clear();
   scope_trace_.setZero();
   t0_.setConstant(std::numeric_limits<double>::quiet_NaN());
   nmin_.setZero();

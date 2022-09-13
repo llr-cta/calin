@@ -142,7 +142,8 @@ public:
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double ux, double uy, double t, double pe_weight) override;
-  Eigen::MatrixXd pixel_traces(unsigned iscope,
+  Eigen::MatrixXd pixel_traces(double& trace_t0, Eigen::VectorXd& trace_overflow, unsigned iscope,
+    double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
     double nsb_rate_ghz = 0, calin::math::rng::RNG* rng_ = nullptr,
     calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen = nullptr) const;
   Eigen::VectorXd scope_trace(unsigned iscope) const { check_iscope(iscope); return scope_trace_.row(iscope); }
@@ -164,10 +165,10 @@ private:
   unsigned scope_trace_nsamp_;
   double scope_trace_delta_t_inv_;
 
-  std::vector<unsigned> pe_iscope;
-  std::vector<unsigned> pe_ipix;
-  std::vector<unsigned> pe_t;
-  std::vector<unsigned> pe_q;
+  std::vector<unsigned> pe_iscope_;
+  std::vector<unsigned> pe_ipix_;
+  std::vector<double> pe_t_;
+  std::vector<double> pe_q_;
 
   Eigen::MatrixXd scope_trace_;
   Eigen::VectorXd t0_;

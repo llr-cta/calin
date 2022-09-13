@@ -47,6 +47,9 @@
 %import "math/ray_generator.i"
 %import "math/moments_calc.i"
 
+%apply double &OUTPUT { double& trace_t0 };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& trace_overflow };
+
 %import "simulation/pe_processor.pb.i"
 %include "simulation/pe_processor.hpp"
 %newobject *::add_processor_and_pe_visitor;
