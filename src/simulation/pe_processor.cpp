@@ -496,8 +496,8 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::convolve_instrument_response(
   double* traces_b = fftw_alloc_real(traces.size());
 
   int rank = 1;
-  int n[] = { static_cast<int>(traces.cols()) };
-  int howmany = traces.rows();
+  int n[] = { static_cast<int>(traces.rows()) };
+  int howmany = traces.cols();
   double* in = traces_a;
   int* inembed = n;
   int istride = 1;
