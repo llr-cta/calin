@@ -23,7 +23,11 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+
+#include <fftw3.h>
+
 #include <simulation/pe_processor.hpp>
+#include <math/fftw_util.hpp>
 
 using namespace calin::simulation::pe_processor;
 
@@ -438,7 +442,7 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
     << " tmedian=" << tmedian << " tstart=" << tstart;
 #endif
 
-  Eigen::MatrixXd pix_traces(npix_, trace_nsamp);
+  Eigen::MatrixXd pix_traces(trace_nsamp, npix_);
   Eigen::VectorXd pix_overflow(npix_);
   pix_traces.setZero();
   pix_overflow.setZero();
@@ -446,7 +450,7 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
     if(pe_iscope_[ipe] == iscope) {
       int n = std::round(pe_t_[ipe] * trace_delta_t_inv) - tstart;
       if(n>=0 and n<=trace_nsamp) {
-        pix_traces(pe_ipix_[ipe], n) += pe_q_[ipe];
+        pix_traces(n, pe_ipix_[ipe]) += pe_q_[ipe];
       } else {
         pix_overflow(pe_ipix_[ipe]) += pe_q_[ipe];
       }
@@ -479,4 +483,56 @@ void UnbinnedWaveformPEProcessor::clear_all_traces()
   nmax_.setZero();
   scope_trace_overflow_.setZero();
   warning_sent_ = false;
+}
+
+Eigen::MatrixXd UnbinnedWaveformPEProcessor::convolve_instrument_response(
+  const Eigen::MatrixXd& traces, const Eigen::VectorXd& impulse_response_dft)
+{
+  if(traces.rows() != impulse_response_dft.size()) {
+    throw std::length_error("convolve_instrument_response: number of columns in traces does not match impulse response");
+  }
+
+  double* traces_a = fftw_alloc_real(traces.size());
+  double* traces_b = fftw_alloc_real(traces.size());
+
+  int rank = 1;
+  int n[] = { static_cast<int>(traces.cols()) };
+  int howmany = traces.rows();
+  double* in = traces_a;
+  int* inembed = n;
+  int istride = 1;
+  int idist = traces.rows();
+  double* out = traces_b;
+  int* onembed = n;
+  int ostride = 1;
+  int odist = traces.rows();
+  fftw_r2r_kind kind[] = { FFTW_R2HC };
+
+  auto fwd_plan = fftw_plan_many_r2r(rank, n, howmany,
+    in, inembed, istride, idist, out, onembed, ostride, odist, kind, 0);
+
+  kind[0] = FFTW_HC2R;
+
+  auto rev_plan = fftw_plan_many_r2r(rank, n, howmany,
+    in, inembed, istride, idist, out, onembed, ostride, odist, kind, 0);
+
+  std::copy(traces.data(), traces.data()+traces.size(), traces_a);
+
+  fftw_execute(fwd_plan);
+
+  for(unsigned icol=0; icol<traces.cols(); ++icol) {
+    calin::math::fftw_util::hcvec_scale_and_multiply(traces_a + icol*traces.rows(),
+      traces_b + icol*traces.rows(), impulse_response_dft.data(),
+      traces.rows(), 1.0/traces.rows());
+  }
+
+  fftw_execute(rev_plan);
+
+  Eigen::MatrixXd convolved_traces(traces.rows(), traces.cols());
+  std::copy(traces_b, traces_b+traces.size(), convolved_traces.data());
+
+  fftw_free(traces_a);
+  fftw_free(traces_b);
+
+  return convolved_traces;
 }

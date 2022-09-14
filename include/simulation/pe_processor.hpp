@@ -152,6 +152,8 @@ public:
   int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
   double scope_trace_overflow(unsigned iscope) const { check_iscope(iscope); return scope_trace_overflow_(iscope); }
   void clear_all_traces();
+  static Eigen::MatrixXd convolve_instrument_response(const Eigen::MatrixXd& traces,
+    const Eigen::VectorXd& impulse_response_dft);
 private:
   void check_iscope(unsigned iscope) const {
     if(iscope >= nscope_) {
