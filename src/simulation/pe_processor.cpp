@@ -531,6 +531,8 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::convolve_instrument_response(
   Eigen::MatrixXd convolved_traces(traces.rows(), traces.cols());
   std::copy(traces_b, traces_b+traces.size(), convolved_traces.data());
 
+  fftw_destroy_plan(fwd_plan);
+  fftw_destroy_plan(rev_plan);
   fftw_free(traces_a);
   fftw_free(traces_b);
 
