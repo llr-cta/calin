@@ -145,7 +145,8 @@ public:
   Eigen::MatrixXd pixel_traces(double& trace_t0, Eigen::VectorXd& trace_overflow, unsigned iscope,
     double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
     double nsb_rate_ghz = 0, calin::math::rng::RNG* rng_ = nullptr,
-    calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen = nullptr) const;
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen = nullptr,
+    bool ac_couple=false) const;
   Eigen::VectorXd scope_trace(unsigned iscope) const { check_iscope(iscope); return scope_trace_.row(iscope); }
   double scope_t0(unsigned iscope) const { check_iscope(iscope); return t0_(iscope); }
   int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
@@ -153,7 +154,7 @@ public:
   double scope_trace_overflow(unsigned iscope) const { check_iscope(iscope); return scope_trace_overflow_(iscope); }
   void clear_all_traces();
   static Eigen::MatrixXd convolve_instrument_response(const Eigen::MatrixXd& traces,
-    const Eigen::VectorXd& impulse_response_dft);
+    const Eigen::VectorXd& impulse_response_dft, double pedestal=0);
 private:
   void check_iscope(unsigned iscope) const {
     if(iscope >= nscope_) {

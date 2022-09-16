@@ -418,13 +418,19 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
   unsigned iscope,
   double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
   double nsb_rate_ghz, calin::math::rng::RNG* rng,
-  calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen) const
+  calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen,
+  bool ac_couple) const
 {
   check_iscope(iscope);
 
   Eigen::MatrixXd pix_traces(trace_nsamp, npix_);
   Eigen::VectorXd pix_overflow(npix_);
-  pix_traces.setZero();
+  if(ac_couple and nsb_rate_ghz>0 and rng!=nullptr) {
+    double mean_amplitude = nsb_pegen==nullptr ? 1.0 : nsb_pegen->mean_amplitude();
+    pix_traces.setConstant(-trace_delta_t*nsb_rate_ghz*mean_amplitude);
+  } else {
+    pix_traces.setZero();
+  }
   pix_overflow.setZero();
 
   double trace_delta_t_inv = 1.0/trace_delta_t;
@@ -495,7 +501,8 @@ void UnbinnedWaveformPEProcessor::clear_all_traces()
 }
 
 Eigen::MatrixXd UnbinnedWaveformPEProcessor::convolve_instrument_response(
-  const Eigen::MatrixXd& traces, const Eigen::VectorXd& impulse_response_dft)
+  const Eigen::MatrixXd& traces, const Eigen::VectorXd& impulse_response_dft,
+  double pedestal)
 {
   if(traces.rows() != impulse_response_dft.size()) {
     throw std::length_error("convolve_instrument_response: number of columns in traces does not match impulse response");
@@ -533,6 +540,7 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::convolve_instrument_response(
     calin::math::fftw_util::hcvec_scale_and_multiply(traces_a + icol*traces.rows(),
       traces_b + icol*traces.rows(), impulse_response_dft.data(),
       traces.rows(), 1.0/traces.rows());
+    *(traces_a + icol*traces.rows()) += pedestal;
   }
 
   fftw_execute(rev_plan);
