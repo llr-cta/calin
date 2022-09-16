@@ -274,6 +274,7 @@ class PEAmplitudeGenerator
 public:
   virtual ~PEAmplitudeGenerator();
   virtual double generate_amplitude() const = 0;
+  virtual double mean_amplitude() const = 0;
   Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
     Eigen::VectorXd rvs(n);
     for(unsigned i=0;i<n;i++) {
@@ -299,6 +300,7 @@ public:
     SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
   virtual ~SplinePEAmplitudeGenerator();
   double generate_amplitude() const final;
+  double mean_amplitude() const final;
   template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
     calin::math::rng::VCLRNG<VCLArchitecture>& rng) const
   {
@@ -326,10 +328,15 @@ public:
     unsigned regularize_ninterval = 0,
     double norm = 1.0-std::numeric_limits<double>::epsilon());
 protected:
+  void calc_pdf_moments();
   calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
   SplineMode spline_mode_ = SM_LINEAR;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
+  double pdf_mean_;
+  double pdf_res_;
+  double pdf_P20_;
+  double pdf_peak_;
 };
 
 } } } // namespace calin::simulation::detector_efficiency

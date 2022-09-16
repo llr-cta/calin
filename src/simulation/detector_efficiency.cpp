@@ -613,7 +613,7 @@ SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
   rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
   adopt_rng_(rng==nullptr ? true : adopt_rng)
 {
-  // nothing to see here
+  calc_pdf_moments();
 }
 
 SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
@@ -637,13 +637,29 @@ double SplinePEAmplitudeGenerator::generate_amplitude() const
   return spline_->value(x);
 }
 
+double SplinePEAmplitudeGenerator::mean_amplitude() const
+{
+  return pdf_mean_;
+}
+
 std::string SplinePEAmplitudeGenerator::banner(const std::string& indent0, const std::string& indentN) const
 {
   using calin::util::string::double_to_string_with_commas;
   std::ostringstream stream;
+  stream << indent0 << "G=" << double_to_string_with_commas(pdf_mean_,3)
+    << " res=" << double_to_string_with_commas(pdf_res_,3)
+    << " EVF=" << double_to_string_with_commas(1.0+pdf_res_*pdf_res_,2)
+    << " ENF=" << double_to_string_with_commas(std::sqrt(1.0+pdf_res_*pdf_res_),2)
+    << " P(q<0.2PE)=" << double_to_string_with_commas(pdf_P20_*100,1) << '%'
+    << " Peak=" << double_to_string_with_commas(pdf_peak_,2) << " PE\n";
+  return stream.str();
+}
+
+void SplinePEAmplitudeGenerator::calc_pdf_moments()
+{
   std::vector<double> q;
   std::vector<double> p;
-  double dx = (spline_->xmax()-spline_->xmin())/10000.0;
+  double dx = (spline_->xmax()-spline_->xmin())/(100.0*spline_->xknot().size());
   for(double xi=spline_->xmin(); xi<spline_->xmax()+0.1*dx; xi+=dx) {
     q.push_back(spline_->value(xi));
     switch(spline_mode_) {
@@ -679,11 +695,9 @@ std::string SplinePEAmplitudeGenerator::banner(const std::string& indent0, const
   }
   double P = 1.0-p.back();
   auto iq20 = std::upper_bound(q.begin(), q.end(), 0.2*PQ/P);
-  stream << indent0 << "G=" << double_to_string_with_commas(PQ/P,3)
-    << " res=" << double_to_string_with_commas(std::sqrt(PQQ*P/SQR(PQ) - 1),3)
-    << " EVF=" << double_to_string_with_commas(PQQ*P/SQR(PQ),2)
-    << " ENF=" << double_to_string_with_commas(std::sqrt(PQQ*P/SQR(PQ)),2)
-    << " P(q<0.2PE)=" << double_to_string_with_commas(100-p[iq20-q.begin()]*100,1) << '%'
-    << " Peak=" << double_to_string_with_commas(q_dp_dq_max/(PQ/P),2) << " PE\n";
-  return stream.str();
+
+  pdf_mean_ = PQ/P;
+  pdf_res_  = std::sqrt(PQQ*P/SQR(PQ) - 1);
+  pdf_P20_  = 1.0-p[iq20-q.begin()];
+  pdf_peak_ = q_dp_dq_max/(PQ/P);
 }
