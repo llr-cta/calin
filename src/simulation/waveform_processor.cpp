@@ -326,6 +326,7 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
             }
           }
         }
+        break;
       case 3:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
           unsigned nneighbor = 1;
@@ -341,6 +342,7 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
             }
           }
         }
+        break;
       default:
         throw std::runtime_error("digital_nn_trigger : multiplicity "
           + std::to_string(multiplicity_threshold) + " unsupported");
