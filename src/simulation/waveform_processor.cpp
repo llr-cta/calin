@@ -23,6 +23,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <alloca.h>
 
 #include <fftw3.h>
 
@@ -220,4 +221,35 @@ void WaveformProcessor::clear_pes()
   ac_coupling_constant_ = 0;
   wavewform_t0_ = std::numeric_limits<double>::quiet_NaN();
   std::fill(pe_waveform_, pe_waveform_ + npixels_*trace_nsamples_, 0);
+}
+
+int WaveformProcessor::digital_multipicity_trigger(double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold)
+{
+  compute_el_waveform();
+  unsigned* l0_eop = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
+  unsigned* l0_tot = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
+  std::fill(l0_eop, l0_eop+npixels_, 0);
+  std::fill(l0_tot, l0_eop+npixels_, 0);
+  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+    unsigned multiplicity = 0;
+    for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+      if(el_waveform_[ipixel*trace_nsamples_ + isamp] > threshold) {
+        ++l0_tot[ipixel];
+      } else {
+        l0_tot[ipixel] = 0;
+      }
+      if(l0_tot[ipixel] >= time_over_threshold_samples) {
+        l0_eop[ipixel] = isamp+coherence_time_samples;
+      }
+      if(l0_eop[ipixel] > isamp) {
+        ++multiplicity;
+        if(multiplicity >= multiplicity_threshold) {
+          return isamp;
+        }
+      }
+    }
+  }
+  return -1;
 }

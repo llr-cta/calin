@@ -60,8 +60,14 @@ public:
   void convolve_impulse_response(const Eigen::VectorXd& impulse_response_dft, double pedestal = 0);
   void add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude);
   void clear_pes();
+
   Eigen::MatrixXd pe_waveform() const;
   Eigen::MatrixXd el_waveform();
+
+  int digital_multipicity_trigger(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold);
+
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
 private:
