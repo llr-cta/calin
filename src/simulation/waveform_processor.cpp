@@ -72,6 +72,28 @@ WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsa
     in, inembed, istride, idist, out, onembed, ostride, odist, kind, fftw_flags);
 }
 
+WaveformProcessor::
+WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* camera,
+    double trace_sampling_ns, unsigned trace_nsamples,
+    double trace_advance_time, calin::math::rng::RNG* rng,
+    unsigned fftw_flags, bool adopt_rng):
+  WaveformProcessor(camera->channel_size(), trace_sampling_ns, trace_nsamples,
+    trace_advance_time, rng, fftw_flags, adopt_rng)
+{
+  for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
+    max_num_neighbors_ = std::max(max_num_neighbors_,
+      camera->channel(ichannel).neighbour_channel_indexes_size());
+  }
+  neighbour_map_ = new int[npixels_ * max_num_neighbors_];
+  std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbors_, -1);
+  for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
+    for(int ineighbor=0; ineighbor<camera->channel(ichannel).neighbour_channel_indexes_size(); ++ineighbor) {
+      neighbour_map_[ichannel*max_num_neighbors_ + ineighbor] =
+        camera->channel(ichannel).neighbour_channel_indexes(ineighbor);
+    }
+  }
+}
+
 WaveformProcessor::~WaveformProcessor()
 {
   fftw_destroy_plan(fwd_plan_);
@@ -248,6 +270,80 @@ int WaveformProcessor::digital_multipicity_trigger(double threshold,
         if(multiplicity >= multiplicity_threshold) {
           return isamp;
         }
+      }
+    }
+  }
+  return -1;
+}
+
+int WaveformProcessor::digital_nn_trigger(double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold)
+{
+  if(neighbour_map_ == nullptr) {
+    throw std::runtime_error("digital_nn_trigger : nearest neighbour map not defined");
+  }
+  compute_el_waveform();
+  unsigned* l0_eop = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
+  unsigned* l0_tot = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
+  std::fill(l0_eop, l0_eop+npixels_, 0);
+  std::fill(l0_tot, l0_eop+npixels_, 0);
+  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+    unsigned multiplicity = 0;
+    bool found_new_l0_triggers = false;
+    for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+      if(el_waveform_[ipixel*trace_nsamples_ + isamp] > threshold) {
+        ++l0_tot[ipixel];
+      } else {
+        l0_tot[ipixel] = 0;
+      }
+      if(l0_tot[ipixel] >= time_over_threshold_samples) {
+        if(l0_eop[ipixel] <= isamp) {
+          found_new_l0_triggers = true;
+        }
+        l0_eop[ipixel] = isamp+coherence_time_samples;
+      }
+      if(l0_eop[ipixel] > isamp) {
+        ++multiplicity;
+      }
+    }
+    if(multiplicity >= multiplicity_threshold and found_new_l0_triggers) {
+      // The simple multiplicity threshold has been met, and we have some newly
+      // triggered channels - test neighbours
+
+      switch(multiplicity_threshold) {
+      case 0:
+      case 1:
+        return isamp;
+      case 2:
+        for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+          if(l0_eop[ipixel] > isamp) {
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbors_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbors_ + ineighbour];
+              if(jpixel>ipixel and l0_eop[jpixel]>isamp) {
+                return isamp;
+              }
+            }
+          }
+        }
+      case 3:
+        for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+          unsigned nneighbor = 1;
+          if(l0_eop[ipixel] > isamp) {
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbors_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbors_ + ineighbour];
+              if(jpixel>ipixel and l0_eop[jpixel]>isamp) {
+                ++nneighbor;
+              }
+            }
+            if(nneighbor >= multiplicity_threshold) {
+              return isamp;
+            }
+          }
+        }
+      default:
+        throw std::runtime_error("digital_nn_trigger : multiplicity "
+          + std::to_string(multiplicity_threshold) + " unsupported");
       }
     }
   }

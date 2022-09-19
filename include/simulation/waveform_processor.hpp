@@ -35,6 +35,7 @@
 
 #include <Eigen/Core>
 #include <simulation/pe_processor.hpp>
+#include <iact_data/instrument_layout.pb.h>
 #include <math/fftw_util.hpp>
 
 namespace calin { namespace simulation { namespace waveform_processor {
@@ -43,6 +44,10 @@ class WaveformProcessor
 {
 public:
   WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsamples,
+    double trace_advance_time, calin::math::rng::RNG* rng = nullptr,
+    unsigned fftw_flags = 0, bool adopt_rng = false);
+  WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* camera,
+    double trace_sampling_ns, unsigned trace_nsamples,
     double trace_advance_time, calin::math::rng::RNG* rng = nullptr,
     unsigned fftw_flags = 0, bool adopt_rng = false);
   ~WaveformProcessor();
@@ -67,6 +72,9 @@ public:
   int digital_multipicity_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned multiplicity_threshold);
+  int digital_nn_trigger(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned nn_threshold);
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
@@ -92,6 +100,9 @@ private:
   bool el_waveform_dft_valid_ = false;
   bool el_waveform_valid_ = false;
   double ac_coupling_constant_ = 0;
+
+  int* neighbour_map_ = nullptr;
+  int max_num_neighbors_ = 0;
 };
 
 } } } // namespace calin::simulation::waveform_processor
