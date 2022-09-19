@@ -142,6 +142,10 @@ public:
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double ux, double uy, double t, double pe_weight) override;
+  void pixel_traces_into_buffer(double* pe_waveform_buffer, double* pe_overflow_buffer,
+    double& waveform_t0, unsigned iscope,
+    double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
+    unsigned pe_waveform_buffer_stride = 0);
   Eigen::MatrixXd pixel_traces(double& trace_t0, Eigen::VectorXd& trace_overflow, unsigned iscope,
     double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
     double nsb_rate_ghz = 0, calin::math::rng::RNG* rng_ = nullptr,

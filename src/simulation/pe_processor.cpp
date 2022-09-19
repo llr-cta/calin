@@ -413,6 +413,55 @@ void UnbinnedWaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int
 
 }
 
+void UnbinnedWaveformPEProcessor::pixel_traces_into_buffer(
+  double* pe_waveform_buffer, double* pe_overflow_buffer,
+  double& waveform_t0, unsigned iscope,
+  double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
+  unsigned pe_waveform_buffer_stride)
+{
+  check_iscope(iscope);
+
+  pe_waveform_buffer_stride = std::max(pe_waveform_buffer_stride, trace_nsamp);
+
+  double trace_delta_t_inv = 1.0/trace_delta_t;
+
+  if(std::isfinite(t0_[iscope])) {
+    Eigen::VectorXd pe_integral(nmax_(iscope) - nmin_(iscope) + 2);
+    double I = 0;
+    for(int n=nmin_(iscope);n<=nmax_(iscope);++n) {
+      pe_integral[n - nmin_(iscope)] = I;
+      I += scope_trace_(iscope, n & (scope_trace_nsamp_-1));
+    }
+    pe_integral[nmax_(iscope) - nmin_(iscope) + 1] = I;
+
+    auto nmedian = std::upper_bound(pe_integral.begin(), pe_integral.end(), I*0.5);
+    double tfrac = (I*0.5 - *(nmedian-1))/(*nmedian - *(nmedian-1));
+    double tmedian = (t0_[iscope] + double(nmedian-pe_integral.begin()+nmin_(iscope)-1) + tfrac - 0.5)/scope_trace_delta_t_inv_;
+
+    double tstart = std::round((tmedian - trace_advance_time)*trace_delta_t_inv);
+
+#if 0
+    LOG(INFO) << "t0=" << t0_[iscope] << " nmin=" << nmin_(iscope)
+      << " nmedian=" << nmedian-pe_integral.begin() << " tfrac=" << tfrac
+      << " tmedian=" << tmedian << " tstart=" << tstart;
+#endif
+
+    for(unsigned ipe=0;ipe<pe_iscope_.size();++ipe) {
+      if(pe_iscope_[ipe] == iscope) {
+        int n = std::round(pe_t_[ipe] * trace_delta_t_inv) - tstart;
+        if(n>=0 and n<=trace_nsamp) {
+          pe_waveform_buffer[pe_ipix_[ipe]*pe_waveform_buffer_stride + n] += pe_q_[ipe];
+        } else if(pe_overflow_buffer) {
+          pe_overflow_buffer[pe_ipix_[ipe]] += pe_q_[ipe];
+        }
+      }
+    }
+    waveform_t0 = tstart*trace_delta_t;
+  } else {
+    waveform_t0 = t0_[iscope];
+  }
+}
+
 Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
   double& trace_t0, Eigen::VectorXd& trace_overflow,
   unsigned iscope,
