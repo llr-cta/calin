@@ -48,17 +48,22 @@ public:
   ~WaveformProcessor();
   void load_pes_from_processor(
     calin::simulation::pe_processor::UnbinnedWaveformPEProcessor* pe_processor,
-    unsigned iscope, double trace_advance_time);
+    unsigned iscope);
   void add_nsb(double nsb_rate_ghz,
     calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen = nullptr,
     bool ac_couple=true);
   void convolve_unity_impulse_response(double pedestal = 0);
+#ifndef SWIG
   void convolve_impulse_response(const double* impulse_response_dft, double pedestal = 0);
   void add_electronics_noise(const double* noise_spectrum_amplitude);
+#endif
+  void convolve_impulse_response(const Eigen::VectorXd& impulse_response_dft, double pedestal = 0);
+  void add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude);
   void clear_pes();
   Eigen::MatrixXd pe_waveform() const;
-  Eigen::MatrixXd el_waveform() const;
+  Eigen::MatrixXd el_waveform();
   double wavewform_t0() { return wavewform_t0_; }
+  double ac_coupling_constant() { return ac_coupling_constant_; }
 private:
   void compute_pe_waveform_dft();
   void compute_el_waveform();

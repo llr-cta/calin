@@ -86,11 +86,11 @@ WaveformProcessor::~WaveformProcessor()
 
 void WaveformProcessor::load_pes_from_processor(
   calin::simulation::pe_processor::UnbinnedWaveformPEProcessor* pe_processor,
-  unsigned iscope, double trace_advance_time)
+  unsigned iscope)
 {
   clear_pes();
   pe_processor->pixel_traces_into_buffer(pe_waveform_, nullptr, wavewform_t0_,
-    iscope, trace_sampling_ns_, trace_nsamples_, trace_advance_time,
+    iscope, trace_sampling_ns_, trace_nsamples_, trace_advance_time_,
     /* pe_waveform_buffer_stride= */ trace_nsamples_);
 }
 
@@ -110,14 +110,15 @@ void WaveformProcessor::add_nsb(double nsb_rate_ghz,
     double mean_amp = nsb_pegen==nullptr? 1.0 : nsb_pegen->mean_amplitude();
     ac_coupling_constant_ += nsb_rate_ghz*trace_sampling_ns_*mean_amp;
   }
+  pe_waveform_dft_valid_ = false;
 }
 
 void WaveformProcessor::convolve_unity_impulse_response(double pedestal)
 {
   compute_pe_waveform_dft();
   pedestal -= ac_coupling_constant_;
+  double scale = 1.0/trace_nsamples_;
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-    double scale = 1.0/trace_nsamples_;
     std::transform(pe_waveform_dft_ + ipixel*trace_nsamples_,
       pe_waveform_dft_ + ipixel*trace_nsamples_ + trace_nsamples_,
       el_waveform_dft_ + ipixel*trace_nsamples_,
@@ -131,18 +132,29 @@ void WaveformProcessor::convolve_unity_impulse_response(double pedestal)
 void WaveformProcessor::convolve_impulse_response(const double* impulse_response_dft, double pedestal)
 {
   compute_pe_waveform_dft();
-  pedestal -= ac_coupling_constant_;
+  pedestal -= ac_coupling_constant_*impulse_response_dft[0];
+  double scale = 1.0/trace_nsamples_;
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     calin::math::fftw_util::hcvec_scale_and_multiply(
       el_waveform_dft_ + ipixel*trace_nsamples_,
       pe_waveform_dft_ + ipixel*trace_nsamples_,
       impulse_response_dft,
-      trace_nsamples_, 1.0/trace_nsamples_);
+      trace_nsamples_, scale);
     *(el_waveform_dft_ + ipixel*trace_nsamples_) += pedestal;
   }
   el_waveform_dft_valid_ = true;
   el_waveform_valid_ = false;
 }
+
+void WaveformProcessor::convolve_impulse_response(
+  const Eigen::VectorXd& impulse_response_dft, double pedestal)
+{
+  if(impulse_response_dft.size() != trace_nsamples_) {
+    throw std::runtime_error("convolve_impulse_response : impulse response DFT have " + std::to_string(trace_nsamples_) + " points");
+  }
+  convolve_impulse_response(impulse_response_dft.data(), pedestal);
+}
+
 
 void WaveformProcessor::add_electronics_noise(const double* noise_spectrum_amplitude)
 {
@@ -158,6 +170,14 @@ void WaveformProcessor::add_electronics_noise(const double* noise_spectrum_ampli
   el_waveform_valid_ = false;
 }
 
+void WaveformProcessor::add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+  add_electronics_noise(noise_spectrum_amplitude.data());
+}
+
 Eigen::MatrixXd WaveformProcessor::pe_waveform() const
 {
   Eigen::MatrixXd pe_traces(trace_nsamples_, npixels_);
@@ -165,8 +185,9 @@ Eigen::MatrixXd WaveformProcessor::pe_waveform() const
   return pe_traces;
 }
 
-Eigen::MatrixXd WaveformProcessor::el_waveform() const
+Eigen::MatrixXd WaveformProcessor::el_waveform()
 {
+  compute_el_waveform();
   Eigen::MatrixXd el_traces(trace_nsamples_, npixels_);
   std::copy(el_waveform_, el_waveform_+trace_nsamples_*npixels_, el_traces.data());
   return el_traces;
