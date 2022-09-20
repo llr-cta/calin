@@ -536,6 +536,10 @@ struct VCL128Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0); }
+  static inline int32_vt int32_iota() {
+    return int32_vt(0,1,2,3); }
+  static inline int64_vt int64_iota() {
+    return int64_vt(0,1); }
   static inline void* aligned_malloc(size_t nbytes) {
     void* p = nullptr;
     if(::posix_memalign(&p, vec_bytes, nbytes)==0) {
@@ -614,6 +618,10 @@ struct VCL256Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0); }
+  static inline int32_vt int32_iota() {
+    return int32_vt(0,1,2,3,4,5,6,7); }
+  static inline int64_vt int64_iota() {
+    return int64_vt(0,1,2,3); }
 
   static inline void* aligned_malloc(size_t nbytes) {
     void* p = nullptr;
@@ -692,6 +700,10 @@ struct VCL512Architecture
     return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f); }
   static inline double_vt double_iota() {
     return double_vt(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0); }
+  static inline int32_vt int32_iota() {
+    return int32_vt(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); }
+  static inline int64_vt int64_iota() {
+    return int64_vt(0,1,2,3,4,5,6,7); }
 
   static inline void* aligned_malloc(size_t nbytes) {
     void* p = nullptr;
