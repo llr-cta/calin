@@ -81,15 +81,15 @@ WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* c
     trace_advance_time, rng, fftw_flags, adopt_rng)
 {
   for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
-    max_num_neighbors_ = std::max(max_num_neighbors_,
+    max_num_neighbours_ = std::max(max_num_neighbours_,
       camera->channel(ichannel).neighbour_channel_indexes_size());
   }
-  neighbour_map_ = new int[npixels_ * max_num_neighbors_];
-  std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbors_, -1);
+  neighbour_map_ = new int[npixels_ * max_num_neighbours_];
+  std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbours_, -1);
   for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
-    for(int ineighbor=0; ineighbor<camera->channel(ichannel).neighbour_channel_indexes_size(); ++ineighbor) {
-      neighbour_map_[ichannel*max_num_neighbors_ + ineighbor] =
-        camera->channel(ichannel).neighbour_channel_indexes(ineighbor);
+    for(int ineighbour=0; ineighbour<camera->channel(ichannel).neighbour_channel_indexes_size(); ++ineighbour) {
+      neighbour_map_[ichannel*max_num_neighbours_ + ineighbour] =
+        camera->channel(ichannel).neighbour_channel_indexes(ineighbour);
     }
   }
 }
@@ -184,10 +184,11 @@ void WaveformProcessor::add_electronics_noise(const double* noise_spectrum_ampli
   if(not el_waveform_dft_valid_) {
     throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
   }
+  double scale = std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; ++isample) {
-      *(el_waveform_dft_ + ipixel*trace_nsamples_ + isample) +=
-        *(noise_spectrum_amplitude + isample) * rng_->normal();
+      el_waveform_dft_[ipixel*trace_nsamples_ + isample] +=
+        noise_spectrum_amplitude[isample] * scale * rng_->normal();
     }
   }
   el_waveform_valid_ = false;
@@ -267,10 +268,10 @@ int WaveformProcessor::digital_multipicity_trigger(double threshold,
       }
       if(l0_eop[ipixel] > isamp) {
         ++multiplicity;
-        if(multiplicity >= multiplicity_threshold) {
-          return isamp;
-        }
       }
+    }
+    if(multiplicity >= multiplicity_threshold) {
+      return isamp;
     }
   }
   return -1;
@@ -318,9 +319,9 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
       case 2:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
           if(l0_eop[ipixel] > isamp) {
-            for(unsigned ineighbour=0; ineighbour<max_num_neighbors_; ++ineighbour) {
-              int jpixel = neighbour_map_[ipixel*max_num_neighbors_ + ineighbour];
-              if(jpixel>ipixel and l0_eop[jpixel]>isamp) {
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
+              if(jpixel>0 and l0_eop[jpixel]>isamp) {
                 return isamp;
               }
             }
@@ -329,15 +330,15 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
         break;
       case 3:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-          unsigned nneighbor = 1;
+          unsigned nneighbour = 1;
           if(l0_eop[ipixel] > isamp) {
-            for(unsigned ineighbour=0; ineighbour<max_num_neighbors_; ++ineighbour) {
-              int jpixel = neighbour_map_[ipixel*max_num_neighbors_ + ineighbour];
-              if(jpixel>ipixel and l0_eop[jpixel]>isamp) {
-                ++nneighbor;
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
+              if(jpixel>0 and l0_eop[jpixel]>isamp) {
+                ++nneighbour;
               }
             }
-            if(nneighbor >= multiplicity_threshold) {
+            if(nneighbour >= multiplicity_threshold) {
               return isamp;
             }
           }

@@ -102,7 +102,7 @@ private:
   double ac_coupling_constant_ = 0;
 
   int* neighbour_map_ = nullptr;
-  int max_num_neighbors_ = 0;
+  int max_num_neighbours_ = 0;
 };
 
 } } } // namespace calin::simulation::waveform_processor
