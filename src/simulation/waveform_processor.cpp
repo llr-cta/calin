@@ -48,6 +48,10 @@ WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsa
   el_waveform_dft_(fftw_alloc_real(npixels * trace_nsamples)),
   el_waveform_(fftw_alloc_real(npixels * trace_nsamples))
 {
+  if(trace_nsamples_ & (trace_nsamples_-1)) {
+    throw std::runtime_error("WaveformProcessor : trace_nsamples must be power of two : "+std::to_string(trace_nsamples_));
+  }
+
   int rank = 1;
   int n[] = { static_cast<int>(trace_nsamples_) };
   int howmany = npixels_;
