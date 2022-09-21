@@ -234,8 +234,16 @@ break_to_outer_loop:
       calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
       bool ac_couple=true);
 
+  void vcl128_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
+      calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b, double nsb_rate_ghz,
+      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      bool ac_couple=true);
   void vcl256_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
+      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      bool ac_couple=true);
+  void vcl512_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
+      calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b, double nsb_rate_ghz,
       calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
       bool ac_couple=true);
 
