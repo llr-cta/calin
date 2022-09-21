@@ -402,27 +402,82 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
   }
   if(trace_nsamples_%(2*VCLArchitecture::num_double) != 0) {
     throw std::runtime_error("vcl_add_electronics_noise : number of samples must be multiple of "
-      + std::to_string(VCLArchitecture::num_double));
+      + std::to_string(2*VCLArchitecture::num_double));
   }
   double*__restrict__ buffer = el_waveform_dft_;
   scale *= std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; isample+=2*VCLArchitecture::num_double) {
-      typename VCLArchitecture::double_vt norm_a;
-      typename VCLArchitecture::double_vt norm_b;
-      vcl_rng.normal_two_double_bm(norm_a, norm_b);
-      typename VCLArchitecture::double_vt x_a;
-      typename VCLArchitecture::double_vt x_b;
-      x_a.load(buffer + ipixel*trace_nsamples_ + isample);
-      x_b.load(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
-      typename VCLArchitecture::double_vt amp_a;
-      typename VCLArchitecture::double_vt amp_b;
-      amp_a.load(noise_spectrum_amplitude + isample);
-      amp_b.load(noise_spectrum_amplitude + isample + VCLArchitecture::num_double);
-      x_a += scale * amp_a * norm_a;
-      x_b += scale * amp_b * norm_b;
-      x_a.store(buffer + ipixel*trace_nsamples_ + isample);
-      x_b.store(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+      typename VCLArchitecture::double_vt norm_1;
+      typename VCLArchitecture::double_vt norm_2;
+      vcl_rng.normal_two_double_bm(norm_1, norm_2);
+      typename VCLArchitecture::double_vt x_1;
+      typename VCLArchitecture::double_vt x_2;
+      x_1.load(buffer + ipixel*trace_nsamples_ + isample);
+      x_2.load(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+      typename VCLArchitecture::double_vt amp_1;
+      typename VCLArchitecture::double_vt amp_2;
+      amp_1.load(noise_spectrum_amplitude + isample);
+      amp_2.load(noise_spectrum_amplitude + isample + VCLArchitecture::num_double);
+      x_1 += scale * amp_1 * norm_1;
+      x_2 += scale * amp_2 * norm_2;
+      x_1.store(buffer + ipixel*trace_nsamples_ + isample);
+      x_2.store(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+    }
+  }
+  el_waveform_valid_ = false;
+}
+
+template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_noise(
+  calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
+  const double* noise_spectrum_amplitude, double scale)
+{
+  if(not el_waveform_dft_valid_) {
+    throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
+  }
+  if(trace_nsamples_%(4*VCLArchitecture::num_double) != 0) {
+    throw std::runtime_error("vcl_add_electronics_noise : number of samples must be multiple of "
+      + std::to_string(4*VCLArchitecture::num_double));
+  }
+  double*__restrict__ buffer = el_waveform_dft_;
+  scale *= std::sqrt(1.0/trace_nsamples_);
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    for(unsigned isample=0; isample<trace_nsamples_; isample+=4*VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt norm_a1;
+      typename VCLArchitecture::double_vt norm_a2;
+      typename VCLArchitecture::double_vt norm_b1;
+      typename VCLArchitecture::double_vt norm_b2;
+      vcl_rng_a.normal_two_double_bm(norm_a1, norm_a2);
+      vcl_rng_b.normal_two_double_bm(norm_b1, norm_b2);
+
+      typename VCLArchitecture::double_vt x_a1;
+      typename VCLArchitecture::double_vt x_a2;
+      typename VCLArchitecture::double_vt x_b1;
+      typename VCLArchitecture::double_vt x_b2;
+      x_a1.load(buffer + ipixel*trace_nsamples_ + isample);
+      x_a2.load(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+      x_b1.load(buffer + ipixel*trace_nsamples_ + isample + 2*VCLArchitecture::num_double);
+      x_b2.load(buffer + ipixel*trace_nsamples_ + isample + 3*VCLArchitecture::num_double);
+
+      typename VCLArchitecture::double_vt amp_a1;
+      typename VCLArchitecture::double_vt amp_a2;
+      typename VCLArchitecture::double_vt amp_b1;
+      typename VCLArchitecture::double_vt amp_b2;
+      amp_a1.load(noise_spectrum_amplitude + isample);
+      amp_a2.load(noise_spectrum_amplitude + isample + VCLArchitecture::num_double);
+      amp_b1.load(noise_spectrum_amplitude + isample + 2*VCLArchitecture::num_double);
+      amp_b2.load(noise_spectrum_amplitude + isample + 3*VCLArchitecture::num_double);
+
+      x_a1 += scale * amp_a1 * norm_a1;
+      x_a2 += scale * amp_a2 * norm_a2;
+      x_b1 += scale * amp_b1 * norm_b1;
+      x_b2 += scale * amp_b2 * norm_b2;
+
+      x_a1.store(buffer + ipixel*trace_nsamples_ + isample);
+      x_a2.store(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+      x_b1.store(buffer + ipixel*trace_nsamples_ + isample + 2*VCLArchitecture::num_double);
+      x_b2.store(buffer + ipixel*trace_nsamples_ + isample + 3*VCLArchitecture::num_double);
     }
   }
   el_waveform_valid_ = false;

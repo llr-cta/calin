@@ -416,6 +416,52 @@ void WaveformProcessor::vcl512_add_electronics_noise(
 #endif
 }
 
+void WaveformProcessor::vcl128_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl128_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 128
+  vcl_add_electronics_noise<calin::util::vcl::VCL128Architecture>(vcl_rng_a, vcl_rng_b, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl128_add_electronics_noise : 128 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl256_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl256_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 256
+  vcl_add_electronics_noise<calin::util::vcl::VCL256Architecture>(vcl_rng_a, vcl_rng_b, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl256_add_electronics_noise : 256 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl512_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl512_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 512
+  vcl_add_electronics_noise<calin::util::vcl::VCL512Architecture>(vcl_rng_a, vcl_rng_b, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl512_add_electronics_noise : 512 bit vectors not available at compile time");
+#endif
+}
+
+
 Eigen::MatrixXd WaveformProcessor::pe_waveform() const
 {
   Eigen::MatrixXd pe_traces(trace_nsamples_, npixels_);

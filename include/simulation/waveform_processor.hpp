@@ -114,6 +114,11 @@ public:
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng,
     const double* noise_spectrum_amplitude, double scale = 1.0);
 
+  template<typename VCLArchitecture> void vcl_add_electronics_noise(
+    calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
+    calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
+    const double* noise_spectrum_amplitude, double scale = 1.0);
+
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -182,6 +187,19 @@ public:
     const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
   void vcl512_add_electronics_noise(
     calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+
+  void vcl128_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+  void vcl256_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+  void vcl512_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
     const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
 
 private:
