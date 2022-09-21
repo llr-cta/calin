@@ -173,42 +173,83 @@ void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl
 #endif
 }
 
-void WaveformProcessor::vcl128_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
+void WaveformProcessor::vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b, double nsb_rate_ghz,
   calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 128
-  vcl_add_nsb_unroll<calin::util::vcl::VCL128Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
+  vcl_add_nsb<calin::util::vcl::VCL128Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
 #else
   throw std::logic_error("vcl128_add_nsb_unroll : 128 bit vectors not available at compile time");
 #endif
 }
 
-void WaveformProcessor::vcl256_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+void WaveformProcessor::vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
   calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 256
-  vcl_add_nsb_unroll<calin::util::vcl::VCL256Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
+  vcl_add_nsb<calin::util::vcl::VCL256Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
 #else
   throw std::logic_error("vcl256_add_nsb_unroll : 256 bit vectors not available at compile time");
 #endif
 }
 
-void WaveformProcessor::vcl512_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
+void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b, double nsb_rate_ghz,
   calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 512
-  vcl_add_nsb_unroll<calin::util::vcl::VCL512Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
+  vcl_add_nsb<calin::util::vcl::VCL512Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
 #else
   throw std::logic_error("vcl512_add_nsb_unroll : 512 bit vectors not available at compile time");
 #endif
 }
 
+void WaveformProcessor::vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_c,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_d, double nsb_rate_ghz,
+  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  bool ac_couple)
+{
+#if MAX_VECTOR_SIZE >= 128
+  vcl_add_nsb<calin::util::vcl::VCL128Architecture>(vcl_rng_a, vcl_rng_b, vcl_rng_c, vcl_rng_d, nsb_rate_ghz, nsb_pegen, ac_couple);
+#else
+  throw std::logic_error("vcl128_add_nsb_unroll : 128 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_c,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_d, double nsb_rate_ghz,
+  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  bool ac_couple)
+{
+#if MAX_VECTOR_SIZE >= 256
+  vcl_add_nsb<calin::util::vcl::VCL256Architecture>(vcl_rng_a, vcl_rng_b, vcl_rng_c, vcl_rng_d, nsb_rate_ghz, nsb_pegen, ac_couple);
+#else
+  throw std::logic_error("vcl256_add_nsb_unroll : 256 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_c,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_d, double nsb_rate_ghz,
+  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  bool ac_couple)
+{
+#if MAX_VECTOR_SIZE >= 512
+  vcl_add_nsb<calin::util::vcl::VCL512Architecture>(vcl_rng_a, vcl_rng_b, vcl_rng_c, vcl_rng_d, nsb_rate_ghz, nsb_pegen, ac_couple);
+#else
+  throw std::logic_error("vcl512_add_nsb_unroll : 512 bit vectors not available at compile time");
+#endif
+}
 
 void WaveformProcessor::convolve_unity_impulse_response(double pedestal)
 {
