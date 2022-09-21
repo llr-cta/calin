@@ -406,7 +406,28 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
   }
   double*__restrict__ buffer = el_waveform_dft_;
   scale *= std::sqrt(1.0/trace_nsamples_);
-  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+
+  unsigned mpixels = npixels_>>1;
+  for(unsigned ipixel=0; ipixel<mpixels; ++ipixel) {
+    for(unsigned isample=0; isample<trace_nsamples_; isample+=VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt norm_1;
+      typename VCLArchitecture::double_vt norm_2;
+      vcl_rng.normal_two_double_bm(norm_1, norm_2);
+      typename VCLArchitecture::double_vt x_1;
+      typename VCLArchitecture::double_vt x_2;
+      x_1.load(buffer + ipixel*trace_nsamples_ + isample);
+      x_2.load(buffer + (ipixel+mpixels)*trace_nsamples_ + isample);
+      typename VCLArchitecture::double_vt amp;
+      amp.load(noise_spectrum_amplitude + isample);
+      amp *= scale;
+      x_1 += amp * norm_1;
+      x_2 += amp * norm_2;
+      x_1.store(buffer + ipixel*trace_nsamples_ + isample);
+      x_2.store(buffer + (ipixel+mpixels)*trace_nsamples_ + isample);
+    }
+  }
+
+  for(unsigned ipixel=2*mpixels; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; isample+=2*VCLArchitecture::num_double) {
       typename VCLArchitecture::double_vt norm_1;
       typename VCLArchitecture::double_vt norm_2;
@@ -442,7 +463,41 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
   }
   double*__restrict__ buffer = el_waveform_dft_;
   scale *= std::sqrt(1.0/trace_nsamples_);
-  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+  unsigned mpixels = npixels_>>2;
+  for(unsigned ipixel=0; ipixel<mpixels; ++ipixel) {
+    for(unsigned isample=0; isample<trace_nsamples_; isample+=VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt norm_a1;
+      typename VCLArchitecture::double_vt norm_a2;
+      typename VCLArchitecture::double_vt norm_b1;
+      typename VCLArchitecture::double_vt norm_b2;
+      vcl_rng_a.normal_two_double_bm(norm_a1, norm_a2);
+      vcl_rng_b.normal_two_double_bm(norm_b1, norm_b2);
+
+      typename VCLArchitecture::double_vt x_a1;
+      typename VCLArchitecture::double_vt x_a2;
+      typename VCLArchitecture::double_vt x_b1;
+      typename VCLArchitecture::double_vt x_b2;
+      x_a1.load(buffer + ipixel*trace_nsamples_ + isample);
+      x_a2.load(buffer + (ipixel+mpixels)*trace_nsamples_ + isample);
+      x_b1.load(buffer + (ipixel+2*mpixels)*trace_nsamples_ + isample);
+      x_b2.load(buffer + (ipixel+3*mpixels)*trace_nsamples_ + isample);
+
+      typename VCLArchitecture::double_vt amp;
+      amp.load(noise_spectrum_amplitude + isample);
+      amp *= scale;
+
+      x_a1 += amp * norm_a1;
+      x_a2 += amp * norm_a2;
+      x_b1 += amp * norm_b1;
+      x_b2 += amp * norm_b2;
+
+      x_a1.store(buffer + ipixel*trace_nsamples_ + isample);
+      x_a2.store(buffer + (ipixel+mpixels)*trace_nsamples_ + isample);
+      x_b1.store(buffer + (ipixel+2*mpixels)*trace_nsamples_ + isample);
+      x_b2.store(buffer + (ipixel+3*mpixels)*trace_nsamples_ + isample);
+    }
+  }
+  for(unsigned ipixel=mpixels<<2; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; isample+=4*VCLArchitecture::num_double) {
       typename VCLArchitecture::double_vt norm_a1;
       typename VCLArchitecture::double_vt norm_a2;
