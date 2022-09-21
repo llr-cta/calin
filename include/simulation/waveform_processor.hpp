@@ -91,6 +91,7 @@ public:
     typename VCLArchitecture::double_vt vx = dx * vcl_rng.exponential_double();
     typename VCLArchitecture::double_at ax;
     vx.store(ax);
+
     double x = ax[0];
     while(x < xmax) {
       typename VCLArchitecture::double_vt vamp =
@@ -118,6 +119,109 @@ break_to_outer_loop:
     pe_waveform_dft_valid_ = false;
   }
 
+  template<typename VCLArchitecture> void vcl_add_nsb_unroll(
+    calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
+    calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
+    double nsb_rate_ghz,
+    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+    bool ac_couple=true)
+  {
+    const double dx = trace_sampling_inv_/nsb_rate_ghz;
+    const double xmax = npixels_*trace_nsamples_;
+
+    typename VCLArchitecture::double_vt vx_a;
+    typename VCLArchitecture::double_at ax_a;
+    typename VCLArchitecture::int32_at axi_a;
+
+    typename VCLArchitecture::double_vt vx_b;
+    typename VCLArchitecture::double_at ax_b;
+    typename VCLArchitecture::int32_at axi_b;
+
+    vx_a = dx * vcl_rng_a.exponential_double();
+    vx_a.store(ax_a);
+
+    axi_a[0] = ax_a[0];
+    __builtin_prefetch(pe_waveform_ + axi_a[0]*sizeof(double));
+    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+      ax_a[i] += ax_a[i-1];
+      axi_a[i] = ax_a[i];
+      __builtin_prefetch(pe_waveform_ + axi_a[i]*sizeof(double));
+    }
+
+    vx_b = dx * vcl_rng_b.exponential_double();
+    vx_b.store(ax_b);
+
+    ax_b[0] += ax_a[VCLArchitecture::num_double-1];
+    axi_b[0] = ax_b[0];
+    __builtin_prefetch(pe_waveform_ + axi_b[0]*sizeof(double));
+    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+      ax_b[i] += ax_b[i-1];
+      axi_b[i] = ax_b[i];
+      __builtin_prefetch(pe_waveform_ + axi_b[i]*sizeof(double));
+    }
+
+    typename VCLArchitecture::double_vt vamp_a;
+    typename VCLArchitecture::double_at aamp_a;
+    typename VCLArchitecture::double_vt vamp_b;
+    typename VCLArchitecture::double_at aamp_b;
+
+    while(ax_a[0] < xmax) {
+      vamp_a = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_a);
+      vamp_a.store(aamp_a);
+
+      vamp_b = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_b);
+      vamp_b.store(aamp_b);
+
+      pe_waveform_[axi_a[0]] += aamp_a[0];
+      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+        if(ax_a[i]<xmax) {
+          pe_waveform_[axi_a[i]] += aamp_a[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      pe_waveform_[axi_b[0]] += aamp_b[0];
+      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+        if(ax_b[i]<xmax) {
+          pe_waveform_[axi_b[i]] += aamp_b[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      vx_a = dx * vcl_rng_a.exponential_double();
+      vx_a.store(ax_a);
+
+      ax_a[0] += ax_b[VCLArchitecture::num_double-1];
+      axi_a[0] = ax_a[0];
+      __builtin_prefetch(pe_waveform_ + axi_a[0]*sizeof(double));
+      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+        ax_a[i] += ax_a[i-1];
+        axi_a[i] = ax_a[i];
+        __builtin_prefetch(pe_waveform_ + axi_a[i]*sizeof(double));
+      }
+
+      vx_b = dx * vcl_rng_b.exponential_double();
+      vx_b.store(ax_b);
+
+      ax_b[0] += ax_a[VCLArchitecture::num_double-1];
+      axi_b[0] = ax_b[0];
+      __builtin_prefetch(pe_waveform_ + axi_b[0]*sizeof(double));
+      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
+        ax_b[i] += ax_b[i-1];
+        axi_b[i] = ax_b[i];
+        __builtin_prefetch(pe_waveform_ + axi_b[i]*sizeof(double));
+      }
+    }
+break_to_outer_loop:
+    if(ac_couple) {
+      double mean_amp = nsb_pegen==nullptr? 1.0 : nsb_pegen->mean_amplitude();
+      ac_coupling_constant_ += nsb_rate_ghz*trace_sampling_ns_*mean_amp;
+    }
+    pe_waveform_dft_valid_ = false;
+  }
+
 #endif
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -127,6 +231,11 @@ break_to_outer_loop:
       calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng, double nsb_rate_ghz,
+      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      bool ac_couple=true);
+
+  void vcl256_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+      calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
       calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
       bool ac_couple=true);
 

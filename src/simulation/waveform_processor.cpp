@@ -173,6 +173,18 @@ void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl
 #endif
 }
 
+void WaveformProcessor::vcl256_add_nsb_unroll(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
+  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  bool ac_couple)
+{
+#if MAX_VECTOR_SIZE >= 256
+  vcl_add_nsb_unroll<calin::util::vcl::VCL256Architecture>(vcl_rng_a, vcl_rng_b, nsb_rate_ghz, nsb_pegen, ac_couple);
+#else
+  throw std::logic_error("vcl256_add_nsb_unroll : 256 bit vectors not available at compile time");
+#endif
+}
+
 void WaveformProcessor::convolve_unity_impulse_response(double pedestal)
 {
   compute_pe_waveform_dft();
@@ -216,7 +228,7 @@ void WaveformProcessor::convolve_impulse_response(
 }
 
 
-void WaveformProcessor::add_electronics_noise(const double* noise_spectrum_amplitude)
+void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_spectrum_amplitude)
 {
   if(not el_waveform_dft_valid_) {
     throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
