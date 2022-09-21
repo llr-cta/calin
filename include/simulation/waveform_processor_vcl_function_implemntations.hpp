@@ -392,4 +392,40 @@ break_to_outer_loop:
   }
   pe_waveform_dft_valid_ = false;
 }
+
+template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_noise(
+  calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng,
+  const double* noise_spectrum_amplitude, double scale)
+{
+  if(not el_waveform_dft_valid_) {
+    throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
+  }
+  if(trace_nsamples_%(2*VCLArchitecture::num_double) != 0) {
+    throw std::runtime_error("vcl_add_electronics_noise : number of samples must be multiple of "
+      + std::to_string(VCLArchitecture::num_double));
+  }
+  double*__restrict__ buffer = el_waveform_dft_;
+  scale *= std::sqrt(1.0/trace_nsamples_);
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    for(unsigned isample=0; isample<trace_nsamples_; isample+=2*VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt norm_a;
+      typename VCLArchitecture::double_vt norm_b;
+      vcl_rng.normal_two_double_bm(norm_a, norm_b);
+      typename VCLArchitecture::double_vt x_a;
+      typename VCLArchitecture::double_vt x_b;
+      x_a.load(buffer + ipixel*trace_nsamples_ + isample);
+      x_b.load(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+      typename VCLArchitecture::double_vt amp_a;
+      typename VCLArchitecture::double_vt amp_b;
+      amp_a.load(noise_spectrum_amplitude + isample);
+      amp_b.load(noise_spectrum_amplitude + isample + VCLArchitecture::num_double);
+      x_a += scale * amp_a * norm_a;
+      x_b += scale * amp_b * norm_b;
+      x_a.store(buffer + ipixel*trace_nsamples_ + isample);
+      x_b.store(buffer + ipixel*trace_nsamples_ + isample + VCLArchitecture::num_double);
+    }
+  }
+  el_waveform_valid_ = false;
+}
+
 #endif

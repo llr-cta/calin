@@ -61,10 +61,10 @@ public:
   void convolve_unity_impulse_response(double pedestal = 0);
 #ifndef SWIG
   void convolve_impulse_response(const double* impulse_response_dft, double pedestal = 0);
-  void add_electronics_noise(const double* noise_spectrum_amplitude);
+  void add_electronics_noise(const double* noise_spectrum_amplitude, double scale = 1.0);
 #endif
   void convolve_impulse_response(const Eigen::VectorXd& impulse_response_dft, double pedestal = 0);
-  void add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude);
+  void add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
   void clear_pes();
 
   Eigen::MatrixXd pe_waveform() const;
@@ -109,6 +109,11 @@ public:
     double nsb_rate_ghz,
     calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
     bool ac_couple=true);
+
+  template<typename VCLArchitecture> void vcl_add_electronics_noise(
+    calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng,
+    const double* noise_spectrum_amplitude, double scale = 1.0);
+
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -168,6 +173,16 @@ public:
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_d, double nsb_rate_ghz,
       calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
       bool ac_couple=true);
+
+  void vcl128_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+  void vcl256_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+  void vcl512_add_electronics_noise(
+    calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng,
+    const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
 
 private:
   void compute_pe_waveform_dft();

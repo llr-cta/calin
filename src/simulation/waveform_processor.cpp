@@ -342,27 +342,78 @@ void WaveformProcessor::convolve_impulse_response(
 }
 
 
-void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_spectrum_amplitude)
+void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_spectrum_amplitude, double scale)
 {
   if(not el_waveform_dft_valid_) {
     throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
   }
-  double scale = std::sqrt(1.0/trace_nsamples_);
+  if(trace_nsamples_%2 != 0) {
+    throw std::runtime_error("add_electronics_noise : number of samples must be even");
+  }
+  double*__restrict__ buffer = el_waveform_dft_;
+  scale *= std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-    for(unsigned isample=0; isample<trace_nsamples_; ++isample) {
-      el_waveform_dft_[ipixel*trace_nsamples_ + isample] +=
-        noise_spectrum_amplitude[isample] * scale * rng_->normal();
+    for(unsigned isample=0; isample<trace_nsamples_; isample+=2) {
+      double norm_a;
+      double norm_b;
+      rng_->normal_two_bm(norm_a, norm_b);
+      buffer[ipixel*trace_nsamples_ + isample] +=
+        noise_spectrum_amplitude[isample] * scale * norm_a;
+      buffer[ipixel*trace_nsamples_ + isample + 1] +=
+        noise_spectrum_amplitude[isample + 1] * scale * norm_b;
     }
   }
   el_waveform_valid_ = false;
 }
 
-void WaveformProcessor::add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude)
+void WaveformProcessor::add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
 {
   if(noise_spectrum_amplitude.size() != trace_nsamples_) {
     throw std::runtime_error("add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
   }
-  add_electronics_noise(noise_spectrum_amplitude.data());
+  add_electronics_noise(noise_spectrum_amplitude.data(), scale);
+}
+
+void WaveformProcessor::vcl128_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl128_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 128
+  vcl_add_electronics_noise<calin::util::vcl::VCL128Architecture>(vcl_rng, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl128_add_electronics_noise : 128 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl256_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl256_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 256
+  vcl_add_electronics_noise<calin::util::vcl::VCL256Architecture>(vcl_rng, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl256_add_electronics_noise : 256 bit vectors not available at compile time");
+#endif
+}
+
+void WaveformProcessor::vcl512_add_electronics_noise(
+  calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng,
+  const Eigen::VectorXd& noise_spectrum_amplitude, double scale)
+{
+  if(noise_spectrum_amplitude.size() != trace_nsamples_) {
+    throw std::runtime_error("vcl512_add_electronics_noise : noise spectrum amplitude must have " + std::to_string(trace_nsamples_) + " points");
+  }
+#if MAX_VECTOR_SIZE >= 512
+  vcl_add_electronics_noise<calin::util::vcl::VCL512Architecture>(vcl_rng, noise_spectrum_amplitude.data(), scale);
+#else
+  throw std::logic_error("vcl512_add_electronics_noise : 512 bit vectors not available at compile time");
+#endif
 }
 
 Eigen::MatrixXd WaveformProcessor::pe_waveform() const
