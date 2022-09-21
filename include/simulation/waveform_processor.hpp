@@ -131,65 +131,22 @@ break_to_outer_loop:
 
     typename VCLArchitecture::double_vt vx_a;
     typename VCLArchitecture::double_at ax_a;
-    typename VCLArchitecture::int32_at axi_a;
+    int32_t axi_a[VCLArchitecture::num_double];
 
     typename VCLArchitecture::double_vt vx_b;
     typename VCLArchitecture::double_at ax_b;
-    typename VCLArchitecture::int32_at axi_b;
+    int32_t axi_b[VCLArchitecture::num_double];
 
-    vx_a = dx * vcl_rng_a.exponential_double();
-    vx_a.store(ax_a);
-
-    axi_a[0] = ax_a[0];
-    __builtin_prefetch(pe_waveform_ + axi_a[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_a[i] += ax_a[i-1];
-      axi_a[i] = ax_a[i];
-      __builtin_prefetch(pe_waveform_ + axi_a[i]*sizeof(double));
-    }
-
-    vx_b = dx * vcl_rng_b.exponential_double();
-    vx_b.store(ax_b);
-
-    ax_b[0] += ax_a[VCLArchitecture::num_double-1];
-    axi_b[0] = ax_b[0];
-    __builtin_prefetch(pe_waveform_ + axi_b[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_b[i] += ax_b[i-1];
-      axi_b[i] = ax_b[i];
-      __builtin_prefetch(pe_waveform_ + axi_b[i]*sizeof(double));
-    }
 
     typename VCLArchitecture::double_vt vamp_a;
     typename VCLArchitecture::double_at aamp_a;
     typename VCLArchitecture::double_vt vamp_b;
     typename VCLArchitecture::double_at aamp_b;
 
-    while(ax_a[0] < xmax) {
-      vamp_a = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_a);
-      vamp_a.store(aamp_a);
+    // Initialze position within buffer
+    ax_b[VCLArchitecture::num_double-1] = 0;
 
-      vamp_b = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_b);
-      vamp_b.store(aamp_b);
-
-      pe_waveform_[axi_a[0]] += aamp_a[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_a[i]<xmax) {
-          pe_waveform_[axi_a[i]] += aamp_a[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
-      pe_waveform_[axi_b[0]] += aamp_b[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_b[i]<xmax) {
-          pe_waveform_[axi_b[i]] += aamp_b[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
+    while(true) {
       vx_a = dx * vcl_rng_a.exponential_double();
       vx_a.store(ax_a);
 
@@ -212,6 +169,28 @@ break_to_outer_loop:
         ax_b[i] += ax_b[i-1];
         axi_b[i] = ax_b[i];
         __builtin_prefetch(pe_waveform_ + axi_b[i]*sizeof(double));
+      }
+
+      vamp_a = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_a);
+      vamp_a.store(aamp_a);
+
+      vamp_b = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_b);
+      vamp_b.store(aamp_b);
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_a[i]<xmax) {
+          pe_waveform_[axi_a[i]] += aamp_a[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_b[i]<xmax) {
+          pe_waveform_[axi_b[i]] += aamp_b[i];
+        } else {
+          goto break_to_outer_loop;
+        }
       }
     }
 break_to_outer_loop:
@@ -250,53 +229,6 @@ break_to_outer_loop:
     typename VCLArchitecture::double_at ax_d;
     int32_t axi_d[VCLArchitecture::num_double];
 
-    vx_a = dx * vcl_rng_a.exponential_double();
-    vx_a.store(ax_a);
-
-    axi_a[0] = ax_a[0];
-    __builtin_prefetch(pe_waveform_ + axi_a[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_a[i] += ax_a[i-1];
-      axi_a[i] = ax_a[i];
-      __builtin_prefetch(pe_waveform_ + axi_a[i]*sizeof(double));
-    }
-
-    vx_b = dx * vcl_rng_b.exponential_double();
-    vx_b.store(ax_b);
-
-    ax_b[0] += ax_a[VCLArchitecture::num_double-1];
-    axi_b[0] = ax_b[0];
-    __builtin_prefetch(pe_waveform_ + axi_b[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_b[i] += ax_b[i-1];
-      axi_b[i] = ax_b[i];
-      __builtin_prefetch(pe_waveform_ + axi_b[i]*sizeof(double));
-    }
-
-    vx_c = dx * vcl_rng_c.exponential_double();
-    vx_c.store(ax_c);
-
-    ax_c[0] += ax_b[VCLArchitecture::num_double-1];
-    axi_c[0] = ax_c[0];
-    __builtin_prefetch(pe_waveform_ + axi_c[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_c[i] += ax_c[i-1];
-      axi_c[i] = ax_c[i];
-      __builtin_prefetch(pe_waveform_ + axi_c[i]*sizeof(double));
-    }
-
-    vx_d = dx * vcl_rng_d.exponential_double();
-    vx_d.store(ax_d);
-
-    ax_d[0] += ax_d[VCLArchitecture::num_double-1];
-    axi_d[0] = ax_d[0];
-    __builtin_prefetch(pe_waveform_ + axi_d[0]*sizeof(double));
-    for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-      ax_d[i] += ax_d[i-1];
-      axi_d[i] = ax_d[i];
-      __builtin_prefetch(pe_waveform_ + axi_d[i]*sizeof(double));
-    }
-
     typename VCLArchitecture::double_vt vamp_a;
     typename VCLArchitecture::double_at aamp_a;
     typename VCLArchitecture::double_vt vamp_b;
@@ -306,59 +238,13 @@ break_to_outer_loop:
     typename VCLArchitecture::double_vt vamp_d;
     typename VCLArchitecture::double_at aamp_d;
 
-    while(ax_a[0] < xmax) {
-      vamp_a = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_a);
-      vamp_a.store(aamp_a);
+    ax_d[VCLArchitecture::num_double-1] = 0;
 
-      vamp_b = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_b);
-      vamp_b.store(aamp_b);
-
-      vamp_c = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_c);
-      vamp_c.store(aamp_c);
-
-      vamp_d = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_d);
-      vamp_d.store(aamp_d);
-
-      pe_waveform_[axi_a[0]] += aamp_a[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_a[i]<xmax) {
-          pe_waveform_[axi_a[i]] += aamp_a[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
-      pe_waveform_[axi_b[0]] += aamp_b[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_b[i]<xmax) {
-          pe_waveform_[axi_b[i]] += aamp_b[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
-      pe_waveform_[axi_c[0]] += aamp_c[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_c[i]<xmax) {
-          pe_waveform_[axi_c[i]] += aamp_c[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
-      pe_waveform_[axi_d[0]] += aamp_d[0];
-      for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
-        if(ax_d[i]<xmax) {
-          pe_waveform_[axi_d[i]] += aamp_d[i];
-        } else {
-          goto break_to_outer_loop;
-        }
-      }
-
+    while(true) {
       vx_a = dx * vcl_rng_a.exponential_double();
       vx_a.store(ax_a);
 
-      ax_a[0] += ax_b[VCLArchitecture::num_double-1];
+      ax_a[0] += ax_d[VCLArchitecture::num_double-1];
       axi_a[0] = ax_a[0];
       __builtin_prefetch(pe_waveform_ + axi_a[0]*sizeof(double));
       for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
@@ -394,13 +280,57 @@ break_to_outer_loop:
       vx_d = dx * vcl_rng_d.exponential_double();
       vx_d.store(ax_d);
 
-      ax_d[0] += ax_d[VCLArchitecture::num_double-1];
+      ax_d[0] += ax_c[VCLArchitecture::num_double-1];
       axi_d[0] = ax_d[0];
       __builtin_prefetch(pe_waveform_ + axi_d[0]*sizeof(double));
       for(unsigned i=1;i<VCLArchitecture::num_double;++i) {
         ax_d[i] += ax_d[i-1];
         axi_d[i] = ax_d[i];
         __builtin_prefetch(pe_waveform_ + axi_d[i]*sizeof(double));
+      }
+
+      vamp_a = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_a);
+      vamp_a.store(aamp_a);
+
+      vamp_b = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_b);
+      vamp_b.store(aamp_b);
+
+      vamp_c = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_c);
+      vamp_c.store(aamp_c);
+
+      vamp_d = nsb_pegen==nullptr? 1.0 : nsb_pegen->vcl_generate_amplitude(vcl_rng_d);
+      vamp_d.store(aamp_d);
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_a[i]<xmax) {
+          pe_waveform_[axi_a[i]] += aamp_a[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_b[i]<xmax) {
+          pe_waveform_[axi_b[i]] += aamp_b[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_c[i]<xmax) {
+          pe_waveform_[axi_c[i]] += aamp_c[i];
+        } else {
+          goto break_to_outer_loop;
+        }
+      }
+
+      for(unsigned i=0;i<VCLArchitecture::num_double;++i) {
+        if(ax_d[i]<xmax) {
+          pe_waveform_[axi_d[i]] += aamp_d[i];
+        } else {
+          goto break_to_outer_loop;
+        }
       }
     }
 break_to_outer_loop:
