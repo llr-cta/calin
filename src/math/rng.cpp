@@ -313,6 +313,28 @@ double RNG::ziggurat_normal()
   }
 }
 
+double RNG::ziggurat_exponential()
+{
+  using namespace exponential_ziggurat;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xi[i+1]*uint64_to_double(u0>>8);
+    if(x < xi[i]) {
+      return x;
+    } else if(i != 0xFF) {
+      double fx = std::exp(-x);
+      double y = uint64_to_double(core_->uniform_uint64());
+      if(y*(fi[i]-fi[i+1]) < fx-fi[i+1]) {
+        return x;
+      }
+    } else {
+      x = -std::log(this->uniform_double() * exp_minus_r);
+      return x;
+    }
+  }
+}
+
 /**
  *  Returns a deviate distributed as a gamma distribution, i.e., a
  *  waiting time to the i'th event in a Poisson process of unit mean.
