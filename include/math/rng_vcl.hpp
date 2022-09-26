@@ -212,18 +212,6 @@ public:
     return scale*(xhi-1.0);
   }
 
-  // Probably should not be kept (after testing)
-  double_vt uniform_double_alt(const double_vt& scale = 1.0) {
-    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
-    constexpr uint64_t MASK_LO = ((1ULL<<12)-1)<<40;
-    constexpr uint64_t EXP_HI = 1023ULL<<52;
-    constexpr uint64_t EXP_LO = (1023ULL-52ULL)<<52;
-    uint64_vt xui = uniform_uint64();
-    double_vt xlo = vcl::reinterpret_d(((xui>>12)&MASK_LO) | EXP_LO);
-    double_vt xhi = vcl::reinterpret_d((xui&MASK_HI) | EXP_HI);
-    return scale*((xlo-2.2204460492503130808e-16) + (xhi-1.0));
-  }
-
   float_vt uniform_float(const float_vt& scale = 1.0f) {
     const float_vt multiplier = C_U32_TO_FLT*scale;
     float_vt x = to_float(uniform_int32());
@@ -382,6 +370,49 @@ public:
   void sincos_real(double_vt& s, double_vt& c)
   {
     sincos_double(s, c);
+  }
+
+  inline double_vt uint64_to_double_52bit(uint64_vt u) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    return vcl::reinterpret_d((u&MASK_HI) | EXP_HI) - 1;
+  }
+
+  double_vt normal_double_ziggurat()
+  {
+    constexpr uint64_t MASK_SIGN = 1ULL<<63;
+    using namespace gaussian_ziggurat;
+    double_bvt good_samples = false;
+    uint64_vt u0 = core_->uniform_uint64();
+    while(true) {
+      const uint64_vt i = u0&0xFFULL;
+      const double_vt sign = vcl::reinterpret_d(u0&MASK_SIGN); // +/- 0
+      const double_vt xr = vcl::lookup<0x40000000>(i+1, xi);
+      const double_vt xl = vcl::lookup<0x40000000>(i, xi);
+      double_vt x = xr*uint64_to_double_52bit(u0>>8);
+      good_samples |= x<xl;
+      if(vcl::horizontal_and(good_samples)) {
+        return vcl::sign_combine(x, sign);
+      }
+      if(vcl::horizontal_or(double_bvt(i!=0xFFULL)&(!good_samples))) {
+        const double_vt fr = vcl::lookup<0x40000000>(i+1, fi);
+        const double_vt fl = vcl::lookup<0x40000000>(i, fi);
+        double_vt fx = vcl::exp(-0.5*x*x);
+        double_vt y = uint64_to_double_52bit(core_->uniform_uint64());
+        good_samples |= double_bvt(i!=0xFFULL)&(y*(fl-fr)<fx-fr);
+      }
+      while(vcl::horizontal_or(double_bvt(i==0xFFULL)&(!good_samples))) {
+        double_vt xx = vcl::log(uint64_to_double_52bit(core_->uniform_uint64())) * r_inv;
+        double_vt yy = vcl::log(uint64_to_double_52bit(core_->uniform_uint64()));
+        double_bvt mask = double_bvt(i==0xFFULL)&(!good_samples)&(-2*yy >= xx*xx);
+        x = select(mask, r-xx, x);
+        good_samples |= mask;
+      }
+      if(vcl::horizontal_and(good_samples)) {
+        return vcl::sign_combine(x, sign);
+      }
+      u0 = vcl::select(uint64_bvt(good_samples), u0, core_->uniform_uint64());
+    }
   }
 
   void normal_two_float_bm(float_vt& x1, float_vt& x2)
@@ -648,6 +679,10 @@ public:
     return inverse_cdf;
   }
 
+  double test_normal_double_ziggurat()
+  {
+    return normal_double_ziggurat()[0];
+  }
 
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
