@@ -394,13 +394,13 @@ public:
       if(vcl::horizontal_and(good_samples)) {
         return vcl::sign_combine(x, sign);
       }
-      if(vcl::horizontal_or(double_bvt(i!=0xFFULL)&(!good_samples))) {
-        const double_vt fr = vcl::lookup<0x40000000>(i+1, fi);
-        const double_vt fl = vcl::lookup<0x40000000>(i, fi);
-        double_vt fx = vcl::exp(-0.5*x*x);
-        double_vt y = uint64_to_double_52bit(core_->uniform_uint64());
-        good_samples |= double_bvt(i!=0xFFULL)&(y*(fl-fr)<fx-fr);
-      }
+
+      const double_vt fr = vcl::lookup<0x40000000>(i+1, fi);
+      const double_vt fl = vcl::lookup<0x40000000>(i, fi);
+      double_vt fx = vcl::exp(-0.5*x*x);
+      double_vt y = uint64_to_double_52bit(core_->uniform_uint64());
+      good_samples |= double_bvt(i!=0xFFULL)&(y*(fl-fr)<fx-fr);
+
       while(vcl::horizontal_or(double_bvt(i==0xFFULL)&(!good_samples))) {
         double_vt xx = vcl::log(uint64_to_double_52bit(core_->uniform_uint64())) * r_inv;
         double_vt yy = vcl::log(uint64_to_double_52bit(core_->uniform_uint64()));
