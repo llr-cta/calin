@@ -484,7 +484,7 @@ namespace gaussian_ziggurat {
   extern double r;
   extern double r_inv;
   extern double xi[257];
-  extern double fi[256];
+  extern double fi[257];
 } // namespace calin::math::rng::gaussian_ziggurat
 
 } } } // namespace calin::math::rng

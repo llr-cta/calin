@@ -108,18 +108,6 @@ TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double)
   EXPECT_TRUE(horizontal_and(sum >= 0.0));
 }
 
-TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double_Alt)
-{
-  uint64_t seed = RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::double_vt sum(0);
-  for(unsigned i=0;i<N;i++) {
-    sum = core.uniform_double_alt();
-  }
-  EXPECT_TRUE(horizontal_and(sum >= 0.0));
-}
-
 TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double_53bit)
 {
   uint64_t seed = RNG::uint64_from_random_device();
