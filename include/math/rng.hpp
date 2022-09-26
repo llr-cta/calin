@@ -136,6 +136,9 @@ public:
   double exponential(double mean) { return -mean*std::log(uniform()); }
   double normal();
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
+
+  double ziggurat_normal();
+
   void normal_two_bm(double& x, double& y);
   double gamma_by_alpha_and_beta(double alpha, double beta);
   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
@@ -476,5 +479,12 @@ private:
   uint64_t vec_dev_[NSTREAM];
   unsigned ndev_ = NSTREAM;
 };
+
+namespace gaussian_ziggurat {
+  extern double r;
+  extern double r_inv;
+  extern double xi[257];
+  extern double fi[256];
+} // namespace calin::math::rng::gaussian_ziggurat
 
 } } } // namespace calin::math::rng

@@ -275,6 +275,44 @@ void RNG::normal_two_bm(double &x, double& y)
   y = v2*fac;
 }
 
+namespace {
+  inline double uint64_to_double(uint64_t u) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    u &= MASK_HI;
+    u |= EXP_HI;
+    return *reinterpret_cast<double*>(&u) - 1.0;
+  }
+}
+
+double RNG::ziggurat_normal()
+{
+  using namespace gaussian_ziggurat;
+  constexpr uint64_t MASK_SIGN = 1ULL<<63;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xi[i+1]*uint64_to_double(u0>>8);
+    if(x < xi[i]) {
+      return (u0&MASK_SIGN) ? -x : x;
+    } else if(i != 0xFF) {
+      double fx = std::exp(-0.5*x*x);
+      double y = uint64_to_double(core_->uniform_uint64());
+      if(y*(fi[i]-fi[i+1]) < fx-fi[i+1]) {
+        return (u0&MASK_SIGN) ? -x : x;
+      }
+    } else {
+      double y;
+      do
+        {
+          x = std::log(uint64_to_double(core_->uniform_uint64())) * r_inv;
+          y = std::log(uint64_to_double(core_->uniform_uint64()));
+        } while (-2 * y < x * x);
+      return (u0&MASK_SIGN) ? x - r : r - x;
+    }
+  }
+}
+
 /**
  *  Returns a deviate distributed as a gamma distribution, i.e., a
  *  waiting time to the i'th event in a Poisson process of unit mean.

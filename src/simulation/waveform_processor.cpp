@@ -347,20 +347,13 @@ void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_sp
   if(not el_waveform_dft_valid_) {
     throw std::runtime_error("add_electronics_noise : impulse response must be applied before noise added");
   }
-  if(trace_nsamples_%2 != 0) {
-    throw std::runtime_error("add_electronics_noise : number of samples must be even");
-  }
   double*__restrict__ buffer = el_waveform_dft_;
   scale *= std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-    for(unsigned isample=0; isample<trace_nsamples_; isample+=2) {
-      double norm_a;
-      double norm_b;
-      rng_->normal_two_bm(norm_a, norm_b);
+    for(unsigned isample=0; isample<trace_nsamples_; ++isample) {
+      double norm = rng_->ziggurat_normal();
       buffer[ipixel*trace_nsamples_ + isample] +=
-        noise_spectrum_amplitude[isample] * scale * norm_a;
-      buffer[ipixel*trace_nsamples_ + isample + 1] +=
-        noise_spectrum_amplitude[isample + 1] * scale * norm_b;
+        noise_spectrum_amplitude[isample] * scale * norm;
     }
   }
   el_waveform_valid_ = false;
