@@ -62,6 +62,67 @@ TEST(NR3SpeedTestRNG, Scalar_1G_Double)
   EXPECT_GE(sum,0.0);
 }
 
+TEST(NR3SpeedTestRNG, Scalar_1G_Normal_BM)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += rng.normal();
+  EXPECT_NE(sum,0.0);
+}
+
+TEST(NR3SpeedTestRNG, Scalar_1G_Normal_Ziggurat)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += rng.normal_ziggurat();
+  EXPECT_NE(sum,0.0);
+}
+
+TEST(NR3SpeedTestRNG, Scalar_1G_Exponential_Log)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += rng.exponential();
+  EXPECT_GE(sum,0.0);
+}
+
+TEST(NR3SpeedTestRNG, Scalar_1G_Exponential_Ziggurat)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += rng.exponential_ziggurat();
+  EXPECT_GE(sum,0.0);
+}
+
+TEST(NR3SpeedTestRNG, Scalar_1G_XExpMinusXSquare)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += std::sqrt(-std::log(rng.uniform_double()));
+  EXPECT_GE(sum,0.0);
+}
+
+TEST(NR3SpeedTestRNG, Scalar_1G_XExpMinusXSquare_Ziggurat)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += rng.x_exp_minus_x_squared_ziggurat();
+  EXPECT_GE(sum,0.0);
+}
+
+
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLSpeedTestRNG :
   public testing::Test
 {
