@@ -304,15 +304,16 @@ public:
   template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
     calin::math::rng::VCLRNG<VCLArchitecture>& rng) const
   {
-    typename VCLArchitecture::double_vt x = rng.uniform_double();
+    typename VCLArchitecture::double_vt x;
     switch(spline_mode_) {
     case SM_LINEAR:
+      x = rng.uniform_double();
       break;
     case SM_LOG:
-      x = -vcl::log(x);
+      x = rng.exponential_double_ziggurat();
       break;
     case SM_SQRT_LOG:
-      x = vcl::sqrt(-vcl::log(x));
+      x = rng.x_exp_minus_x_squared_double_ziggurat();
       break;
     }
     return spline_->template vcl_value<VCLArchitecture>(x);

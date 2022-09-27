@@ -623,15 +623,16 @@ SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
 
 double SplinePEAmplitudeGenerator::generate_amplitude() const
 {
-  double x = rng_->uniform_double();
+  double x;
   switch(spline_mode_) {
   case SM_LINEAR:
+    x = rng_->uniform_double();
     break;
   case SM_LOG:
-    x = -std::log(x);
+    x = rng_->exponential_ziggurat();
     break;
   case SM_SQRT_LOG:
-    x = std::sqrt(-std::log(x));
+    x = rng_->x_exp_minus_x_squared_ziggurat();
     break;
   }
   return spline_->value(x);
