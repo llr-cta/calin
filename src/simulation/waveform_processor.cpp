@@ -351,7 +351,7 @@ void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_sp
   scale *= std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; ++isample) {
-      double norm = rng_->normal_ziggurat();
+      double norm = rng_->normal();
       buffer[ipixel*trace_nsamples_ + isample] +=
         noise_spectrum_amplitude[isample] * scale * norm;
     }

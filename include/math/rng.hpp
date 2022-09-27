@@ -132,17 +132,22 @@ public:
   void uniform_by_type(float& x) { x = uniform_float(); }
 
   double uniform() { return uniform_double(); }
-  double exponential() { return -std::log(uniform()); }
-  double exponential(double mean) { return -mean*std::log(uniform()); }
+
+  double exponential() { return exponential_ziggurat(); }
+  double exponential(double mean) { return mean*exponential(); }
+  double exponential_transformation() { return -std::log(uniform()); }
   double exponential_ziggurat();
 
-  double normal();
+  double normal() { return normal_ziggurat(); }
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
+  double normal_bm();
+  void normal_two_bm(double& x, double& y);
   double normal_ziggurat();
 
+  double x_exp_minus_x_squared() { return x_exp_minus_x_squared_ziggurat(); }
+  double x_exp_minus_x_squared_transformation() { return std::sqrt(-std::log(uniform())); }
   double x_exp_minus_x_squared_ziggurat();
 
-  void normal_two_bm(double& x, double& y);
   double gamma_by_alpha_and_beta(double alpha, double beta);
   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
     double b = mean/(sigma*sigma);

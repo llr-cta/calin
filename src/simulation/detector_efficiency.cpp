@@ -629,10 +629,10 @@ double SplinePEAmplitudeGenerator::generate_amplitude() const
     x = rng_->uniform_double();
     break;
   case SM_LOG:
-    x = rng_->exponential_ziggurat();
+    x = rng_->exponential();
     break;
   case SM_SQRT_LOG:
-    x = rng_->x_exp_minus_x_squared_ziggurat();
+    x = rng_->x_exp_minus_x_squared();
     break;
   }
   return spline_->value(x);

@@ -234,7 +234,7 @@ uint32_t RNG::uint32_from_random_device()
   return gen();
 }
 
-double RNG::normal()
+double RNG::normal_bm()
 {
   if(bm_hascached_)
   {

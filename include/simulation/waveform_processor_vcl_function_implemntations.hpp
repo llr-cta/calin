@@ -409,7 +409,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; isample+=VCLArchitecture::num_double) {
       typename VCLArchitecture::double_vt norm;
-      norm = vcl_rng.normal_double_ziggurat();
+      norm = vcl_rng.normal_double();
       typename VCLArchitecture::double_vt x;
       x.load(buffer + ipixel*trace_nsamples_ + isample);
       typename VCLArchitecture::double_vt amp;
@@ -440,8 +440,8 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
     for(unsigned isample=0; isample<trace_nsamples_; isample+=VCLArchitecture::num_double) {
       typename VCLArchitecture::double_vt norm_a;
       typename VCLArchitecture::double_vt norm_b;
-      norm_a = vcl_rng_a.normal_double_ziggurat();
-      norm_b = vcl_rng_b.normal_double_ziggurat();
+      norm_a = vcl_rng_a.normal_double();
+      norm_b = vcl_rng_b.normal_double();
 
       typename VCLArchitecture::double_vt x_a;
       typename VCLArchitecture::double_vt x_b;
@@ -463,8 +463,8 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
     for(unsigned isample=0; isample<trace_nsamples_; isample+=2*VCLArchitecture::num_double) {
       typename VCLArchitecture::double_vt norm_a;
       typename VCLArchitecture::double_vt norm_b;
-      norm_a = vcl_rng_a.normal_double_ziggurat();
-      norm_b = vcl_rng_b.normal_double_ziggurat();
+      norm_a = vcl_rng_a.normal_double();
+      norm_b = vcl_rng_b.normal_double();
 
       typename VCLArchitecture::double_vt x_a;
       typename VCLArchitecture::double_vt x_b;

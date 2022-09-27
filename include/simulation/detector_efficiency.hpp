@@ -310,10 +310,10 @@ public:
       x = rng.uniform_double();
       break;
     case SM_LOG:
-      x = rng.exponential_double_ziggurat();
+      x = rng.exponential_double();
       break;
     case SM_SQRT_LOG:
-      x = rng.x_exp_minus_x_squared_double_ziggurat();
+      x = rng.x_exp_minus_x_squared_double();
       break;
     }
     return spline_->template vcl_value<VCLArchitecture>(x);
