@@ -285,7 +285,7 @@ namespace {
   }
 }
 
-double RNG::ziggurat_normal()
+double RNG::normal_ziggurat()
 {
   using namespace gaussian_ziggurat;
   constexpr uint64_t MASK_SIGN = 1ULL<<63;
@@ -313,7 +313,7 @@ double RNG::ziggurat_normal()
   }
 }
 
-double RNG::ziggurat_exponential()
+double RNG::exponential_ziggurat()
 {
   using namespace exponential_ziggurat;
   while(true) {
@@ -330,6 +330,28 @@ double RNG::ziggurat_exponential()
       }
     } else {
       x = -std::log(this->uniform_double() * exp_minus_r);
+      return x;
+    }
+  }
+}
+
+double RNG::x_exp_minus_x_squared_ziggurat()
+{
+  using namespace x_exp_minus_x_squared_ziggurat;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xli[i+1]+(xri[i+1]-xli[i+1])*uint64_to_double(u0>>8);
+    if(x > xli[i] and x < xri[i]) {
+      return x;
+    } else if((i != 0xFF)or(x < xmax)) {
+      double fx = 2*x*std::exp(-x*x);
+      double y = uint64_to_double(core_->uniform_uint64());
+      if(y*(fi[i]-fi[i+1]) < fx-fi[i+1]) {
+        return x;
+      }
+    } else {
+      x = std::sqrt(-std::log(this->uniform_double() * exp_minus_r_squared));
       return x;
     }
   }

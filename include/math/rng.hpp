@@ -134,11 +134,13 @@ public:
   double uniform() { return uniform_double(); }
   double exponential() { return -std::log(uniform()); }
   double exponential(double mean) { return -mean*std::log(uniform()); }
-  double ziggurat_exponential();
+  double exponential_ziggurat();
 
   double normal();
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
-  double ziggurat_normal();
+  double normal_ziggurat();
+
+  double x_exp_minus_x_squared_ziggurat();
 
   void normal_two_bm(double& x, double& y);
   double gamma_by_alpha_and_beta(double alpha, double beta);
@@ -495,6 +497,16 @@ namespace exponential_ziggurat {
   extern double xi[257];
   extern double fi[257];
 } // namespace calin::math::rng::exponential_ziggurat
+
+namespace x_exp_minus_x_squared_ziggurat {
+  extern double xmax;
+  extern double r;
+  extern double exp_minus_r_squared;
+  extern double xli[257];
+  extern double xri[257];
+  extern double fi[257];
+} // namespace calin::math::rng::exponential_ziggurat
+
 #endif
 
 } } } // namespace calin::math::rng
