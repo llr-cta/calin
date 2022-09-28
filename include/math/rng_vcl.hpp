@@ -814,6 +814,45 @@ public:
     return x_exp_minus_x_squared_double_ziggurat()[0];
   }
 
+  Eigen::VectorXd bulk_normal_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_normal_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = normal_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXd bulk_exponential_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_exponential_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = exponential_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXd bulk_x_exp_minus_x_squared_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_x_exp_minus_x_squared_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = x_exp_minus_x_squared_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
 //   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
