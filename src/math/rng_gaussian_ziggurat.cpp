@@ -284,7 +284,7 @@ double calin::math::rng::gaussian_ziggurat::xi[257] = {
   3.91075795952491586954962143453,
 };
 
-double calin::math::rng::gaussian_ziggurat::fi[257] = {
+double calin::math::rng::gaussian_ziggurat::yi[257] = {
   1.0,
   0.977101701267671240395871902877,
   0.95987909180010638647213553683,
@@ -541,7 +541,7 @@ double calin::math::rng::gaussian_ziggurat::fi[257] = {
   0.00403797259336303082185788154245,
   0.00260907274610216295131325492458,
   0.00126028593049859756413346221554,
-  0.000477467764609387558003239685092,
+  0.0,
 };
 
 double calin::math::rng::gaussian_ziggurat::r = 3.6541528853610087716454297204;

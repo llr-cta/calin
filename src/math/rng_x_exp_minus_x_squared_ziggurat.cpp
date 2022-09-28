@@ -544,7 +544,7 @@ double calin::math::rng::x_exp_minus_x_squared_ziggurat::xri[257] = {
   3.07409464108795459813655428779,
 };
 
-double calin::math::rng::x_exp_minus_x_squared_ziggurat::fi[257] = {
+double calin::math::rng::x_exp_minus_x_squared_ziggurat::yi[257] = {
   0.857763884960706796480189641279,
   0.839034005543808562930323090735,
   0.824933281819740110041215950664,
@@ -804,6 +804,6 @@ double calin::math::rng::x_exp_minus_x_squared_ziggurat::fi[257] = {
   0.0,
 };
 
-double calin::math::rng::x_exp_minus_x_squared_ziggurat::xmax = 0.707106781186547524400844362105;
+double calin::math::rng::x_exp_minus_x_squared_ziggurat::xpeak = 0.707106781186547524400844362105;
 double calin::math::rng::x_exp_minus_x_squared_ziggurat::r = 2.90178702671194107325891655457;
 double calin::math::rng::x_exp_minus_x_squared_ziggurat::exp_minus_r_squared = 0.000220333566531385817543786941204;

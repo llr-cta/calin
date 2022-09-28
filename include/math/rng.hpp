@@ -493,23 +493,23 @@ namespace gaussian_ziggurat {
   extern double r;
   extern double r_inv;
   extern double xi[257];
-  extern double fi[257];
+  extern double yi[257];
 } // namespace calin::math::rng::gaussian_ziggurat
 
 namespace exponential_ziggurat {
   extern double r;
   extern double exp_minus_r;
   extern double xi[257];
-  extern double fi[257];
+  extern double yi[257];
 } // namespace calin::math::rng::exponential_ziggurat
 
 namespace x_exp_minus_x_squared_ziggurat {
-  extern double xmax;
+  extern double xpeak;
   extern double r;
   extern double exp_minus_r_squared;
   extern double xli[257];
   extern double xri[257];
-  extern double fi[257];
+  extern double yi[257];
 } // namespace calin::math::rng::exponential_ziggurat
 
 #endif
