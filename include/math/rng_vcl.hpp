@@ -265,10 +265,10 @@ public:
     while(true) {
       const uint64_vt u0 = core_->uniform_uint64();
       const uint64_vt i = u0&0xFFULL;
-      const double_vt xr = vcl::lookup<0x40000000>(i+1, xi);
-      const double_vt xl = vcl::lookup<0x40000000>(i, xi);
-      x = vcl::select(good_samples, x, xr*uint64_to_double_52bit(u0>>8));
-      good_samples |= x<xl;
+      const double_vt xb = vcl::lookup<0x40000000>(i+1, xi);
+      const double_vt xt = vcl::lookup<0x40000000>(i, xi);
+      x = vcl::select(good_samples, x, xb*uint64_to_double_52bit(u0>>8));
+      good_samples |= x<xt;
       if(vcl::horizontal_and(good_samples)) {
         return x;
       }
@@ -442,10 +442,10 @@ public:
       const uint64_vt u0 = core_->uniform_uint64();
       const uint64_vt i = u0&0xFFULL;
       const double_vt sign = vcl::reinterpret_d(u0&MASK_SIGN); // +/- 0
-      const double_vt xr = vcl::lookup<0x40000000>(i+1, xi);
-      const double_vt xl = vcl::lookup<0x40000000>(i, xi);
-      x = vcl::select(good_samples, x, xr*uint64_to_double_52bit(u0>>8));
-      good_samples |= x<xl;
+      const double_vt xb = vcl::lookup<0x40000000>(i+1, xi);
+      const double_vt xt = vcl::lookup<0x40000000>(i, xi);
+      x = vcl::select(good_samples, x, xb*uint64_to_double_52bit(u0>>8));
+      good_samples |= x<xt;
       if(vcl::horizontal_and(good_samples)) {
         return vcl::sign_combine(x, sign);
       }
@@ -518,12 +518,12 @@ public:
     while(true) {
       const uint64_vt u0 = core_->uniform_uint64();
       const uint64_vt i = u0&0xFFULL;
-      const double_vt xrr = vcl::lookup<0x40000000>(i+1, xri);
-      const double_vt xrl = vcl::lookup<0x40000000>(i, xri);
-      const double_vt xll = vcl::lookup<0x40000000>(i+1, xli);
-      const double_vt xlr = vcl::lookup<0x40000000>(i, xli);
-      x = vcl::select(good_samples, x, xll+(xrr-xll)*uint64_to_double_52bit(u0>>8));
-      good_samples |= (x>xlr) & (x<xrl);
+      const double_vt xrb = vcl::lookup<0x40000000>(i+1, xri);
+      const double_vt xrt = vcl::lookup<0x40000000>(i, xri);
+      const double_vt xlb = vcl::lookup<0x40000000>(i+1, xli);
+      const double_vt xlt = vcl::lookup<0x40000000>(i, xli);
+      x = vcl::select(good_samples, x, xlb+(xrb-xlb)*uint64_to_double_52bit(u0>>8));
+      good_samples |= (x>xlt) & (x<xrt);
       if(vcl::horizontal_and(good_samples)) {
         return x;
       }
