@@ -261,12 +261,13 @@ public:
   {
     using namespace exponential_ziggurat;
     double_bvt good_samples = false;
-    uint64_vt u0 = core_->uniform_uint64();
+    double_vt x;
     while(true) {
+      const uint64_vt u0 = core_->uniform_uint64();
       const uint64_vt i = u0&0xFFULL;
       const double_vt xr = vcl::lookup<0x40000000>(i+1, xi);
       const double_vt xl = vcl::lookup<0x40000000>(i, xi);
-      double_vt x = xr*uint64_to_double_52bit(u0>>8);
+      x = vcl::select(good_samples, x, xr*uint64_to_double_52bit(u0>>8));
       good_samples |= x<xl;
       if(vcl::horizontal_and(good_samples)) {
         return x;
@@ -278,16 +279,15 @@ public:
       double_vt y = uint64_to_double_52bit(core_->uniform_uint64());
       good_samples |= double_bvt(i!=0xFFULL)&(y*(fl-fr)<fx-fr);
 
-      if(vcl::horizontal_or(double_bvt(i==0xFFULL)&(!good_samples))) {
-        double_vt xx = -vcl::log(this->uniform_double() * exp_minus_r);
-        double_bvt mask = double_bvt(i==0xFFULL)&(!good_samples);
-        x = select(mask, xx, x);
+      double_bvt mask = double_bvt(i==0xFFULL)&(!good_samples);
+      if(vcl::horizontal_or(mask)) {
+        x = select(mask, -vcl::log(this->uniform_double() * exp_minus_r), x);
         good_samples |= mask;
       }
+
       if(vcl::horizontal_and(good_samples)) {
         return x;
       }
-      u0 = vcl::select(uint64_bvt(good_samples), u0, core_->uniform_uint64());
     }
   }
 
