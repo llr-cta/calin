@@ -320,6 +320,7 @@ public:
   }
   std::string banner(const std::string& indent0="", const std::string& indentN="") const final;
 
+  template<typename VCLArchitecture> typename
   Eigen::VectorXd vcl_bulk_generate_amplitude(unsigned n,
       calin::math::rng::VCLRNG<VCLArchitecture>& rng) {
     if(n % VCLArchitecture::num_double != 0) {
@@ -327,10 +328,16 @@ public:
     }
     Eigen::VectorXd rvs(n);
     for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
-      double_vt x = vcl_generate_amplitude(rng);
+      typename VCLArchitecture::double_vt x =
+        vcl_generate_amplitude<VCLArchitecture>(rng);
       x.store(rvs.data() + i);
     }
     return rvs;
+  }
+
+  Eigen::VectorXd vcl256_bulk_generate_amplitude(unsigned n,
+      calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& rng) {
+    return vcl_bulk_generate_amplitude<calin::util::vcl::VCL256Architecture>(n, rng);
   }
 
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
