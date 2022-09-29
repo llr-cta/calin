@@ -490,6 +490,7 @@ private:
 
 #ifndef SWIG
 namespace gaussian_ziggurat {
+  extern double v;
   extern double r;
   extern double r_inv;
   extern double xi[257];
@@ -497,6 +498,7 @@ namespace gaussian_ziggurat {
 } // namespace calin::math::rng::gaussian_ziggurat
 
 namespace exponential_ziggurat {
+  extern double v;
   extern double r;
   extern double exp_minus_r;
   extern double xi[257];
@@ -504,6 +506,7 @@ namespace exponential_ziggurat {
 } // namespace calin::math::rng::exponential_ziggurat
 
 namespace x_exp_minus_x_squared_ziggurat {
+  extern double v;
   extern double xpeak;
   extern double r;
   extern double exp_minus_r_squared;

@@ -807,3 +807,4 @@ double calin::math::rng::x_exp_minus_x_squared_ziggurat::yi[257] = {
 double calin::math::rng::x_exp_minus_x_squared_ziggurat::xpeak = 0.707106781186547524400844362105;
 double calin::math::rng::x_exp_minus_x_squared_ziggurat::r = 2.90178702671194107325891655457;
 double calin::math::rng::x_exp_minus_x_squared_ziggurat::exp_minus_r_squared = 0.000220333566531385817543786941204;
+double calin::math::rng::x_exp_minus_x_squared_ziggurat::v = 0.00393091296968370189721871223907;

@@ -546,3 +546,4 @@ double calin::math::rng::gaussian_ziggurat::yi[257] = {
 
 double calin::math::rng::gaussian_ziggurat::r = 3.6541528853610087716454297204;
 double calin::math::rng::gaussian_ziggurat::r_inv = 0.273661237329758273883665255545;
+double calin::math::rng::gaussian_ziggurat::v = 0.00492867323397465534736177540235;
