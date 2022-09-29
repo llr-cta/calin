@@ -510,6 +510,33 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                                           std::make_pair(0.1, 1000),
                                           std::make_pair(0.1, 1000000)));
 
+TEST(TestRNG, ExponentialZiggurat) {
+  using namespace calin::math::rng::exponential_ziggurat;
+  unsigned N = sizeof(xi)/sizeof(*xi)-1;
+  EXPECT_EQ(N, 256);
+  for(unsigned i=0; i<N;++i) {
+    EXPECT_NEAR(xi[i+1]*(yi[i]-yi[i+1]),v,v*1e-9)
+      << "Ziggurat rectangle area failed to match v : a[" << i
+      << "]=" << xi[i+1]*(yi[i]-yi[i+1]) << " ; v=" << v
+      << " x[i+1]=" << xi[i+1] << " yi[i]=" << yi[i] << " yi[i+1]=" << yi[i+1];
+  }
+  EXPECT_NEAR(r, xi[N-1], 1e-9);
+  EXPECT_NEAR(std::exp(-r) + (xi[N-1]*yi[N-1]),v,v*1e-9);
+}
+
+TEST(TestRNG, GaussianZiggurat) {
+  using namespace calin::math::rng::gaussian_ziggurat;
+  unsigned N = sizeof(xi)/sizeof(*xi)-1;
+  EXPECT_EQ(N, 256);
+  for(unsigned i=0; i<N;++i) {
+    EXPECT_NEAR(xi[i+1]*(yi[i]-yi[i+1]),v,v*1e-9)
+      << "Ziggurat rectangle area failed to match v : a[" << i
+      << "]=" << xi[i+1]*(yi[i]-yi[i+1]) << " ; v=" << v
+      << " x[i+1]=" << xi[i+1] << " yi[i]=" << yi[i] << " yi[i+1]=" << yi[i+1];
+  }
+  EXPECT_NEAR(r, xi[N-1], 1e-9);
+  EXPECT_NEAR(std::sqrt(M_PI/2)*std::erfc(r*M_SQRT1_2) + (xi[N-1]*yi[N-1]),v,v*1e-9);
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
