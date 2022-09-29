@@ -320,6 +320,19 @@ public:
   }
   std::string banner(const std::string& indent0="", const std::string& indentN="") const final;
 
+  Eigen::VectorXd vcl_bulk_generate_amplitude(unsigned n,
+      calin::math::rng::VCLRNG<VCLArchitecture>& rng) {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("vcl_bulk_generate_amplitude : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = vcl_generate_amplitude(rng);
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
   SplineMode spline_mode() const { return spline_mode_; }
 
