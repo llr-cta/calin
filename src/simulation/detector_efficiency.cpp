@@ -618,6 +618,7 @@ SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
 
 SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
 {
+  delete spline_;
   if(adopt_rng_) { delete rng_; }
 }
 
