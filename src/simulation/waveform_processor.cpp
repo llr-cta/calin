@@ -106,6 +106,7 @@ WaveformProcessor::~WaveformProcessor()
   fftw_free(pe_waveform_dft_);
   fftw_free(el_waveform_dft_);
   fftw_free(el_waveform_);
+  delete neighbour_map_;
   if(adopt_rng_) {
     delete rng_;
   }
@@ -507,7 +508,7 @@ int WaveformProcessor::digital_multipicity_trigger(double threshold,
   unsigned* l0_eop = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
   unsigned* l0_tot = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
   std::fill(l0_eop, l0_eop+npixels_, 0);
-  std::fill(l0_tot, l0_eop+npixels_, 0);
+  std::fill(l0_tot, l0_tot+npixels_, 0);
   for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
     unsigned multiplicity = 0;
     for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
@@ -541,7 +542,7 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
   unsigned* l0_eop = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
   unsigned* l0_tot = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
   std::fill(l0_eop, l0_eop+npixels_, 0);
-  std::fill(l0_tot, l0_eop+npixels_, 0);
+  std::fill(l0_tot, l0_tot+npixels_, 0);
   for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
     unsigned multiplicity = 0;
     bool found_new_l0_triggers = false;
