@@ -486,4 +486,110 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
   el_waveform_valid_ = false;
 }
 
+template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplicity_trigger_alt(
+  double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold, bool loud)
+{
+  compute_el_waveform();
+  uint16_t* multiplicity = static_cast<uint16_t*>(alloca(trace_nsamples_ * sizeof(uint16_t)));
+  std::fill(multiplicity, multiplicity+trace_nsamples_, 0);
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
+    unsigned l0_tot = 0;
+    unsigned l0_eop = 0;
+    for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt samples_a;
+      samples_a.load(pixel_waveform + isamp);
+
+      typename VCLArchitecture::double_vt samples_b;
+      samples_b.load(pixel_waveform + isamp + VCLArchitecture::num_double);
+
+      typename VCLArchitecture::double_vt samples_c;
+      samples_c.load(pixel_waveform + isamp + 2*VCLArchitecture::num_double);
+
+      typename VCLArchitecture::double_vt samples_d;
+      samples_d.load(pixel_waveform + isamp + 3*VCLArchitecture::num_double);
+
+      uint32_t above_threshold =
+        static_cast<uint32_t>(vcl::to_bits(samples_a > threshold)) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_b > threshold)) << VCLArchitecture::num_double) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_c > threshold)) << (2*VCLArchitecture::num_double)) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_d > threshold)) << (3*VCLArchitecture::num_double));
+      uint32_t triggered = 0;
+      if(l0_eop > isamp) {
+        triggered |= (1<<std::min(l0_eop-isamp, 4*VCLArchitecture::num_double))-1;
+      }
+
+      // calin::util::log::LOG(calin::util::log::INFO) << ipixel << ' ' << isamp << ' ' << above_threshold;
+
+      if(above_threshold == 0) {
+        l0_tot = 0;
+      } else {
+        unsigned jsamp = 0;
+        uint32_t value = above_threshold & 0x1;
+        while(jsamp < 4*VCLArchitecture::num_double) {
+          if(value == 0) {
+            l0_tot = 0;
+            uint32_t ksamp = ffs(above_threshold);
+            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            above_threshold >>= ksamp;
+            jsamp += ksamp;
+            value = 0x01;
+          } else { /* value == 1 */
+            uint32_t ksamp = ffs(~above_threshold);
+            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            // unsigned was_ot = l0_tot >= time_over_threshold_samples;
+            l0_tot += ksamp;
+            if(l0_tot >= time_over_threshold_samples) {
+              unsigned new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
+              if(l0_eop < isamp+4*VCLArchitecture::num_double) { //} and not was_ot) {
+                unsigned ksop = time_over_threshold_samples - (l0_tot - ksamp) - 1;
+                triggered |= ((1<<(std::min(l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
+              }
+              l0_eop = new_l0_eop;
+            }
+            above_threshold >>= ksamp;
+            jsamp += ksamp;
+            value = 0x00;
+          }
+        }
+        // for(unsigned jsamp=0; jsamp<4*VCLArchitecture::num_double; ++jsamp) {
+        //   uint32_t mask = 1<<jsamp;
+        //   if(above_threshold & mask) {
+        //     ++l0_tot;
+        //   } else {
+        //     l0_tot = 0;
+        //   }
+        //   if(l0_tot >= time_over_threshold_samples) {
+        //     l0_eop = isamp+jsamp+coherence_time_samples;
+        //   }
+        //   if(l0_eop > isamp+jsamp) {
+        //     triggered |= mask;
+        //   }
+        // }
+      }
+      if(triggered) {
+        typename VCLArchitecture::uint16_vt mult;
+        mult.load(multiplicity + isamp);
+        typename VCLArchitecture::uint16_bvt mult_add_mask;
+        mult_add_mask.load_bits(triggered);
+        mult = vcl::if_add(mult_add_mask, mult, 1);
+        mult.store(multiplicity + isamp);
+      }
+    }
+  }
+  if(loud) {
+    for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+      calin::util::log::LOG(calin::util::log::INFO) << isamp << ' ' << multiplicity[isamp];
+    }
+  }
+  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+    if(multiplicity[isamp] >= multiplicity_threshold) {
+      return isamp;
+    }
+  }
+  return -1;
+}
+
 #endif

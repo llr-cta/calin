@@ -38,6 +38,7 @@
 #include <iact_data/instrument_layout.pb.h>
 #include <math/fftw_util.hpp>
 #include <math/rng_vcl.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace waveform_processor {
 
@@ -70,9 +71,13 @@ public:
   Eigen::MatrixXd pe_waveform() const;
   Eigen::MatrixXd el_waveform();
 
-  int digital_multipicity_trigger(double threshold,
+  int digital_multiplicity_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold);
+    unsigned multiplicity_threshold, bool loud = false);
+  int digital_multiplicity_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, bool loud = false);
+
   int digital_nn_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned nn_threshold);
@@ -118,6 +123,11 @@ public:
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
     const double* noise_spectrum_amplitude, double scale = 1.0);
+
+  template<typename VCLArchitecture> int vcl_digital_multiplicity_trigger_alt(
+      double threshold,
+      unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+      unsigned multiplicity_threshold, bool loud = false);
 
 #endif // SWIG
 
@@ -201,6 +211,10 @@ public:
     calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
     calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
     const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
+
+  int vcl256_digital_multiplicity_trigger_alt(double threshold,
+      unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+      unsigned multiplicity_threshold, bool loud = false);
 
 private:
   void compute_pe_waveform_dft();

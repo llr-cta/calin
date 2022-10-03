@@ -500,9 +500,9 @@ void WaveformProcessor::clear_pes()
   std::fill(pe_waveform_, pe_waveform_ + npixels_*trace_nsamples_, 0);
 }
 
-int WaveformProcessor::digital_multipicity_trigger(double threshold,
+int WaveformProcessor::digital_multiplicity_trigger(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold)
+  unsigned multiplicity_threshold, bool loud)
 {
   compute_el_waveform();
   unsigned* l0_eop = static_cast<unsigned*>(alloca(npixels_ * sizeof(unsigned)));
@@ -524,7 +524,47 @@ int WaveformProcessor::digital_multipicity_trigger(double threshold,
         ++multiplicity;
       }
     }
+    if(loud) {
+      calin::util::log::LOG(calin::util::log::INFO) << isamp << ' ' << multiplicity;
+    }
     if(multiplicity >= multiplicity_threshold) {
+      return isamp;
+    }
+  }
+  return -1;
+}
+
+int WaveformProcessor::digital_multiplicity_trigger_alt(double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold, bool loud)
+{
+  compute_el_waveform();
+  unsigned* multiplicity = static_cast<unsigned*>(alloca(trace_nsamples_ * sizeof(unsigned)));
+  std::fill(multiplicity, multiplicity+trace_nsamples_, 0);
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    unsigned l0_tot = 0;
+    unsigned l0_eop = 0;
+    for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+      if(el_waveform_[ipixel*trace_nsamples_ + isamp] > threshold) {
+        ++l0_tot;
+      } else {
+        l0_tot = 0;
+      }
+      if(l0_tot >= time_over_threshold_samples) {
+        l0_eop = isamp+coherence_time_samples;
+      }
+      if(l0_eop > isamp) {
+        ++multiplicity[isamp];
+      }
+    }
+  }
+  if(loud) {
+    for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+      calin::util::log::LOG(calin::util::log::INFO) << isamp << ' ' << multiplicity[isamp];
+    }
+  }
+  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+    if(multiplicity[isamp] >= multiplicity_threshold) {
       return isamp;
     }
   }
@@ -605,4 +645,12 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
     }
   }
   return -1;
+}
+
+int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold, bool loud)
+{
+  return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, loud);
 }
