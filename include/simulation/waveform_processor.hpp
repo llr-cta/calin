@@ -128,10 +128,14 @@ public:
     const double* noise_spectrum_amplitude, double scale = 1.0);
 
   template<typename VCLArchitecture> int vcl_digital_multiplicity_trigger_alt(
-      double threshold,
-      unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-      unsigned multiplicity_threshold, bool loud = false);
+    double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, bool loud = false);
 
+  template<typename VCLArchitecture> int vcl_digital_nn_trigger_alt(
+    double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned nn_threshold);
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -216,8 +220,12 @@ public:
     const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
 
   int vcl256_digital_multiplicity_trigger_alt(double threshold,
-      unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-      unsigned multiplicity_threshold, bool loud = false);
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, bool loud = false);
+
+  int vcl256_digital_nn_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold);
 
 private:
   void compute_pe_waveform_dft();

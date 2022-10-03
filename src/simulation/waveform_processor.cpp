@@ -761,3 +761,11 @@ int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, loud);
 }
+
+int WaveformProcessor::vcl256_digital_nn_trigger_alt(double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold)
+{
+  return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold);  
+}

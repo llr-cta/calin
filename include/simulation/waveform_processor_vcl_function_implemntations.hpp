@@ -575,4 +575,152 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
   return -1;
 }
 
+template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger_alt(
+  double threshold,
+  unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+  unsigned multiplicity_threshold)
+{
+  compute_el_waveform();
+  uint16_t* multiplicity = static_cast<uint16_t*>(alloca(trace_nsamples_ * sizeof(uint16_t)));
+  std::fill(multiplicity, multiplicity+trace_nsamples_, 0);
+  uint32_t* triggered_bitmask = static_cast<unsigned*>(malloc(trace_nsamples_ * npixels_ / 8));
+  uint32_t* newly_triggered_bitmask = static_cast<unsigned*>(alloca(trace_nsamples_ / 8));
+  std::fill(triggered_bitmask, triggered_bitmask+trace_nsamples_/32, 0);
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
+    unsigned l0_tot = 0;
+    unsigned l0_eop = 0;
+    uint32_t triggered_32;
+    uint32_t newly_triggered;
+    for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
+      if(isamp % 32 == 0) {
+        newly_triggered = newly_triggered_bitmask[isamp/32];
+        triggered_32 = 0;
+      }
+      typename VCLArchitecture::double_vt samples_a;
+      samples_a.load(pixel_waveform + isamp);
+
+      typename VCLArchitecture::double_vt samples_b;
+      samples_b.load(pixel_waveform + isamp + VCLArchitecture::num_double);
+
+      typename VCLArchitecture::double_vt samples_c;
+      samples_c.load(pixel_waveform + isamp + 2*VCLArchitecture::num_double);
+
+      typename VCLArchitecture::double_vt samples_d;
+      samples_d.load(pixel_waveform + isamp + 3*VCLArchitecture::num_double);
+
+      uint32_t above_threshold =
+        static_cast<uint32_t>(vcl::to_bits(samples_a > threshold)) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_b > threshold)) << VCLArchitecture::num_double) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_c > threshold)) << (2*VCLArchitecture::num_double)) |
+        (static_cast<uint32_t>(vcl::to_bits(samples_d > threshold)) << (3*VCLArchitecture::num_double));
+      uint32_t triggered = 0;
+      if(l0_eop > isamp) {
+        triggered |= (1<<std::min(l0_eop-isamp, 4*VCLArchitecture::num_double))-1;
+      }
+
+      if(above_threshold == 0) {
+        l0_tot = 0;
+      } else {
+        unsigned jsamp = 0;
+        uint32_t value = above_threshold & 0x1;
+        while(jsamp < 4*VCLArchitecture::num_double) {
+          if(value == 0) {
+            l0_tot = 0;
+            uint32_t ksamp = ffs(above_threshold);
+            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            above_threshold >>= ksamp;
+            jsamp += ksamp;
+            value = 0x01;
+          } else { /* value == 1 */
+            uint32_t ksamp = ffs(~above_threshold);
+            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            l0_tot += ksamp;
+            if(l0_tot >= time_over_threshold_samples) {
+              unsigned new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
+              if(l0_eop <= isamp+4*VCLArchitecture::num_double) {
+                unsigned ksop = time_over_threshold_samples - (l0_tot - ksamp) - 1;
+                triggered |= ((1<<(std::min(new_l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
+                newly_triggered |= 0x1<<((isamp+jsamp+ksop)%32);
+              }
+              l0_eop = new_l0_eop;
+            }
+            above_threshold >>= ksamp;
+            jsamp += ksamp;
+            value = 0x00;
+          }
+        }
+      }
+      if(triggered) {
+        typename VCLArchitecture::uint16_vt mult;
+        mult.load(multiplicity + isamp);
+        typename VCLArchitecture::uint16_bvt mult_add_mask;
+        mult_add_mask.load_bits(triggered);
+        mult = vcl::if_add(mult_add_mask, mult, 1);
+        mult.store(multiplicity + isamp);
+      }
+
+      triggered_32 |= triggered << (isamp%32);
+      if((isamp+4*VCLArchitecture::num_double) % 32 == 0) {
+        newly_triggered_bitmask[isamp/32] = newly_triggered;
+        triggered_bitmask[(ipixel*trace_nsamples_ + isamp)/32] = triggered_32;
+      }
+    }
+  }
+
+#define IS_TRIGGERED(PIX,SAMPLE) (triggered_bitmask[(PIX*trace_nsamples_ + SAMPLE)/32]&(0x1<<(SAMPLE%32)))
+
+  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+    unsigned found_new_l0_triggers = newly_triggered_bitmask[isamp/32]&(0x1<<(isamp%32));
+    if(multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
+      // The simple multiplicity threshold has been met, and we have some newly
+      // triggered channels - test neighbours
+      switch(multiplicity_threshold) {
+      case 0:
+      case 1:
+        free(triggered_bitmask);
+        return isamp;
+      case 2:
+        for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+          if(IS_TRIGGERED(ipixel, isamp)) {
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
+              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
+                free(triggered_bitmask);
+                return isamp;
+              }
+            }
+          }
+        }
+        break;
+      case 3:
+        for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+          unsigned nneighbour = 1;
+          if(IS_TRIGGERED(ipixel, isamp)) {
+            for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
+              int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
+              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
+                ++nneighbour;
+              }
+            }
+            if(nneighbour >= multiplicity_threshold) {
+              free(triggered_bitmask);
+              return isamp;
+            }
+          }
+        }
+        break;
+      default:
+        throw std::runtime_error("digital_nn_trigger : multiplicity "
+          + std::to_string(multiplicity_threshold) + " unsupported");
+      }
+    }
+  }
+
+#undef IS_TRIGGERED
+
+  free(triggered_bitmask);
+  return -1;
+}
+
 #endif
