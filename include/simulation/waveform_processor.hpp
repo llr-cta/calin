@@ -81,6 +81,9 @@ public:
   int digital_nn_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned nn_threshold);
+  int digital_nn_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned nn_threshold);
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
