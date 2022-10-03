@@ -542,7 +542,7 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
               unsigned new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
               if(l0_eop <= isamp+4*VCLArchitecture::num_double) {
                 unsigned ksop = time_over_threshold_samples - (l0_tot - ksamp) - 1;
-                triggered |= ((1<<(std::min(l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
+                triggered |= ((1<<(std::min(new_l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
               }
               l0_eop = new_l0_eop;
             }
