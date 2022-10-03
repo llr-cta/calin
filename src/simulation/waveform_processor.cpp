@@ -525,7 +525,16 @@ int WaveformProcessor::digital_multiplicity_trigger(double threshold,
       }
     }
     if(loud) {
-      calin::util::log::LOG(calin::util::log::INFO) << isamp << ' ' << multiplicity;
+      auto logger = calin::util::log::LOG(calin::util::log::INFO);
+      logger << isamp << ' ' << multiplicity;
+      if(multiplicity) {
+        logger << " :";
+        for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+          if(l0_eop[ipixel] > isamp) {
+            logger << ' ' << ipixel << '(' << l0_eop[ipixel] << ')';
+          }
+        }
+      }
     }
     if(multiplicity >= multiplicity_threshold) {
       return isamp;
