@@ -521,8 +521,6 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
         triggered |= (1<<std::min(l0_eop-isamp, 4*VCLArchitecture::num_double))-1;
       }
 
-      // calin::util::log::LOG(calin::util::log::INFO) << ipixel << ' ' << isamp << ' ' << above_threshold;
-
       if(above_threshold == 0) {
         l0_tot = 0;
       } else {
@@ -539,11 +537,10 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
           } else { /* value == 1 */
             uint32_t ksamp = ffs(~above_threshold);
             ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
-            // unsigned was_ot = l0_tot >= time_over_threshold_samples;
             l0_tot += ksamp;
             if(l0_tot >= time_over_threshold_samples) {
               unsigned new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
-              if(l0_eop < isamp+4*VCLArchitecture::num_double) { //} and not was_ot) {
+              if(l0_eop <= isamp+4*VCLArchitecture::num_double) {
                 unsigned ksop = time_over_threshold_samples - (l0_tot - ksamp) - 1;
                 triggered |= ((1<<(std::min(l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
               }
@@ -554,20 +551,6 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
             value = 0x00;
           }
         }
-        // for(unsigned jsamp=0; jsamp<4*VCLArchitecture::num_double; ++jsamp) {
-        //   uint32_t mask = 1<<jsamp;
-        //   if(above_threshold & mask) {
-        //     ++l0_tot;
-        //   } else {
-        //     l0_tot = 0;
-        //   }
-        //   if(l0_tot >= time_over_threshold_samples) {
-        //     l0_eop = isamp+jsamp+coherence_time_samples;
-        //   }
-        //   if(l0_eop > isamp+jsamp) {
-        //     triggered |= mask;
-        //   }
-        // }
       }
       if(triggered) {
         typename VCLArchitecture::uint16_vt mult;
