@@ -42,6 +42,48 @@
 
 namespace calin { namespace simulation { namespace waveform_processor {
 
+class WaveformProcessorTriggerMemoryBuffers
+{
+public:
+  unsigned npixels;
+  unsigned trace_nsamples;
+  uint16_t* multiplicity;
+  uint32_t* triggered_bitmask;
+  uint32_t* newly_triggered_bitmask;
+
+  WaveformProcessorTriggerMemoryBuffers(unsigned npixels_, unsigned trace_nsamples_):
+    npixels(npixels_), trace_nsamples(trace_nsamples_),
+    multiplicity(new uint16_t[trace_nsamples]),
+    triggered_bitmask(new uint32_t[trace_nsamples * npixels / 32]),
+    newly_triggered_bitmask(new uint32_t[trace_nsamples_ / 32])
+  {
+    // nothing to see here
+  }
+
+  ~WaveformProcessorTriggerMemoryBuffers()
+  {
+    delete[] multiplicity;
+    delete[] triggered_bitmask;
+    delete[] newly_triggered_bitmask;
+  }
+
+  void clear()
+  {
+    std::fill(multiplicity, multiplicity + trace_nsamples, 0);
+    std::fill(triggered_bitmask, triggered_bitmask + trace_nsamples * npixels / 32 ,0);
+    std::fill(newly_triggered_bitmask, newly_triggered_bitmask + trace_nsamples / 32, 0);
+  }
+
+  inline bool is_triggered(unsigned ipixel, unsigned isamp) const
+  {
+    return triggered_bitmask[(ipixel*trace_nsamples + isamp)/32]&(0x1<<(isamp%32));
+  }
+
+  inline bool is_newly_triggered(unsigned isamp) {
+    return newly_triggered_bitmask[isamp/32]&(0x1<<(isamp%32));
+  }
+};
+
 class WaveformProcessor
 {
 public:
@@ -53,6 +95,11 @@ public:
     double trace_advance_time, calin::math::rng::RNG* rng = nullptr,
     unsigned fftw_flags = 0, bool adopt_rng = false);
   ~WaveformProcessor();
+
+  WaveformProcessorTriggerMemoryBuffers* new_trigger_memory_buffers() const {
+    return new WaveformProcessorTriggerMemoryBuffers(npixels_,trace_nsamples_);
+  }
+
   void load_pes_from_processor(
     calin::simulation::pe_processor::UnbinnedWaveformPEProcessor* pe_processor,
     unsigned iscope);
@@ -83,7 +130,7 @@ public:
     unsigned nn_threshold);
   int digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned nn_threshold);
+    unsigned nn_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
@@ -135,7 +182,7 @@ public:
   template<typename VCLArchitecture> int vcl_digital_nn_trigger_alt(
     double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned nn_threshold);
+    unsigned nn_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -225,7 +272,7 @@ public:
 
   int vcl256_digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold);
+    unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 
 private:
   void compute_pe_waveform_dft();

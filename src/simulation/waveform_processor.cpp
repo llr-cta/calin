@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <alloca.h>
+#include <memory>
 
 #include <fftw3.h>
 
@@ -106,7 +107,7 @@ WaveformProcessor::~WaveformProcessor()
   fftw_free(pe_waveform_dft_);
   fftw_free(el_waveform_dft_);
   fftw_free(el_waveform_);
-  delete neighbour_map_;
+  delete[] neighbour_map_;
   if(adopt_rng_) {
     delete rng_;
   }
@@ -658,17 +659,20 @@ int WaveformProcessor::digital_nn_trigger(double threshold,
 
 int WaveformProcessor::digital_nn_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold)
+  unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
   if(neighbour_map_ == nullptr) {
     throw std::runtime_error("digital_nn_trigger : nearest neighbour map not defined");
   }
   compute_el_waveform();
-  unsigned* multiplicity = static_cast<unsigned*>(alloca(trace_nsamples_ * sizeof(unsigned)));
-  std::fill(multiplicity, multiplicity+trace_nsamples_, 0);
-  uint32_t* triggered_bitmask = static_cast<unsigned*>(malloc(trace_nsamples_ * npixels_ / 8));
-  uint32_t* newly_triggered_bitmask = static_cast<unsigned*>(alloca(trace_nsamples_ / 8));
-  std::fill(triggered_bitmask, triggered_bitmask+trace_nsamples_/32, 0);
+
+  std::unique_ptr<WaveformProcessorTriggerMemoryBuffers> my_buffer;
+  if(buffer == nullptr) {
+    buffer = new WaveformProcessorTriggerMemoryBuffers(npixels_, trace_nsamples_);
+    my_buffer.reset(buffer);
+  }
+  buffer->clear();
+
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     unsigned l0_tot = 0;
     unsigned l0_eop = 0;
@@ -676,7 +680,7 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
     uint32_t newly_triggered;
     for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
       if(isamp % 32 == 0) {
-        newly_triggered = newly_triggered_bitmask[isamp/32];
+        newly_triggered = buffer->newly_triggered_bitmask[isamp/32];
         triggered = 0;
       }
       if(el_waveform_[ipixel*trace_nsamples_ + isamp] > threshold) {
@@ -692,34 +696,30 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
       }
       if(l0_eop > isamp) {
         triggered |= 1<<(isamp%32);
-        ++multiplicity[isamp];
+        ++buffer->multiplicity[isamp];
       }
       if((isamp+1) % 32 == 0) {
-        newly_triggered_bitmask[isamp/32] = newly_triggered;
-        triggered_bitmask[(ipixel*trace_nsamples_ + isamp)/32] = triggered;
+        buffer->newly_triggered_bitmask[isamp/32] = newly_triggered;
+        buffer->triggered_bitmask[(ipixel*trace_nsamples_ + isamp)/32] = triggered;
       }
     }
   }
 
-#define IS_TRIGGERED(PIX,SAMPLE) (triggered_bitmask[(PIX*trace_nsamples_ + SAMPLE)/32]&(0x1<<(SAMPLE%32)))
-
   for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
-    unsigned found_new_l0_triggers = newly_triggered_bitmask[isamp/32]&(0x1<<(isamp%32));
-    if(multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
+    bool found_new_l0_triggers = buffer->is_newly_triggered(isamp);
+    if(buffer->multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
       // The simple multiplicity threshold has been met, and we have some newly
       // triggered channels - test neighbours
       switch(multiplicity_threshold) {
       case 0:
       case 1:
-        free(triggered_bitmask);
         return isamp;
       case 2:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-          if(IS_TRIGGERED(ipixel, isamp)) {
+          if(buffer->is_triggered(ipixel, isamp)) {
             for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
               int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
-              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
-                free(triggered_bitmask);
+              if(jpixel>0 and buffer->is_triggered(jpixel,isamp)) {
                 return isamp;
               }
             }
@@ -729,15 +729,14 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
       case 3:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
           unsigned nneighbour = 1;
-          if(IS_TRIGGERED(ipixel, isamp)) {
+          if(buffer->is_triggered(ipixel, isamp)) {
             for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
               int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
-              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
+              if(jpixel>0 and buffer->is_triggered(jpixel,isamp)) {
                 ++nneighbour;
               }
             }
             if(nneighbour >= multiplicity_threshold) {
-              free(triggered_bitmask);
               return isamp;
             }
           }
@@ -750,7 +749,6 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
     }
   }
 
-  free(triggered_bitmask);
   return -1;
 }
 
@@ -764,8 +762,8 @@ int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
 
 int WaveformProcessor::vcl256_digital_nn_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold)
+  unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
   return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
-    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold);  
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, buffer);
 }

@@ -578,14 +578,17 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
 template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger_alt(
   double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold)
+  unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
   compute_el_waveform();
-  uint16_t* multiplicity = static_cast<uint16_t*>(alloca(trace_nsamples_ * sizeof(uint16_t)));
-  std::fill(multiplicity, multiplicity+trace_nsamples_, 0);
-  uint32_t* triggered_bitmask = static_cast<unsigned*>(malloc(trace_nsamples_ * npixels_ / 8));
-  uint32_t* newly_triggered_bitmask = static_cast<unsigned*>(alloca(trace_nsamples_ / 8));
-  std::fill(triggered_bitmask, triggered_bitmask+trace_nsamples_/32, 0);
+
+  std::unique_ptr<WaveformProcessorTriggerMemoryBuffers> my_buffer;
+  if(buffer == nullptr) {
+    buffer = new WaveformProcessorTriggerMemoryBuffers(npixels_, trace_nsamples_);
+    my_buffer.reset(buffer);
+  }
+  buffer->clear();
+
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
     unsigned l0_tot = 0;
@@ -594,7 +597,7 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
     uint32_t newly_triggered;
     for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
       if(isamp % 32 == 0) {
-        newly_triggered = newly_triggered_bitmask[isamp/32];
+        newly_triggered = buffer->newly_triggered_bitmask[isamp/32];
         triggered_32 = 0;
       }
       typename VCLArchitecture::double_vt samples_a;
@@ -653,40 +656,36 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
       }
       if(triggered) {
         typename VCLArchitecture::uint16_vt mult;
-        mult.load(multiplicity + isamp);
+        mult.load(buffer->multiplicity + isamp);
         typename VCLArchitecture::uint16_bvt mult_add_mask;
         mult_add_mask.load_bits(triggered);
         mult = vcl::if_add(mult_add_mask, mult, 1);
-        mult.store(multiplicity + isamp);
+        mult.store(buffer->multiplicity + isamp);
       }
 
       triggered_32 |= triggered << (isamp%32);
       if((isamp+4*VCLArchitecture::num_double) % 32 == 0) {
-        newly_triggered_bitmask[isamp/32] = newly_triggered;
-        triggered_bitmask[(ipixel*trace_nsamples_ + isamp)/32] = triggered_32;
+        buffer->newly_triggered_bitmask[isamp/32] = newly_triggered;
+        buffer->triggered_bitmask[(ipixel*trace_nsamples_ + isamp)/32] = triggered_32;
       }
     }
   }
 
-#define IS_TRIGGERED(PIX,SAMPLE) (triggered_bitmask[(PIX*trace_nsamples_ + SAMPLE)/32]&(0x1<<(SAMPLE%32)))
-
   for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
-    unsigned found_new_l0_triggers = newly_triggered_bitmask[isamp/32]&(0x1<<(isamp%32));
-    if(multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
+    bool found_new_l0_triggers = buffer->is_newly_triggered(isamp);
+    if(buffer->multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
       // The simple multiplicity threshold has been met, and we have some newly
       // triggered channels - test neighbours
       switch(multiplicity_threshold) {
       case 0:
       case 1:
-        free(triggered_bitmask);
         return isamp;
       case 2:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-          if(IS_TRIGGERED(ipixel, isamp)) {
+          if(buffer->is_triggered(ipixel, isamp)) {
             for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
               int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
-              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
-                free(triggered_bitmask);
+              if(jpixel>0 and buffer->is_triggered(jpixel,isamp)) {
                 return isamp;
               }
             }
@@ -696,15 +695,14 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
       case 3:
         for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
           unsigned nneighbour = 1;
-          if(IS_TRIGGERED(ipixel, isamp)) {
+          if(buffer->is_triggered(ipixel, isamp)) {
             for(unsigned ineighbour=0; ineighbour<max_num_neighbours_; ++ineighbour) {
               int jpixel = neighbour_map_[ipixel*max_num_neighbours_ + ineighbour];
-              if(jpixel>0 and IS_TRIGGERED(jpixel,isamp)) {
+              if(jpixel>0 and buffer->is_triggered(jpixel,isamp)) {
                 ++nneighbour;
               }
             }
             if(nneighbour >= multiplicity_threshold) {
-              free(triggered_bitmask);
               return isamp;
             }
           }
@@ -717,9 +715,6 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
     }
   }
 
-#undef IS_TRIGGERED
-
-  free(triggered_bitmask);
   return -1;
 }
 
