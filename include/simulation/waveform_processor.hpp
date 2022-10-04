@@ -74,6 +74,11 @@ public:
     std::fill(newly_triggered_bitmask, newly_triggered_bitmask + trace_nsamples / 32, 0);
   }
 
+  inline unsigned get_multiplicity(unsigned isamp) const
+  {
+    return multiplicity[isamp];
+  }
+
   inline bool is_triggered(unsigned ipixel, unsigned isamp) const
   {
     return triggered_bitmask[(ipixel*trace_nsamples + isamp)/32]&(0x1<<(isamp%32));
