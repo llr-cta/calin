@@ -303,7 +303,7 @@ private:
   double ac_coupling_constant_ = 0;
 
   int* neighbour_map_ = nullptr;
-  int max_num_neighbours_ = 0;
+  unsigned max_num_neighbours_ = 0;
 };
 
 #include "waveform_processor_vcl_function_implemntations.hpp"
