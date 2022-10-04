@@ -676,8 +676,8 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     unsigned l0_tot = 0;
     unsigned l0_eop = 0;
-    uint32_t triggered;
-    uint32_t newly_triggered;
+    uint32_t triggered = 0;
+    uint32_t newly_triggered = 0;
     for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
       if(isamp % 32 == 0) {
         newly_triggered = buffer->newly_triggered_bitmask[isamp/32];

@@ -593,8 +593,8 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
     double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
     unsigned l0_tot = 0;
     unsigned l0_eop = 0;
-    uint32_t triggered_32;
-    uint32_t newly_triggered;
+    uint32_t triggered_32 = 0;
+    uint32_t newly_triggered = 0;
     for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
       if(isamp % 32 == 0) {
         newly_triggered = buffer->newly_triggered_bitmask[isamp/32];
