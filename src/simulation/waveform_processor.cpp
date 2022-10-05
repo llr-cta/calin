@@ -87,7 +87,7 @@ WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* c
 {
   for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
     max_num_neighbours_ = std::max(max_num_neighbours_,
-      camera->channel(ichannel).neighbour_channel_indexes_size());
+      unsigned(camera->channel(ichannel).neighbour_channel_indexes_size()));
   }
   neighbour_map_ = new int[npixels_ * max_num_neighbours_];
   std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbours_, -1);
