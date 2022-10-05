@@ -131,10 +131,12 @@ public:
   VCLRNG(const calin::ix::math::rng::VCLRNGCoreData& proto, bool restore_state = false,
       const std::string& created_by = "", const std::string& comment = ""):
     core_(VCLRNGCore<VCLArchitecture>::create_from_proto(proto,
-      restore_state, created_by, comment)) { /* nothing to see here */ }
+      restore_state, created_by, comment)), adopt_core_(true) { /* nothing to see here */ }
 
   ~VCLRNG() {
-    if(adopt_core_)delete core_;
+    if(adopt_core_) {
+      delete core_;
+    }
   }
 
   VCLRNGCore<VCLArchitecture>* core() { return core_; }
