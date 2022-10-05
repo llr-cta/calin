@@ -580,6 +580,9 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
   unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
+  if(neighbour_map_ == nullptr) {
+    throw std::runtime_error("vcl_digital_nn_trigger_alt : nearest neighbour map not defined");
+  }
   compute_el_waveform();
 
   std::unique_ptr<WaveformProcessorTriggerMemoryBuffers> my_buffer;
@@ -709,7 +712,7 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
         }
         break;
       default:
-        throw std::runtime_error("digital_nn_trigger : multiplicity "
+        throw std::runtime_error("vcl_digital_nn_trigger_alt : multiplicity "
           + std::to_string(multiplicity_threshold) + " unsupported");
       }
     }
