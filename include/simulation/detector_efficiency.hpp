@@ -273,8 +273,8 @@ class PEAmplitudeGenerator
 {
 public:
   virtual ~PEAmplitudeGenerator();
-  virtual double generate_amplitude() const = 0;
-  virtual double mean_amplitude() const = 0;
+  virtual double generate_amplitude() = 0;
+  virtual double mean_amplitude() = 0;
   Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
     Eigen::VectorXd rvs(n);
     for(unsigned i=0;i<n;i++) {
@@ -299,8 +299,8 @@ public:
   SplinePEAmplitudeGenerator(const calin::math::spline_interpolation::CubicSpline& spline,
     SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
   virtual ~SplinePEAmplitudeGenerator();
-  double generate_amplitude() const final;
-  double mean_amplitude() const final;
+  double generate_amplitude() final;
+  double mean_amplitude() final;
   template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
     calin::math::rng::VCLRNG<VCLArchitecture>& rng) const
   {

@@ -621,7 +621,7 @@ SplinePEAmplitudeGenerator::~SplinePEAmplitudeGenerator()
   if(adopt_rng_) { delete rng_; }
 }
 
-double SplinePEAmplitudeGenerator::generate_amplitude() const
+double SplinePEAmplitudeGenerator::generate_amplitude()
 {
   double x;
   switch(spline_mode_) {
@@ -638,7 +638,7 @@ double SplinePEAmplitudeGenerator::generate_amplitude() const
   return spline_->value(x);
 }
 
-double SplinePEAmplitudeGenerator::mean_amplitude() const
+double SplinePEAmplitudeGenerator::mean_amplitude()
 {
   return pdf_mean_;
 }
