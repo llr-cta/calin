@@ -349,6 +349,13 @@ public:
     unsigned regularize_ninterval = 0,
     double norm = 1.0-std::numeric_limits<double>::epsilon());
 protected:
+  calin::math::rng::RNG* get_rng() {
+    if(rng_ == nullptr) {
+      rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation");
+      adopt_rng_ = true;
+    }
+    return rng_;
+  }
   void calc_pdf_moments();
   calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
   SplineMode spline_mode_ = SM_LINEAR;

@@ -610,8 +610,7 @@ SplinePEAmplitudeGenerator::SplinePEAmplitudeGenerator(
   PEAmplitudeGenerator(),
   spline_(new calin::math::spline_interpolation::CubicSpline(spline)),
   spline_mode_(spline_mode),
-  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation") : rng),
-  adopt_rng_(rng==nullptr ? true : adopt_rng)
+  rng_(rng), adopt_rng_(rng==nullptr ? true : adopt_rng)
 {
   calc_pdf_moments();
 }
@@ -627,13 +626,13 @@ double SplinePEAmplitudeGenerator::generate_amplitude() const
   double x;
   switch(spline_mode_) {
   case SM_LINEAR:
-    x = rng_->uniform_double();
+    x = get_rng()->uniform_double();
     break;
   case SM_LOG:
-    x = rng_->exponential();
+    x = get_rng()->exponential();
     break;
   case SM_SQRT_LOG:
-    x = rng_->x_exp_minus_x_squared();
+    x = get_rng()->x_exp_minus_x_squared();
     break;
   }
   return spline_->value(x);
