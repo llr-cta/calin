@@ -42,8 +42,7 @@ WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsa
   npixels_(npixels), trace_sampling_ns_(trace_sampling_ns),
   trace_sampling_inv_(1.0/trace_sampling_ns),
   trace_nsamples_(trace_nsamples), trace_advance_time_(trace_advance_time),
-  rng_(rng==nullptr ? new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB and electronics noise generation") : rng),
-  adopt_rng_(rng==nullptr ? true : adopt_rng),
+  rng_(rng), adopt_rng_(rng==nullptr ? true : adopt_rng),
   pe_waveform_(fftw_alloc_real(npixels * trace_nsamples)),
   pe_waveform_dft_(fftw_alloc_real(npixels * trace_nsamples)),
   el_waveform_dft_(fftw_alloc_real(npixels * trace_nsamples)),
@@ -129,11 +128,11 @@ void WaveformProcessor::add_nsb(double nsb_rate_ghz,
 {
   double dx = trace_sampling_inv_/nsb_rate_ghz;
   double xmax = npixels_*trace_nsamples_;
-  double x = dx*rng_->exponential();
+  double x = dx*get_rng()->exponential();
   while(x < xmax) {
     double amp = nsb_pegen==nullptr? 1.0 : nsb_pegen->generate_amplitude();
     pe_waveform_[unsigned(floor(x))] += amp;
-    x += dx*rng_->exponential();
+    x += dx*get_rng()->exponential();
   }
   if(ac_couple) {
     double mean_amp = nsb_pegen==nullptr? 1.0 : nsb_pegen->mean_amplitude();
@@ -353,7 +352,7 @@ void WaveformProcessor::add_electronics_noise(const double*__restrict__ noise_sp
   scale *= std::sqrt(1.0/trace_nsamples_);
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     for(unsigned isample=0; isample<trace_nsamples_; ++isample) {
-      double norm = rng_->normal();
+      double norm = get_rng()->normal();
       buffer[ipixel*trace_nsamples_ + isample] +=
         noise_spectrum_amplitude[isample] * scale * norm;
     }
@@ -662,7 +661,7 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
   unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
   if(neighbour_map_ == nullptr) {
-    throw std::runtime_error("digital_nn_trigger : nearest neighbour map not defined");
+    throw std::runtime_error("digital_nn_trigger_alt : nearest neighbour map not defined");
   }
   compute_el_waveform();
 
@@ -743,7 +742,7 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
         }
         break;
       default:
-        throw std::runtime_error("digital_nn_trigger : multiplicity "
+        throw std::runtime_error("digital_nn_trigger_alt : multiplicity "
           + std::to_string(multiplicity_threshold) + " unsupported");
       }
     }

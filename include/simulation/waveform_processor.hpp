@@ -282,6 +282,13 @@ public:
 private:
   void compute_pe_waveform_dft();
   void compute_el_waveform();
+  calin::math::rng::RNG* get_rng() {
+    if(rng_ == nullptr) {
+      rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB and electronics noise generation");
+      adopt_rng_ = true;
+    }
+    return rng_;
+  }
   unsigned npixels_;
   double trace_sampling_ns_;
   double trace_sampling_inv_;
