@@ -489,7 +489,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_electronics_n
 template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplicity_trigger_alt(
   double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold, bool loud)
+  unsigned multiplicity_threshold, unsigned sample_0, bool loud)
 {
   compute_el_waveform();
   uint16_t* multiplicity = static_cast<uint16_t*>(alloca(trace_nsamples_ * sizeof(uint16_t)));
@@ -567,7 +567,7 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
       calin::util::log::LOG(calin::util::log::INFO) << isamp << ' ' << multiplicity[isamp];
     }
   }
-  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+  for(unsigned isamp=sample_0; isamp<trace_nsamples_; ++isamp) {
     if(multiplicity[isamp] >= multiplicity_threshold) {
       return isamp;
     }
@@ -578,7 +578,8 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_multiplici
 template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger_alt(
   double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer)
+  unsigned multiplicity_threshold, unsigned sample_0,
+  WaveformProcessorTriggerMemoryBuffers* buffer)
 {
   if(neighbour_map_ == nullptr) {
     throw std::runtime_error("vcl_digital_nn_trigger_alt : nearest neighbour map not defined");
@@ -674,7 +675,7 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
     }
   }
 
-  for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+  for(unsigned isamp=sample_0; isamp<trace_nsamples_; ++isamp) {
     bool found_new_l0_triggers = buffer->is_newly_triggered(isamp);
     if(buffer->multiplicity[isamp] >= multiplicity_threshold and found_new_l0_triggers) {
       // The simple multiplicity threshold has been met, and we have some newly

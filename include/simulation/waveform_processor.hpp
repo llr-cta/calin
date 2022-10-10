@@ -125,17 +125,18 @@ public:
 
   int digital_multiplicity_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
   int digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
 
   int digital_nn_trigger(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned nn_threshold);
+    unsigned nn_threshold, unsigned sample_0 = 0);
   int digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned nn_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+    unsigned nn_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
@@ -182,12 +183,13 @@ public:
   template<typename VCLArchitecture> int vcl_digital_multiplicity_trigger_alt(
     double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
 
   template<typename VCLArchitecture> int vcl_digital_nn_trigger_alt(
     double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned nn_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+    unsigned nn_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -273,11 +275,12 @@ public:
 
   int vcl256_digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
 
   int vcl256_digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 
 private:
   void compute_pe_waveform_dft();
