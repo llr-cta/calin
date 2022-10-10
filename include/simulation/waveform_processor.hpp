@@ -273,11 +273,29 @@ public:
     calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
     const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
 
+  int vcl128_digital_multiplicity_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+
   int vcl256_digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
 
+  int vcl512_digital_multiplicity_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+
+  int vcl128_digital_nn_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+
   int vcl256_digital_nn_trigger_alt(double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+
+  int vcl512_digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned multiplicity_threshold, unsigned sample_0 = 0,
     WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
