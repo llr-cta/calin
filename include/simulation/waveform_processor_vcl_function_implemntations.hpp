@@ -595,11 +595,11 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
 
   for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
     double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
-    unsigned l0_tot = 0;
-    unsigned l0_eop = 0;
+    int l0_tot = 0;
+    int l0_eop = 0;
     uint32_t triggered_32 = 0;
     uint32_t newly_triggered = 0;
-    for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
+    for(int isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
       if(isamp % 32 == 0) {
         newly_triggered = buffer->newly_triggered_bitmask[isamp/32];
         triggered_32 = 0;
@@ -623,33 +623,32 @@ template<typename VCLArchitecture> int WaveformProcessor::vcl_digital_nn_trigger
         (static_cast<uint32_t>(vcl::to_bits(samples_d > threshold)) << (3*VCLArchitecture::num_double));
       uint32_t triggered = 0;
       if(l0_eop > isamp) {
-        triggered |= (1<<std::min(l0_eop-isamp, 4*VCLArchitecture::num_double))-1;
+        triggered |= (1ULL<<std::min(l0_eop-isamp, int(4*VCLArchitecture::num_double)))-1;
       }
 
       if(above_threshold == 0) {
         l0_tot = 0;
       } else {
-        unsigned jsamp = 0;
+        int jsamp = 0;
         uint32_t value = above_threshold & 0x1;
         while(jsamp < 4*VCLArchitecture::num_double) {
           if(value == 0) {
             l0_tot = 0;
-            uint32_t ksamp = ffs(above_threshold);
-            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            int ksamp = ffs(above_threshold);
+            ksamp = (ksamp == 0) ? int(4*VCLArchitecture::num_double)-jsamp : ksamp-1;
             above_threshold >>= ksamp;
             jsamp += ksamp;
             value = 0x01;
           } else { /* value == 1 */
-            uint32_t ksamp = ffs(~above_threshold);
-            ksamp = std::min(ksamp-1, 4*VCLArchitecture::num_double-jsamp);
+            int ksamp = ffs(~above_threshold);
+            ksamp = (ksamp == 0) ? int(4*VCLArchitecture::num_double)-jsamp : ksamp-1;
             l0_tot += ksamp;
             if(l0_tot >= time_over_threshold_samples) {
-              unsigned new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
-              if(l0_eop <= isamp+4*VCLArchitecture::num_double) {
-                unsigned ksop = time_over_threshold_samples - (l0_tot - ksamp) - 1;
-                triggered |= ((1<<(std::min(new_l0_eop-isamp, 4*VCLArchitecture::num_double)-jsamp-ksop))-1)<<(jsamp+ksop);
-                newly_triggered |= 0x1<<((isamp+jsamp+ksop)%32);
-              }
+              int new_l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
+
+              int ksop = std::max(int(time_over_threshold_samples) - (l0_tot - ksamp) - 1, 0);
+              triggered |= ((1ULL<<(std::min(new_l0_eop-isamp, int(4*VCLArchitecture::num_double))-jsamp-ksop))-1)<<(jsamp+ksop);
+              newly_triggered |= 0x1ULL<<((isamp+jsamp+ksop)%32);
               l0_eop = new_l0_eop;
             }
             above_threshold >>= ksamp;
