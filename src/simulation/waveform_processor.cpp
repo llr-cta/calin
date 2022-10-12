@@ -754,26 +754,29 @@ int WaveformProcessor::digital_nn_trigger_alt(double threshold,
 
 int WaveformProcessor::vcl128_digital_multiplicity_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold, unsigned sample_0, bool loud)
+  unsigned multiplicity_threshold, unsigned sample_0,
+  WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL128Architecture>(threshold,
-    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, loud);
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
 }
 
 int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold, unsigned sample_0, bool loud)
+  unsigned multiplicity_threshold, unsigned sample_0,
+  WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
-    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, loud);
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
 }
 
 int WaveformProcessor::vcl512_digital_multiplicity_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-  unsigned multiplicity_threshold, unsigned sample_0, bool loud)
+  unsigned multiplicity_threshold, unsigned sample_0,
+  WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL512Architecture>(threshold,
-    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, loud);
+    time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
 }
 
 int WaveformProcessor::vcl128_digital_nn_trigger_alt(double threshold,

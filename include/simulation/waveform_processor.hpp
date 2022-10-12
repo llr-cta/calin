@@ -183,7 +183,8 @@ public:
   template<typename VCLArchitecture> int vcl_digital_multiplicity_trigger_alt(
     double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr, bool loud = false);
 
   template<typename VCLArchitecture> int vcl_digital_nn_trigger_alt(
     double threshold,
@@ -275,15 +276,18 @@ public:
 
   int vcl128_digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr, bool loud = false);
 
   int vcl256_digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr, bool loud = false);
 
   int vcl512_digital_multiplicity_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
-    unsigned multiplicity_threshold, unsigned sample_0 = 0, bool loud = false);
+    unsigned multiplicity_threshold, unsigned sample_0 = 0,
+    WaveformProcessorTriggerMemoryBuffers* buffer = nullptr, bool loud = false);
 
   int vcl128_digital_nn_trigger_alt(double threshold,
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
@@ -303,6 +307,14 @@ public:
 private:
   void compute_pe_waveform_dft();
   void compute_el_waveform();
+
+#ifndef SWIG
+  template<typename VCLArchitecture> void vcl_fill_digital_trigger_buffer(
+    double threshold,
+    unsigned time_over_threshold_samples, unsigned coherence_time_samples,
+    WaveformProcessorTriggerMemoryBuffers* buffer);
+#endif // SWIG
+
   calin::math::rng::RNG* get_rng() {
     if(rng_ == nullptr) {
       rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "NSB and electronics noise generation");
