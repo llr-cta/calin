@@ -88,12 +88,31 @@ WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* c
     max_num_neighbours_ = std::max(max_num_neighbours_,
       unsigned(camera->channel(ichannel).neighbour_channel_indexes_size()));
   }
-  neighbour_map_ = new int[npixels_ * max_num_neighbours_];
-  std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbours_, -1);
+  if(max_num_neighbours_ > 0) {
+    neighbour_map_ = new int[npixels_ * max_num_neighbours_];
+    std::fill(neighbour_map_, neighbour_map_ + npixels_ * max_num_neighbours_, -1);
+    for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
+      for(int ineighbour=0; ineighbour<camera->channel(ichannel).neighbour_channel_indexes_size(); ++ineighbour) {
+        neighbour_map_[ichannel*max_num_neighbours_ + ineighbour] =
+          camera->channel(ichannel).neighbour_channel_indexes(ineighbour);
+      }
+    }
+  }
+
   for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
-    for(int ineighbour=0; ineighbour<camera->channel(ichannel).neighbour_channel_indexes_size(); ++ineighbour) {
-      neighbour_map_[ichannel*max_num_neighbours_ + ineighbour] =
-        camera->channel(ichannel).neighbour_channel_indexes(ineighbour);
+    max_num_trigger_patches_per_channel_ = std::max(max_num_trigger_patches_per_channel_,
+      unsigned(camera->channel(ichannel).trigger_patch_indexes_size()));
+  }
+  if(max_num_trigger_patches_per_channel_ > 0) {
+    trigger_patch_map_ = new int[npixels_ * max_num_trigger_patches_per_channel_];
+    std::fill(trigger_patch_map_, trigger_patch_map_ + npixels_ * max_num_trigger_patches_per_channel_, -1);
+    for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
+      for(int ipatch=0; ipatch<camera->channel(ichannel).trigger_patch_indexes_size(); ++ipatch) {
+        num_trigger_patches_ = std::max(num_trigger_patches_,
+          camera->channel(ichannel).trigger_patch_indexes(ipatch)+1);
+        trigger_patch_map_[ichannel*max_num_trigger_patches_per_channel_ + ipatch] =
+          camera->channel(ichannel).trigger_patch_indexes(ipatch);
+      }
     }
   }
 }
@@ -107,6 +126,7 @@ WaveformProcessor::~WaveformProcessor()
   fftw_free(el_waveform_dft_);
   fftw_free(el_waveform_);
   delete[] neighbour_map_;
+  delete[] trigger_patch_map_;
   if(adopt_rng_) {
     delete rng_;
   }
@@ -500,6 +520,12 @@ void WaveformProcessor::clear_pes()
   std::fill(pe_waveform_, pe_waveform_ + npixels_*trace_nsamples_, 0);
 }
 
+void WaveformProcessor::clear_el_waveform()
+{
+  el_waveform_valid_ = false;
+  std::fill(el_waveform_, el_waveform_ + npixels_*trace_nsamples_, 0);
+}
+
 int WaveformProcessor::digital_multiplicity_trigger(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
   unsigned multiplicity_threshold, unsigned sample_0, bool loud)
@@ -801,4 +827,54 @@ int WaveformProcessor::vcl512_digital_nn_trigger_alt(double threshold,
 {
   return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL512Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer);
+}
+
+void WaveformProcessor::generate_trigger_patch_sums(WaveformProcessor* output_waveforms,
+  double clip_hi, double clip_lo)
+{
+  if(trigger_patch_map_ == nullptr) {
+    throw std::runtime_error("generate_trigger_patch_sums : trigger patch map not defined");
+  }
+  if(num_trigger_patches_ != output_waveforms->npixels_) {
+    throw std::runtime_error("generate_trigger_patch_sums : output_waveforms must have " +
+      std::to_string(num_trigger_patches_) + " waveforms");
+  }
+  if(trace_nsamples_ != output_waveforms->trace_nsamples_) {
+    throw std::runtime_error("generate_trigger_patch_sums : output_waveforms must have " +
+      std::to_string(trace_nsamples_) + " samples");
+  }
+  compute_el_waveform();
+  output_waveforms->clear_el_waveform();
+
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
+      double x = std::max(std::min(el_waveform_[ipixel*trace_nsamples_ + isamp], clip_hi), clip_lo);
+      for(unsigned ipatch=0; ipatch<max_num_trigger_patches_per_channel_; ++ipatch) {
+        int patch_id = trigger_patch_map_[ipixel*max_num_trigger_patches_per_channel_ + ipatch];
+        if(patch_id >= 0) {
+          output_waveforms->el_waveform_[patch_id*trace_nsamples_ + isamp] += x;
+        }
+      }
+    }
+  }
+
+  output_waveforms->el_waveform_valid_ = true;
+}
+
+void WaveformProcessor::vcl128_generate_trigger_patch_sums(
+  WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
+{
+  vcl_generate_trigger_patch_sums<calin::util::vcl::VCL128Architecture>(output_waveforms, clip_hi, clip_lo);
+}
+
+void WaveformProcessor::vcl256_generate_trigger_patch_sums(
+  WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
+{
+  vcl_generate_trigger_patch_sums<calin::util::vcl::VCL256Architecture>(output_waveforms, clip_hi, clip_lo);
+}
+
+void WaveformProcessor::vcl512_generate_trigger_patch_sums(
+  WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
+{
+  vcl_generate_trigger_patch_sums<calin::util::vcl::VCL512Architecture>(output_waveforms, clip_hi, clip_lo);
 }

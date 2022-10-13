@@ -105,6 +105,11 @@ public:
     return new WaveformProcessorTriggerMemoryBuffers(npixels_,trace_nsamples_);
   }
 
+  unsigned npixels() const { return npixels_; }
+  double trace_sampling_ns() const { return trace_sampling_ns_; }
+  unsigned trace_nsamples() const { return trace_nsamples_; }
+  double trace_advance_time() const { return trace_advance_time_; }
+
   void load_pes_from_processor(
     calin::simulation::pe_processor::UnbinnedWaveformPEProcessor* pe_processor,
     unsigned iscope);
@@ -119,6 +124,7 @@ public:
   void convolve_impulse_response(const Eigen::VectorXd& impulse_response_dft, double pedestal = 0);
   void add_electronics_noise(const Eigen::VectorXd& noise_spectrum_amplitude, double scale = 1.0);
   void clear_pes();
+  void clear_el_waveform();
 
   Eigen::MatrixXd pe_waveform() const;
   Eigen::MatrixXd el_waveform();
@@ -137,6 +143,10 @@ public:
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned nn_threshold, unsigned sample_0 = 0,
     WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+
+  void generate_trigger_patch_sums(WaveformProcessor* output_waveforms,
+    double clip_hi = std::numeric_limits<double>::infinity(),
+    double clip_lo = -std::numeric_limits<double>::infinity());
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
@@ -191,6 +201,11 @@ public:
     unsigned time_over_threshold_samples, unsigned coherence_time_samples,
     unsigned nn_threshold, unsigned sample_0 = 0,
     WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
+
+  template<typename VCLArchitecture> void vcl_generate_trigger_patch_sums(
+    WaveformProcessor* output_waveforms,
+    double clip_hi = std::numeric_limits<double>::infinity(),
+    double clip_lo = -std::numeric_limits<double>::infinity());
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
@@ -304,6 +319,21 @@ public:
     unsigned multiplicity_threshold, unsigned sample_0 = 0,
     WaveformProcessorTriggerMemoryBuffers* buffer = nullptr);
 
+  void vcl128_generate_trigger_patch_sums(
+    WaveformProcessor* output_waveforms,
+    double clip_hi = std::numeric_limits<double>::infinity(),
+    double clip_lo = -std::numeric_limits<double>::infinity());
+
+  void vcl256_generate_trigger_patch_sums(
+    WaveformProcessor* output_waveforms,
+    double clip_hi = std::numeric_limits<double>::infinity(),
+    double clip_lo = -std::numeric_limits<double>::infinity());
+
+  void vcl512_generate_trigger_patch_sums(
+    WaveformProcessor* output_waveforms,
+    double clip_hi = std::numeric_limits<double>::infinity(),
+    double clip_lo = -std::numeric_limits<double>::infinity());
+
 private:
   void compute_pe_waveform_dft();
   void compute_el_waveform();
@@ -344,6 +374,10 @@ private:
 
   int* neighbour_map_ = nullptr;
   unsigned max_num_neighbours_ = 0;
+
+  int* trigger_patch_map_ = nullptr;
+  unsigned max_num_trigger_patches_per_channel_ = 0;
+  unsigned num_trigger_patches_ = 0;
 };
 
 #include "waveform_processor_vcl_function_implemntations.hpp"
