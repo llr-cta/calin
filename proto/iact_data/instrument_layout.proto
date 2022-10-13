@@ -110,6 +110,8 @@ message ChannelLayout {
       "This forms a commutative relationship between the two channels." ];
   bool is_boundary_pixel                                   = 21 [
     (CFO).desc = "True if channel corresponds to pixel on edge of camera." ];
+  repeated uint32 trigger_patch_indexes                    = 22 [
+    (CFO).desc = "Indexes of the patches to which this channel belongs." ];
 
   repeated uint32 outline_polygon_vertex_index             = 30 [
     (CFO).desc = "Index of end of pixel polygon lines." ];
@@ -163,6 +165,23 @@ message ModuleLayout {
       "positive Y up. If this channel is not connected to a real pixel "
       "then the value should be Nan.",
     (CFO).units = "cm" ];
+  repeated uint32 outline_polygon_vertex_index             = 30 [
+    (CFO).desc = "Index of end of module polygon lines." ];
+  repeated double outline_polygon_vertex_x                 = 31 [
+    (CFO).desc = "X coordinates of an open polygon that represents the "
+      "outline of the module.",
+    (CFO).units = "cm" ];
+  repeated double outline_polygon_vertex_y                 = 32 [
+    (CFO).desc = "Y coordinates of an open polygon that represents the "
+      "outline of the module.",
+    (CFO).units = "cm" ];
+};
+
+message TriggerPatchLayout {
+  uint32 patch_index                                       = 1 [
+    (CFO).desc = "Sequential index of the trigger patch in camera." ];
+  repeated int32 channels_in_patch                         = 10 [
+    (CFO).desc = "List of channel indexes that belong to this trigger patch." ];
   repeated uint32 outline_polygon_vertex_index             = 30 [
     (CFO).desc = "Index of end of module polygon lines." ];
   repeated double outline_polygon_vertex_x                 = 31 [
@@ -264,31 +283,34 @@ message CameraLayout {
     (CFO).desc = "Index into module array for each of the modules in spiral "
       "order." ];
 
-  ADCGains adc_gains                                       = 40;
-  int32 adc_bits                                           = 41;
-  bool can_read_waveforms                                  = 42;
-  bool can_read_charges                                    = 43;
-  bool can_read_peak_sample                                = 44;
-  bool can_read_trigger_image                              = 45;
-  int64 first_event_number                                 = 46;
+  repeated TriggerPatchLayout trigger_patches              = 40 [
+    (CFO).desc = "Layout of each trigger patch." ];
 
-  repeated string camera_clock_name                        = 50;
-  repeated double camera_clock_frequency                   = 51 [
+  ADCGains adc_gains                                       = 50;
+  int32 adc_bits                                           = 51;
+  bool can_read_waveforms                                  = 52;
+  bool can_read_charges                                    = 53;
+  bool can_read_peak_sample                                = 54;
+  bool can_read_trigger_image                              = 55;
+  int64 first_event_number                                 = 56;
+
+  repeated string camera_clock_name                        = 60;
+  repeated double camera_clock_frequency                   = 61 [
     (CFO).desc = "Frequency of camera clock.", (CFO).units = "GHz" ];
 
-  repeated string module_clock_name                        = 52;
-  repeated double module_clock_frequency                   = 53 [
+  repeated string module_clock_name                        = 62;
+  repeated double module_clock_frequency                   = 63 [
     (CFO).desc = "Frequency of module clock.", (CFO).units = "GHz" ];
 
-  repeated string module_counter_name                      = 54;
+  repeated string module_counter_name                      = 64;
 
-  repeated uint32 outline_polygon_vertex_index             = 60 [
+  repeated uint32 outline_polygon_vertex_index             = 70 [
     (CFO).desc = "Index of end of camera polygon lines." ];
-  repeated double outline_polygon_vertex_x                 = 61 [
+  repeated double outline_polygon_vertex_x                 = 71 [
     (CFO).desc = "X coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];
-  repeated double outline_polygon_vertex_y                 = 62 [
+  repeated double outline_polygon_vertex_y                 = 72 [
     (CFO).desc = "Y coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];
