@@ -782,8 +782,12 @@ int WaveformProcessor::vcl128_digital_multiplicity_trigger_alt(double threshold,
   unsigned multiplicity_threshold, unsigned sample_0,
   WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
+#if MAX_VECTOR_SIZE >= 128
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL128Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
+#else
+  throw std::logic_error("vcl128_digital_multiplicity_trigger_alt : 128 bit vectors not available at compile time");
+#endif
 }
 
 int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
@@ -791,8 +795,12 @@ int WaveformProcessor::vcl256_digital_multiplicity_trigger_alt(double threshold,
   unsigned multiplicity_threshold, unsigned sample_0,
   WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
+#if MAX_VECTOR_SIZE >= 256
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
+#else
+  throw std::logic_error("vcl256_digital_multiplicity_trigger_alt : 256 bit vectors not available at compile time");
+#endif
 }
 
 int WaveformProcessor::vcl512_digital_multiplicity_trigger_alt(double threshold,
@@ -800,32 +808,48 @@ int WaveformProcessor::vcl512_digital_multiplicity_trigger_alt(double threshold,
   unsigned multiplicity_threshold, unsigned sample_0,
   WaveformProcessorTriggerMemoryBuffers* buffer, bool loud)
 {
+#if MAX_VECTOR_SIZE >= 512
   return vcl_digital_multiplicity_trigger_alt<calin::util::vcl::VCL512Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer, loud);
+#else
+  throw std::logic_error("vcl512_digital_multiplicity_trigger_alt : 512 bit vectors not available at compile time");
+#endif
 }
 
 int WaveformProcessor::vcl128_digital_nn_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
   unsigned multiplicity_threshold, unsigned sample_0, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
+#if MAX_VECTOR_SIZE >= 128
   return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL128Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer);
+#else
+  throw std::logic_error("vcl128_digital_nn_trigger_alt : 128 bit vectors not available at compile time");
+#endif
 }
 
 int WaveformProcessor::vcl256_digital_nn_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
   unsigned multiplicity_threshold, unsigned sample_0, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
+#if MAX_VECTOR_SIZE >= 256
   return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL256Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer);
+#else
+  throw std::logic_error("vcl256_digital_nn_trigger_alt : 256 bit vectors not available at compile time");
+#endif
 }
 
 int WaveformProcessor::vcl512_digital_nn_trigger_alt(double threshold,
   unsigned time_over_threshold_samples, unsigned coherence_time_samples,
   unsigned multiplicity_threshold, unsigned sample_0, WaveformProcessorTriggerMemoryBuffers* buffer)
 {
+#if MAX_VECTOR_SIZE >= 512
   return vcl_digital_nn_trigger_alt<calin::util::vcl::VCL512Architecture>(threshold,
     time_over_threshold_samples, coherence_time_samples, multiplicity_threshold, sample_0, buffer);
+#else
+  throw std::logic_error("vcl512_digital_nn_trigger_alt : 512 bit vectors not available at compile time");
+#endif
 }
 
 void WaveformProcessor::generate_trigger_patch_sums(WaveformProcessor* output_waveforms,
@@ -863,19 +887,31 @@ void WaveformProcessor::generate_trigger_patch_sums(WaveformProcessor* output_wa
 void WaveformProcessor::vcl128_generate_trigger_patch_sums(
   WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
 {
+#if MAX_VECTOR_SIZE >= 128
   vcl_generate_trigger_patch_sums<calin::util::vcl::VCL128Architecture>(output_waveforms, clip_hi, clip_lo);
+#else
+  throw std::logic_error("vcl128_generate_trigger_patch_sums : 128 bit vectors not available at compile time");
+#endif
 }
 
 void WaveformProcessor::vcl256_generate_trigger_patch_sums(
   WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
 {
+#if MAX_VECTOR_SIZE >= 256
   vcl_generate_trigger_patch_sums<calin::util::vcl::VCL256Architecture>(output_waveforms, clip_hi, clip_lo);
+#else
+  throw std::logic_error("vcl256_generate_trigger_patch_sums : 256 bit vectors not available at compile time");
+#endif
 }
 
 void WaveformProcessor::vcl512_generate_trigger_patch_sums(
   WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
 {
+#if MAX_VECTOR_SIZE >= 512
   vcl_generate_trigger_patch_sums<calin::util::vcl::VCL512Architecture>(output_waveforms, clip_hi, clip_lo);
+#else
+  throw std::logic_error("vcl512_generate_trigger_patch_sums : 512 bit vectors not available at compile time");
+#endif
 }
 
 void WaveformProcessor::downsample_waveforms_int(int* buffer,
@@ -888,7 +924,7 @@ void WaveformProcessor::downsample_waveforms_int(int* buffer,
       unsigned sample_index = (isample*dt_sample+sample_0)%trace_nsamples_;
       double sample = el_waveform_[ipixel*trace_nsamples_ + sample_index] + pedestal;
       if(noise_rms > 0) {
-        sample += rng_->uniform();
+        sample += noise_rms * get_rng()->normal();
       }
       int int_sample = std::round(sample);
       int_sample = std::max(std::min(int_sample, clip_hi), clip_lo);
