@@ -36,6 +36,74 @@ using namespace calin::util::log;
 
 using namespace calin::simulation::waveform_processor;
 
+WaveformProcessorDownsampledNoiseSpectrum::
+WaveformProcessorDownsampledNoiseSpectrum(const double* noise_spectrum,
+    unsigned npixels, unsigned nsamples, unsigned fftw_flags):
+  npixels_(npixels), nsamples_(nsamples),
+  noise_spectrum_(fftw_alloc_real(nsamples)),
+  noise_dft_buffer_(fftw_alloc_real(npixels * nsamples)),
+  noise_buffer_(fftw_alloc_real(npixels * nsamples))
+{
+  int rank = 1;
+  int n[] = { static_cast<int>(nsamples_) };
+  int howmany = npixels_;
+  double* in = noise_dft_buffer_;
+  int* inembed = n;
+  int istride = 1;
+  int idist = nsamples_;
+  double* out = noise_buffer_;
+  int* onembed = n;
+  int ostride = 1;
+  int odist = nsamples_;
+  fftw_r2r_kind kind[] = { FFTW_HC2R };
+  rev_plan_ = fftw_plan_many_r2r(rank, n, howmany,
+    in, inembed, istride, idist, out, onembed, ostride, odist, kind, fftw_flags);
+  std::copy(noise_spectrum, noise_spectrum+nsamples, noise_spectrum_);
+}
+
+WaveformProcessorDownsampledNoiseSpectrum::
+WaveformProcessorDownsampledNoiseSpectrum(const Eigen::VectorXd& noise_spectrum,
+    unsigned npixels, unsigned fftw_flags):
+  WaveformProcessorDownsampledNoiseSpectrum(noise_spectrum.data(), npixels,
+    noise_spectrum.size(), fftw_flags)
+{
+  // nothing to see here
+}
+
+WaveformProcessorDownsampledNoiseSpectrum::
+~WaveformProcessorDownsampledNoiseSpectrum()
+{
+  fftw_destroy_plan(rev_plan_);
+  fftw_free(noise_spectrum_);
+  fftw_free(noise_dft_buffer_);
+  fftw_free(noise_buffer_);
+}
+
+void WaveformProcessorDownsampledNoiseSpectrum::
+generate_noise_in_buffer(calin::math::rng::RNG* rng, double* noise_buffer)
+{
+  for(unsigned ipixel=0;ipixel<npixels_;++ipixel) {
+    for(unsigned isample=0;isample<nsamples_;++isample) {
+      noise_dft_buffer_[ipixel*nsamples_ + isample] =
+        rng->normal()*noise_spectrum_[isample];
+    }
+  }
+  if(fftw_alignment_of(noise_buffer_) == fftw_alignment_of(noise_buffer)) {
+    fftw_execute_r2r(rev_plan_, noise_dft_buffer_, noise_buffer);
+  } else {
+    fftw_execute(rev_plan_);
+    std::copy(noise_buffer_, noise_buffer_+npixels_*nsamples_, noise_buffer);
+  }
+}
+
+Eigen::MatrixXd WaveformProcessorDownsampledNoiseSpectrum::
+generate_noise_in_buffer(calin::math::rng::RNG* rng)
+{
+  Eigen::MatrixXd samples(nsamples_, npixels_);
+  generate_noise_in_buffer(rng, samples.data());
+  return samples;
+}
+
 WaveformProcessor::
 WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsamples,
     double trace_advance_time, calin::math::rng::RNG* rng, unsigned fftw_flags, bool adopt_rng):

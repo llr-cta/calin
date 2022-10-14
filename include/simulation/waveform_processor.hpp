@@ -89,6 +89,26 @@ public:
   }
 };
 
+class WaveformProcessorDownsampledNoiseSpectrum
+{
+public:
+  WaveformProcessorDownsampledNoiseSpectrum(const double* noise_spectrum,
+      unsigned npixels, unsigned nsamples, unsigned fftw_flags = 0);
+  WaveformProcessorDownsampledNoiseSpectrum(const Eigen::VectorXd& noise_spectrum,
+      unsigned npixels, unsigned fftw_flags = 0);
+  ~WaveformProcessorDownsampledNoiseSpectrum();
+  void generate_noise_in_buffer(calin::math::rng::RNG* rng, double* noise_buffer);
+  Eigen::MatrixXd generate_noise_in_buffer(calin::math::rng::RNG* rng);
+
+private:
+  unsigned npixels_;
+  unsigned nsamples_;
+  double* noise_spectrum_ = nullptr;
+  double* noise_dft_buffer_ = nullptr;
+  double* noise_buffer_ = nullptr;
+  fftw_plan rev_plan_;
+};
+
 class WaveformProcessor
 {
 public:
