@@ -376,7 +376,7 @@ private:
   unsigned max_num_neighbours_ = 0;
 
   int* trigger_patch_map_ = nullptr;
-  unsigned max_num_trigger_patches_per_channel_ = 0;
+  unsigned max_num_channels_per_trigger_patch = 0;
   unsigned num_trigger_patches_ = 0;
 };
 

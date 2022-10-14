@@ -696,53 +696,46 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_generate_trigger_
       std::to_string(4*VCLArchitecture::num_double));
   }
   compute_el_waveform();
-  output_waveforms->clear_el_waveform();
 
-  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
-    double*__restrict__ pixel_waveform = el_waveform_ + ipixel*trace_nsamples_;
-    for(int isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
-      typename VCLArchitecture::double_vt samples_a;
-      samples_a.load(pixel_waveform + isamp);
-      samples_a = vcl::max(vcl::min(samples_a, clip_hi), clip_lo);
+  for(unsigned ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
+    double*__restrict__ patch_waveform = output_waveforms->el_waveform_ + ipatch*trace_nsamples_;
+    for(unsigned isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt patch_samples_a = 0;
+      typename VCLArchitecture::double_vt patch_samples_b = 0;
+      typename VCLArchitecture::double_vt patch_samples_c = 0;
+      typename VCLArchitecture::double_vt patch_samples_d = 0;
 
-      typename VCLArchitecture::double_vt samples_b;
-      samples_b.load(pixel_waveform + isamp + VCLArchitecture::num_double);
-      samples_b = vcl::max(vcl::min(samples_b, clip_hi), clip_lo);
+      for(unsigned ipatchchannel=0; ipatchchannel<max_num_channels_per_trigger_patch; ++ipatchchannel) {
+        int ichannel = trigger_patch_map_[ipatch*max_num_channels_per_trigger_patch + ipatchchannel];
+        if(ichannel >= 0) {
+          double*__restrict__ pixel_waveform = el_waveform_ + ichannel*trace_nsamples_;
 
-      typename VCLArchitecture::double_vt samples_c;
-      samples_c.load(pixel_waveform + isamp + 2*VCLArchitecture::num_double);
-      samples_c = vcl::max(vcl::min(samples_c, clip_hi), clip_lo);
+          typename VCLArchitecture::double_vt samples_a;
+          samples_a.load(pixel_waveform + isamp);
+          samples_a = vcl::max(vcl::min(samples_a, clip_hi), clip_lo);
+          patch_samples_a += samples_a;
 
-      typename VCLArchitecture::double_vt samples_d;
-      samples_d.load(pixel_waveform + isamp + 3*VCLArchitecture::num_double);
-      samples_d = vcl::max(vcl::min(samples_d, clip_hi), clip_lo);
+          typename VCLArchitecture::double_vt samples_b;
+          samples_b.load(pixel_waveform + isamp + VCLArchitecture::num_double);
+          samples_b = vcl::max(vcl::min(samples_b, clip_hi), clip_lo);
+          patch_samples_b += samples_b;
 
-      for(unsigned ipatch=0; ipatch<max_num_trigger_patches_per_channel_; ++ipatch) {
-        int patch_id = trigger_patch_map_[ipixel*max_num_trigger_patches_per_channel_ + ipatch];
-        if(patch_id >= 0) {
-          double*__restrict__ patch_waveform = output_waveforms->el_waveform_ + patch_id*trace_nsamples_;
+          typename VCLArchitecture::double_vt samples_c;
+          samples_c.load(pixel_waveform + isamp + 2*VCLArchitecture::num_double);
+          samples_c = vcl::max(vcl::min(samples_c, clip_hi), clip_lo);
+          patch_samples_c += samples_c;
 
-          typename VCLArchitecture::double_vt op_samples_a;
-          op_samples_a.load(patch_waveform + isamp);
-          op_samples_a += samples_a;
-          op_samples_a.store(patch_waveform + isamp);
-
-          typename VCLArchitecture::double_vt op_samples_b;
-          op_samples_b.load(patch_waveform + isamp + VCLArchitecture::num_double);
-          op_samples_b += samples_b;
-          op_samples_b.store(patch_waveform + isamp + VCLArchitecture::num_double);
-
-          typename VCLArchitecture::double_vt op_samples_c;
-          op_samples_c.load(patch_waveform + isamp + 2*VCLArchitecture::num_double);
-          op_samples_c += samples_c;
-          op_samples_c.store(patch_waveform + isamp + 2*VCLArchitecture::num_double);
-
-          typename VCLArchitecture::double_vt op_samples_d;
-          op_samples_d.load(patch_waveform + isamp + 3*VCLArchitecture::num_double);
-          op_samples_d += samples_d;
-          op_samples_d.store(patch_waveform + isamp + 3*VCLArchitecture::num_double);
+          typename VCLArchitecture::double_vt samples_d;
+          samples_d.load(pixel_waveform + isamp + 3*VCLArchitecture::num_double);
+          samples_d = vcl::max(vcl::min(samples_d, clip_hi), clip_lo);
+          patch_samples_d += samples_d;
         }
       }
+
+      patch_samples_a.store(patch_waveform + isamp);
+      patch_samples_b.store(patch_waveform + isamp + VCLArchitecture::num_double);
+      patch_samples_c.store(patch_waveform + isamp + 2*VCLArchitecture::num_double);
+      patch_samples_d.store(patch_waveform + isamp + 3*VCLArchitecture::num_double);
     }
   }
 

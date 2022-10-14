@@ -99,19 +99,18 @@ WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* c
     }
   }
 
-  for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
-    max_num_trigger_patches_per_channel_ = std::max(max_num_trigger_patches_per_channel_,
-      unsigned(camera->channel(ichannel).trigger_patch_indexes_size()));
+  num_trigger_patches_ = camera->trigger_patches_size();
+  for(int ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
+    max_num_channels_per_trigger_patch = std::max(max_num_channels_per_trigger_patch,
+      unsigned(camera->trigger_patches(ipatch).channels_in_patch_size()));
   }
-  if(max_num_trigger_patches_per_channel_ > 0) {
-    trigger_patch_map_ = new int[npixels_ * max_num_trigger_patches_per_channel_];
-    std::fill(trigger_patch_map_, trigger_patch_map_ + npixels_ * max_num_trigger_patches_per_channel_, -1);
-    for(int ichannel=0; ichannel<camera->channel_size(); ++ichannel) {
-      for(int ipatch=0; ipatch<camera->channel(ichannel).trigger_patch_indexes_size(); ++ipatch) {
-        num_trigger_patches_ = std::max(num_trigger_patches_,
-          camera->channel(ichannel).trigger_patch_indexes(ipatch)+1);
-        trigger_patch_map_[ichannel*max_num_trigger_patches_per_channel_ + ipatch] =
-          camera->channel(ichannel).trigger_patch_indexes(ipatch);
+  if(num_trigger_patches_ > 0 and max_num_channels_per_trigger_patch > 0) {
+    trigger_patch_map_ = new int[num_trigger_patches_ * max_num_channels_per_trigger_patch];
+    std::fill(trigger_patch_map_, trigger_patch_map_ + num_trigger_patches_ * max_num_channels_per_trigger_patch, -1);
+    for(int ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
+      for(int ichannel=0; ichannel<camera->trigger_patches(ipatch).channels_in_patch_size(); ++ichannel) {
+        trigger_patch_map_[ipatch*max_num_channels_per_trigger_patch + ichannel] =
+          camera->trigger_patches(ipatch).channels_in_patch(ichannel);
       }
     }
   }
@@ -844,17 +843,17 @@ void WaveformProcessor::generate_trigger_patch_sums(WaveformProcessor* output_wa
       std::to_string(trace_nsamples_) + " samples");
   }
   compute_el_waveform();
-  output_waveforms->clear_el_waveform();
 
-  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+  for(unsigned ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
     for(unsigned isamp=0; isamp<trace_nsamples_; ++isamp) {
-      double x = std::max(std::min(el_waveform_[ipixel*trace_nsamples_ + isamp], clip_hi), clip_lo);
-      for(unsigned ipatch=0; ipatch<max_num_trigger_patches_per_channel_; ++ipatch) {
-        int patch_id = trigger_patch_map_[ipixel*max_num_trigger_patches_per_channel_ + ipatch];
-        if(patch_id >= 0) {
-          output_waveforms->el_waveform_[patch_id*trace_nsamples_ + isamp] += x;
+      double x = 0;
+      for(unsigned ipatchchannel=0; ipatchchannel<max_num_channels_per_trigger_patch; ++ipatchchannel) {
+        int ichannel = trigger_patch_map_[ipatch*max_num_channels_per_trigger_patch + ipatchchannel];
+        if(ichannel >= 0) {
+          x += std::min(std::max(el_waveform_[ichannel*trace_nsamples_ + isamp], clip_lo),clip_hi);
         }
       }
+      output_waveforms->el_waveform_[ipatch*trace_nsamples_ + isamp] += x;
     }
   }
 
