@@ -42,7 +42,7 @@ WaveformProcessor(unsigned npixels, double trace_sampling_ns, unsigned trace_nsa
   npixels_(npixels), trace_sampling_ns_(trace_sampling_ns),
   trace_sampling_inv_(1.0/trace_sampling_ns),
   trace_nsamples_(trace_nsamples), trace_advance_time_(trace_advance_time),
-  rng_(rng), adopt_rng_(rng==nullptr ? true : adopt_rng),
+  rng_(rng), adopt_rng_(rng==nullptr ? true : adopt_rng), fftw_flags_(fftw_flags),
   pe_waveform_(fftw_alloc_real(npixels * trace_nsamples)),
   pe_waveform_dft_(fftw_alloc_real(npixels * trace_nsamples)),
   el_waveform_dft_(fftw_alloc_real(npixels * trace_nsamples)),
@@ -876,4 +876,33 @@ void WaveformProcessor::vcl512_generate_trigger_patch_sums(
   WaveformProcessor* output_waveforms, double clip_hi, double clip_lo)
 {
   vcl_generate_trigger_patch_sums<calin::util::vcl::VCL512Architecture>(output_waveforms, clip_hi, clip_lo);
+}
+
+void WaveformProcessor::downsample_waveforms_int(int* buffer,
+  unsigned nsample, unsigned dt_sample, unsigned sample_0,
+  double pedestal, int clip_hi, int clip_lo, double noise_rms)
+{
+  compute_el_waveform();
+  for(unsigned ipixel=0; ipixel<npixels_; ++ipixel) {
+    for(unsigned isample=0; isample<nsample; ++isample) {
+      unsigned sample_index = (isample*dt_sample+sample_0)%trace_nsamples_;
+      double sample = el_waveform_[ipixel*trace_nsamples_ + sample_index] + pedestal;
+      if(noise_rms > 0) {
+        sample += rng_->uniform();
+      }
+      int int_sample = std::round(sample);
+      int_sample = std::max(std::min(int_sample, clip_hi), clip_lo);
+      buffer[ipixel*nsample + isample] = int_sample;
+    }
+  }
+}
+
+Eigen::MatrixXi WaveformProcessor::downsample_waveforms_int(
+  unsigned nsample, unsigned dt_sample, unsigned sample_0,
+  double pedestal, int clip_hi, int clip_lo, double noise_rms)
+{
+  Eigen::MatrixXi samples(nsample, npixels_);
+  downsample_waveforms_int(samples.data(), nsample, dt_sample, sample_0, pedestal,
+    clip_hi, clip_lo, noise_rms);
+  return samples;
 }

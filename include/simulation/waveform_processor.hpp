@@ -105,6 +105,14 @@ public:
     return new WaveformProcessorTriggerMemoryBuffers(npixels_,trace_nsamples_);
   }
 
+  WaveformProcessor* new_trigger_patch_waveform_processor() const {
+    if(num_trigger_patches_) {
+      return new WaveformProcessor(num_trigger_patches_, trace_sampling_ns_,
+        trace_nsamples_, trace_advance_time_, rng_, fftw_flags_, false);
+    }
+    return nullptr;
+  }
+
   unsigned npixels() const { return npixels_; }
   double trace_sampling_ns() const { return trace_sampling_ns_; }
   unsigned trace_nsamples() const { return trace_nsamples_; }
@@ -150,6 +158,14 @@ public:
 
   double wavewform_t0() { return wavewform_t0_; }
   double ac_coupling_constant() { return ac_coupling_constant_; }
+
+  void downsample_waveforms_int(int* buffer,
+    unsigned nsample, unsigned dt_sample, unsigned sample_0,
+    double pedestal, int clip_hi, int clip_lo, double noise_rms = 0);
+
+  Eigen::MatrixXi downsample_waveforms_int(
+    unsigned nsample, unsigned dt_sample, unsigned sample_0,
+    double pedestal, int clip_hi, int clip_lo, double noise_rms = 0);
 
 #ifndef SWIG
   template<typename VCLArchitecture> void vcl_add_nsb(
@@ -359,6 +375,7 @@ private:
   double trace_advance_time_;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_;
+  unsigned fftw_flags_ = 0;
 
   double wavewform_t0_ = std::numeric_limits<double>::quiet_NaN();
   double* pe_waveform_ = nullptr;

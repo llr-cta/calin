@@ -44,4 +44,5 @@
 %import "simulation/ray_processor.i"
 
 %newobject new_trigger_memory_buffers;
+%newobject new_trigger_patch_waveform_processor;
 %include "simulation/waveform_processor.hpp"
