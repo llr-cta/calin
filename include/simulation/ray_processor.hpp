@@ -42,7 +42,7 @@ struct RayProcessorDetectorSphere
   // Position of sphere around detector through which incoming ray must mast
   // if it is to have any chance of being detected
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius = 0;         // Radius of sphere  [cm^2]
+  double radius = 0;         // Radius of sphere [cm]
   unsigned iobs = 0;         // Observation layer associated with this detector
 
   // Optional restriction on direction that incoming ray must have if it is to
