@@ -50,3 +50,7 @@
 %template (DaviesCottonVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
 %template (DaviesCottonVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
 %template (DaviesCottonVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
+
+%template (TrivialVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
+%template (TrivialVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
+%template (TrivialVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
