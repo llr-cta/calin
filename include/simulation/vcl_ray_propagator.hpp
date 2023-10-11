@@ -235,7 +235,7 @@ public:
     }
   }
 
-  void add_telecope(const Eigen::Vector3d& r0, double radius, unsigned iobs, 
+  void add_telescope(const Eigen::Vector3d& r0, double radius, unsigned iobs, 
       double focal_length = 0, double field_of_view_radius = M_PI/2) {
     TelescopeDetails* scope = new TelescopeDetails;
     scope->r0                   = r0;
