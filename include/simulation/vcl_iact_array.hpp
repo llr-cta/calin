@@ -289,7 +289,9 @@ public:
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
-  TrivialVCLFocalPlaneRayPropagator* add_trivial_propagator(PEProcessor* pe_processor,
+  TrivialVCLFocalPlaneRayPropagator* add_trivial_propagator(
+    const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
+    double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
     const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
@@ -573,13 +575,23 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
 
 template<typename VCLArchitecture>
 calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<VCLArchitecture>*
-VCLIACTArray<VCLArchitecture>::add_trivial_propagator(PEProcessor* pe_processor,
+VCLIACTArray<VCLArchitecture>::add_trivial_propagator(
+  const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
+  double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
   const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
   const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
   bool adopt_pe_processor, bool adopt_pe_generator)
 {
+  if(x.size() != y.size() or x.size() != z.size()) {
+    throw std::runtime_error("Number of telescope x, y and z coordinates must be equal");
+  }
   auto* propagator = new calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<VCLArchitecture>(
     this->rng_, ref_index_, /* adopt_rng= */ false);
+  for(unsigned iscope=0; iscope<x.size(); ++iscope) {
+    Eigen::Vector3d r0;
+    r0 << x[iscope], y[iscope], z[iscope];
+    propagator->add_telescope(r0, radius, config_.observation_level(), focal_length, field_of_view_radius);
+  }
 
   auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
     &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
