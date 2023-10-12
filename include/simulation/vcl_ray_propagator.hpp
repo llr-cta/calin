@@ -202,7 +202,7 @@ private:
 #endif
 };
 
-template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) TrivialVCLFocalPlaneRayPropagator:
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) PerfectOpticsVCLFocalPlaneRayPropagator:
   public VCLFocalPlaneRayPropagator<VCLArchitecture>
 {
 public:
@@ -214,22 +214,18 @@ public:
   using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
   using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
 
-  using RayTracer   = calin::simulation::vcl_raytracer::VCLScopeRayTracer<Real_vt>;
   using TraceInfo   = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<Real_vt>;
-  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
 #endif // not defined SWIG
 
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
 
-  TrivialVCLFocalPlaneRayPropagator(ArchRNG* rng = nullptr, double ref_index = 1.0, bool adopt_rng = false):
-    rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
-      rng==nullptr ? true : adopt_rng)),
+  PerfectOpticsVCLFocalPlaneRayPropagator(double ref_index = 1.0):
     ref_index_(ref_index)
   {
     // nothing to see here
   }
 
-  virtual ~TrivialVCLFocalPlaneRayPropagator() {
+  virtual ~PerfectOpticsVCLFocalPlaneRayPropagator() {
     for(auto* scope : scopes_) {
       delete scope;
     }
@@ -346,9 +342,114 @@ private:
     double focal_length;           // Focal length [cm]
   };
 
-  RealRNG* rng_ = nullptr;
   double ref_index_ = 1.0;
   std::vector<TelescopeDetails*> scopes_;
+#endif
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) AllSkyVCLFocalPlaneRayPropagator:
+  public VCLFocalPlaneRayPropagator<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+
+  using TraceInfo   = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<Real_vt>;
+#endif // not defined SWIG
+
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  AllSkyVCLFocalPlaneRayPropagator(unsigned observation_level, 
+      const Eigen::VectorXd& sphere_center, double sphere_radius, double field_of_view_radius = M_PI/2,
+      double ref_index = 1.0):
+    observation_level_(observation_level), sphere_center_(sphere_center), 
+    sphere_radius_(sphere_radius), sphere_radius_squared_(sphere_radius * sphere_radius),
+    sphere_field_of_view_radius_(field_of_view_radius), 
+    sphere_field_of_view_uycut_(-std::cos(field_of_view_radius)),
+    global_to_fp_(Eigen::Matrix3d::Identity()), ref_index_(ref_index)
+  {
+    // nothing to see here
+  }
+
+  virtual ~AllSkyVCLFocalPlaneRayPropagator() {
+    // nothing to see here
+  }
+
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
+    std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> spheres;
+    spheres.emplace_back(sphere_center_, sphere_radius_, 
+      global_to_fp_.transpose() * Eigen::Vector3d::UnitY(), M_PI/2, observation_level_);
+    return spheres;
+  }
+
+  void start_propagating() final {
+    // nothing to see here
+  }
+
+  void point_telescope_az_el_phi_deg(unsigned iscope,
+      double az_deg, double el_deg, double phi_deg) final {
+    if(iscope >= 1) {
+      throw std::out_of_range("Telescope number out of range");
+    }
+    global_to_fp_ = 
+      Eigen::AngleAxisd(phi_deg*M_PI/180.0, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(-el_deg*M_PI/180.0, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(az_deg*M_PI/180.0, Eigen::Vector3d::UnitZ());
+  }
+
+#ifndef SWIG
+  double_bvt propagate_rays_to_focal_plane(
+      unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
+      VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) final {
+    if(scope_id >= 1) {
+      throw std::out_of_range("Telescope number out of range");
+    }
+    ray.translate_origin(sphere_center_.template cast<double_vt>());
+    ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, /* d= */ sphere_center_.z(), 
+      /* time_reversal_ok = */ false, ref_index_);
+    ray.rotate(global_to_fp_.template cast<double_vt>());
+    ray_mask &= ray.x()*ray.x() + ray.z()*ray.z() < sphere_radius_squared_;
+    ray_mask &= ray.uy() <= sphere_field_of_view_uycut_;
+    TraceInfo info;
+    fp_parameters.fplane_x       = select(ray_mask, x, 0);
+    fp_parameters.fplane_y       = select(ray_mask, y, 0); // ** UNUSED **
+    fp_parameters.fplane_z       = select(ray_mask, z, 0);
+    fp_parameters.fplane_ux      = select(ray_mask, ray.ux(), 0);
+    fp_parameters.fplane_uy      = select(ray_mask, ray.uy(), 0); // ** UNUSED **
+    fp_parameters.fplane_uz      = select(ray_mask, ray.uz(), 0);
+    fp_parameters.fplane_t       = select(ray_mask, ray.time(), 0);
+    fp_parameters.pixel_id       = 0;
+    fp_parameters.detection_prob = 1.0;
+    return ray_mask;
+  }
+#endif
+
+  void finish_propagating() final {
+    // nothing to see here
+  }
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const final {
+    std::ostringstream stream;
+    stream << indent0 << "All-sky detector.\n";
+    return stream.str();
+  }
+
+#ifndef SWIG
+private:
+  unsigned observation_level_;          // Observation layer associated with this detector
+  Eigen::Vector3d sphere_center_;       // Center of detector sphere [cm]
+  double sphere_radius_;                // Radius of sphere [cm]
+  double sphere_radius_squared_;        // Squared radius of sphere [cm^2]
+  double sphere_field_of_view_radius_;  // Field of view of detector [radians]
+  double sphere_field_of_view_uycut_;   // Value of cos(uy) that coresponds to FoV radius
+  Eigen::Matrix3d global_to_fp_;        // Rotation matrix from global to focal plane
+
+  double ref_index_ = 1.0;
 #endif
 };
 

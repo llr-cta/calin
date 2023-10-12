@@ -250,7 +250,8 @@ public:
 
   CALIN_TYPEALIAS(FocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
-  CALIN_TYPEALIAS(TrivialVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<VCLArchitecture>);
+  CALIN_TYPEALIAS(PerfectOpticsVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<VCLArchitecture>);
+  CALIN_TYPEALIAS(AllSkyVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>);
 
   VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
@@ -289,9 +290,15 @@ public:
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
-  TrivialVCLFocalPlaneRayPropagator* add_trivial_propagator(
+  PerfectOpticsVCLFocalPlaneRayPropagator* add_perfect_optics_propagator(
     const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
     double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
+    bool adopt_pe_processor = false, bool adopt_pe_generator = false);
+
+  AllSkyVCLFocalPlaneRayPropagator* add_all_sky_propagator(
+    Eigen::VectorXd& r0, double radius, PEProcessor* pe_processor,
     const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
@@ -574,8 +581,8 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
 }
 
 template<typename VCLArchitecture>
-calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<VCLArchitecture>*
-VCLIACTArray<VCLArchitecture>::add_trivial_propagator(
+calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
   const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
   double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
   const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
@@ -585,8 +592,8 @@ VCLIACTArray<VCLArchitecture>::add_trivial_propagator(
   if(x.size() != y.size() or x.size() != z.size()) {
     throw std::runtime_error("Number of telescope x, y and z coordinates must be equal");
   }
-  auto* propagator = new calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<VCLArchitecture>(
-    this->rng_, ref_index_, /* adopt_rng= */ false);
+  auto* propagator = new calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<VCLArchitecture>(
+    ref_index_);
   for(unsigned iscope=0; iscope<x.size(); ++iscope) {
     Eigen::Vector3d r0;
     r0 << x[iscope], y[iscope], z[iscope];
@@ -602,6 +609,29 @@ VCLIACTArray<VCLArchitecture>::add_trivial_propagator(
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
 
   return propagator;
+}
+
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
+  Eigen::VectorXd& r0, double radius, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+  const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
+  bool adopt_pe_processor, bool adopt_pe_generator)
+{
+  auto* propagator = new calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>(
+    config_.observation_level(), r0, radius, /* field_of_view_radius = */ M_PI/2, ref_index_);
+
+  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
+    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
+    config_.detector_energy_lo(), config_.detector_energy_hi(),
+    config_.detector_energy_bin_width(), propagator_name);
+
+  add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
+    /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
+
+  return propagator;
+
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::

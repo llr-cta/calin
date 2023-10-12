@@ -51,6 +51,10 @@
 %template (DaviesCottonVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
 %template (DaviesCottonVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
 
-%template (TrivialVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
-%template (TrivialVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
-%template (TrivialVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::TrivialVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
+%template (PerfectOpticsVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
+%template (PerfectOpticsVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
+%template (PerfectOpticsVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
+
+%template (AllSkyVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
+%template (AllSkyVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
+%template (AllSkyVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
