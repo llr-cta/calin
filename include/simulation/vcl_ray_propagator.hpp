@@ -416,9 +416,9 @@ public:
     ray_mask &= ray.x()*ray.x() + ray.z()*ray.z() < sphere_radius_squared_;
     ray_mask &= ray.uy() <= sphere_field_of_view_uycut_;
     TraceInfo info;
-    fp_parameters.fplane_x       = select(ray_mask, x, 0);
-    fp_parameters.fplane_y       = select(ray_mask, y, 0); // ** UNUSED **
-    fp_parameters.fplane_z       = select(ray_mask, z, 0);
+    fp_parameters.fplane_x       = select(ray_mask, ray.x(), 0);
+    fp_parameters.fplane_y       = select(ray_mask, ray.y(), 0); // ** UNUSED **
+    fp_parameters.fplane_z       = select(ray_mask, ray.z(), 0);
     fp_parameters.fplane_ux      = select(ray_mask, ray.ux(), 0);
     fp_parameters.fplane_uy      = select(ray_mask, ray.uy(), 0); // ** UNUSED **
     fp_parameters.fplane_uz      = select(ray_mask, ray.uz(), 0);
