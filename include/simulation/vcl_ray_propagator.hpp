@@ -410,15 +410,17 @@ public:
       throw std::out_of_range("Telescope number out of range");
     }
     ray.translate_origin(sphere_center_.template cast<double_vt>());
-    ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, /* d= */ sphere_center_.z(), 
+    ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, /* d= */ 0, 
       /* time_reversal_ok = */ false, ref_index_);
-    ray.rotate(global_to_fp_.template cast<double_vt>());
-    ray_mask &= ray.x()*ray.x() + ray.z()*ray.z() < sphere_radius_squared_;
+    double_vt x = ray.x();
+    double_vt y = ray.y();
+    ray_mask &= x*x+y*y < sphere_radius_squared_;
+    ray.set_direction(global_to_fp_.template cast<double_vt>() * ray.direction());
     ray_mask &= ray.uy() <= sphere_field_of_view_uycut_;
     TraceInfo info;
     fp_parameters.fplane_x       = select(ray_mask, x, 0);
-    fp_parameters.fplane_y       = select(ray_mask, y, 0); // ** UNUSED **
-    fp_parameters.fplane_z       = select(ray_mask, z, 0);
+    fp_parameters.fplane_y       = select(ray_mask, 0, 0); // ** UNUSED **
+    fp_parameters.fplane_z       = select(ray_mask, y, 0);
     fp_parameters.fplane_ux      = select(ray_mask, ray.ux(), 0);
     fp_parameters.fplane_uy      = select(ray_mask, ray.uy(), 0); // ** UNUSED **
     fp_parameters.fplane_uz      = select(ray_mask, ray.uz(), 0);
