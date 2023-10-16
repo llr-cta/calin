@@ -122,6 +122,83 @@ protected:
   std::string name_;
 };
 
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLSimpleBandwidthManager:
+  public VCLBandwidthManager<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using double_vt   = typename VCLArchitecture::double_vt;
+#endif
+
+  VCLSimpleBandwidthManager(
+      const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
+      const calin::simulation::detector_efficiency::DetectionEfficiency& detection_efficiency,
+      double zobs, double e_lo, double e_hi, double delta_e, const std::string& name):
+    VCLBandwidthManager<VCLArchitecture>(name), atm_abs_(atm_abs),
+    detection_efficiency_(detection_efficiency)
+  {
+    detector_efficiency_spline_ = VCLBandwidthManager<VCLArchitecture>::
+      new_detector_efficiency_spline(detection_efficiency_, e_lo, e_hi, delta_e);
+    detector_bandwidth_spline_ = VCLBandwidthManager<VCLArchitecture>::
+      new_detector_bandwidth_spline(detection_efficiency_, *atm_abs_, zobs);
+  }
+
+  virtual ~VCLSimpleBandwidthManager() {
+    delete detector_efficiency_spline_;
+    delete detector_bandwidth_spline_;
+  }
+
+  double bandwidth() const final {
+    return detector_efficiency_spline_->integral(detector_efficiency_spline_->xmax());
+  }
+
+  std::vector<double> bandwidth_vs_height(const std::vector<double>& h, double w) const final {
+    std::vector<double> bw(h.size());
+    std::transform(h.begin(), h.end(), bw.begin(),
+      [this,w](double hh) { return detector_bandwidth_spline_->value(hh,w); });
+    return bw;
+  }
+
+  const calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline() const final {
+    return detector_efficiency_spline_;
+  }
+
+  const calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline() const final {
+    return detector_bandwidth_spline_;
+  }
+
+  virtual std::string banner(double wmin, double wmax, const std::string& indent_1 = "", const std::string& indent_n = "") const {
+    // constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
+    using calin::util::string::double_to_string_with_commas;
+    std::ostringstream stream;
+    stream
+      << indent_1 << this->name_ << " : "
+      << double_to_string_with_commas(detector_efficiency_spline_->integral(detector_efficiency_spline_->xmax()),3) << " eV\n"
+      << indent_n << "Absorbed from 5 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(5e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(5e5,wmax),3) << " eV\n"
+      << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
+      << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
+    return stream.str();
+  }
+
+#ifndef SWIG
+  double_vt bandwidth_for_pe(const double_vt z_emission, const double_vt uz_emission,
+    const double_vt ux_fp, const double_vt uy_fp, const double_vt uz_fp) const final
+  {
+    return detector_bandwidth_spline_->
+      template vcl_value<VCLArchitecture>(z_emission, vcl::abs(uz_emission));
+  }
+#endif
+
+private:
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_ = nullptr;
+  calin::simulation::detector_efficiency::DetectionEfficiency detection_efficiency_;
+  calin::math::spline_interpolation::CubicSpline* detector_efficiency_spline_ = nullptr;
+  calin::math::spline_interpolation::TwoDimensionalCubicSpline* detector_bandwidth_spline_ = nullptr;
+};
+
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLDCBandwidthManager:
   public VCLBandwidthManager<VCLArchitecture>
 {
@@ -293,13 +370,13 @@ public:
   PerfectOpticsVCLFocalPlaneRayPropagator* add_perfect_optics_propagator(
     const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
     double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
-    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    const DetectionEfficiency& detector_efficiency,
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
   AllSkyVCLFocalPlaneRayPropagator* add_all_sky_propagator(
-    Eigen::VectorXd& r0, double radius, PEProcessor* pe_processor,
-    const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+    Eigen::VectorXd& r0, double radius, double field_of_view_radius, PEProcessor* pe_processor,
+    const DetectionEfficiency& detector_efficiency,
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
@@ -585,7 +662,7 @@ calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<V
 VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
   const Eigen::VectorXd& x, const Eigen::VectorXd& y, const Eigen::VectorXd& z, 
   double radius, double focal_length, double field_of_view_radius, PEProcessor* pe_processor,
-  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+  const DetectionEfficiency& detector_efficiency,
   const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
   bool adopt_pe_processor, bool adopt_pe_generator)
 {
@@ -600,8 +677,8 @@ VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
     propagator->add_telescope(r0, radius, config_.observation_level(), focal_length, field_of_view_radius);
   }
 
-  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
+  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+    &atm_abs_, detector_efficiency, zobs_,
     config_.detector_energy_lo(), config_.detector_energy_hi(),
     config_.detector_energy_bin_width(), propagator_name);
 
@@ -614,16 +691,16 @@ VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
 template<typename VCLArchitecture>
 calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>*
 VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
-  Eigen::VectorXd& r0, double radius, PEProcessor* pe_processor,
-  const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
+  Eigen::VectorXd& r0, double radius, double field_of_view_radius, PEProcessor* pe_processor,
+  const DetectionEfficiency& detector_efficiency,
   const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
   bool adopt_pe_processor, bool adopt_pe_generator)
 {
   auto* propagator = new calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>(
-    config_.observation_level(), r0, radius, /* field_of_view_radius = */ M_PI/2, ref_index_);
+    config_.observation_level(), r0, radius, field_of_view_radius, ref_index_);
 
-  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
+  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+    &atm_abs_, detector_efficiency, zobs_,
     config_.detector_energy_lo(), config_.detector_energy_hi(),
     config_.detector_energy_bin_width(), propagator_name);
 
@@ -631,7 +708,6 @@ VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
 
   return propagator;
-
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
