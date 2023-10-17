@@ -559,6 +559,12 @@ inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const Eige
   return norm_of_polynomial_surface(x, z, p.data(), p.size());
 }
 
+inline Eigen::Vector3d norm_and_y_of_polynomial_surface(double& y_out, double x, double z,
+  const Eigen::VectorXd& p)
+{
+  return norm_and_y_of_polynomial_surface(y_out, x, z, p.data(), p.size());
+}
+
 inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned nside,
   double xc = 0, double yc = 0, double dead_space_fraction = 0)
 {
