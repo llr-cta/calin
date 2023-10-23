@@ -35,6 +35,8 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "math/nspace.pb.i"
+
 %apply double &OUTPUT { double& w0 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& w1 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x_out };
