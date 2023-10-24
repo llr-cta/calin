@@ -141,7 +141,7 @@ public:
   double normal() { return normal_ziggurat(); }
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
   double normal_bm();
-  void normal_two_bm(double& x, double& y);
+  void normal_pair_bm(double& x, double& y);
   double normal_ziggurat();
 
   double x_exp_minus_x_squared() { return x_exp_minus_x_squared_ziggurat(); }

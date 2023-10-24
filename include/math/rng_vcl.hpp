@@ -420,7 +420,7 @@ public:
   inline float_vt normal_float()
   {
     float_vt n1, n2;
-    normal_two_float_bm(n1, n2);
+    normal_pair_float_bm(n1, n2);
     return n1;
   }
 
@@ -471,7 +471,7 @@ public:
     }
   }
 
-  void normal_two_float_bm(float_vt& x1, float_vt& x2)
+  void normal_pair_float_bm(float_vt& x1, float_vt& x2)
   {
     // double_vt r1 = sqrt(exponential_double(2.0));
     // double_vt r2 = sqrt(exponential_double(2.0));
@@ -483,7 +483,7 @@ public:
     x2 = r*s;
   }
 
-  void normal_two_double_bm(double_vt& x1, double_vt& x2)
+  void normal_pair_double_bm(double_vt& x1, double_vt& x2)
   {
     double_vt r = sqrt(exponential_double(2.0));
     double_vt s, c;
@@ -492,14 +492,14 @@ public:
     x2 = r*s;
   }
 
-  void normal_two_real_bm(float_vt& x1, float_vt& x2)
+  void normal_pair_real_bm(float_vt& x1, float_vt& x2)
   {
-    normal_two_float_bm(x1, x2);
+    normal_pair_float_bm(x1, x2);
   }
 
-  void normal_two_real_bm(double_vt& x1, double_vt& x2)
+  void normal_pair_real_bm(double_vt& x1, double_vt& x2)
   {
-    normal_two_double_bm(x1, x2);
+    normal_pair_double_bm(x1, x2);
   }
 
   inline double_vt x_exp_minus_x_squared_double()
@@ -937,8 +937,8 @@ public:
 
   real_vt exponential() { real_vt x; rng_->exponential_real(x); return x; }
 
-  void normal_two_bm(real_vt& x1, real_vt& x2) {
-    rng_->normal_two_real_bm(x1,x2); }
+  void normal_pair_bm(real_vt& x1, real_vt& x2) {
+    rng_->normal_pair_real_bm(x1,x2); }
   real_vt normal() {
     real_vt x1; rng_->normal_real(x1); return x1; }
 

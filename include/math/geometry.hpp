@@ -411,7 +411,7 @@ scatter_direction_in_place(Eigen::Vector3d& v, double dispersion_per_axis,
   calin::math::rng::RNG& rng)
 {
   Eigen::Vector3d x;
-  rng.normal_two_bm(x.x(), x.y());
+  rng.normal_pair_bm(x.x(), x.y());
   x.x() *= dispersion_per_axis;
   x.y() *= dispersion_per_axis;
   x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());

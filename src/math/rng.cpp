@@ -259,7 +259,7 @@ double RNG::normal_bm()
   }
 }
 
-void RNG::normal_two_bm(double &x, double& y)
+void RNG::normal_pair_bm(double &x, double& y)
 {
   double v1;
   double v2;

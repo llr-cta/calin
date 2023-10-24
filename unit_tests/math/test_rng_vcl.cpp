@@ -359,7 +359,7 @@ TYPED_TEST(VCLRNGTests, NormalFloatMoments)
   typename TypeParam::float_vt x;
   typename TypeParam::float_vt y;
   for(unsigned i=0;i<N;i++) {
-    core.normal_two_float_bm(x,y);
+    core.normal_pair_float_bm(x,y);
     sumx.accumulate(x);
     sumxx.accumulate(x*x);
     sumxxx.accumulate(x*x*x);
@@ -401,7 +401,7 @@ TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
   typename TypeParam::double_vt x;
   typename TypeParam::double_vt y;
   for(unsigned i=0;i<N;i++) {
-    core.normal_two_double_bm(x,y);
+    core.normal_pair_double_bm(x,y);
     sumx.accumulate(x);
     sumxx.accumulate(x*x);
     sumxxx.accumulate(x*x*x);
