@@ -45,5 +45,7 @@
 
 %newobject project_along_axis;
 %newobject sum_x_to_the_n_along_axis;
+%newobject create_from_proto;
+%newobject as_proto;
 
 %include "math/nspace.hpp"
