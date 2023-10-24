@@ -206,6 +206,10 @@ public:
       time_reversal_ok, n, ray_is_close_to_surface, tol, niter);
   }
 
+  void scatter_direction(double dispersion_per_axis, calin::math::rng::RNG& rng) {
+    calin::math::geometry::scatter_direction_in_place(dir_, dispersion_per_axis, rng);
+  }
+
 #ifndef SWIG
   inline Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const
   {
