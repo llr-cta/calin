@@ -47,6 +47,7 @@ public:
   TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n);
   TreeSparseNSpace(const std::vector<Axis>& axes);
+  TreeSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto);
 
   void clear() { bins_.clear(); }
   void injest(const TreeSparseNSpace& o);
@@ -210,6 +211,7 @@ public:
   BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n, unsigned log2_block_size = 0);
   BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log2_block_size = 0);
+  BlockSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto, unsigned log2_block_size = 0);
 
   ~BlockSparseNSpace();
 

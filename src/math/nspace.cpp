@@ -84,6 +84,15 @@ TreeSparseNSpace::TreeSparseNSpace(const std::vector<Axis>& axes):
   // nothing to see here
 }
 
+TreeSparseNSpace::TreeSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto):
+  TreeSparseNSpace(
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
+    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()))
+{
+  this->accumulate_from_proto(proto);
+}
+
 void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
 {
   if(xlo_!=o.xlo_ or xhi_!=o.xhi_ or n_!=o.n_) {
@@ -407,12 +416,7 @@ void TreeSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSpa
 
 TreeSparseNSpace* TreeSparseNSpace::create_from_proto(const calin::ix::math::nspace::NSpaceData& proto)
 {
-  TreeSparseNSpace* nspace = new TreeSparseNSpace(
-    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
-    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
-    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()));
-  nspace->accumulate_from_proto(proto);
-  return nspace;
+  return new TreeSparseNSpace(proto);
 }
 
 // =============================================================================
@@ -465,6 +469,16 @@ BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log
   BlockSparseNSpace(xlo_from_axes(axes), xhi_from_axes(axes), n_from_axes(axes), log2_block_size)
 {
   // nothing to see here
+}
+
+BlockSparseNSpace::BlockSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto, unsigned log2_block_size ):
+  BlockSparseNSpace(
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
+    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()),
+    log2_block_size)
+{
+  this->accumulate_from_proto(proto);
 }
 
 BlockSparseNSpace::~BlockSparseNSpace()
@@ -1272,13 +1286,7 @@ void BlockSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSp
 BlockSparseNSpace* BlockSparseNSpace::create_from_proto(const calin::ix::math::nspace::NSpaceData& proto, 
   unsigned log2_block_size)
 {
-  BlockSparseNSpace* nspace = new BlockSparseNSpace(
-    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
-    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
-    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()),
-    log2_block_size);
-  nspace->accumulate_from_proto(proto);
-  return nspace;
+  return new BlockSparseNSpace(proto, log2_block_size);
 }
 
 #if 0

@@ -48,4 +48,25 @@
 %newobject create_from_proto;
 %newobject as_proto;
 
+%extend calin::math::nspace::TreeSparseNSpace {
+  %pythoncode %{
+    def __getstate__(self):
+      return self.as_proto()
+
+    def __setstate__(self, proto):
+      self.__init__(proto)
+  %}
+}
+
+
+%extend calin::math::nspace::BlockSparseNSpace {
+  %pythoncode %{
+    def __getstate__(self):
+      return self.as_proto()
+
+    def __setstate__(self, proto):
+      self.__init__(proto)
+  %}
+}
+
 %include "math/nspace.hpp"
