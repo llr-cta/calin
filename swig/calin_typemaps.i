@@ -41,6 +41,7 @@
 %include "calin_typemap_vectorxi.i"
 %include "calin_typemap_vector3d.i"
 %include "calin_typemap_matrixxd.i"
+%include "calin_typemap_matrixxi.i"
 %include "calin_typemap_matrix3d.i"
 
 // =============================================================================

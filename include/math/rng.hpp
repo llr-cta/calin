@@ -132,11 +132,22 @@ public:
   void uniform_by_type(float& x) { x = uniform_float(); }
 
   double uniform() { return uniform_double(); }
-  double exponential() { return -std::log(uniform()); }
-  double exponential(double mean) { return -mean*std::log(uniform()); }
-  double normal();
+
+  double exponential() { return exponential_ziggurat(); }
+  double exponential(double mean) { return mean*exponential(); }
+  double exponential_transformation() { return -std::log(uniform()); }
+  double exponential_ziggurat();
+
+  double normal() { return normal_ziggurat(); }
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
-  void normal_two_bm(double& x, double& y);
+  double normal_bm();
+  void normal_pair_bm(double& x, double& y);
+  double normal_ziggurat();
+
+  double x_exp_minus_x_squared() { return x_exp_minus_x_squared_ziggurat(); }
+  double x_exp_minus_x_squared_transformation() { return std::sqrt(-std::log(uniform())); }
+  double x_exp_minus_x_squared_ziggurat();
+
   double gamma_by_alpha_and_beta(double alpha, double beta);
   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
     double b = mean/(sigma*sigma);
@@ -271,24 +282,24 @@ class Ranlux48RNGCore: public RNGCore
     res <<= 16;
     switch(dev_blocks_)
     {
-      case 0:
-        dev_ = gen_();
-        gen_calls_++;
-        res |= dev_&0x000000000000FFFFULL;
-        dev_ >>= 16;
-        dev_blocks_ = 2;
-        break;
-      case 1:
-        res |= dev_&0x000000000000FFFFULL;
-        dev_blocks_ = 0;
-        break;
-      case 2:
-        res |= dev_&0x000000000000FFFFULL;
-        dev_ >>= 16;
-        dev_blocks_ = 1;
-        break;
-      default:
-        assert(0);
+    case 0:
+      dev_ = gen_();
+      gen_calls_++;
+      res |= dev_&0x000000000000FFFFULL;
+      dev_ >>= 16;
+      dev_blocks_ = 2;
+      break;
+    case 1:
+      res |= dev_&0x000000000000FFFFULL;
+      dev_blocks_ = 0;
+      break;
+    case 2:
+      res |= dev_&0x000000000000FFFFULL;
+      dev_ >>= 16;
+      dev_blocks_ = 1;
+      break;
+    default:
+      assert(0);
     }
     return res;
   }
@@ -476,5 +487,34 @@ private:
   uint64_t vec_dev_[NSTREAM];
   unsigned ndev_ = NSTREAM;
 };
+
+#ifndef SWIG
+namespace gaussian_ziggurat {
+  extern double v;
+  extern double r;
+  extern double r_inv;
+  extern double xi[257];
+  extern double yi[257];
+} // namespace calin::math::rng::gaussian_ziggurat
+
+namespace exponential_ziggurat {
+  extern double v;
+  extern double r;
+  extern double exp_minus_r;
+  extern double xi[257];
+  extern double yi[257];
+} // namespace calin::math::rng::exponential_ziggurat
+
+namespace x_exp_minus_x_squared_ziggurat {
+  extern double v;
+  extern double xpeak;
+  extern double r;
+  extern double exp_minus_r_squared;
+  extern double xli[257];
+  extern double xri[257];
+  extern double yi[257];
+} // namespace calin::math::rng::exponential_ziggurat
+
+#endif
 
 } } } // namespace calin::math::rng

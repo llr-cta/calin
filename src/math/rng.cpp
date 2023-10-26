@@ -234,7 +234,7 @@ uint32_t RNG::uint32_from_random_device()
   return gen();
 }
 
-double RNG::normal()
+double RNG::normal_bm()
 {
   if(bm_hascached_)
   {
@@ -259,7 +259,7 @@ double RNG::normal()
   }
 }
 
-void RNG::normal_two_bm(double &x, double& y)
+void RNG::normal_pair_bm(double &x, double& y)
 {
   double v1;
   double v2;
@@ -273,6 +273,88 @@ void RNG::normal_two_bm(double &x, double& y)
   const double fac = sqrt(-2.0*log(rsq)/rsq);
   x = v1*fac;
   y = v2*fac;
+}
+
+namespace {
+  inline double uint64_to_double(uint64_t u) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    u &= MASK_HI;
+    u |= EXP_HI;
+    return *reinterpret_cast<double*>(&u) - 1.0;
+  }
+}
+
+double RNG::normal_ziggurat()
+{
+  using namespace gaussian_ziggurat;
+  constexpr uint64_t MASK_SIGN = 1ULL<<63;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xi[i+1]*uint64_to_double(u0>>8);
+    if(x < xi[i]) {
+      return (u0&MASK_SIGN) ? -x : x;
+    } else if(i != 0xFF) {
+      double yx = std::exp(-0.5*x*x);
+      double uy = uint64_to_double(core_->uniform_uint64());
+      if(uy*(yi[i]-yi[i+1]) < yx-yi[i+1]) {
+        return (u0&MASK_SIGN) ? -x : x;
+      }
+    } else {
+      double y;
+      do
+        {
+          x = std::log(uint64_to_double(core_->uniform_uint64())) * r_inv;
+          y = std::log(uint64_to_double(core_->uniform_uint64()));
+        } while (-2 * y < x * x);
+      return (u0&MASK_SIGN) ? x - r : r - x;
+    }
+  }
+}
+
+double RNG::exponential_ziggurat()
+{
+  using namespace exponential_ziggurat;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xi[i+1]*uint64_to_double(u0>>8);
+    if(x < xi[i]) {
+      return x;
+    } else if(i != 0xFF) {
+      double yx = std::exp(-x);
+      double uy = uint64_to_double(core_->uniform_uint64());
+      if(uy*(yi[i]-yi[i+1]) < yx-yi[i+1]) {
+        return x;
+      }
+    } else {
+      x = -std::log(this->uniform_double() * exp_minus_r);
+      return x;
+    }
+  }
+}
+
+double RNG::x_exp_minus_x_squared_ziggurat()
+{
+  using namespace x_exp_minus_x_squared_ziggurat;
+  while(true) {
+    uint64_t u0 = core_->uniform_uint64();
+    uint64_t i = u0&0xFF;
+    double x = xli[i+1]+(xri[i+1]-xli[i+1])*uint64_to_double(u0>>8);
+    if(x > xli[i] and x < xri[i]) {
+      return x;
+    } else if((i != 0xFF)or(x < xpeak)) {
+      double yx = 2*x*std::exp(-x*x);
+      double uy = uint64_to_double(core_->uniform_uint64());
+      if(uy*(yi[i]-yi[i+1]) < yx-yi[i+1]) {
+        return x;
+      }
+    } else {
+      x = std::sqrt(-std::log(this->uniform_double() * exp_minus_r_squared));
+      return x;
+    }
+  }
 }
 
 /**

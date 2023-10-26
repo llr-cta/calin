@@ -29,6 +29,7 @@
 
 #include <Eigen/Dense>
 #include <calin_global_definitions.hpp>
+#include <math/nspace.pb.h>
 
 namespace calin { namespace math { namespace nspace {
 
@@ -46,6 +47,7 @@ public:
   TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n);
   TreeSparseNSpace(const std::vector<Axis>& axes);
+  TreeSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto);
 
   void clear() { bins_.clear(); }
   void injest(const TreeSparseNSpace& o);
@@ -187,6 +189,11 @@ public:
   Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
   Eigen::MatrixXd covar() const;
 
+  void save_to_proto(calin::ix::math::nspace::NSpaceData* proto) const;
+  calin::ix::math::nspace::NSpaceData* as_proto() const;
+  void accumulate_from_proto(const calin::ix::math::nspace::NSpaceData& proto);
+  static TreeSparseNSpace* create_from_proto(const calin::ix::math::nspace::NSpaceData& proto);
+
 private:
   Eigen::VectorXd xlo_;
   Eigen::VectorXd xhi_;
@@ -204,6 +211,7 @@ public:
   BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n, unsigned log2_block_size = 0);
   BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log2_block_size = 0);
+  BlockSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto, unsigned log2_block_size = 0);
 
   ~BlockSparseNSpace();
 
@@ -232,6 +240,9 @@ public:
 
   bool index_of_bin(const Eigen::VectorXi& ix, int64_t& array_index, int64_t& block_index) const;
   bool bin_coords(Eigen::VectorXi& ix_out, int64_t array_index, int64_t block_index) const;
+
+  int64_t map_index(const Eigen::VectorXi& ix) const;
+  void map_bin_coords(Eigen::VectorXi& ix_out, int64_t index) const;
 
   uint64_t size() const { return N_; }
   uint64_t block_size() const { return block_size_; }
@@ -275,6 +286,12 @@ public:
 
   Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
   Eigen::MatrixXd covar() const;
+
+  void save_to_proto(calin::ix::math::nspace::NSpaceData* proto) const;
+  calin::ix::math::nspace::NSpaceData* as_proto() const;
+  void accumulate_from_proto(const calin::ix::math::nspace::NSpaceData& proto);
+  static BlockSparseNSpace* create_from_proto(const calin::ix::math::nspace::NSpaceData& proto, 
+    unsigned log2_block_size = 0);
 
 #if 0
   void subspace_covar_mean_and_total_weight(const Eigen::VectorXi& subspace_axes,

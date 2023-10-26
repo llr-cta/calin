@@ -1,0 +1,47 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/*
+
+   calin/proto/math/nspace.proto -- Stephen Fegan -- 2015-06-11
+
+   Protobufs for representing NSpaces
+
+   Copyright 2023, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+
+package calin.ix.math.nspace;
+
+message NSpaceData {
+  int32 num_axes                        = 1
+    [(CFO).desc = "Number of axes in space."];
+  repeated double axes_lower_bounds     = 2
+    [(CFO).desc = "Lower bounds on each of the axes of the spaces."];
+  repeated double axes_upper_bounds     = 3
+    [(CFO).desc = "Upper bounds on each of the axes of the spaces."];
+  repeated int32 axes_num_bins          = 4
+    [(CFO).desc = "Number of bins on each of the axes of the spaces."];
+  repeated int64 bin_indices            = 5
+    [(CFO).desc = "Indices for the bins" ];
+  repeated double bin_weights           = 6
+    [(CFO).desc = "Weights for the bins", (CFO).is_counter = true ];
+  double overflow_weight                = 7
+    [(CFO).desc = "Weight in bins that are outside space", (CFO).is_counter = true ];
+};

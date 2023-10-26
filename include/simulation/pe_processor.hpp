@@ -29,6 +29,7 @@
 #include <math/rng.hpp>
 #include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
+#include <simulation/detector_efficiency.hpp>
 
 namespace calin { namespace simulation { namespace pe_processor {
 
@@ -38,7 +39,7 @@ public:
   virtual ~PEProcessor();
   virtual void start_processing();
   virtual void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight);
+    double x, double y, double ux, double uy, double t, double pe_weight);
   virtual void finish_processing();
 };
 
@@ -49,7 +50,7 @@ public:
   virtual ~RecordingPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   void clear_all_pes();
   unsigned npe() const { return x_.size(); }
   unsigned scope_id(unsigned ipe) { return sid_.at(ipe); }
@@ -83,7 +84,7 @@ public:
   virtual ~SimpleImagePEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
 private:
@@ -100,15 +101,17 @@ public:
   virtual ~WaveformPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   const Eigen::MatrixXd& scope_traces(unsigned iscope) const { check_iscope(iscope); return traces_[iscope]; }
   double scope_t0(unsigned iscope) const { check_iscope(iscope); return t0_(iscope); }
   int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
   int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
   Eigen::VectorXd scope_overflow(unsigned iscope) const { check_iscope(iscope); return overflow_.row(iscope); }
   void clear_all_traces();
-  void add_nsb(double rate_ghz);
-  void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz);
+  void add_nsb(double rate_ghz,
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen = nullptr);
+  void add_nsb(const Eigen::VectorXd rate_per_pixel_ghz,
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* pegen = nullptr);
 private:
   void check_iscope(unsigned iscope) const {
     if(iscope >= traces_.size()) {
@@ -129,6 +132,60 @@ private:
   calin::math::rng::RNG* rng_ = nullptr;
 };
 
+class UnbinnedWaveformPEProcessor: public PEProcessor
+{
+public:
+  UnbinnedWaveformPEProcessor(unsigned nscope, unsigned npix,
+    double scope_trace_delta_t = 1.0 /*ns*/, unsigned scope_trace_nsamp = 4096,
+    bool auto_clear = true);
+  virtual ~UnbinnedWaveformPEProcessor();
+  void start_processing() override;
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
+  void pixel_traces_into_buffer(double* pe_waveform_buffer, double* pe_overflow_buffer,
+    double& waveform_t0, unsigned iscope,
+    double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
+    unsigned pe_waveform_buffer_stride = 0);
+  Eigen::MatrixXd pixel_traces(double& trace_t0, Eigen::VectorXd& trace_overflow, unsigned iscope,
+    double trace_delta_t, unsigned trace_nsamp, double trace_advance_time,
+    double nsb_rate_ghz = 0, calin::math::rng::RNG* rng_ = nullptr,
+    calin::simulation::detector_efficiency::PEAmplitudeGenerator* nsb_pegen = nullptr,
+    bool ac_couple=false) const;
+  Eigen::VectorXd scope_trace(unsigned iscope) const { check_iscope(iscope); return scope_trace_.row(iscope); }
+  double scope_t0(unsigned iscope) const { check_iscope(iscope); return t0_(iscope); }
+  int scope_nmin(unsigned iscope) const { check_iscope(iscope); return nmin_(iscope); }
+  int scope_nmax(unsigned iscope) const { check_iscope(iscope); return nmax_(iscope); }
+  double scope_trace_overflow(unsigned iscope) const { check_iscope(iscope); return scope_trace_overflow_(iscope); }
+  void clear_all_traces();
+  static Eigen::MatrixXd convolve_instrument_response(const Eigen::MatrixXd& traces,
+    const Eigen::VectorXd& impulse_response_dft, double pedestal=0);
+private:
+  void check_iscope(unsigned iscope) const {
+    if(iscope >= nscope_) {
+      throw std::out_of_range("iscope out of range : " + std::to_string(iscope)
+        + " >= " + std::to_string(nscope_));
+    }
+  }
+  unsigned nscope_;
+  unsigned npix_;
+
+  unsigned scope_trace_nsamp_;
+  double scope_trace_delta_t_inv_;
+
+  std::vector<unsigned> pe_iscope_;
+  std::vector<unsigned> pe_ipix_;
+  std::vector<double> pe_t_;
+  std::vector<double> pe_q_;
+
+  Eigen::MatrixXd scope_trace_;
+  Eigen::VectorXd t0_;
+  Eigen::VectorXi nmin_;
+  Eigen::VectorXi nmax_;
+  Eigen::VectorXd scope_trace_overflow_;
+  bool auto_clear_ = false;
+  bool warning_sent_ = false;
+};
+
 class TelescopePSFCalcPEProcessor: public PEProcessor
 {
 public:
@@ -136,7 +193,7 @@ public:
   virtual ~TelescopePSFCalcPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::SecondMomentsCalc2D mom() { return mom_; }
 private:
@@ -152,7 +209,7 @@ public:
   virtual ~TelescopePSFCalcThirdMomentPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::ThirdMomentsCalc2D mom() { return mom_; }
 private:

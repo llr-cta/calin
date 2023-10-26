@@ -411,7 +411,7 @@ scatter_direction_in_place(Eigen::Vector3d& v, double dispersion_per_axis,
   calin::math::rng::RNG& rng)
 {
   Eigen::Vector3d x;
-  rng.normal_two_bm(x.x(), x.y());
+  rng.normal_pair_bm(x.x(), x.y());
   x.x() *= dispersion_per_axis;
   x.y() *= dispersion_per_axis;
   x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
@@ -557,6 +557,12 @@ inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const doub
 inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const Eigen::VectorXd& p)
 {
   return norm_of_polynomial_surface(x, z, p.data(), p.size());
+}
+
+inline Eigen::Vector3d norm_and_y_of_polynomial_surface(double& y_out, double x, double z,
+  const Eigen::VectorXd& p)
+{
+  return norm_and_y_of_polynomial_surface(y_out, x, z, p.data(), p.size());
 }
 
 inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned nside,

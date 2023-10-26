@@ -16,6 +16,8 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 import numpy
+import scipy.integrate
+
 import calin.math.hex_array
 import calin.simulation.vs_optics
 import calin.simulation.atmosphere
@@ -217,12 +219,70 @@ def mstn_detection_efficiency(qe = 'qe_R12992-100-05b.dat',
 def mstn_cone_efficiency(cone = 'NectarCAM_lightguide_efficiency_POP_131019.dat',
         quiet = False):
 
-    if(cone):
-        cone_eff = calin.simulation.detector_efficiency.AngularEfficiency(ds_filename(cone))
-        if(not quiet):
-            print('Loading light-cone curve :',cone)
+    cone_eff = calin.simulation.detector_efficiency.AngularEfficiency(ds_filename(cone))
+    if(not quiet):
+        print('Loading light-cone curve :',cone)
 
     return cone_eff
+
+def mstn_spe_amplitude_generator(spe = "spe_nectarcam_lmp_run1512.dat", dpdq_min=0,
+        spline_mode = calin.simulation.detector_efficiency.SM_SQRT_LOG,
+        spline_ninterval = 100, regularize_spline = True, extend_spline = False,
+        spline_normalization = None, rescale_gain_to_unity = False, quiet = False):
+    q = []
+    dpdq = []
+    with open(ds_filename(spe), 'r') as file:
+        file_record = calin.provenance.chronicle.register_file_open(ds_filename(spe),
+            calin.ix.provenance.chronicle.AT_READ, 'calin.simulation.vs_cta.mstn_spe_amplitude_generator')
+        comment = ""
+        for line in file.readlines():
+            if(line[0]=='#'):
+                comment += line
+            else:
+                spe_data = line.split()
+                q.append(float(spe_data[0]))
+                dpdq.append(float(spe_data[1]))
+        file_record.set_comment(comment)
+        calin.provenance.chronicle.register_file_close(file_record)
+
+    if(not quiet):
+        print('Loading SPE spectrum :',spe)
+
+    q = numpy.asarray(q)
+    dpdq = numpy.asarray(dpdq)
+    m = dpdq>0
+
+    spl = None
+    if spline_normalization is None:
+        spl = calin.simulation.detector_efficiency.SplinePEAmplitudeGenerator.make_spline(
+            q[m], dpdq[m], spline_mode, regularize_spline, extend_spline, int(spline_ninterval))
+    else:
+        spl = calin.simulation.detector_efficiency.SplinePEAmplitudeGenerator.make_spline(
+            q[m], dpdq[m], spline_mode, regularize_spline, extend_spline, int(spline_ninterval),
+            spline_normalization)
+
+    if rescale_gain_to_unity:
+        if(spline_mode == calin.simulation.detector_efficiency.SM_LINEAR):
+            def integrand(x):
+                return spl.value(x)
+            (I,Ierr) = scipy.integrate.quad(integrand,0,1,limit=1000,epsabs=-1,epsrel=1e-6)
+        elif(spline_mode == calin.simulation.detector_efficiency.SM_LOG):
+            def integrand(x):
+                return spl.value(x)*numpy.exp(-x)
+            (I,Ierr) = scipy.integrate.quad(integrand,0,numpy.inf,limit=1000,epsabs=-1,epsrel=1e-6)
+        elif(spline_mode == calin.simulation.detector_efficiency.SM_SQRT_LOG):
+            def integrand(x):
+                return spl.value(x)*2*x*numpy.exp(-x**2)
+            (I,Ierr) = scipy.integrate.quad(integrand,0,numpy.inf,limit=1000,epsabs=-1,epsrel=1e-6)
+        spl.rescale(1/I)
+
+    return calin.simulation.detector_efficiency.SplinePEAmplitudeGenerator(spl, spline_mode)
+
+def mstn_spe_and_afterpulsing_amplitude_generator(spe = "spe_nectarcam_lmp_run1512_with_toy_ap_model.dat",
+        spline_ninterval = 200, **args):
+    if 'rescale_gain_to_unity' not in args:
+        args['rescale_gain_to_unity'] = False
+    return mstn_spe_amplitude_generator(spe = spe, spline_ninterval = spline_ninterval, **args)
 
 def dms(d,m,s):
     # Note that "negative" d=0 (e.g. -00:30:00) must be specified as 00:-30:00 or 00:00:-30

@@ -321,7 +321,7 @@ public:
     calin::math::rng::VCLRealRNG<VCLReal>& rng)
   {
     vec3_vt x;
-    rng.normal_two_bm(x.x(), x.y());
+    rng.normal_pair_bm(x.x(), x.y());
     x.x() *= dispersion_per_axis;
     x.y() *= dispersion_per_axis;
     // x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());

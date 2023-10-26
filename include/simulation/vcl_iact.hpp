@@ -64,6 +64,9 @@ public:
     const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config = default_config(),
     calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
     bool adopt_atm = false, bool adopt_rng = false);
+  VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config, unsigned rng_seed,
+    bool adopt_atm = false);
   virtual ~VCLIACTTrackVisitor();
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
@@ -147,11 +150,23 @@ VCLIACTTrackVisitor(
     bool adopt_atm, bool adopt_rng):
   calin::simulation::tracker::TrackVisitor(),
   atm_(atm), adopt_atm_(adopt_atm),
-  rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
+  rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>(__PRETTY_FUNCTION__,
+    "RNG for Cherenkov photon generation and propagation")),
   adopt_rng_(rng ? adopt_rng : true),
   fixed_bandwidth_(config.bandwidth()),
   forced_sin2theta_(config.enable_forced_cherenkov_angle_mode()?
     calin::math::special::SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
+{
+  // nothing to see here
+}
+
+template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
+VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+  const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config,
+  unsigned rng_seed, bool adopt_atm): VCLIACTTrackVisitor(atm, config,
+    new calin::math::rng::VCLRNG<VCLArchitecture>(rng_seed, __PRETTY_FUNCTION__,
+      "RNG for Cherenkov photon generation and propagation"),
+    adopt_atm, /* adopt_rng = */ true)
 {
   // nothing to see here
 }

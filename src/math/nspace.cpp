@@ -25,6 +25,7 @@
 
 #include <util/log.hpp>
 #include <math/nspace.hpp>
+#include <calin_global_definitions.hpp>
 
 using namespace calin::math::nspace;
 using namespace calin::util::log;
@@ -81,6 +82,15 @@ TreeSparseNSpace::TreeSparseNSpace(const std::vector<Axis>& axes):
   TreeSparseNSpace(xlo_from_axes(axes), xhi_from_axes(axes), n_from_axes(axes))
 {
   // nothing to see here
+}
+
+TreeSparseNSpace::TreeSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto):
+  TreeSparseNSpace(
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
+    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()))
+{
+  this->accumulate_from_proto(proto);
 }
 
 void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
@@ -354,6 +364,61 @@ Eigen::MatrixXd TreeSparseNSpace::covar() const {
   return covar_mean_and_total_weight(w1, w0);
 }
 
+void TreeSparseNSpace::save_to_proto(ix::math::nspace::NSpaceData* proto) const
+{
+  proto->Clear();
+  proto->set_num_axes(xlo_.size());
+  for(unsigned iaxis=0;iaxis<xlo_.size();++iaxis) {
+    proto->add_axes_lower_bounds(xlo_[iaxis]);
+    proto->add_axes_upper_bounds(xhi_[iaxis]);
+    proto->add_axes_num_bins(n_[iaxis]);
+  }
+  proto->mutable_bin_indices()->Reserve(bins_.size());
+  proto->mutable_bin_weights()->Reserve(bins_.size());
+  for(const auto& bin : bins_) {
+    if(bin.first == -1) {
+      proto->set_overflow_weight(bin.first);
+    } else if (bin.second != 0.0) {
+      proto->add_bin_indices(bin.first);
+      proto->add_bin_weights(bin.second);
+    }
+  }
+}
+
+calin::ix::math::nspace::NSpaceData* TreeSparseNSpace::as_proto() const
+{
+  auto* proto = new calin::ix::math::nspace::NSpaceData;
+  save_to_proto(proto); 
+  return proto;
+}
+
+void TreeSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSpaceData& proto)
+{
+  if(not std::equal(xlo_.begin(), xlo_.end(), proto.axes_lower_bounds().begin(), proto.axes_lower_bounds().end())) {
+    throw std::runtime_error("TreeSparseNSpace: lower bounds do not match");
+  }
+  if(not std::equal(xhi_.begin(), xhi_.end(), proto.axes_upper_bounds().begin(), proto.axes_upper_bounds().end())) {
+    throw std::runtime_error("TreeSparseNSpace: upper bounds do not match");
+  }
+  if(not std::equal(n_.begin(), n_.end(), proto.axes_num_bins().begin(), proto.axes_num_bins().end())) {
+    throw std::runtime_error("TreeSparseNSpace: number of bins do not match");
+  }
+  if(proto.bin_indices_size() != proto.bin_weights_size()) {
+    throw std::runtime_error("TreeSparseNSpace: bin indices and weights do not match");
+  }
+  for(unsigned ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
+    bins_[proto.bin_indices(ibin)] +=  proto.bin_weights(ibin);
+  }
+  if(proto.overflow_weight() != 0.0) {
+    bins_[-1] += proto.overflow_weight();
+  }
+}
+
+TreeSparseNSpace* TreeSparseNSpace::create_from_proto(const calin::ix::math::nspace::NSpaceData& proto)
+{
+  return new TreeSparseNSpace(proto);
+}
+
 // =============================================================================
 // =============================================================================
 
@@ -404,6 +469,16 @@ BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log
   BlockSparseNSpace(xlo_from_axes(axes), xhi_from_axes(axes), n_from_axes(axes), log2_block_size)
 {
   // nothing to see here
+}
+
+BlockSparseNSpace::BlockSparseNSpace(const calin::ix::math::nspace::NSpaceData& proto, unsigned log2_block_size ):
+  BlockSparseNSpace(
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_lower_bounds().data(), proto.axes_lower_bounds().size()),
+    Eigen::Map<const Eigen::VectorXd>(proto.axes_upper_bounds().data(), proto.axes_upper_bounds().size()),
+    Eigen::Map<const Eigen::VectorXi>(proto.axes_num_bins().data(), proto.axes_num_bins().size()),
+    log2_block_size)
+{
+  this->accumulate_from_proto(proto);
 }
 
 BlockSparseNSpace::~BlockSparseNSpace()
@@ -1111,6 +1186,107 @@ Eigen::MatrixXd BlockSparseNSpace::covar() const {
   double w0;
   Eigen::VectorXd w1(xlo_.size());
   return covar_mean_and_total_weight(w1, w0);
+}
+
+int64_t BlockSparseNSpace::map_index(const Eigen::VectorXi& ix) const
+{
+  if(ix.size() != xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: map coordinates dimensional mismatch");
+  }
+  int64_t indx = 0;
+  for(int i=0; i<xlo_.size(); i++) {
+    int ii = ix[i];
+    if(ii<0 or ii>=n_(i)) {
+      throw std::runtime_error("BlockSparseNSpace: map coordinates out of range");
+    }
+    indx = indx*n_(i) + ii;
+  }
+  return indx;
+}
+
+void BlockSparseNSpace::map_bin_coords(Eigen::VectorXi& ix_out, int64_t indx) const
+{
+  if(indx < 0 or indx >= N_) {
+    throw std::runtime_error("BlockSparseNSpace: map index out of range");
+  }
+  int n = xlo_.size();
+  ix_out.resize(n);
+  for(unsigned i=n; i>0;) {
+    --i;
+    auto qr = std::div(indx, int64_t(n_[i]));
+    ix_out[i] = qr.rem;
+    indx = qr.quot;
+  }
+}
+
+void BlockSparseNSpace::save_to_proto(ix::math::nspace::NSpaceData* proto) const
+{
+  proto->Clear();
+  proto->set_num_axes(xlo_.size());
+  for(unsigned iaxis=0;iaxis<xlo_.size();++iaxis) {
+    proto->add_axes_lower_bounds(xlo_[iaxis]);
+    proto->add_axes_upper_bounds(xhi_[iaxis]);
+    proto->add_axes_num_bins(n_[iaxis]);
+  }
+  Eigen::VectorXi ix(xlo_.size());
+  unsigned nblock = array_.size() - std::count(array_.begin(), array_.end(), nullptr);
+  proto->mutable_bin_indices()->Reserve(nblock * block_size_);
+  proto->mutable_bin_weights()->Reserve(nblock * block_size_);
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0;block_index<block_size_;++block_index) {
+        if(block[block_index] and bin_coords(ix, array_index, block_index)) {
+          proto->add_bin_indices(map_index(ix));
+          proto->add_bin_weights(block[block_index]);
+        }
+      }
+    }
+  }
+  if(overflow_) {
+    proto->set_overflow_weight(overflow_);
+  }
+}
+
+calin::ix::math::nspace::NSpaceData* BlockSparseNSpace::as_proto() const
+{
+  auto* proto = new calin::ix::math::nspace::NSpaceData;
+  save_to_proto(proto); 
+  return proto;
+}
+
+void BlockSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSpaceData& proto)
+{
+  if(not std::equal(xlo_.begin(), xlo_.end(), proto.axes_lower_bounds().begin(), proto.axes_lower_bounds().end())) {
+    throw std::runtime_error("BlockSparseNSpace: lower bounds do not match");
+  }
+  if(not std::equal(xhi_.begin(), xhi_.end(), proto.axes_upper_bounds().begin(), proto.axes_upper_bounds().end())) {
+    throw std::runtime_error("BlockSparseNSpace: upper bounds do not match");
+  }
+  if(not std::equal(n_.begin(), n_.end(), proto.axes_num_bins().begin(), proto.axes_num_bins().end())) {
+    throw std::runtime_error("BlockSparseNSpace: number of bins do not match");
+  }
+  if(proto.bin_indices_size() != proto.bin_weights_size()) {
+    throw std::runtime_error("BlockSparseNSpace: bin indices and weights do not match");
+  }
+  Eigen::VectorXi ix(xlo_.size());
+  int64_t array_index;
+  int64_t block_index;
+  for(unsigned ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
+    map_bin_coords(ix, proto.bin_indices(ibin));
+    index_of_bin(ix, array_index, block_index);
+    cell_ref(array_index,block_index) += proto.bin_weights(ibin);
+  }
+  if(proto.overflow_weight() != 0.0) {
+    overflow_ += proto.overflow_weight();
+  }
+}
+
+BlockSparseNSpace* BlockSparseNSpace::create_from_proto(const calin::ix::math::nspace::NSpaceData& proto, 
+  unsigned log2_block_size)
+{
+  return new BlockSparseNSpace(proto, log2_block_size);
 }
 
 #if 0

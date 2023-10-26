@@ -35,6 +35,8 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "math/nspace.pb.i"
+
 %apply double &OUTPUT { double& w0 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& w1 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x_out };
@@ -43,5 +45,28 @@
 
 %newobject project_along_axis;
 %newobject sum_x_to_the_n_along_axis;
+%newobject create_from_proto;
+%newobject as_proto;
+
+%extend calin::math::nspace::TreeSparseNSpace {
+  %pythoncode %{
+    def __getstate__(self):
+      return self.as_proto()
+
+    def __setstate__(self, proto):
+      self.__init__(proto)
+  %}
+}
+
+
+%extend calin::math::nspace::BlockSparseNSpace {
+  %pythoncode %{
+    def __getstate__(self):
+      return self.as_proto()
+
+    def __setstate__(self, proto):
+      self.__init__(proto)
+  %}
+}
 
 %include "math/nspace.hpp"

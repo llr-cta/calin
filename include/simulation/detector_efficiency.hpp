@@ -36,7 +36,9 @@
 #include <tuple>
 #include <ostream>
 
+#include <util/vcl.hpp>
 #include <math/rng.hpp>
+#include <math/rng_vcl.hpp>
 #include <math/interpolation_1d.hpp>
 #include <math/spline_interpolation.hpp>
 
@@ -272,6 +274,7 @@ class PEAmplitudeGenerator
 public:
   virtual ~PEAmplitudeGenerator();
   virtual double generate_amplitude() = 0;
+  virtual double mean_amplitude() = 0;
   Eigen::VectorXd bulk_generate_amplitude(unsigned n) {
     Eigen::VectorXd rvs(n);
     for(unsigned i=0;i<n;i++) {
@@ -279,6 +282,7 @@ public:
     }
     return rvs;
   }
+  virtual std::string banner(const std::string& indent0="", const std::string& indentN="") const = 0;
 };
 
 enum SplineMode {
@@ -296,16 +300,71 @@ public:
     SplineMode spline_mode, calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
   virtual ~SplinePEAmplitudeGenerator();
   double generate_amplitude() final;
+  double mean_amplitude() final;
+  template<typename VCLArchitecture> typename VCLArchitecture::double_vt vcl_generate_amplitude(
+    calin::math::rng::VCLRNG<VCLArchitecture>& rng) const
+  {
+    typename VCLArchitecture::double_vt x;
+    switch(spline_mode_) {
+    case SM_LINEAR:
+      x = rng.uniform_double();
+      break;
+    case SM_LOG:
+      x = rng.exponential_double();
+      break;
+    case SM_SQRT_LOG:
+      x = rng.x_exp_minus_x_squared_double();
+      break;
+    }
+    return spline_->template vcl_value<VCLArchitecture>(x);
+  }
+  std::string banner(const std::string& indent0="", const std::string& indentN="") const final;
+
+  template<typename VCLArchitecture> typename
+  Eigen::VectorXd vcl_bulk_generate_amplitude(unsigned n,
+      calin::math::rng::VCLRNG<VCLArchitecture>& rng) {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("vcl_bulk_generate_amplitude : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      typename VCLArchitecture::double_vt x =
+        vcl_generate_amplitude<VCLArchitecture>(rng);
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXd vcl256_bulk_generate_amplitude(unsigned n,
+      calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& rng) {
+    return vcl_bulk_generate_amplitude<calin::util::vcl::VCL256Architecture>(n, rng);
+  }
+
   const calin::math::spline_interpolation::CubicSpline& spline() const { return *spline_; }
   SplineMode spline_mode() const { return spline_mode_; }
+
   static calin::math::spline_interpolation::CubicSpline* make_spline(
     const Eigen::VectorXd& q, const Eigen::VectorXd& dp_dq, SplineMode spline_mode,
-    bool regularize_spline = true, bool extend_linear_rhs = true);
+    bool regularize_spline = true, bool extend_linear_rhs = true,
+    unsigned regularize_ninterval = 0,
+    double norm = 1.0-std::numeric_limits<double>::epsilon());
 protected:
+  calin::math::rng::RNG* get_rng() {
+    if(rng_ == nullptr) {
+      rng_ = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Amplitude generation");
+      adopt_rng_ = true;
+    }
+    return rng_;
+  }
+  void calc_pdf_moments();
   calin::math::spline_interpolation::CubicSpline* spline_ = nullptr;
   SplineMode spline_mode_ = SM_LINEAR;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
+  double pdf_mean_;
+  double pdf_res_;
+  double pdf_P20_;
+  double pdf_peak_;
 };
 
 } } } // namespace calin::simulation::detector_efficiency

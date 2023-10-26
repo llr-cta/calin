@@ -124,6 +124,10 @@ public:
         pos_, ux_inv_, uy_inv_, uz_inv_);
   }
 
+  void scatter_direction(real_vt dispersion_per_axis, calin::math::rng::VCLRealRNG<VCLReal>& rng) {
+    calin::math::geometry::scatter_direction_in_place(dir_, dispersion_per_axis, rng);
+  }
+
   void reflect_from_surface_with_mask(const bool_vt& mask, const vec3_vt& surface_norm) {
     clear_dir_inv();
     dir_ -= surface_norm * select(mask, 2.0*(dir_.dot(surface_norm)), 0);

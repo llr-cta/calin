@@ -131,10 +131,12 @@ public:
   VCLRNG(const calin::ix::math::rng::VCLRNGCoreData& proto, bool restore_state = false,
       const std::string& created_by = "", const std::string& comment = ""):
     core_(VCLRNGCore<VCLArchitecture>::create_from_proto(proto,
-      restore_state, created_by, comment)) { /* nothing to see here */ }
+      restore_state, created_by, comment)), adopt_core_(true) { /* nothing to see here */ }
 
   ~VCLRNG() {
-    if(adopt_core_)delete core_;
+    if(adopt_core_) {
+      delete core_;
+    }
   }
 
   VCLRNGCore<VCLArchitecture>* core() { return core_; }
@@ -212,18 +214,6 @@ public:
     return scale*(xhi-1.0);
   }
 
-  // Probably should not be kept (after testing)
-  double_vt uniform_double_alt(const double_vt& scale = 1.0) {
-    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
-    constexpr uint64_t MASK_LO = ((1ULL<<12)-1)<<40;
-    constexpr uint64_t EXP_HI = 1023ULL<<52;
-    constexpr uint64_t EXP_LO = (1023ULL-52ULL)<<52;
-    uint64_vt xui = uniform_uint64();
-    double_vt xlo = vcl::reinterpret_d(((xui>>12)&MASK_LO) | EXP_LO);
-    double_vt xhi = vcl::reinterpret_d((xui&MASK_HI) | EXP_HI);
-    return scale*((xlo-2.2204460492503130808e-16) + (xhi-1.0));
-  }
-
   float_vt uniform_float(const float_vt& scale = 1.0f) {
     const float_vt multiplier = C_U32_TO_FLT*scale;
     float_vt x = to_float(uniform_int32());
@@ -251,7 +241,15 @@ public:
   // void uniform_by_type(float_vt& x, float scale, float offset) {
   //   x = uniform_float(scale, offset); }
 
-  double_vt exponential_double() {
+  inline double_vt exponential_double() {
+    return exponential_double_ziggurat();
+  }
+
+  double_vt exponential_double(const double_vt& scale) {
+    return scale * exponential_double();
+  }
+
+  double_vt exponential_double_transformation() {
     double_vt x = uniform_double();
     double_bvt xzero = x==0.0;
     while(horizontal_or(xzero)) {
@@ -261,8 +259,38 @@ public:
     return -calin::util::vcl::log(x);
   }
 
-  double_vt exponential_double(const double_vt& scale) {
-    return scale * exponential_double();
+  double_vt exponential_double_ziggurat()
+  {
+    using namespace exponential_ziggurat;
+    double_bvt good_samples = false;
+    double_vt x;
+    while(true) {
+      const uint64_vt u0 = core_->uniform_uint64();
+      const uint64_vt i = u0&0xFFULL;
+      const double_vt xb = vcl::lookup<0x40000000>(i+1, xi);
+      const double_vt xt = vcl::lookup<0x40000000>(i, xi);
+      x = vcl::select(good_samples, x, xb*uint64_to_double_52bit(u0>>8));
+      good_samples |= x<xt;
+      if(vcl::horizontal_and(good_samples)) {
+        return x;
+      }
+
+      const double_vt yb = vcl::lookup<0x40000000>(i+1, yi);
+      const double_vt yt = vcl::lookup<0x40000000>(i, yi);
+      double_vt yx = vcl::exp(-x);
+      double_vt uy = uint64_to_double_52bit(core_->uniform_uint64());
+      good_samples |= double_bvt(i!=0xFFULL)&(uy*(yt-yb)<yx-yb);
+
+      double_bvt mask = double_bvt(i==0xFFULL)&(!good_samples);
+      if(vcl::horizontal_or(mask)) {
+        x = select(mask, -vcl::log(this->uniform_double() * exp_minus_r), x);
+        good_samples |= mask;
+      }
+
+      if(vcl::horizontal_and(good_samples)) {
+        return x;
+      }
+    }
   }
 
   float_vt exponential_float() {
@@ -384,7 +412,66 @@ public:
     sincos_double(s, c);
   }
 
-  void normal_two_float_bm(float_vt& x1, float_vt& x2)
+  inline double_vt normal_double()
+  {
+    return normal_double_ziggurat();
+  }
+
+  inline float_vt normal_float()
+  {
+    float_vt n1, n2;
+    normal_pair_float_bm(n1, n2);
+    return n1;
+  }
+
+  inline void normal_real(double_vt& x)
+  {
+    x = normal_double();
+  }
+
+  inline void normal_real(float_vt& x)
+  {
+    x = normal_float();
+  }
+
+  double_vt normal_double_ziggurat()
+  {
+    constexpr uint64_t MASK_SIGN = 1ULL<<63;
+    using namespace gaussian_ziggurat;
+    double_bvt good_samples = false;
+    double_vt x;
+    while(true) {
+      const uint64_vt u0 = core_->uniform_uint64();
+      const uint64_vt i = u0&0xFFULL;
+      const double_vt sign = vcl::reinterpret_d(u0&MASK_SIGN); // +/- 0
+      const double_vt xb = vcl::lookup<0x40000000>(i+1, xi);
+      const double_vt xt = vcl::lookup<0x40000000>(i, xi);
+      x = vcl::select(good_samples, x, xb*uint64_to_double_52bit(u0>>8));
+      good_samples |= x<xt;
+      if(vcl::horizontal_and(good_samples)) {
+        return vcl::sign_combine(x, sign);
+      }
+
+      const double_vt yb = vcl::lookup<0x40000000>(i+1, yi);
+      const double_vt yt = vcl::lookup<0x40000000>(i, yi);
+      const double_vt yx = vcl::exp(-0.5*x*x);
+      const double_vt uy = uint64_to_double_52bit(core_->uniform_uint64());
+      good_samples |= double_bvt(i!=0xFFULL)&(uy*(yt-yb)<yx-yb);
+
+      while(vcl::horizontal_or(double_bvt(i==0xFFULL)&(!good_samples))) {
+        double_vt xx = vcl::log(uint64_to_double_52bit(core_->uniform_uint64())) * r_inv;
+        double_vt yy = vcl::log(uint64_to_double_52bit(core_->uniform_uint64()));
+        double_bvt mask = double_bvt(i==0xFFULL)&(!good_samples)&(-2*yy >= xx*xx);
+        x = select(mask, r-xx, x);
+        good_samples |= mask;
+      }
+      if(vcl::horizontal_and(good_samples)) {
+        return vcl::sign_combine(x, sign);
+      }
+    }
+  }
+
+  void normal_pair_float_bm(float_vt& x1, float_vt& x2)
   {
     // double_vt r1 = sqrt(exponential_double(2.0));
     // double_vt r2 = sqrt(exponential_double(2.0));
@@ -396,7 +483,7 @@ public:
     x2 = r*s;
   }
 
-  void normal_two_double_bm(double_vt& x1, double_vt& x2)
+  void normal_pair_double_bm(double_vt& x1, double_vt& x2)
   {
     double_vt r = sqrt(exponential_double(2.0));
     double_vt s, c;
@@ -405,14 +492,79 @@ public:
     x2 = r*s;
   }
 
-  void normal_two_real_bm(float_vt& x1, float_vt& x2)
+  void normal_pair_real_bm(float_vt& x1, float_vt& x2)
   {
-    normal_two_float_bm(x1, x2);
+    normal_pair_float_bm(x1, x2);
   }
 
-  void normal_two_real_bm(double_vt& x1, double_vt& x2)
+  void normal_pair_real_bm(double_vt& x1, double_vt& x2)
   {
-    normal_two_double_bm(x1, x2);
+    normal_pair_double_bm(x1, x2);
+  }
+
+  inline double_vt x_exp_minus_x_squared_double()
+  {
+    return x_exp_minus_x_squared_double_ziggurat();
+  }
+
+  double_vt x_exp_minus_x_squared_double_transformation()
+  {
+    return vcl::sqrt(-vcl::log(uniform_double()));
+  }
+
+  double_vt x_exp_minus_x_squared_double_ziggurat()
+  {
+    using namespace x_exp_minus_x_squared_ziggurat;
+    double_bvt good_samples = false;
+    double_vt x;
+    while(true) {
+      const uint64_vt u0 = core_->uniform_uint64();
+      const uint64_vt i = u0&0xFFULL;
+      const double_vt xrb = vcl::lookup<0x40000000>(i+1, xri);
+      const double_vt xrt = vcl::lookup<0x40000000>(i, xri);
+      const double_vt xlb = vcl::lookup<0x40000000>(i+1, xli);
+      const double_vt xlt = vcl::lookup<0x40000000>(i, xli);
+      x = vcl::select(good_samples, x, xlb+(xrb-xlb)*uint64_to_double_52bit(u0>>8));
+      good_samples |= (x>xlt) & (x<xrt);
+      if(vcl::horizontal_and(good_samples)) {
+        return x;
+      }
+
+      const double_vt yb = vcl::lookup<0x40000000>(i+1, yi);
+      const double_vt yt = vcl::lookup<0x40000000>(i, yi);
+      double_vt yx = 2*x*vcl::exp(-x*x);
+      double_vt uy = uint64_to_double_52bit(core_->uniform_uint64());
+      good_samples |= (double_bvt(i!=0xFFULL)|(x<xpeak))&(uy*(yt-yb)<yx-yb);
+
+      double_bvt mask = double_bvt(i==0xFFULL)&(x>xpeak)&(!good_samples);
+      if(vcl::horizontal_or(mask)) {
+        x = select(mask, vcl::sqrt(-vcl::log(this->uniform_double() * exp_minus_r_squared)), x);
+        good_samples |= mask;
+      }
+      if(vcl::horizontal_and(good_samples)) {
+        return x;
+      }
+    }
+  }
+
+  inline float_vt x_exp_minus_x_squared_float()
+  {
+    return x_exp_minus_x_squared_float_transformation();
+  }
+
+  float_vt x_exp_minus_x_squared_float_transformation()
+  {
+    return vcl::sqrt(-vcl::log(uniform_float()));
+  }
+
+  inline void x_exp_minus_x_squared_real(double_vt x)
+  {
+    x = x_exp_minus_x_squared_double();
+  }
+
+  inline void x_exp_minus_x_squared_real(float_vt x)
+  {
+    x = x_exp_minus_x_squared_float();
   }
 
   void uniform_on_unit_sphere_float(float_vt& x, float_vt& y, float_vt& z)
@@ -648,6 +800,59 @@ public:
     return inverse_cdf;
   }
 
+  double test_normal_double_ziggurat()
+  {
+    return normal_double_ziggurat()[0];
+  }
+
+  double test_exponential_double_ziggurat()
+  {
+    return exponential_double_ziggurat()[0];
+  }
+
+  double test_x_exp_minus_x_squared_double_ziggurat()
+  {
+    return x_exp_minus_x_squared_double_ziggurat()[0];
+  }
+
+  Eigen::VectorXd bulk_normal_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_normal_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = normal_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXd bulk_exponential_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_exponential_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = exponential_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXd bulk_x_exp_minus_x_squared_double(unsigned n)
+  {
+    if(n % VCLArchitecture::num_double != 0) {
+      throw std::runtime_error("bulk_x_exp_minus_x_squared_double : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_double));
+    }
+    Eigen::VectorXd rvs(n);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_double) {
+      double_vt x = x_exp_minus_x_squared_double();
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
 
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
@@ -671,6 +876,12 @@ public:
 //   static constexpr uint64_t std_test_seed = 12939; // essential supply
 //
 private:
+  static inline double_vt uint64_to_double_52bit(uint64_vt u) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    return vcl::reinterpret_d((u&MASK_HI) | EXP_HI) - 1;
+  }
+
   VCLRNGCore<VCLArchitecture>* core_ = nullptr;
   bool adopt_core_ = true;
   calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
@@ -714,7 +925,7 @@ public:
   }
 
 #ifndef SWIG
-  int_vt uniform_int() { int_vt x; rng_->uniform_int(x); return x; }
+  int_vt uniform_int  () { int_vt x; rng_->uniform_int(x); return x; }
   uint_vt uniform_uint() { uint_vt x; rng_->uniform_uint(x); return x; }
 
   real_vt uniform_gen(const real_vt& scale = 1.0, const real_vt& offset = 0.5) {
@@ -726,10 +937,10 @@ public:
 
   real_vt exponential() { real_vt x; rng_->exponential_real(x); return x; }
 
-  void normal_two_bm(real_vt& x1, real_vt& x2) {
-    rng_->normal_two_real_bm(x1,x2); }
+  void normal_pair_bm(real_vt& x1, real_vt& x2) {
+    rng_->normal_pair_real_bm(x1,x2); }
   real_vt normal() {
-    real_vt x1, x2; rng_->normal_two_real_bm(x1,x2); return x1; }
+    real_vt x1; rng_->normal_real(x1); return x1; }
 
   void uniform_on_unit_sphere(real_vt& x, real_vt& y, real_vt& z) {
     rng_->uniform_on_unit_sphere_real(x,y,z); }

@@ -42,7 +42,7 @@ struct RayProcessorDetectorSphere
   // Position of sphere around detector through which incoming ray must mast
   // if it is to have any chance of being detected
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius = 0;         // Radius of sphere  [cm^2]
+  double radius = 0;         // Radius of sphere [cm]
   unsigned iobs = 0;         // Observation layer associated with this detector
 
   // Optional restriction on direction that incoming ray must have if it is to
@@ -73,7 +73,7 @@ public:
   virtual ~FederatedPEProcessor();
   void start_processing() override;
   void process_focal_plane_hit(unsigned scope_id, int pixel_id,
-    double x, double y, double ux, double uy, double t0, double pe_weight) override;
+    double x, double y, double ux, double uy, double t, double pe_weight) override;
   void finish_processing() override;
 protected:
   unsigned scope_id_base_ = 0;

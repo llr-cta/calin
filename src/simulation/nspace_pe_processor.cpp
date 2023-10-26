@@ -48,7 +48,7 @@ void NSpacePEProcessor::start_processing()
 }
 
 void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
-  double x, double y, double ux, double uy, double t0, double pe_weight)
+  double x, double y, double ux, double uy, double t, double pe_weight)
 {
   switch(config_.axis_variables()) {
   case calin::ix::simulation::pe_processor::XY:
@@ -61,7 +61,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[1] = uy;
     break;
   case calin::ix::simulation::pe_processor::T:
-    p_[0] = t0 - config_.t_origin();
+    p_[0] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::XY_UXUY:
     p_[0] = x;
@@ -72,19 +72,19 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
   case calin::ix::simulation::pe_processor::XY_T:
     p_[0] = x;
     p_[1] = y;
-    p_[2] = t0 - config_.t_origin();
+    p_[2] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::UXUY_T:
     p_[0] = ux;
     p_[1] = uy;
-    p_[2] = t0 - config_.t_origin();
+    p_[2] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::XY_UXUY_T:
     p_[0] = x;
     p_[1] = y;
     p_[2] = ux;
     p_[3] = uy;
-    p_[4] = t0 - config_.t_origin();
+    p_[4] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY:
     p_[0] = scope_id;
@@ -98,7 +98,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     break;
   case calin::ix::simulation::pe_processor::SCOPE_T:
     p_[0] = scope_id;
-    p_[1] = t0 - config_.t_origin();
+    p_[1] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY:
     p_[0] = scope_id;
@@ -110,13 +110,13 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[0] = scope_id;
     p_[1] = x;
     p_[2] = y;
-    p_[3] = t0 - config_.t_origin();
+    p_[3] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_UXUY_T:
     p_[0] = scope_id;
     p_[1] = ux;
     p_[2] = uy;
-    p_[3] = t0 - config_.t_origin();
+    p_[3] = t - config_.t_origin();
     break;
   case calin::ix::simulation::pe_processor::SCOPE_XY_UXUY_T:
     p_[0] = scope_id;
@@ -124,7 +124,7 @@ void NSpacePEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     p_[2] = y;
     p_[3] = ux;
     p_[4] = uy;
-    p_[5] = t0 - config_.t_origin();
+    p_[5] = t - config_.t_origin();
   };
   space_.accumulate(p_, pe_weight);
 }

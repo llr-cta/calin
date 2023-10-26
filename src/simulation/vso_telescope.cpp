@@ -875,6 +875,12 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
     auto* m = c->add_module();
     m->set_module_index(0);
     m->set_module_grid_index(0);
+    m->set_module_grid_u(0);
+    m->set_module_grid_v(0);
+    m->set_module_grid_i(-1);
+    m->set_module_grid_j(-1);
+    m->set_module_spiral_index(0);
+
     unsigned modchan_id = 0;
     for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size, use_a_config)) {
       pixel_hexids[id] = std::make_pair(module_index, modchan_id);
@@ -912,6 +918,13 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
         auto* m = c->add_module();
         m->set_module_index(module_index);
         m->set_module_grid_index(module_id);
+        int mu, mv;
+        math::hex_array::hexid_to_uv(module_id, mu, mv);
+        m->set_module_grid_u(mu);
+        m->set_module_grid_v(mv);
+        m->set_module_grid_i(-1);
+        m->set_module_grid_j(-1);
+        m->set_module_spiral_index(module_index);
         for(auto id : math::hex_array::
             cluster_hexid_to_member_hexid(module_id, module_size, use_a_config)) {
           m->add_channels_in_module(id); // temporarily add hexid
@@ -937,11 +950,15 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
     ch->set_channel_index(pixelid);
     ch->set_pixel_index(pixelid);
     ch->set_pixel_grid_index(hexid);
+    int u, v;
+    math::hex_array::hexid_to_uv(hexid, u, v);
+    ch->set_pixel_grid_u(u);
+    ch->set_pixel_grid_v(v);
+    ch->set_pixel_spiral_index(pixelid);
     ch->set_channel_set_index(0);
     ch->set_module_index(modid);
     ch->set_module_channel_index(modchanid);
-    double x;
-    double y;
+    double x, y;
     grid.gridid_to_xy(hexid, x, y);
     ch->set_x(x);
     ch->set_y(y);

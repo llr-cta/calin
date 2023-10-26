@@ -206,6 +206,10 @@ public:
       time_reversal_ok, n, ray_is_close_to_surface, tol, niter);
   }
 
+  void scatter_direction(double dispersion_per_axis, calin::math::rng::RNG& rng) {
+    calin::math::geometry::scatter_direction_in_place(dir_, dispersion_per_axis, rng);
+  }
+
 #ifndef SWIG
   inline Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const
   {
@@ -215,6 +219,16 @@ public:
   double reflect_from_polynomial_surface(const double* p, unsigned np);
   double reflect_from_rough_polynomial_surface(const double* p, unsigned np,
     double roughness, calin::math::rng::RNG& rng);
+
+  void refract_at_polynomial_surface_in(const double* p, unsigned np, double n)
+  {
+    refract_at_surface_in(norm_of_polynomial_surface(p,np), n);
+  }
+
+  void refract_at_polynomial_surface_out(const double* p, unsigned np, double n)
+  {
+    refract_at_surface_out(norm_of_polynomial_surface(p,np), n);
+  }
 #endif
 
   Eigen::Vector3d norm_of_polynomial_surface(const Eigen::VectorXd& p) const
@@ -231,6 +245,16 @@ public:
     double roughness, calin::math::rng::RNG& rng)
   {
     return reflect_from_rough_polynomial_surface(p.data(), p.size(), roughness, rng);
+  }
+
+  void refract_at_polynomial_surface_in(const Eigen::VectorXd& p, double n)
+  {
+    refract_at_polynomial_surface_in(p.data(), p.size(), n);
+  }
+
+  void refract_at_polynomial_surface_out(const Eigen::VectorXd& p, double n)
+  {
+    refract_at_polynomial_surface_out(p.data(), p.size(), n);
   }
 
 private:

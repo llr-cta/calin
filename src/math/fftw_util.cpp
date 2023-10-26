@@ -91,6 +91,14 @@ hcvec_fftindex(unsigned nsample, bool imaginary_negative)
 }
 
 #if INSTRSET >= 7
+void calin::math::fftw_util::hcvec_scale_and_multiply(double* ovec, const double* ivec1,
+  const double* ivec2, unsigned nsample, double scale)
+{
+  hcvec_scale_and_multiply_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec,
+    ivec1, ivec2, nsample, scale);
+  // hcvec_scale_and_multiply<double>(ovec, ivec1, ivec2, nsample, scale);
+}
+
 void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
   const double* ivec2, double real_addand, unsigned nsample)
 {
