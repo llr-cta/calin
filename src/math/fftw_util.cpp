@@ -317,6 +317,13 @@ void calin::math::fftw_util::hcvec_delta_iq_idft_by_index(Eigen::VectorXd& oivec
   }
 }
 
+Eigen::VectorXd calin::math::fftw_util::hcvec_psd_weight(unsigned nsample)
+{
+  Eigen::VectorXd ovec(nsample);
+  hcvec_psd_weight(ovec.data(), nsample);
+  return ovec;
+}
+
 Eigen::VectorXd calin::math::fftw_util::hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt)
 {
   unsigned nsample = ivec.size();

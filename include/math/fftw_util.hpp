@@ -310,6 +310,23 @@ T hcvec_avg_real(const T* ivec, unsigned nsample)
 }
 
 template<typename T>
+void hcvec_psd_weight(T* ovec, unsigned nsample)
+{
+  using calin::math::special::SQR;
+  T* r = ovec;
+  T* c = ovec + nsample;
+  *r++ = 1.0;
+  c--;
+  while(r<c) {
+    *r++ = 2.0;
+    *c-- = 2.0;
+  }
+  if(r==c) {
+    *r++ = 1.0;
+  }
+}
+
+template<typename T>
 void hcvec_to_psd(T* ovec, const T* ivec, unsigned nsample, T dc_cpt = 0)
 {
   using calin::math::special::SQR;
@@ -318,7 +335,7 @@ void hcvec_to_psd(T* ovec, const T* ivec, unsigned nsample, T dc_cpt = 0)
   *ovec++ = SQR(*r++ + dc_cpt);
   c--;
   while(r<c) {
-    *ovec++ = SQR(*r++) + SQR(*c--);
+    *ovec++ = 2.0*(SQR(*r++) + SQR(*c--));
   }
   if(r==c) {
     *ovec++ = SQR(*r++);
@@ -333,7 +350,7 @@ void hcvec_to_psd_no_square(T* ovec, const T* ivec, unsigned nsample)
   *ovec++ = *r++;
   c--;
   while(r<c) {
-    *ovec++ = *r++ + *c--;
+    *ovec++ = 2.0*(*r++ + *c--);
   }
   if(r==c) {
     *ovec++ = *r++;
@@ -1565,6 +1582,7 @@ void hcvec_delta_iq_idft(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
 void hcvec_delta_iq_idft_by_index(Eigen::VectorXd& oivec, Eigen::VectorXd& oqvec,
   unsigned index, unsigned nsample, bool vcl = true);
 
+Eigen::VectorXd hcvec_psd_weight(unsigned nsample);
 Eigen::VectorXd hcvec_to_psd(const Eigen::VectorXd& ivec, double dc_cpt=0);
 Eigen::VectorXd hcvec_to_psd_no_square(const Eigen::VectorXd& ivec);
 
