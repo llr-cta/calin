@@ -104,6 +104,9 @@ template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
 template<typename VCLArchitecture> void VCLIACTGroundMap<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
+  xatm_.clear();
+  yatm_.clear();
+  zatm_.clear();
   xgnd_.clear();
   ygnd_.clear();
   uxgnd_.clear();
