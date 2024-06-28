@@ -58,6 +58,9 @@ public:
     bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTGroundMap();
 
+  const std::vector<double>& xatm() const { return xatm_; }
+  const std::vector<double>& yatm() const { return yatm_; }
+  const std::vector<double>& zatm() const { return zatm_; }
   const std::vector<double>& xgnd() const { return xgnd_; }
   const std::vector<double>& ygnd() const { return ygnd_; }
   const std::vector<double>& uxgnd() const { return uxgnd_; }
@@ -69,6 +72,9 @@ public:
     double_vt bandwidth, double_vt ray_weight) final;
 
 protected:
+  std::vector<double> xatm_;
+  std::vector<double> yatm_;
+  std::vector<double> zatm_;
   std::vector<double> xgnd_;
   std::vector<double> ygnd_;
   std::vector<double> uxgnd_;
@@ -110,6 +116,13 @@ template<typename VCLArchitecture> void VCLIACTGroundMap<VCLArchitecture>::
 propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   double_vt bandwidth, double_vt ray_weight)
 {
+  double_at atm_x;
+  double_at atm_y;
+  double_at atm_z;
+  ray.x().store(atm_x);
+  ray.y().store(atm_y);
+  ray.z().store(atm_z);
+
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
     VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
 
@@ -124,6 +137,9 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
     if(ray_mask[iv]) {
+      xatm_.push_back(atm_x[iv]);
+      yatm_.push_back(atm_y[iv]);
+      zatm_.push_back(atm_z[iv]);
       xgnd_.push_back(x[iv]);
       ygnd_.push_back(y[iv]);
       uxgnd_.push_back(ux[iv]);
