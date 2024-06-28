@@ -50,7 +50,7 @@ jobs:
                     [clang-18, clang++-18, 'clang-18', broadwell ],
                     [clang-16, clang++-16, 'clang-16', broadwell ],
                     [clang-14, clang++-14, 'clang-14', broadwell ],
-                    [clang-12, clang++-12, 'clang-12', broadwell ] ]
+                    [clang-12, clang++-12, 'clang-12', broadwell ]
  ]
 
     runs-on: ${{ matrix.os }}
