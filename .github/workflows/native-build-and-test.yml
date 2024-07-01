@@ -43,6 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
+        geant: [v11.2.2]
         compiler: [ [gcc-10, g++-10, 'gcc-10 g++-10', broadwell ],
                     [gcc-9, g++-9, 'gcc-9 g++-9', broadwell ],
                     [gcc-8, g++-8, 'gcc-8 g++-8', broadwell ],
@@ -68,8 +69,8 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           ${{ matrix.compiler[2] }}
-        curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz | sudo tar -zxf - -C /
-        curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-20.04-10.7.2/Geant4-ubuntu-20.04-10.7.2.tbz2 | sudo tar -jxf - -C /
+        curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/${{matrix.os}}/CamerasToACTL-${{matrix.os}}.tgz | sudo tar -zxf - -C /
+        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}/Geant4-${{matrix.os}}-${{matrix.geant}}.tbz2 | sudo tar -jxf - -C /
     - name: Print version information
       shell: bash
       run: |
