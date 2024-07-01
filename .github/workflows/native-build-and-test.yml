@@ -42,15 +42,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-22.04]
         geant: [11.2.2]
-        compiler: [ [gcc-10, g++-10, 'gcc-10 g++-10', broadwell ],
+        compiler: [ [gcc-12, g++-12, 'gcc-12 g++-12', broadwell ],
+                    [gcc-11, g++-11, 'gcc-11 g++-11', broadwell ],
+                    [gcc-10, g++-10, 'gcc-10 g++-10', broadwell ],
                     [gcc-9, g++-9, 'gcc-9 g++-9', broadwell ],
-                    [gcc-8, g++-8, 'gcc-8 g++-8', broadwell ],
-                    [gcc-7, g++-7, 'gcc-7 g++-7', broadwell ],
-                    [clang-12, clang++-12, 'clang-12', broadwell ],
-                    [clang-11, clang++-11, 'clang-11', broadwell ],
-                    [clang-10, clang++-10, 'clang-10', broadwell ] ]
+                    [clang-15, clang++-15, 'clang-15', broadwell ],
+                    [clang-14, clang++-14, 'clang-14', broadwell ],
+                    [clang-13, clang++-13, 'clang-13', broadwell ],
+                    [clang-12, clang++-12, 'clang-12', broadwell ] ]
 
     runs-on: ${{ matrix.os }}
 
