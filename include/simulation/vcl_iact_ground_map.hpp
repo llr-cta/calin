@@ -61,6 +61,7 @@ public:
   const std::vector<double>& xatm() const { return xatm_; }
   const std::vector<double>& yatm() const { return yatm_; }
   const std::vector<double>& zatm() const { return zatm_; }
+  const std::vector<double>& tgnd() const { return tgnd_; }
   const std::vector<double>& xgnd() const { return xgnd_; }
   const std::vector<double>& ygnd() const { return ygnd_; }
   const std::vector<double>& uxgnd() const { return uxgnd_; }
@@ -75,6 +76,7 @@ protected:
   std::vector<double> xatm_;
   std::vector<double> yatm_;
   std::vector<double> zatm_;
+  std::vector<double> tgnd_;
   std::vector<double> xgnd_;
   std::vector<double> ygnd_;
   std::vector<double> uxgnd_;
@@ -107,6 +109,7 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   xatm_.clear();
   yatm_.clear();
   zatm_.clear();
+  tgnd_.clear();
   xgnd_.clear();
   ygnd_.clear();
   uxgnd_.clear();
@@ -129,10 +132,12 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
     VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
 
+  double_at t;
   double_at x;
   double_at y;
   double_at ux;
   double_at uy;
+  ray.time().store(t);
   ray.x().store(x);
   ray.y().store(y);
   ray.ux().store(ux);
@@ -143,6 +148,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
       xatm_.push_back(atm_x[iv]);
       yatm_.push_back(atm_y[iv]);
       zatm_.push_back(atm_z[iv]);
+      tgnd_.push_back(t[iv]);
       xgnd_.push_back(x[iv]);
       ygnd_.push_back(y[iv]);
       uxgnd_.push_back(ux[iv]);
