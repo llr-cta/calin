@@ -84,8 +84,6 @@ protected:
 
   unsigned iobs_ = 0;
   double zobs_ = 0.0;
-  double ref_index_ = 1.0;
-  double ref_index_correction_ = 0.0;
 #endif
 };
 
@@ -101,9 +99,6 @@ VCLIACTTrackVisitor<VCLArchitecture>(atm, config, rng, adopt_atm, adopt_rng)
 {
   iobs_ = 0;
   zobs_ = this->atm_->zobs(iobs_);
-  double n_minus_one = this->atm_->n_minus_one(zobs_);
-  ref_index_ = 1.0 + n_minus_one;
-  ref_index_correction_ = -n_minus_one;
 }
 
 template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
@@ -140,13 +135,11 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   ray_mask &= (ray.z()>zobs_) & (ray.uz()<0);
 
-  double_vt dz = ray.z()-zobs_;
   ray.mutable_ct() -= vcl::select(ray_mask,
-    (dz*ref_index_correction_ + this->atm_->template vcl_propagation_ct_correction_to_iobs<VCLArchitecture>(ray.z(), 0))/ray.uz(),
+    (this->atm_->template vcl_propagation_ct_correction_to_iobs<VCLArchitecture>(ray.z(), 0))/ray.uz(),
     0);
 
-  ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask,
-    VCLIACTTrackVisitor<VCLArchitecture>::atm_->zobs(0), false);
+  ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, zobs_, false);
 
   double_at t;
   double_at x;
