@@ -135,6 +135,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   ray_mask &= (ray.z()>zobs_) & (ray.uz()<0);
 
+  // Note that uz is negative so we subtract delay
   ray.mutable_ct() -= vcl::select(ray_mask,
     (this->atm_->template vcl_propagation_ct_correction_to_iobs<VCLArchitecture>(ray.z(), 0))/ray.uz(),
     0);
