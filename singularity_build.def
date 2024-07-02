@@ -89,11 +89,12 @@ From: ubuntu:22.04
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4/data
-    export G4URL=http://geant4-data.web.cern.ch/datasets
+    # export G4URL=http://geant4-data.web.cern.ch/datasets
+    export G4URL=https://cern.ch/geant4-data/datasets/
     mkdir -p $G4DATADIR
 
-    curl -L $G4URL/G4NDL4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4EMLOW8.5.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4NDL.4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4EMLOW.8.5.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4PhotonEvaporation.5.7.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4RadioactiveDecay.5.6.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4SAIDDATA.2.0.tar.gz | tar -C $G4DATADIR -zxf -
