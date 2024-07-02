@@ -90,7 +90,7 @@ From: ubuntu:22.04
 
     export G4DATADIR=/usr/share/Geant4/data
     # export G4URL=http://geant4-data.web.cern.ch/datasets
-    export G4URL=https://cern.ch/geant4-data/datasets/
+    export G4URL=https://cern.ch/geant4-data/datasets
     mkdir -p $G4DATADIR
 
     curl -L $G4URL/G4NDL.4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
@@ -98,13 +98,13 @@ From: ubuntu:22.04
     curl -L $G4URL/G4PhotonEvaporation.5.7.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4RadioactiveDecay.5.6.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4SAIDDATA.2.0.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4PARTICLEXS4.0.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4PARTICLEXS.4.0.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4ABLA.3.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4INCL.1.2.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4PII.1.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4ENSDFSTATE.2.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4RealSurface.2.2.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4TENDL.1.3.2.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
 
     curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/ubuntu-22.04/CamerasToACTL-ubuntu-22.04.tgz | sudo tar -zxf - -C /
     curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-22.04-10.7.2/Geant4-ubuntu-22.04-10.7.2.tbz2 | sudo tar -jxf - -C /
