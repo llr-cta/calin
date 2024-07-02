@@ -406,7 +406,7 @@ void TreeSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSpa
   if(proto.bin_indices_size() != proto.bin_weights_size()) {
     throw std::runtime_error("TreeSparseNSpace: bin indices and weights do not match");
   }
-  for(unsigned ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
+  for(int ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
     bins_[proto.bin_indices(ibin)] +=  proto.bin_weights(ibin);
   }
   if(proto.overflow_weight() != 0.0) {
@@ -1273,7 +1273,7 @@ void BlockSparseNSpace::accumulate_from_proto(const calin::ix::math::nspace::NSp
   Eigen::VectorXi ix(xlo_.size());
   int64_t array_index;
   int64_t block_index;
-  for(unsigned ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
+  for(int ibin=0; ibin<proto.bin_indices_size(); ++ibin) {
     map_bin_coords(ix, proto.bin_indices(ibin));
     index_of_bin(ix, array_index, block_index);
     cell_ref(array_index,block_index) += proto.bin_weights(ibin);

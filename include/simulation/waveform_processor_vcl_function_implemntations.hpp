@@ -499,7 +499,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_fill_digital_trig
     int l0_eop = 0;
     uint32_t triggered_32 = 0;
     uint32_t newly_triggered = 0;
-    for(int isamp=0; isamp<trace_nsamples_; isamp += 4*VCLArchitecture::num_double) {
+    for(int isamp=0; isamp<int(trace_nsamples_); isamp += 4*VCLArchitecture::num_double) {
       if(isamp % 32 == 0) {
         newly_triggered = buffer->newly_triggered_bitmask[isamp/32];
         triggered_32 = 0;
@@ -531,7 +531,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_fill_digital_trig
       } else {
         int jsamp = 0;
         uint32_t value = above_threshold & 0x1;
-        while(jsamp < 4*VCLArchitecture::num_double) {
+        while(jsamp < int(4*VCLArchitecture::num_double)) {
           if(value == 0) {
             l0_tot = 0;
             int ksamp = ffs(above_threshold);
@@ -545,7 +545,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_fill_digital_trig
             // ksamp = (ksamp == 0) ? int(4*VCLArchitecture::num_double)-jsamp : ksamp-1;
             ksamp = std::min(unsigned(ksamp)-1, 4*VCLArchitecture::num_double-jsamp);
             l0_tot += ksamp;
-            if(l0_tot >= time_over_threshold_samples) {
+            if(l0_tot >= int(time_over_threshold_samples)) {
               l0_eop = isamp+jsamp+ksamp+coherence_time_samples-1;
               int ksop = int(time_over_threshold_samples) - (l0_tot - ksamp) - 1;
               if(ksop >= 0) {
