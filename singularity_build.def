@@ -40,8 +40,8 @@ From: ubuntu:22.04
 %post
     export DEBIAN_FRONTEND=noninteractive
     
-    echo "deb http://us.archive.ubuntu.com/ubuntu focal main universe" > /etc/apt/sources.list
-    echo "deb http://us.archive.ubuntu.com/ubuntu/ focal-security main universe" >> /etc/apt/sources.list
+    echo "deb http://us.archive.ubuntu.com/ubuntu jammy main universe" > /etc/apt/sources.list
+    echo "deb http://us.archive.ubuntu.com/ubuntu/ jammy-security main universe" >> /etc/apt/sources.list
     apt-get -y update
     apt-get -y upgrade
     apt-get -y install                                             \
