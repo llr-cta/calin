@@ -107,7 +107,7 @@ From: ubuntu:22.04
     curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
 
     curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/ubuntu-22.04/CamerasToACTL-ubuntu-22.04.tgz | tar -zxf - -C /
-    curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-22.04-10.7.2/Geant4-ubuntu-22.04-10.7.2.tbz2 | tar -jxf - -C /
+    curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-22.04-10.7.2/Geant4-ubuntu-22.04-11.2.2.tbz2 | tar -jxf - -C /
 
     tar -zxf /tmp/calin_installed.tgz -C /
     rm -f /tmp/calin_installed.tgz
