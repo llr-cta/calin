@@ -58,6 +58,9 @@ public:
     bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTGroundMap();
 
+  double ground_radius_cut() const { return std::sqrt(r2gnd_cut_); }
+  void set_ground_radius_cut(double r) { r2gnd_cut_ = r*r; }
+
   const std::vector<double>& xatm() const { return xatm_; }
   const std::vector<double>& yatm() const { return yatm_; }
   const std::vector<double>& zatm() const { return zatm_; }
@@ -84,6 +87,7 @@ protected:
 
   unsigned iobs_ = 0;
   double zobs_ = 0.0;
+  double r2gnd_cut_ = 0.0;
 #endif
 };
 
@@ -141,6 +145,10 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
     0);
 
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, zobs_, false);
+
+  if(r2gnd_cut_ > 0.0) {
+    ray_mask &= ray.x()*ray.x() + ray.y()*ray.y() < r2gnd_cut_;
+  }
 
   double_at t;
   double_at x;
