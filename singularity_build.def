@@ -57,7 +57,6 @@ From: ubuntu:22.04
         python3-scipy                                              \
         python3-matplotlib                                         \
         cython3                                                    \
-        ipython3                                                   \
         jupyter-notebook                                           \
         fftw3                                                      \
         sqlite3                                                    \
@@ -80,12 +79,11 @@ From: ubuntu:22.04
         libprotobuf-c1                                             \
         libprotobuf23                                              \
         libprotoc23                                                \
-        python3-ipywidgets                                         \
         gdb
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install ipyparallel cdsapi ecmwf-api-client astropy gammapy
+    pip3 install cdsapi ecmwf-api-client astropy gammapy
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4/data
@@ -115,7 +113,6 @@ From: ubuntu:22.04
     tar -zxf /tmp/calin_installed.tgz -C /
     rm -f /tmp/calin_installed.tgz
 
-    ipython3 profile create default
     jupyter notebook --allow-root --generate-config
     sed -i -e '/c.NotebookApp.ip/s/^#//'                           \
            -e '/c.NotebookApp.ip/s/localhost/*/'                   \
