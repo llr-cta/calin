@@ -57,7 +57,6 @@ From: ubuntu:22.04
         python3-scipy                                              \
         python3-matplotlib                                         \
         cython3                                                    \
-        jupyter-notebook                                           \
         fftw3                                                      \
         sqlite3                                                    \
         libxerces-c3.2                                             \
@@ -83,7 +82,7 @@ From: ubuntu:22.04
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install cdsapi ecmwf-api-client astropy gammapy
+    pip3 install notebook cdsapi ecmwf-api-client astropy gammapy
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4/data
