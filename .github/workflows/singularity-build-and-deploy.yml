@@ -63,7 +63,7 @@ jobs:
         cmake -DCALIN_BUILD_ARCH=${{ matrix.arch }}                       \
               -DCMAKE_BUILD_TYPE=Release                                  \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
-              -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
+              -DCALIN_PYTHON_SUB_DIR=lib/python3.10                       \
               -DNO_GEANT4_TEST:BOOLEAN=TRUE                               \
               ..
 
