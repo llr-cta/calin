@@ -85,7 +85,7 @@ From: ubuntu:22.04
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install ipyparallel cdsapi ecmwf-api-client astropy gammagy
+    pip3 install ipyparallel cdsapi ecmwf-api-client astropy gammapy
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4/data
