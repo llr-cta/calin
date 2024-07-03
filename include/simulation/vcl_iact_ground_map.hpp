@@ -52,6 +52,10 @@ public:
   using double_at   = typename VCLArchitecture::double_at;
 #endif // not defined SWIG
 
+  VCLIACTGroundMap(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm, double dzatm_profile,
+    const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config = VCLIACTTrackVisitor<VCLArchitecture>::default_config(),
+    calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
+    bool adopt_atm = false, bool adopt_rng = false);
   VCLIACTGroundMap(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
     const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config = VCLIACTTrackVisitor<VCLArchitecture>::default_config(),
     calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
@@ -60,6 +64,7 @@ public:
 
   double ground_radius_cut() const { return std::sqrt(r2gnd_cut_); }
   void set_ground_radius_cut(double r) { r2gnd_cut_ = r*r; }
+  void set_store_emission_point(bool store = true) { store_emission_pt_ = store; }
 
   const std::vector<double>& xatm() const { return xatm_; }
   const std::vector<double>& yatm() const { return yatm_; }
@@ -69,6 +74,8 @@ public:
   const std::vector<double>& ygnd() const { return ygnd_; }
   const std::vector<double>& uxgnd() const { return uxgnd_; }
   const std::vector<double>& uygnd() const { return uygnd_; }
+  double ncherenkov() const { return ncherenkov_; }
+  const std::vector<double>& zatm_profile() const { return zatm_profile_; }
 
 #ifndef SWIG
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) final;
@@ -76,6 +83,10 @@ public:
     double_vt bandwidth, double_vt ray_weight) final;
 
 protected:
+  double ncherenkov_;
+  std::vector<double> zatm_profile_;
+  double dzatm_profile_inv_;
+
   std::vector<double> xatm_;
   std::vector<double> yatm_;
   std::vector<double> zatm_;
@@ -88,6 +99,7 @@ protected:
   unsigned iobs_ = 0;
   double zobs_ = 0.0;
   double r2gnd_cut_ = 0.0;
+  bool store_emission_pt_ = false;
 #endif
 };
 
@@ -96,13 +108,27 @@ protected:
 template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
 VCLIACTGroundMap(
     calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    double dzatm_profile,
     const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config,
-    calin::math::rng::VCLRNG<VCLArchitecture>* rng,
+    calin::math::rng::VCLRNG<VCLArchitecture>* rng, 
     bool adopt_atm, bool adopt_rng):
-VCLIACTTrackVisitor<VCLArchitecture>(atm, config, rng, adopt_atm, adopt_rng)
+  VCLIACTTrackVisitor<VCLArchitecture>(atm, config, rng, adopt_atm, adopt_rng),
+  dzatm_profile_inv_(1.0/dzatm_profile)
 {
   iobs_ = 0;
   zobs_ = this->atm_->zobs(iobs_);
+  zatm_profile_.resize(std::ceil(atm->top_of_atmosphere() * dzatm_profile_inv_));
+}
+
+template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
+VCLIACTGroundMap(
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config,
+    calin::math::rng::VCLRNG<VCLArchitecture>* rng, 
+    bool adopt_atm, bool adopt_rng):
+  VCLIACTGroundMap(atm, 5000.0 /* 50m */, config, rng, adopt_atm, adopt_rng)
+{
+  // nothing to see here
 }
 
 template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
@@ -114,6 +140,8 @@ template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
 template<typename VCLArchitecture> void VCLIACTGroundMap<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
+  ncherenkov_ = 0.0;
+  std::fill(zatm_profile_.begin(), zatm_profile_.end(), 0.0);
   xatm_.clear();
   yatm_.clear();
   zatm_.clear();
@@ -133,9 +161,18 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   double_at atm_x;
   double_at atm_y;
   double_at atm_z;
+  double_at ray_w;
   ray.x().store(atm_x);
   ray.y().store(atm_y);
   ray.z().store(atm_z);
+  ray_weight.store(ray_w);
+
+  for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
+    if(ray_mask[iv]) {
+      ncherenkov_ += ray_w[iv];
+      zatm_profile_.at(atm_z[iv] * dzatm_profile_inv_) += ray_w[iv];
+    }
+  }
 
   ray_mask &= (ray.z()>zobs_) & (ray.uz()<0);
 
@@ -146,7 +183,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   ray_mask = ray.propagate_to_z_plane_with_mask(ray_mask, zobs_, false);
 
-  if(r2gnd_cut_ > 0.0) {
+  if(r2gnd_cut_) {
     ray_mask &= ray.x()*ray.x() + ray.y()*ray.y() < r2gnd_cut_;
   }
 
@@ -163,9 +200,11 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
   for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
     if(ray_mask[iv]) {
-      xatm_.push_back(atm_x[iv]);
-      yatm_.push_back(atm_y[iv]);
-      zatm_.push_back(atm_z[iv]);
+      if(store_emission_pt_) {
+        xatm_.push_back(atm_x[iv]);
+        yatm_.push_back(atm_y[iv]);
+        zatm_.push_back(atm_z[iv]);
+      }
       tgnd_.push_back(t[iv]);
       xgnd_.push_back(x[iv]);
       ygnd_.push_back(y[iv]);
