@@ -44,8 +44,8 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
   auto config = calin::simulation::vcl_iact::VCLIACTGroundMap<
     calin::util::vcl::VCL256Architecture>::default_config();
   if(global_argc > 1) {
-    config.set_bandwidth(calin::util::string::double_from_string(global_argv[1]));
-    std::cerr << "HELLO: " << global_argv[1] << ' ' << config.bandwidth() << '\n';
+    config.mutable_base_config()->set_bandwidth(calin::util::string::double_from_string(global_argv[1]));
+    std::cerr << "HELLO: " << global_argv[1] << ' ' << config.base_config().bandwidth() << '\n';
   }
   auto* act = new calin::simulation::vcl_iact::VCLIACTGroundMap<
     calin::util::vcl::VCL256Architecture>(atm, config);
