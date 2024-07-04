@@ -22,7 +22,7 @@ From: ubuntu:22.04
     /tmp/calin_installed.tgz
 
 %environment
-    export G4DATADIR="/usr/share/Geant4/data"
+    export GEANT4_DATA_DIR="/usr/share/Geant4/data"
     export G4NEUTRONHPDATA="$GEANT4_DATA_DIR/G4NDL4.7.1"
     export G4LEDATA="$GEANT4_DATA_DIR/G4EMLOW8.5"
     export G4LEVELGAMMADATA="$GEANT4_DATA_DIR/PhotonEvaporation5.7"
