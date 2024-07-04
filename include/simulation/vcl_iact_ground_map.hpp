@@ -62,6 +62,8 @@ public:
     bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTGroundMap();
 
+  double dzatm_profile() const { return 1.0/dzatm_profile_inv_; }
+
   double ground_radius_cut() const { return std::sqrt(r2gnd_cut_); }
   void set_ground_radius_cut(double r) { r2gnd_cut_ = r*r; }
   void set_store_emission_point(bool store = true) { store_emission_pt_ = store; }
