@@ -173,6 +173,8 @@ VCLIACTGroundMap<VCLArchitecture>::default_config()
   detector->set_store_time(true);
   detector->set_store_emission_point(false);
   detector->set_store_fraction(1.0);
+  config.set_dzatm_profile(5000.0);
+  config.set_observation_level(0);
   return config;
 }
 
