@@ -66,21 +66,21 @@ public:
   double dzatm_profile() const { return 1.0/dzatm_profile_inv_; }
 
   const std::vector<double>& xatm(unsigned idetector) const { 
-    return detector_.at(idetector).xatm; }
+    return detector_.at(idetector)->xatm; }
   const std::vector<double>& yatm(unsigned idetector) const { 
-    return detector_.at(idetector).yatm; }
+    return detector_.at(idetector)->yatm; }
   const std::vector<double>& zatm(unsigned idetector) const { 
-    return detector_.at(idetector).zatm; }
+    return detector_.at(idetector)->zatm; }
   const std::vector<double>& tgnd(unsigned idetector) const { 
-    return detector_.at(idetector).tgnd; }
+    return detector_.at(idetector)->tgnd; }
   const std::vector<double>& xgnd(unsigned idetector) const { 
-    return detector_.at(idetector).xgnd; }
+    return detector_.at(idetector)->xgnd; }
   const std::vector<double>& ygnd(unsigned idetector) const { 
-    return detector_.at(idetector).ygnd; }
+    return detector_.at(idetector)->ygnd; }
   const std::vector<double>& uxgnd(unsigned idetector) const { 
-    return detector_.at(idetector).uxgnd; }
+    return detector_.at(idetector)->uxgnd; }
   const std::vector<double>& uygnd(unsigned idetector) const { 
-    return detector_.at(idetector).uygnd; }
+    return detector_.at(idetector)->uygnd; }
 
   double num_cherenkov() const { return ncherenkov_; }
   const std::vector<double>& zatm_profile() const { return zatm_profile_; }
@@ -92,8 +92,8 @@ public:
 
 protected:
   struct Detector {
-    double r2;
-    const calin::ix::simulation::vcl_iact::VCLIACTGroundMapDetectorConfiguration* config;
+    double r2 = 0;
+    const calin::ix::simulation::vcl_iact::VCLIACTGroundMapDetectorConfiguration* config = nullptr;
     std::vector<double> xatm;
     std::vector<double> yatm;
     std::vector<double> zatm;
@@ -120,7 +120,7 @@ protected:
   std::vector<double> zatm_profile_;
   double dzatm_profile_inv_;
 
-  std::vector<Detector> detector_;
+  std::vector<Detector*> detector_;
 
   unsigned iobs_ = 0;
   double zobs_ = 0.0;
@@ -144,15 +144,18 @@ VCLIACTGroundMap(
   zatm_profile_.resize(std::ceil(atm->top_of_atmosphere() * dzatm_profile_inv_));
   detector_.resize(config_.detector_size());
   for(int idetector=0;idetector<config_.detector_size(); idetector++) {
-    detector_[idetector].r2 = SQR(config_.detector(idetector).r_gnd());
-    detector_[idetector].config = &config_.detector(idetector);
+    detector_[idetector] = new Detector;
+    detector_[idetector]->r2 = SQR(config_.detector(idetector).r_gnd());
+    detector_[idetector]->config = &config_.detector(idetector);
   }
 }
 
 template<typename VCLArchitecture> VCLIACTGroundMap<VCLArchitecture>::
 ~VCLIACTGroundMap()
 {
-  // nothing to see here
+  for(auto* idetector : detector_) {
+    delete idetector;
+  }
 }
 
 template<typename VCLArchitecture> 
@@ -179,7 +182,7 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   ncherenkov_ = 0.0;
   std::fill(zatm_profile_.begin(), zatm_profile_.end(), 0.0);
   for(auto& idetector : detector_) {
-    idetector.clear();
+    idetector->clear();
   }
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
 }
@@ -227,28 +230,28 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   double_vt u = VCLIACTTrackVisitor<VCLArchitecture>::rng_->uniform_double();
 
   for(unsigned idetector=0;idetector<config_.detector_size();idetector++) {
-    auto& detector = detector_[idetector];
-    double_vt xrel = ray.x() - detector.config->x_gnd();
-    double_vt yrel = ray.y() - detector.config->y_gnd();
-    double_bvt store_mask = ray_mask && (xrel*xrel + yrel*yrel)<detector.r2 && u<=detector.config->store_fraction();
+    auto* detector = detector_[idetector];
+    double_vt xrel = ray.x() - detector->config->x_gnd();
+    double_vt yrel = ray.y() - detector->config->y_gnd();
+    double_bvt store_mask = ray_mask && (xrel*xrel + yrel*yrel)<detector->r2 && u<=detector->config->store_fraction();
 
       for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
         if(store_mask[iv]) {
-          if(detector.config->store_position()) {
-            detector.xgnd.push_back(x[iv]);
-            detector.ygnd.push_back(y[iv]);
+          if(detector->config->store_position()) {
+            detector->xgnd.push_back(x[iv]);
+            detector->ygnd.push_back(y[iv]);
           }
-          if(detector.config->store_direction()) {
-            detector.uxgnd.push_back(ux[iv]);
-            detector.uygnd.push_back(uy[iv]);
+          if(detector->config->store_direction()) {
+            detector->uxgnd.push_back(ux[iv]);
+            detector->uygnd.push_back(uy[iv]);
           }
-          if(detector.config->store_time()) {
-            detector.tgnd.push_back(t[iv]);
+          if(detector->config->store_time()) {
+            detector->tgnd.push_back(t[iv]);
           }
-          if(detector.config->store_time()) {
-            detector.xatm.push_back(atm_x[iv]);
-            detector.yatm.push_back(atm_y[iv]);
-            detector.zatm.push_back(atm_z[iv]);
+          if(detector->config->store_time()) {
+            detector->xatm.push_back(atm_x[iv]);
+            detector->yatm.push_back(atm_y[iv]);
+            detector->zatm.push_back(atm_z[iv]);
           }
         }
       }
