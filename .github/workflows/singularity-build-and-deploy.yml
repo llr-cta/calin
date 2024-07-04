@@ -53,7 +53,7 @@ jobs:
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
           libseccomp-dev pkg-config
         curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/${{matrix.os}}/CamerasToACTL-${{matrix.os}}.tgz | sudo tar -zxf - -C /
-        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}/Geant4-${{matrix.os}}-${{matrix.geant}}.tbz2 | sudo tar -jxf - -C /
+        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
 
     - name: Configure calin
       shell: bash
