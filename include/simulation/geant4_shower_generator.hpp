@@ -107,6 +107,8 @@ public:
   static double get_material_density(const std::string& material_name);
   static config_type default_config();
 
+  std::string pdg_type_to_string(int pdg_type);
+
 protected:
   void construct(unsigned num_atm_layers, VerbosityLevel verbose_level,
     double default_cut_value_cm, double detector_size, const std::string& material_name);

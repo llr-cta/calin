@@ -245,6 +245,19 @@ get_material_density(const std::string& material_name)
   return material->GetDensity() / (CLHEP::g/CLHEP::cm3);
 }
 
+std::string Geant4ShowerGenerator::pdg_type_to_string(int pdg_type)
+{
+  G4ParticleTable* table = G4ParticleTable::GetParticleTable();
+  if(table) {
+    const G4ParticleDefinition* particle = table->FindParticle(pdg_type);
+    if(particle) {
+      return particle->GetParticleType();
+    }
+  }
+  return std::to_string(pdg_type);
+}
+
+
 Geant4ShowerGenerator::config_type Geant4ShowerGenerator::default_config()
 {
   config_type config;
