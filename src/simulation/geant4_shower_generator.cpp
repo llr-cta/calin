@@ -251,7 +251,7 @@ std::string Geant4ShowerGenerator::pdg_type_to_string(int pdg_type)
   if(table) {
     const G4ParticleDefinition* particle = table->FindParticle(pdg_type);
     if(particle) {
-      return particle->GetParticleType();
+      return particle->GetParticleName();
     }
   }
   return std::to_string(pdg_type);

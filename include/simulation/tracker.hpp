@@ -64,6 +64,9 @@ struct Event
 
 struct Track
 {
+  int track_id;            // Track ID
+  int parent_track_id;     // Track ID of parent
+
   ParticleType type;       // Simplified particle type
   int pdg_type;            // PDG particle type code
   double q;                // PDG particle charge          [e]

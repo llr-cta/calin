@@ -146,30 +146,32 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
 
   calin::simulation::tracker::Track track;
 
-  track.pdg_type = pdg_info->GetPDGEncoding();
-  track.q        = pdg_info->GetPDGCharge();
-  track.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
-  track.type     = tracker::pdg_type_to_particle_type(track.pdg_type);
+  track.track_id        = the_step->GetTrack()->GetTrackID();
+  track.parent_track_id = the_step->GetTrack()->GetParentID();
+  track.pdg_type        = pdg_info->GetPDGEncoding();
+  track.q               = pdg_info->GetPDGCharge();
+  track.mass            = pdg_info->GetPDGMass()/CLHEP::MeV;
+  track.type            = tracker::pdg_type_to_particle_type(track.pdg_type);
 
   const G4ThreeVector& pre_step_pt_posn = pre_step_pt->GetPosition();
-  track.e0       = pre_step_pt_etot/CLHEP::MeV;
+  track.e0              = pre_step_pt_etot/CLHEP::MeV;
   g4vec_to_eigen(track.x0, pre_step_pt_posn, CLHEP::cm);
   g4vec_to_eigen(track.u0, pre_step_pt->GetMomentumDirection());
-  track.t0       = pre_step_pt->GetGlobalTime()/CLHEP::ns;
+  track.t0              = pre_step_pt->GetGlobalTime()/CLHEP::ns;
 
   const G4StepPoint* post_step_pt = the_step->GetPostStepPoint();
   const G4ThreeVector& post_step_pt_posn = post_step_pt->GetPosition();
-  track.e1       = post_step_pt->GetTotalEnergy()/CLHEP::MeV;
+  track.e1              = post_step_pt->GetTotalEnergy()/CLHEP::MeV;
   g4vec_to_eigen(track.x1, post_step_pt_posn, CLHEP::cm);
   g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());
-  track.t1       = post_step_pt->GetGlobalTime()/CLHEP::ns;
+  track.t1              = post_step_pt->GetGlobalTime()/CLHEP::ns;
 
-  track.dx_hat   = track.x1 - track.x0;
-  track.dx       = track.dx_hat.norm();
+  track.dx_hat          = track.x1 - track.x0;
+  track.dx              = track.dx_hat.norm();
   track.dx_hat/=track.dx;
-  track.de       = track.e1 - track.e0;
-  track.dt       = track.t1 - track.t0;
-  track.weight   = pre_step_pt->GetWeight();
+  track.de              = track.e1 - track.e0;
+  track.dt              = track.t1 - track.t0;
+  track.weight          = pre_step_pt->GetWeight();
 
 #if 0
   static int nprint=0;
