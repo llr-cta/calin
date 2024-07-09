@@ -58,7 +58,7 @@ void StraightTrackGenerator::generate_showers(
   event.weight          = weight;
 
   tracker::Track track;
-  track.track_id        = 0;
+  track.track_id        = 1;
   track.parent_track_id = 0;
   track.type            = event.type;
   track.pdg_type        = event.pdg_type;
