@@ -257,7 +257,6 @@ std::string Geant4ShowerGenerator::pdg_type_to_string(int pdg_type)
   return std::to_string(pdg_type);
 }
 
-
 Geant4ShowerGenerator::config_type Geant4ShowerGenerator::default_config()
 {
   config_type config;
