@@ -27,7 +27,7 @@
 
 %{
 #include "math/hex_array.hpp"
-/* #include "math/hex_array_simd.hpp" */
+#include "math/hex_array_vcl.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -55,4 +55,4 @@
 %apply int &INOUT { int& uinout, int& vinout };
 
 %include "math/hex_array.hpp"
-/* %include "math/hex_array_simd.hpp" */
+%include "math/hex_array_vcl.hpp"

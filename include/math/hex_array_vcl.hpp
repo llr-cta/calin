@@ -25,9 +25,12 @@
 
 #pragma once
 
+#include <util/vcl.hpp>
 #include <math/hex_array.hpp>
 
 namespace calin { namespace math { namespace hex_array {
+
+#ifndef SWIG
 
 template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCL: public VCLArchitecture
 {
@@ -54,8 +57,8 @@ public:
 
   static inline int32_vt positive_hexid_to_ringid_loop(const int32_vt hexid)
   {
-    // This algorithm is relatively slow in comparisson to the scalar version
-    // but still faster overall conidering we compute 8 rigids in one go
+    // This algorithm is relatively slow in comparison to the scalar version
+    // but still faster overall considering we compute 8 rigid's in one go
     int32_vt ringid = 0;
     int32_vt nsites = 1;
     int32_vt nring = 0;
@@ -69,7 +72,7 @@ public:
     return ringid;
   }
 
-  static inline int32_vt positive_hexid_to_ringid_root(const int32_vt hexid)
+  static inline int32_vt positive_hexid_to_ringid_float_root(const int32_vt hexid)
   {
     // The following algorithm works until hexid=12,589,056
     // const unsigned iarg = 1+4*(hexid-1)/3;
@@ -107,6 +110,12 @@ public:
     return truncate_to_int(arg_l, arg_h);
   }
 
+  static inline int32_vt positive_hexid_to_ringid_root(const int32_vt hexid)
+  {
+    if(horizontal_and(hexid <= 12589056))return positive_hexid_to_ringid_float_root(hexid);
+    else return positive_hexid_to_ringid_double_root(hexid);
+  }
+  
   static inline int32_vt positive_hexid_to_ringid(const int32_vt hexid)
   {
     return positive_hexid_to_ringid_root(hexid);
@@ -154,6 +163,80 @@ public:
     mask = runid > ringid_minus_one;
     runid = if_add(mask, runid, -ringid);
     segid = if_add(mask, segid, 1);
+  }
+
+  static inline void positive_hexid_to_ringid_segid_runid_twostep(
+    const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
+  {
+    // ringid = positive_hexid_to_ringid(hexid);
+    // unsigned iring = hexid - ringid_to_nsites_contained(ringid-1);
+    // segid = int(iring/ringid);
+    // runid = iring - segid*ringid;
+
+    ringid = positive_hexid_to_ringid(hexid);
+    const int32_vt ringid_minus_one = ringid - 1;
+    runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
+    segid = 0;
+
+    const int32_vt two_ringid = ringid<<1;
+
+    int32_bvt mask = runid >= two_ringid;
+    runid = if_add(mask, runid, -two_ringid);
+    segid = if_add(mask, segid, 2);
+
+    mask = runid >= two_ringid;
+    runid = if_add(mask, runid, -two_ringid);
+    segid = if_add(mask, segid, 2);
+
+    mask = runid >= ringid;
+    runid = if_add(mask, runid, -ringid);
+    segid = if_add(mask, segid, 1);
+  }
+
+  static inline void positive_hexid_to_ringid_segid_runid_muldiv(
+    const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
+  {
+    ringid = positive_hexid_to_ringid(hexid);
+    const int32_vt ringid_minus_one = ringid - 1;
+    runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
+
+    if(horizontal_and(ringid_minus_one<32)) {
+      int32_vt M = vcl::lookup<32>(ringid_minus_one, divisor_M13);
+      segid = (runid*M)>>13;
+      runid -= segid*ringid;
+    } else {
+      segid = 0;
+
+      int32_bvt mask = runid > ringid_minus_one;
+      runid = if_add(mask, runid, -ringid);
+      segid = if_add(mask, segid, 1);
+
+      mask = runid > ringid_minus_one;
+      runid = if_add(mask, runid, -ringid);
+      segid = if_add(mask, segid, 1);
+
+      mask = runid > ringid_minus_one;
+      runid = if_add(mask, runid, -ringid);
+      segid = if_add(mask, segid, 1);
+
+      mask = runid > ringid_minus_one;
+      runid = if_add(mask, runid, -ringid);
+      segid = if_add(mask, segid, 1);
+
+      mask = runid > ringid_minus_one;
+      runid = if_add(mask, runid, -ringid);
+      segid = if_add(mask, segid, 1);
+    }
+  }
+
+  static inline void positive_hexid_to_ringid_segid_runid_idiv(
+    const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
+  {
+    ringid = positive_hexid_to_ringid(hexid);
+    const int32_vt ringid_minus_one = ringid - 1;
+    runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
+    segid = runid/ringid;
+    runid -= segid*ringid;
   }
 
   static inline void hexid_to_ringid_segid_runid(
@@ -956,10 +1039,97 @@ public:
 
 };
 
-#if 0
+#endif // not defined SWIG
 
-unsigned test_avx2_positive_hexid_to_ringid_loop(unsigned hexid);
-unsigned test_avx2_positive_hexid_to_ringid_root(unsigned hexid);
+inline unsigned test_vcl_positive_hexid_to_ringid_loop(volatile unsigned hexid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  unsigned result = 0;
+  while(iterations--)result += VCL<Arch>::positive_hexid_to_ringid_loop(hexid)[0];
+  return result;
+}
+
+inline unsigned test_vcl_positive_hexid_to_ringid_root(volatile unsigned hexid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  unsigned result = 0;
+  while(iterations--)result += VCL<Arch>::positive_hexid_to_ringid_root(hexid)[0];
+  return result;
+}
+
+inline void test_vcl_positive_hexid_to_ringid_segid_runid(volatile unsigned hexid,
+  unsigned& ringid, unsigned& segid, unsigned& runid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  ringid = 0;
+  segid = 0;
+  runid = 0;
+  while(iterations--) {
+    Arch::int32_vt v_ringid;
+    Arch::int32_vt v_segid;
+    Arch::int32_vt v_runid;
+    VCL<Arch>::positive_hexid_to_ringid_segid_runid(hexid,v_ringid,v_segid,v_runid);
+    ringid += v_ringid[0];
+    segid += v_segid[0];
+    runid += v_runid[0];
+  }
+}
+
+inline void test_vcl_positive_hexid_to_ringid_segid_runid_twostep(volatile unsigned hexid,
+  unsigned& ringid, unsigned& segid, unsigned& runid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  ringid = 0;
+  segid = 0;
+  runid = 0;
+  while(iterations--) {
+    Arch::int32_vt v_ringid;
+    Arch::int32_vt v_segid;
+    Arch::int32_vt v_runid;
+    VCL<Arch>::positive_hexid_to_ringid_segid_runid_twostep(hexid,v_ringid,v_segid,v_runid);
+    ringid += v_ringid[0];
+    segid += v_segid[0];
+    runid += v_runid[0];
+  }
+}
+
+inline void test_vcl_positive_hexid_to_ringid_segid_runid_muldiv(volatile unsigned hexid,
+  unsigned& ringid, unsigned& segid, unsigned& runid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  ringid = 0;
+  segid = 0;
+  runid = 0;
+  while(iterations--) {
+    Arch::int32_vt v_ringid;
+    Arch::int32_vt v_segid;
+    Arch::int32_vt v_runid;
+    VCL<Arch>::positive_hexid_to_ringid_segid_runid_muldiv(hexid,v_ringid,v_segid,v_runid);
+    ringid += v_ringid[0];
+    segid += v_segid[0];
+    runid += v_runid[0];
+  }
+}
+
+inline void test_vcl_positive_hexid_to_ringid_segid_runid_idiv(volatile unsigned hexid,
+  unsigned& ringid, unsigned& segid, unsigned& runid, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  ringid = 0;
+  segid = 0;
+  runid = 0;
+  while(iterations--) {
+    Arch::int32_vt v_ringid;
+    Arch::int32_vt v_segid;
+    Arch::int32_vt v_runid;
+    VCL<Arch>::positive_hexid_to_ringid_segid_runid_idiv(hexid,v_ringid,v_segid,v_runid);
+    ringid += v_ringid[0];
+    segid += v_segid[0];
+    runid += v_runid[0];
+  }
+}
+
+#if 0
 unsigned test_avx2_hexid_to_ringid(unsigned hexid);
 unsigned test_avx2_ringid_to_nsites_contained(unsigned ringid);
 void test_avx2_positive_hexid_to_ringid_segid_runid(unsigned hexid,
