@@ -229,16 +229,6 @@ public:
     }
   }
 
-  static inline void positive_hexid_to_ringid_segid_runid_idiv(
-    const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
-  {
-    ringid = positive_hexid_to_ringid(hexid);
-    const int32_vt ringid_minus_one = ringid - 1;
-    runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
-    segid = runid/ringid;
-    runid -= segid*ringid;
-  }
-
   static inline void hexid_to_ringid_segid_runid(
     const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
   {
@@ -1105,24 +1095,6 @@ inline void test_vcl_positive_hexid_to_ringid_segid_runid_muldiv(volatile unsign
     Arch::int32_vt v_segid;
     Arch::int32_vt v_runid;
     VCL<Arch>::positive_hexid_to_ringid_segid_runid_muldiv(hexid,v_ringid,v_segid,v_runid);
-    ringid += v_ringid[0];
-    segid += v_segid[0];
-    runid += v_runid[0];
-  }
-}
-
-inline void test_vcl_positive_hexid_to_ringid_segid_runid_idiv(volatile unsigned hexid,
-  unsigned& ringid, unsigned& segid, unsigned& runid, unsigned iterations = 1)
-{
-  using Arch = calin::util::vcl::VCL256Architecture;
-  ringid = 0;
-  segid = 0;
-  runid = 0;
-  while(iterations--) {
-    Arch::int32_vt v_ringid;
-    Arch::int32_vt v_segid;
-    Arch::int32_vt v_runid;
-    VCL<Arch>::positive_hexid_to_ringid_segid_runid_idiv(hexid,v_ringid,v_segid,v_runid);
     ringid += v_ringid[0];
     segid += v_segid[0];
     runid += v_runid[0];
