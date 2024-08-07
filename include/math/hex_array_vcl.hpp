@@ -178,7 +178,7 @@ public:
     runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
     segid = 0;
 
-    const int32_vt two_ringid = ringid<<1;
+    const int32_vt two_ringid = ringid + ringid;
 
     int32_bvt mask = runid >= two_ringid;
     runid = if_add(mask, runid, -two_ringid);
