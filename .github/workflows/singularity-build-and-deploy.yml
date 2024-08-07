@@ -92,6 +92,7 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: 1.13
+        cache: false
       id: go
 
     - name: Install Singularity
