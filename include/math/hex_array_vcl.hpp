@@ -1,4 +1,4 @@
-/*
+  /*
 
    calin/math/hex_array_vcl.hpp -- Stephen Fegan -- 2018-08-20
 
@@ -131,7 +131,7 @@ public:
     return 3*ringid*(ringid+1)+1;
   }
 
-  static inline void positive_hexid_to_ringid_segid_runid(
+  static inline void positive_hexid_to_ringid_segid_runid_onestep(
     const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
   {
     // ringid = positive_hexid_to_ringid(hexid);
@@ -168,10 +168,9 @@ public:
   static inline void positive_hexid_to_ringid_segid_runid_twostep(
     const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
   {
-    // ringid = positive_hexid_to_ringid(hexid);
-    // unsigned iring = hexid - ringid_to_nsites_contained(ringid-1);
-    // segid = int(iring/ringid);
-    // runid = iring - segid*ringid;
+    // Slightly improved algorithm which runs a little faster than "onestep".
+    // Step by two rings twice then by one ring. This cuts down the number of
+    // blocks of conditional additions from 5 to 3.
 
     ringid = positive_hexid_to_ringid(hexid);
     const int32_vt ringid_minus_one = ringid - 1;
@@ -196,6 +195,15 @@ public:
   static inline void positive_hexid_to_ringid_segid_runid_muldiv(
     const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
   {
+    // This was an attempt to develop a faster algorithm to calculate
+    // segid and runid using an optimized "divide" by multiplication and
+    // shifting (a common approach to division by a constant) for the cases
+    // where ringid <= 32, and falling back to the twostep algorithm otherwise.
+    // In the end, despite the fact there are much less instructions in the
+    // optimized case, it is *much* slower, probably due to the vectorized
+    // lookup of the multiplier, and the two multiplications. The version
+    // with the repeated subtraction ("onestep" and "twostep") are much faster.
+
     ringid = positive_hexid_to_ringid(hexid);
     const int32_vt ringid_minus_one = ringid - 1;
     runid = hexid - ringid_to_nsites_contained(ringid_minus_one);
@@ -207,26 +215,26 @@ public:
     } else {
       segid = 0;
 
-      int32_bvt mask = runid > ringid_minus_one;
-      runid = if_add(mask, runid, -ringid);
-      segid = if_add(mask, segid, 1);
+      const int32_vt two_ringid = ringid + ringid;
 
-      mask = runid > ringid_minus_one;
-      runid = if_add(mask, runid, -ringid);
-      segid = if_add(mask, segid, 1);
+      int32_bvt mask = runid >= two_ringid;
+      runid = if_add(mask, runid, -two_ringid);
+      segid = if_add(mask, segid, 2);
 
-      mask = runid > ringid_minus_one;
-      runid = if_add(mask, runid, -ringid);
-      segid = if_add(mask, segid, 1);
+      mask = runid >= two_ringid;
+      runid = if_add(mask, runid, -two_ringid);
+      segid = if_add(mask, segid, 2);
 
-      mask = runid > ringid_minus_one;
-      runid = if_add(mask, runid, -ringid);
-      segid = if_add(mask, segid, 1);
-
-      mask = runid > ringid_minus_one;
+      mask = runid >= ringid;
       runid = if_add(mask, runid, -ringid);
       segid = if_add(mask, segid, 1);
     }
+  }
+
+  static inline void positive_hexid_to_ringid_segid_runid(
+    const int32_vt hexid, int32_vt& ringid, int32_vt& segid, int32_vt& runid)
+  {
+    positive_hexid_to_ringid_segid_runid_twostep(hexid, ringid, segid, runid);
   }
 
   static inline void hexid_to_ringid_segid_runid(
@@ -234,7 +242,7 @@ public:
   {
     // if(hexid==0) { ringid = segid = runid = 0; return; }
     // return positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
-    positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+    positive_hexid_to_ringid_segid_runid(max(hexid,1), ringid, segid, runid);
     int32_bvt mask = hexid > 0;
     ringid = select(mask, ringid, 0);
     segid = select(mask, segid, 0);
@@ -265,6 +273,16 @@ public:
     return ringid;
   }
 
+  static inline int32_vt uv_to_ringid(const int32_vt u, const int32_vt v, const int32_vt w)
+  {
+    // return static_cast<unsigned>(std::max({std::abs(u), std::abs(v),
+    //           std::abs(u+v)}));
+    int32_vt ringid = abs(u);
+    ringid = max(ringid, abs(v));
+    ringid = max(ringid, abs(w));
+    return ringid;
+  }
+
   static inline void hexid_to_uv_ccw(const int32_vt hexid, int32_vt& u, int32_vt& v)
   {
     // if(hexid==0) { u = v = 0; return; }
@@ -282,6 +300,7 @@ public:
     //   case 5: u = ringid;       v = runid-ringid; break;
     //   default: assert(0);
     // }
+  
     int32_vt ringid = positive_hexid_to_ringid(hexid);
     int32_vt iring = hexid - ringid_to_nsites_contained(ringid - 1);
 
@@ -379,6 +398,32 @@ public:
     // Seg ID = 5
     // else /*if(u==ringid and upv!=ringid)*/{ segid=5; runid=ringid+v; }
     hexid = if_add(not_found_mask, hexid, upv);
+
+    return select(ringid>0, hexid, 0);
+  }
+
+  static inline int32_vt uv_to_hexid_ccw_alt(const int32_vt u, const int32_vt v)
+  {
+    const int32_vt w = u + v;
+    const int32_vt ringid = uv_to_ringid(u,v,w);
+    const int32_vt minus_ringid = -ringid;
+
+    int32_vt advance = ringid+ringid;
+
+    int32_vt hexid = ringid_to_nsites_contained(ringid - 1);
+
+    int32_bvt mask;
+    
+    mask = w==ringid || v==ringid;
+    hexid += select(mask, v+max(-u,0), advance);
+    advance = select(mask, 0, advance);
+
+    mask = u==minus_ringid || w==minus_ringid;
+    hexid += select(mask, -w+max(-v,0), advance);
+    advance = select(mask, 0, advance);
+
+    mask = v==minus_ringid || (u==ringid && w!=ringid);
+    hexid += select(mask, u+max(w,0), advance);
 
     return select(ringid>0, hexid, 0);
   }
@@ -1100,6 +1145,32 @@ inline void test_vcl_positive_hexid_to_ringid_segid_runid_muldiv(volatile unsign
     runid += v_runid[0];
   }
 }
+
+inline unsigned test_vcl_uv_to_hexid_ccw_alt(volatile int u, volatile int v, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  int result = 0;
+  while(iterations--) {
+    Arch::int32_vt u_v = u; 
+    Arch::int32_vt v_v = v; 
+    result += VCL<Arch>::uv_to_hexid_ccw_alt(u_v,v_v)[0];
+  }
+  return result;
+}
+
+inline int test_vcl_uv_to_hexid_ccw(volatile int u, volatile int v, unsigned iterations = 1)
+{
+  using Arch = calin::util::vcl::VCL256Architecture;
+  int result = 0;
+  while(iterations--) {
+    Arch::int32_vt u_v = u; 
+    Arch::int32_vt v_v = v; 
+    result += VCL<Arch>::uv_to_hexid_ccw(u_v,v_v)[0];
+  }
+  return result;
+}
+
+
 
 #if 0
 unsigned test_avx2_hexid_to_ringid(unsigned hexid);
