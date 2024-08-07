@@ -26,16 +26,8 @@
 
 #include <math/hex_array.hpp>
 
-const unsigned calin::math::hex_array::divisor_M[32] =  { 
-         1,   1,  11,   1,  13,  43,  37,   1,  57,  13,  47,  43,  79,
-        37,  69,   1, 121,  57,  27, 103,  49, 187, 179, 171,  41,  79,
-        19, 147,  71, 137, 265,   1 };
-
-const unsigned calin::math::hex_array::divisor_S[32] =  { 
-         0,   1,   5,   2,   6,   8,   8,   3,   9,   7,   9,   9,  10,  
-         9,  10,   4,  11,  10,   9,  11,  10,  12,  12,  12,  10,  11,  
-         9,  12,  11,  12,  13,   5 };
-
+// Set of multipliers that calculate the division by 1..32 to determine
+// segment ID : n/d = (n*divisor_M13[d-1]) >> 13 for n in [0,6*d]
 const unsigned calin::math::hex_array::divisor_M13[32] =  {
        8192, 4096, 2816, 2048, 1664, 1376, 1184, 1024,  912,  832,  752,
         688,  632,  592,  552,  512,  484,  456,  432,  412,  392,  374,

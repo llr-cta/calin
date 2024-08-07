@@ -47,9 +47,6 @@ void nh_to_xy(int *, double *, double *);
 } // namespace vinoutv
 #endif
 
-extern const unsigned divisor_M[32];
-extern const unsigned divisor_S[32];
-
 extern const unsigned divisor_M13[32];
 
 // *****************************************************************************
