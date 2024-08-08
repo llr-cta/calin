@@ -418,12 +418,12 @@ public:
     
     mask = w==ringid || v==ringid;
     hexid = if_add(mask, hexid, v+max(-u,0));
-    hexid = if_sub(~mask, hexid, advance);
+    hexid = if_add(~mask, hexid, advance);
     advance = if_sub(mask, advance, advance);
 
     mask = u==minus_ringid || w==minus_ringid;
     hexid = if_add(mask, hexid, -w+max(-v,0));
-    hexid = if_sub(~mask, hexid, advance);
+    hexid = if_add(~mask, hexid, advance);
     advance = if_sub(mask, advance, advance);
 
     mask = v==minus_ringid || (u==ringid && w!=ringid);
