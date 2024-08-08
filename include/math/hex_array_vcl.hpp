@@ -417,17 +417,14 @@ public:
     int32_bvt mask;
     
     mask = w==ringid || v==ringid;
-    hexid = if_add(mask, hexid, v+max(-u,0));
-    hexid = if_add(~mask, hexid, advance);
-    advance = if_sub(mask, advance, advance);
+    hexid += select(mask, v+max(-u,0), advance);
+    advance = select(mask, 0, advance);
 
     mask = u==minus_ringid || w==minus_ringid;
-    hexid = if_add(mask, hexid, -w+max(-v,0));
-    hexid = if_add(~mask, hexid, advance);
-    advance = if_sub(mask, advance, advance);
+    hexid += select(mask, -w+max(-v,0), advance);
 
     mask = v==minus_ringid || (u==ringid && w!=ringid);
-    hexid = if_add(mask, hexid, u+max(w,0));
+    hexid += select(mask, u+max(w,0), 0);
 
     return select(ringid>0, hexid, 0);
   }
