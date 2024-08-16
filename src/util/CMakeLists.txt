@@ -20,7 +20,7 @@ set(CALIN_SOURCES string.cpp file.cpp log.cpp
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto_util calin_proto
-  ${PYTHON_LIBRARIES})
+  ${Python3_LIBRARIES})
 
 add_library(${CALIN_TARGET_LIBRARY}_native SHARED string.cpp)
 target_compile_options(${CALIN_TARGET_LIBRARY}_native PUBLIC -march=native)
