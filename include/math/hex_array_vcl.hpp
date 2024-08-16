@@ -421,7 +421,7 @@ public:
     advance = select(mask, 0, advance);
 
     mask = u==minus_ringid || w==minus_ringid;
-    hexid += select(mask, -w+max(-v,0), advance);
+    hexid += select(mask, -(w+min(v,0)) /* -w+max(-v,0) */, advance);
 
     mask = v==minus_ringid || (u==ringid && w!=ringid);
     hexid += select(mask, u+max(w,0), 0);
