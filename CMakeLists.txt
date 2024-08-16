@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.15)
 project(calin)
 enable_testing()
 
@@ -97,18 +97,14 @@ include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 
 ## Find Python interpreter and libraries
-find_package(PythonInterp 3 REQUIRED)
-find_package(PythonLibs 3 REQUIRED)
-include_directories(${PYTHON_INCLUDE_PATH})
-
-## Find Numpy since we use numpy arrays here
-find_package(Numpy)
-include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
+find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+include_directories(${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
+message(STATUS "Python3_LIBRARIES:" ${Python3_LIBRARIES})
 
 ## Find SWIG and set SWIG include paths to "swig", "include" and "proto"
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
-set(CMAKE_SWIG_FLAGS -py3 -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_BINARY_DIR}/swig -I${CMAKE_SOURCE_DIR}/include -I${CMAKE_BINARY_DIR}/include -I${CMAKE_BINARY_DIR}/proto)
+set(CMAKE_SWIG_FLAGS -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_BINARY_DIR}/swig -I${CMAKE_SOURCE_DIR}/include -I${CMAKE_BINARY_DIR}/include -I${CMAKE_BINARY_DIR}/proto)
 
 ## Find ZeroMQ
 find_package(ZMQ REQUIRED)
