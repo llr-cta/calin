@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_FILES atmosphere.i pmt.i vs_optics.i ray_processor.i tracker.i
 	detector_efficiency.i world_magnetic_model.i vcl_iact.i sct_optics.i
-	ray_propagator.i waveform_processor.i)
+	ray_propagator.i waveform_processor.i corsika8_shower_generator.i)
 
 if(GEANT4_FOUND)
 	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} geant4_shower_generator.i)

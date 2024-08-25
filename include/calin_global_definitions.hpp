@@ -78,30 +78,51 @@ inline Eigen::VectorXi std_to_eigenvec_unsigned(const std::vector<unsigned> &x)
   return Eigen::Map<const Eigen::VectorXi>(reinterpret_cast<const int*>(&x.front()), x.size());
 }
 
-template<typename T>
+template<typename T> inline 
 std::vector<T> protobuf_to_stdvec(const google::protobuf::RepeatedField<T>& x)
 {
   return std::vector<T>(x.begin(), x.end());
 }
 
-template<typename T>
+template<typename T> inline 
 std::vector<T> protobuf_to_stdvec(const google::protobuf::RepeatedField<T>* x)
 {
   return std::vector<T>(x->begin(), x->end());
 }
 
-template<typename T> void stdvec_to_existing_protobuf(
+template<typename T> inline void stdvec_to_existing_protobuf(
   google::protobuf::RepeatedField<T>& y, const std::vector<int> &x)
 {
   y.Resize(x.size());
   std::copy(x.begin(), x.end(), y.begin());
 }
 
-template<typename T> void stdvec_to_existing_protobuf(
+template<typename T> inline void stdvec_to_existing_protobuf(
   google::protobuf::RepeatedField<T>* y, const std::vector<int> &x)
 {
   y->Resize(x.size());
   std::copy(x.begin(), x.end(), y->begin());
+}
+
+template<typename T, typename V> inline void vec_to_xyz(T* xyz, const V& v)
+{
+  xyz->set_x(v[0]);
+  xyz->set_y(v[1]);
+  xyz->set_z(v[2]);
+}
+
+template<typename T, typename V> inline T vec_to_xyz(const V& v)
+{
+  T xyz;
+  xyz.set_x(v[0]);
+  xyz.set_y(v[1]);
+  xyz.set_z(v[2]);
+  return xyz;
+}
+
+template<typename T> inline Eigen::Vector3d xyz_to_eigenvec(const T& xyz)
+{
+  return { xyz.x(), xyz.y(), xyz.z() };
 }
 
 }; // namespace calin
