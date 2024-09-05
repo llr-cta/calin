@@ -52,7 +52,7 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   using namespace calin::ix::simulation::corsika8_shower_generator;
   
   config_type config;
-  config.set_atmospheric_model(LinsleyUSStd);
+  config.set_atmospheric_model(ATM_LinsleyUSStd);
   config.set_atmospheric_fraction_n2(0.78084);
   config.set_atmospheric_fraction_o2(0.20946);
   config.set_atmospheric_fraction_ar(0.009340);
@@ -62,7 +62,7 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_earth_radius(6371.0 * 1E5);
   config.set_zground(0.0);
   config.set_ztop(112.8 * 1E5);
-  calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d::Zero());
+  // calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d{10.0,12.0,13.0});
 
   config.set_seed(0);
   config.set_verbosity(C8_WARNING);
