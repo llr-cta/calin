@@ -27,7 +27,8 @@ set(CALIN_SOURCES algorithms.cpp
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
-		actl_event_decoder.cpp
+		acada_data_source.cpp zfits_acada_data_source.cpp
+		actl_event_decoder.cpp 
 		nectarcam_actl_l0_event_decoder.cpp nectarcam_actl_r1_event_decoder.cpp
 		lstcam_actl_r1_event_decoder.cpp
 		cta_actl_r1_event_decoder.cpp

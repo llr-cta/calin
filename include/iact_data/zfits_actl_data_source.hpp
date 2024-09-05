@@ -41,6 +41,12 @@ using std::streamoff;
 #ifndef CALIN_NO_ACTL_L0
 #include <L0.pb.h>
 
+namespace calin { namespace iact_data { namespace zfits_actl_data_source {
+
+
+
+} } } // namespace calin::iact_data::zfits_actl_data_source
+
 /*
 
               LLLLLLLLLLL                       000000000

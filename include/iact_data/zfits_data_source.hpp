@@ -59,6 +59,45 @@ namespace calin { namespace iact_data { namespace zfits_data_source {
               L::::::::::::::::::::::L        00:::::::::00
               LLLLLLLLLLLLLLLLLLLLLLLL          000000000
 
+
+
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
+
+
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
 */
 
 class ZFITSSingleFileDataSource_L0:
@@ -256,6 +295,10 @@ protected:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
+
+/*
+                                                               
+*/                                                               
 
 #endif // defined CALIN_HAVE_CTA_CAMERASTOACTL
 

@@ -1,0 +1,203 @@
+/*
+
+   calin/iact_data/zfits_acada_data_source.hpp -- Stephen Fegan -- 2022-09-05
+
+   Source of "raw" ACADA data types from ZFITS files
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+#pragma once
+
+#include <string>
+
+#include <iact_data/acada_data_source.hpp>
+#include <iact_data/zfits_data_source.pb.h>
+
+namespace calin { namespace iact_data { namespace zfits_acada_data_source {
+
+template<typename EventMessage, typename HeaderMessage>
+class ZFITSSingleFileACADACameraEventDataSource:
+  public calin::iact_data::acada_data_source::
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>
+{
+public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
+  CALIN_TYPEALIAS(event_type, EventMessage);
+  CALIN_TYPEALIAS(header_type, HeaderMessage);
+
+  ZFITSSingleFileACADACameraEventDataSource(const std::string& filename,
+    config_type config = default_config());
+  virtual ~ZFITSSingleFileACADACameraEventDataSource();
+
+  const event_type* borrow_next_event(uint64_t& seq_index_out) override;
+  void release_borrowed_event(const event_type* event) override;
+
+  event_type* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+  uint64_t size() override;
+  void set_next_index(uint64_t next_index) override;
+
+  header_type* get_run_header() override;
+
+  static config_type default_config();
+  const config_type& config() const { return config_; }
+
+private:
+  std::string filename_;
+  ACTL::IO::ProtobufIFits* zfits_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
+  uint64_t next_event_index_ = 0;
+  header_type* run_header_ = nullptr;
+  config_type config_;
+};
+
+template<typename EventMessage, typename HeaderMessage>
+class ZFITSACADACameraEventDataSource:
+  public calin::io::data_source::BasicChainedRandomAccessDataSource<
+    calin::iact_data::acada_data_source::
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >
+{
+public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
+  CALIN_TYPEALIAS(event_type, EventMessage);
+  CALIN_TYPEALIAS(header_type, HeaderMessage);
+
+  ZFITSACADACameraEventDataSource(const std::string& filename,
+    const config_type& config = default_config());
+  virtual ~ZFITSACADACameraEventDataSource();
+
+  header_type* get_run_header() override;
+
+  const event_type* borrow_next_event(uint64_t& seq_index_out) override;
+  void release_borrowed_event(const event_type* event) override;
+
+  event_type* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+  uint64_t size() override;
+  void set_next_index(uint64_t next_index) override;
+
+  static config_type default_config();
+  const config_type& config() const { return config_; }
+
+private:
+  config_type config_;
+  header_type* run_header_ = nullptr;
+};
+
+template<typename EventMessage, typename HeaderMessage>
+class ZFITSACADACameraEventDataSourceOpener:
+  public calin::io::data_source::DataSourceOpener<
+    calin::iact_data::acada_data_source::
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >
+{
+public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
+  CALIN_TYPEALIAS(event_type, EventMessage);
+  CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_source_type, calin::iact_data::acada_data_source::
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>);
+
+  ZFITSACADACameraEventDataSourceOpener(std::string filename,
+    const config_type config = default_config());
+  virtual ~ZFITSACADACameraEventDataSourceOpener();
+  unsigned num_sources() const override;
+  std::string source_name(unsigned isource) const override;
+  data_source_type* open(unsigned isource) override;
+  bool has_opened_file() { return has_opened_file_; }
+
+  static config_type default_config();
+  const config_type& config() const { return config_; }
+private:
+  std::vector<std::string> filenames_;
+  config_type config_;
+  bool has_opened_file_ = false;
+};
+
+/*
+
+              LLLLLLLLLLL                       000000000
+              L:::::::::L                     00:::::::::00
+              L:::::::::L                   00:::::::::::::00
+              LL:::::::LL                  0:::::::000:::::::0
+                L:::::L                    0::::::0   0::::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0 000 0:::::0
+                L:::::L                    0:::::0 000 0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L         LLLLLL     0::::::0   0::::::0
+              LL:::::::LLLLLLLLL:::::L     0:::::::000:::::::0
+              L::::::::::::::::::::::L      00:::::::::::::00
+              L::::::::::::::::::::::L        00:::::::::00
+              LLLLLLLLLLLLLLLLLLLLLLLL          000000000
+
+*/
+
+// bool is_zfits_l0(std::string filename, std::string events_table_name = "");
+
+/*
+
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
+
+*/
+
+// bool is_zfits_r1v0(std::string filename, std::string events_table_name = "");
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
+
+
+} } } // namespace calin::iact_data::zfits_acada_data_source
+
