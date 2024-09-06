@@ -24,10 +24,16 @@
 
 using namespace calin::iact_data::acada_data_source;
 
+template<typename EventMessage>
+ACADACameraEventDataSource<EventMessage>::
+~ACADACameraEventDataSource()
+{
+  // nothing to see here
+}
+
 template<typename EventMessage, typename HeaderMessage>
-ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>::
-ACADACameraEventRandomAccessDataSourceWithRunHeader():
-  calin::io::data_source::RandomAccessDataSource<EventMessage>()
+ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage>::
+~ACADACameraEventDataSourceWithRunHeader()
 {
   // nothing to see here
 }
@@ -40,6 +46,12 @@ ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>:
 }
 
 namespace calin { namespace iact_data { namespace acada_data_source {
+
+template class ACADACameraEventDataSource<ACADA_L0_EventMessage>;
+template class ACADACameraEventDataSource<ACADA_R1v0_EventMessage>;
+
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
 
 template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
 template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;

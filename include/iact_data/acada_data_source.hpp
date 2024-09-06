@@ -37,16 +37,32 @@ using std::streamoff; // needed for IFits.h
 
 namespace calin { namespace iact_data { namespace acada_data_source {
 
+template<typename EventMessage>
+class ACADACameraEventDataSource:
+  public virtual calin::io::data_source::DataSource<EventMessage>
+{
+public:
+  CALIN_TYPEALIAS(event_type, EventMessage);
+
+  ACADACameraEventDataSource(): 
+      calin::io::data_source::DataSource<EventMessage>() {
+    /* nothing to see here */ }
+  virtual ~ACADACameraEventDataSource();
+
+  virtual const EventMessage* borrow_next_event(uint64_t& seq_index_out) = 0;
+  virtual void release_borrowed_event(const EventMessage* event) = 0;
+};
+
 template<typename EventMessage, typename HeaderMessage>
 class ACADACameraEventDataSourceWithRunHeader:
-  public calin::io::data_source::DataSource<EventMessage>
+  public virtual ACADACameraEventDataSource<EventMessage>
 {
 public:
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
 
-  ACADACameraEventDataSourceWithRunHeader():
-      calin::io::data_source::DataSource<event_type>() {
+  ACADACameraEventDataSourceWithRunHeader(): 
+      ACADACameraEventDataSource<EventMessage>() {
     /* nothing to see here */ }
   virtual ~ACADACameraEventDataSourceWithRunHeader();
   virtual header_type* get_run_header() = 0;
@@ -54,18 +70,18 @@ public:
 
 template<typename EventMessage, typename HeaderMessage>
 class ACADACameraEventRandomAccessDataSourceWithRunHeader:
-  public calin::io::data_source::RandomAccessDataSource<EventMessage>
+  public virtual calin::io::data_source::RandomAccessDataSource<EventMessage>,
+  public virtual ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage>
 {
 public:
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
 
-  ACADACameraEventRandomAccessDataSourceWithRunHeader();
+  ACADACameraEventRandomAccessDataSourceWithRunHeader(): 
+      calin::io::data_source::RandomAccessDataSource<EventMessage>(), 
+      ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage>() {
+    /* nothing to see here */ }
   virtual ~ACADACameraEventRandomAccessDataSourceWithRunHeader();
-  virtual header_type* get_run_header() = 0;
-
-  virtual const event_type* borrow_next_event(uint64_t& seq_index_out) = 0;
-  virtual void release_borrowed_event(const event_type* event) = 0;
 };
 
 /*
@@ -92,28 +108,6 @@ public:
 CALIN_TYPEALIAS(ACADA_L0_EventMessage, DataModel::CameraEvent);
 CALIN_TYPEALIAS(ACADA_L0_HeaderMessage, DataModel::CameraRunHeader);
 
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventDataSource,
-//   calin::io::data_source::DataSource<ACADA_L0_EventMessage>);
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventRandomAccessDataSource,
-//   calin::io::data_source::RandomAccessDataSource<ACADA_L0_EventMessage>);
-
-// CALIN_TYPEALIAS(ConstACADA_L0_CameraEventDataSource,
-//   calin::io::data_source::DataSource<const ACADA_L0_EventMessage>);
-// CALIN_TYPEALIAS(ConstACADA_L0_CameraEventDataSink,
-//   calin::io::data_source::DataSink<const ACADA_L0_EventMessage>);
-
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventDataSourceWithRunHeader,
-//     ACADA_CameraEventDataSourceWithRunHeader<ACADA_L0_EventMessage,ACADA_L0_HeaderMessage>);
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventRandomAccessDataSourceWithRunHeader,
-//     ACADA_CameraEventRandomAccessDataSourceWithRunHeader<ACADA_L0_EventMessage,ACADA_L0_HeaderMessage>);
-
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventChainedRandomAccessDataSourceWithRunHeader,
-//   calin::io::data_source::BasicChainedRandomAccessDataSource<
-//     ACADA_L0_CameraEventRandomAccessDataSourceWithRunHeader>);
-// CALIN_TYPEALIAS(ACADA_L0_CameraEventRandomAccessDataSourceOpener,
-//   calin::io::data_source::DataSourceOpener<
-//     ACADA_L0_CameraEventRandomAccessDataSourceWithRunHeader>);
-
 /*
 
     RRRRRRRRRRRRRRRRR     1111111                              000000000     
@@ -137,28 +131,6 @@ CALIN_TYPEALIAS(ACADA_L0_HeaderMessage, DataModel::CameraRunHeader);
 
 CALIN_TYPEALIAS(ACADA_R1v0_EventMessage, R1::CameraEvent);
 CALIN_TYPEALIAS(ACADA_R1v0_HeaderMessage, R1::CameraConfiguration);
-
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventDataSource,
-//   calin::io::data_source::DataSource<ACADA_R1v0_EventMessage>);
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventRandomAccessDataSource,
-//   calin::io::data_source::RandomAccessDataSource<ACADA_R1v0_EventMessage>);
-
-// CALIN_TYPEALIAS(ConstACADA_R1v0_CameraEventDataSource,
-//   calin::io::data_source::DataSource<const ACADA_R1v0_EventMessage>);
-// CALIN_TYPEALIAS(ConstACADA_R1v0_CameraEventDataSink,
-//   calin::io::data_source::DataSink<const ACADA_R1v0_EventMessage>);
-
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventDataSourceWithRunHeader,
-//     ACADA_CameraEventDataSourceWithRunHeader<ACADA_R1v0_EventMessage,ACADA_R1v0_HeaderMessage>);
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventRandomAccessDataSourceWithRunHeader,
-//     ACADA_CameraEventRandomAccessDataSourceWithRunHeader<ACADA_R1v0_EventMessage,ACADA_R1v0_HeaderMessage>);
-
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventChainedRandomAccessDataSourceWithRunHeader,
-//   calin::io::data_source::BasicChainedRandomAccessDataSource<
-//     ACADA_R1v0_CameraEventRandomAccessDataSourceWithRunHeader>);
-// CALIN_TYPEALIAS(ACADA_R1v0_CameraEventRandomAccessDataSourceOpener,
-//   calin::io::data_source::DataSourceOpener<
-//     ACADA_R1v0_CameraEventRandomAccessDataSourceWithRunHeader>);
 
 /*
 
