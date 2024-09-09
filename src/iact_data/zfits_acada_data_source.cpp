@@ -42,6 +42,8 @@ namespace {
   template<typename Message> std::string default_message_table_name() { return "unknown"; }
   template<> std::string default_message_table_name<ACADA_L0_HeaderMessage>() { return "RunHeader"; }
   template<> std::string default_message_table_name<ACADA_L0_EventMessage>() { return "Events"; }
+  template<> std::string default_message_table_name<ACADA_R1v0_HeaderMessage>() { return "CameraConfig"; }
+  template<> std::string default_message_table_name<ACADA_R1v0_EventMessage>() { return "Events"; }
 } // anonymous namespace
 
 // =============================================================================

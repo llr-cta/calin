@@ -20,7 +20,7 @@ set(CALIN_SWIG_FILES algorithms.i telescope_data_source.i
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} raw_actl_l0_event_data_source.i
 		raw_actl_r1_event_data_source.i actl_event_decoder.i
-		raw_acada_event_data_source.i)
+		raw_acada_event_data_source_l0.i raw_acada_event_data_source_r1v0.i)
 endif()
 set(CALIN_SWIG_TARGET iact_data)
 
