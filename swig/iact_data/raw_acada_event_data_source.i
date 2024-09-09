@@ -1,0 +1,146 @@
+/*
+
+   calin/iact_data/raw_actl_r1_event_data_source.i -- Stephen Fegan -- 2024-09-09
+
+   SWIG interface file for calin.io.raw_acada_event_data_source
+
+   Copyright 2024, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+%module (package="calin.iact_data") raw_acada_event_data_source
+%feature(autodoc,2);
+
+%{
+using std::streamoff;
+#include <iact_data/telescope_data_source.hpp>
+#include <iact_data/zfits_acada_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
+#define SWIG_FILE_WITH_INIT
+  %}
+
+%init %{
+  import_array();
+%}
+
+%include "calin_typemaps.i"
+%include "calin_global_config.hpp"
+%import "calin_global_definitions.i"
+
+%import "google_protobuf.i"
+%import "io/data_source.i"
+
+%ignore get_next(uint64_t& seq_index_out);
+%ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);
+
+namespace R1 {
+
+class CameraEvent: public google::protobuf::Message { };
+class CameraConfiguration: public google::protobuf::Message { };
+
+}
+
+%typemap(in, numinputs=0) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT
+  (R1::CameraEvent* temp = nullptr) {
+    // typemap(in) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+    $1 = &temp;
+}
+
+%typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
+}
+
+%apply R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+  R1::CameraEvent** event_out };
+%apply uint64_t& OUTPUT { uint64_t& seq_index_out };
+%apply google::protobuf::Arena** CALIN_ARENA_OUTPUT {
+  google::protobuf::Arena** arena_out };
+
+%import "iact_data/telescope_data_source.i"
+
+%template(DataSource_R1v0) 
+  calin::io::data_source::DataSource<R1::CameraEvent>;
+%template(RandomAccessDataSource_R1v0)
+  calin::io::data_source::RandomAccessDataSource<R1::CameraEvent>;
+
+%newobject simple_get_next();
+
+%extend calin::io::data_source::DataSource<R1::CameraEvent> {
+
+  R1::CameraEvent* simple_get_next()
+  {
+    uint64_t unused_seq_index = 0;
+    return $self->get_next(unused_seq_index);
+  }
+
+#if 0
+  void get_next(uint64_t& seq_index_out, R1::CameraEvent** event_out,
+    google::protobuf::Arena** arena_out)
+  {
+    seq_index_out = 0;
+    *event_out = $self->get_next(seq_index_out, arena_out);
+    if(*event_out != nullptr and *arena_out == nullptr)
+      throw std::runtime_error("Memory allocation error: no Arena returned");
+  }
+#else
+  void get_next(uint64_t& seq_index_out, R1::CameraEvent** event_out)
+  {
+    seq_index_out = 0;
+    *event_out = $self->get_next(seq_index_out);
+  }
+#endif
+
+}
+
+%newobject get_run_header();
+
+%include "iact_data/acada_data_source.hpp"
+
+%template(ACADACameraEventDataSource_R1v0) 
+  calin::iact_data::acada_data_source::ACADACameraEventDataSource<R1::CameraEvent>;
+%template(ACADACameraEventDataSourceWithRunHeader_R1v0)
+  calin::iact_data::acada_data_source::ACADACameraEventDataSourceWithRunHeader<R1::CameraEvent,R1::CameraConfiguration>;
+%template(ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
+  calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<R1::CameraEvent,R1::CameraConfiguration>;
+
+#include "io/chained_data_source.hpp"
+
+%template(DataSourceOpener_R1v0)
+  calin::io::data_source::DataSourceOpener<
+    calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
+      R1::CameraEvent,R1::CameraConfiguration> >;
+
+%template(BasicChainedDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
+  calin::io::data_source::BasicChainedDataSource<
+    calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
+      R1::CameraEvent,R1::CameraConfiguration> >;
+
+%template(BasicChainedRandomAccessDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
+    calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
+      R1::CameraEvent,R1::CameraConfiguration> >;
+
+%include "iact_data/zfits_acada_data_source.hpp"
+
+%template(ZFITSACADACameraEventDataSourceOpener_R1v0) 
+  calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSourceOpener<R1::CameraEvent,R1::CameraConfiguration>;
+
+%template(ZFITSSingleFileACADACameraEventDataSource_R1v0) 
+  calin::iact_data::zfits_acada_data_source::ZFITSSingleFileACADACameraEventDataSource<R1::CameraEvent,R1::CameraConfiguration>;
+%template(ZFITSACADACameraEventDataSource_R1v0) 
+  calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSource<R1::CameraEvent,R1::CameraConfiguration>;
