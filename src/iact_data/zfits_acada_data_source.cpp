@@ -44,32 +44,42 @@ namespace {
   template<> std::string default_message_table_name<ACADA_L0_EventMessage>() { return "Events"; }
 } // anonymous namespace
 
+// =============================================================================
+// =============================================================================
+// =============================================================================
+//
+// ZFITSSingleFileACADACameraEventDataSource - single ZFits file
+// 
+// =============================================================================
+// =============================================================================
+// =============================================================================
+
 template<typename EventMessage, typename HeaderMessage>
 ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
-ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, config_type config):
+ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const config_type& config):
   ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>(),
   filename_(expand_filename(filename)), config_(config)
 {
-  if(config.run_header_table_name().empty())
-    config.set_run_header_table_name(default_message_table_name<HeaderMessage>());
-  if(config.events_table_name().empty())
-    config.set_events_table_name(default_message_table_name<EventMessage>());
+  if(config_.run_header_table_name().empty())
+    config_.set_run_header_table_name(default_message_table_name<HeaderMessage>());
+  if(config_.events_table_name().empty())
+    config_.set_events_table_name(default_message_table_name<EventMessage>());
 
   if(!is_file(filename_))
     throw std::runtime_error(std::string("No such file: ")+filename_);
   if(!is_readable(filename_))
     throw std::runtime_error(std::string("File not readable: ")+filename_);
 
-  if(!config.dont_read_run_header())
+  if(!config_.dont_read_run_header())
   {
     try
     {
       ACTL::IO::ProtobufIFits rh_zfits(filename_.c_str(),
-        config.run_header_table_name(), HeaderMessage::descriptor());
+        config_.run_header_table_name(), HeaderMessage::descriptor());
       if(rh_zfits.eof() && !rh_zfits.bad())
         throw std::runtime_error("ZFits reader found no table:" +
-          config.run_header_table_name());
-      if(config.verify_file_after_open() or config.repair_broken_file())
+          config_.run_header_table_name());
+      if(config_.verify_file_after_open() or config_.repair_broken_file())
       {
         try
         {
@@ -77,7 +87,7 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, config_ty
         }
         catch (std::exception& e)
         {
-          if(config.repair_broken_file())
+          if(config_.repair_broken_file())
           {
             LOG(WARNING) << "ZFits file " + filename_ +
               ": integrity verification failed, attempting to repair.";
@@ -96,7 +106,7 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, config_ty
     }
     catch(...)
     {
-      if(!config.ignore_run_header_errors())
+      if(!config_.ignore_run_header_errors())
         LOG(WARNING)
           << "ZFITSSingleFileACADACameraEventDataSource: Could not read run header from "
           << filename_;
@@ -104,15 +114,15 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, config_ty
   }
 
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(),
-    config.events_table_name(), EventMessage::descriptor());
+    config_.events_table_name(), EventMessage::descriptor());
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
-      config.events_table_name());
+      config_.events_table_name());
 
   file_record_ = calin::provenance::chronicle::register_file_open(filename_,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
 
-  if(config.verify_file_after_open() or config.repair_broken_file())
+  if(config_.verify_file_after_open() or config_.repair_broken_file())
   {
     try
     {
@@ -120,7 +130,7 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, config_ty
     }
     catch (std::exception& e)
     {
-      if(config.repair_broken_file())
+      if(config_.repair_broken_file())
       {
         LOG(WARNING) << "ZFits file " + filename_ +
           ": integrity verification failed, attempting to repair.";
@@ -238,9 +248,246 @@ ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_c
   config.set_file_fragment_stride(1);
   return config;
 }
+
+// =============================================================================
+// =============================================================================
+// =============================================================================
+//
+// ZFITSACADACameraEventDataSource - data source chaining multiple ZFits file
+//
+// =============================================================================
+// =============================================================================
+// =============================================================================
+
+template<typename EventMessage, typename HeaderMessage>
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+ZFITSACADACameraEventDataSource(const std::string& filename, const config_type& config):
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >(
+      new ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>(filename, config), true),
+  config_(config), run_header_(nullptr)
+{
+  if(source_) {
+    run_header_ = source_->get_run_header();
+  }
+  if(run_header_ == nullptr and opener_->num_sources() > 1) {
+    // In this case the first file fragment is missing the RunHeader, search
+    // for it in later fragments then reopen the first fragment
+
+    while(run_header_ == nullptr and isource_ < opener_->num_sources())
+    {
+      ++isource_;
+      open_file();
+      run_header_ = source_ ? source_->get_run_header() : nullptr;
+    }
+
+    isource_ = 0;
+    open_file();
+  }
+}
+
+template<typename EventMessage, typename HeaderMessage>
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+~ZFITSACADACameraEventDataSource()
+{
+  delete run_header_;
+}
+
+template<typename EventMessage, typename HeaderMessage>
+HeaderMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::get_run_header()
+{
+  if(!run_header_)return nullptr;
+  auto* run_header = new HeaderMessage();
+  run_header->CopyFrom(*run_header_);
+  return run_header;
+}
+
+template<typename EventMessage, typename HeaderMessage>
+const EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+borrow_next_event(uint64_t& seq_index_out)
+{
+  if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
+    return nullptr;
+  while(isource_ < opener_->num_sources())
+  {
+    uint64_t unused_index = 0;
+    if(const EventMessage* next = source_->borrow_next_event(unused_index))
+    {
+      seq_index_out = seq_index_;
+      ++seq_index_;
+      return next;
+    }
+    ++isource_;
+    open_file();
+  }
+  return nullptr;
+}
+
+template<typename EventMessage, typename HeaderMessage>
+void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+release_borrowed_event(const EventMessage* event)
+{
+  if(source_)
+    source_->release_borrowed_event(event);
+  else
+    delete event;
+}
+
+template<typename EventMessage, typename HeaderMessage>
+EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
+    return nullptr;
+  else
+    return calin::io::data_source::BasicChainedRandomAccessDataSource<
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::
+        get_next(seq_index_out, arena);
+}
+
+template<typename EventMessage, typename HeaderMessage>
+uint64_t ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::size()
+{
+  uint64_t max_seq_index = calin::io::data_source::BasicChainedRandomAccessDataSource<
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::size();
+  if(config_.max_seq_index() and max_seq_index>config_.max_seq_index())
+    max_seq_index = config_.max_seq_index();
+  return max_seq_index;
+}
+
+template<typename EventMessage, typename HeaderMessage>
+void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+set_next_index(uint64_t next_index)
+{
+  if(config_.max_seq_index() and next_index>config_.max_seq_index())
+    next_index = config_.max_seq_index();
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::
+      set_next_index(next_index);
+}
+
+template<typename EventMessage, typename HeaderMessage>
+typename ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::config_type
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
+{
+  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config();
+}
+
+// =============================================================================
+// =============================================================================
+// =============================================================================
+//
+// ZFITSACADACameraEventDataSourceOpener - open Zits file fragments
+//
+// =============================================================================
+// =============================================================================
+// =============================================================================
+
+template<typename EventMessage, typename HeaderMessage>
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& config):
+  calin::io::data_source::DataSourceOpener<
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >(),
+  config_(config)
+{
+  const unsigned istride = std::max(1U,config.file_fragment_stride());
+  if(is_file(filename))
+    filenames_.emplace_back(filename);
+  else
+    throw(std::runtime_error("File not found: " + filename));
+
+  if(not config_.exact_filename_only())
+  {
+    const std::string extension = config_.extension();
+    auto ifind = filename.rfind(extension);
+    if(ifind == filename.size()-extension.size())
+    {
+      filename = filename.substr(0, ifind);
+
+      unsigned istart = 0;
+      if(not is_file(filename+".1"+extension))
+      {
+        ifind = filename.rfind('.');
+        if(ifind != std::string::npos and
+          std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+        {
+          istart = std::stoi(filename.substr(ifind + 1));
+          filename = filename.substr(0, ifind);
+        }
+      }
+
+      bool fragment_found = true;
+      for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments()) ; i+=istride)
+      {
+        fragment_found = false;
+        std::string fragment_i { std::to_string(i) };
+        do {
+          std::string filename_i { filename+"."+fragment_i+extension };
+          if(is_file(filename_i)) {
+            filenames_.emplace_back(filename_i);
+            fragment_found = true;
+          } else {
+            fragment_i = std::string("0") + fragment_i;
+          }
+        }while(not fragment_found and fragment_i.size() <= 6);
+      }
+    }
+  }
+}
+
+template<typename EventMessage, typename HeaderMessage>
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+~ZFITSACADACameraEventDataSourceOpener()
+{
+    // nothing to see here
+}
+
+template<typename EventMessage, typename HeaderMessage>
+unsigned ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::num_sources() const
+{
+  return filenames_.size();
+}
+
+template<typename EventMessage, typename HeaderMessage>
+std::string ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+source_name(unsigned isource) const
+{
+  if(isource >= filenames_.size())return {};
+  return filenames_[isource];
+}
+
+template<typename EventMessage, typename HeaderMessage>
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>*
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+open(unsigned isource)
+{
+  if(isource >= filenames_.size())return nullptr;
+  if(config_.log_on_file_open())
+    LOG(INFO) << "Opening file: " << filenames_[isource];
+  auto config = config_;
+  if(has_opened_file_)config.set_dont_read_run_header(true);
+  config.set_max_seq_index(0);
+  has_opened_file_ = true;
+  return new ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>(filenames_[isource], config);
+}
+
+template<typename EventMessage, typename HeaderMessage>
+typename ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::config_type
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::default_config()
+{
+  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config();
+}
+
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
 
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+
+template class ZFITSACADACameraEventDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
+template class ZFITSACADACameraEventDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+
+template class ZFITSACADACameraEventDataSourceOpener<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
+template class ZFITSACADACameraEventDataSourceOpener<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
 
 } } } // namespace calin::iact_data::zfits_acada_data_source

@@ -41,7 +41,7 @@ public:
   CALIN_TYPEALIAS(header_type, HeaderMessage);
 
   ZFITSSingleFileACADACameraEventDataSource(const std::string& filename,
-    config_type config = default_config());
+    const config_type& config = default_config());
   virtual ~ZFITSSingleFileACADACameraEventDataSource();
 
   const event_type* borrow_next_event(uint64_t& seq_index_out) override;
@@ -77,6 +77,9 @@ public:
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(BaseDataSource, calin::io::data_source::BasicChainedRandomAccessDataSource<
+    calin::iact_data::acada_data_source::
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >);
 
   ZFITSACADACameraEventDataSource(const std::string& filename,
     const config_type& config = default_config());
@@ -95,6 +98,13 @@ public:
   static config_type default_config();
   const config_type& config() const { return config_; }
 
+protected:
+  using BaseDataSource::source_;
+  using BaseDataSource::opener_;
+  using BaseDataSource::isource_;
+  using BaseDataSource::seq_index_;
+  using BaseDataSource::open_file;
+
 private:
   config_type config_;
   header_type* run_header_ = nullptr;
@@ -111,15 +121,13 @@ public:
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_source_type, calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>);
 
   ZFITSACADACameraEventDataSourceOpener(std::string filename,
-    const config_type config = default_config());
+    const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSourceOpener();
   unsigned num_sources() const override;
   std::string source_name(unsigned isource) const override;
-  data_source_type* open(unsigned isource) override;
+  ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 
   static config_type default_config();

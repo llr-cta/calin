@@ -44,22 +44,28 @@ using namespace calin::iact_data::actl_event_decoder;
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+                                  RRRRRRRRRRRRRRRRR     1111111   
+                                  R::::::::::::::::R   1::::::1   
+                                  R::::::RRRRRR:::::R 1:::::::1   
+                                  RR:::::R     R:::::R111:::::1   
+              ppppp   ppppppppp     R::::R     R:::::R   1::::1   
+              p::::ppp:::::::::p    R::::R     R:::::R   1::::1   
+              p:::::::::::::::::p   R::::RRRRRR:::::R    1::::1   
+              pp::::::ppppp::::::p  R:::::::::::::RR     1::::l   
+              p:::::p     p:::::p  R::::RRRRRR:::::R    1::::l   
+              p:::::p     p:::::p  R::::R     R:::::R   1::::l   
+              p:::::p     p:::::p  R::::R     R:::::R   1::::l   
+              p:::::p    p::::::p  R::::R     R:::::R   1::::l   
+              p:::::ppppp:::::::pRR:::::R     R:::::R111::::::111
+              p::::::::::::::::p R::::::R     R:::::R1::::::::::1
+              p::::::::::::::pp  R::::::R     R:::::R1::::::::::1
+              p::::::pppppppp    RRRRRRRR     RRRRRRR111111111111
+              p:::::p                                            
+              p:::::p                                            
+              p:::::::p                                           
+              p:::::::p                                           
+              p:::::::p                                           
+              ppppppppp                                           
 
 */
 
