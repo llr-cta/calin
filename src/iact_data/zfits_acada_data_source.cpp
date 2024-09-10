@@ -393,6 +393,7 @@ ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& c
   config_(config)
 {
   const unsigned istride = std::max(1U,config.file_fragment_stride());
+  filename = expand_filename(filename);
   if(is_file(filename))
     filenames_.emplace_back(filename);
   else
