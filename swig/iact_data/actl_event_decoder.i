@@ -24,7 +24,6 @@
 %feature(autodoc,2);
 
 %{
-using std::streamoff;
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
 #include <R1.pb.h>

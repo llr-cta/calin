@@ -44,6 +44,8 @@ namespace {
   template<> std::string default_message_table_name<ACADA_EventMessage_L0>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v0>() { return "CameraConfig"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v0>() { return "Events"; }
+  template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v1>() { return "CameraConfiguration"; }
+  template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
 } // anonymous namespace
 
 // =============================================================================
@@ -491,5 +493,9 @@ template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_L0, ACAD
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+
+template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
 
 } } } // namespace calin::iact_data::zfits_acada_data_source

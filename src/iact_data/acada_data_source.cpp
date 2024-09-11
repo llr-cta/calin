@@ -55,4 +55,8 @@ template class ACADACameraEventDataSource<ACADA_EventMessage_R1v0>;
 template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
+template class ACADACameraEventDataSource<ACADA_EventMessage_R1v1>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+
 } } } // namespace calin::iact_data::acada_data_source
