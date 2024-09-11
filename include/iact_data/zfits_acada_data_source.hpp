@@ -31,6 +31,11 @@
 
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
 
+std::vector<std::string> get_zfits_table_names(std::string filename);
+std::vector<std::string> get_zfits_table_column_names(std::string filename, std::string tablename);
+std::vector<std::string> get_zfits_table_keys(std::string filename, std::string tablename);
+std::map<std::string,std::string> get_zfits_table_key_values(std::string filename, std::string tablename);
+
 template<typename EventMessage, typename HeaderMessage>
 class ZFITSSingleFileACADACameraEventDataSource:
   public calin::iact_data::acada_data_source::

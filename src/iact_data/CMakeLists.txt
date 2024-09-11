@@ -26,6 +26,7 @@ set(CALIN_SOURCES algorithms.cpp
 	nectarcam_ancillary_data.cpp
 	acada_data_source.cpp zfits_acada_data_source.cpp 
 	acada_event_decoder.cpp
+	nectarcam_acada_event_decoder_l0.cpp 
 	nectarcam_acada_event_decoder_r1v0.cpp
 	zfits_data_source.cpp)
 

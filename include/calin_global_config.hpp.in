@@ -38,11 +38,6 @@
 // Flags conditional compilation of GEANT4-specific code
 #cmakedefine CALIN_HAVE_GEANT4 1
 
-// CALIN_HAVE_CTA_CAMERASTOACTL
-// Flags conditional compilation of code depending on (proprietary)
-// CTA CamerasToACTL package
-#cmakedefine CALIN_HAVE_CTA_CAMERASTOACTL 1
-
 // Capture various CMake variables to pass to build system provenance class
 #define CALIN_BUILD_INSTALL_PREFIX     "${CMAKE_INSTALL_PREFIX}"
 #define CALIN_PROTO_INSTALL_DIR        "${CMAKE_INSTALL_PREFIX}/${CALIN_PROTO_INSTALL_DIR}"

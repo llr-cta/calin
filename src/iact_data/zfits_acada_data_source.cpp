@@ -61,6 +61,81 @@ namespace {
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
 } // anonymous namespace
 
+std::vector<std::string> calin::iact_data::zfits_acada_data_source::
+get_zfits_table_names(std::string filename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  std::vector<std::string> tables;
+  try {
+    IFits ifits(filename, "", /* force= */ true);
+    if(ifits) {
+      tables.push_back(ifits.GetTable().name);
+    }
+    while(ifits.hasNextTable()) {
+      ifits.openNextTable(/* force= */ true);
+      tables.push_back(ifits.GetTable().name);
+    }
+  } catch(...) {
+    throw std::runtime_error(std::string("Could not open ZFits file: ")+filename);
+  }
+  return tables;
+}
+
+std::vector<std::string> calin::iact_data::zfits_acada_data_source::
+get_zfits_table_column_names(std::string filename, std::string tablename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  std::vector<std::string> columns;
+  try {
+    IFits ifits(filename, tablename, /* force= */ true);
+    if(ifits) {
+      for(const auto& col : ifits.GetColumns()) {
+        columns.push_back(col.first);
+      }
+    }
+  } catch(...) {
+    throw std::runtime_error(std::string("Could not open ZFits file table: ")+filename + " -> " + tablename);
+  }
+  return columns;
+}
+
+std::vector<std::string> calin::iact_data::zfits_acada_data_source::
+get_zfits_table_keys(std::string filename, std::string tablename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  std::vector<std::string> keys;
+  try {
+    IFits ifits(filename, tablename, /* force= */ true);
+    if(ifits) {
+      for(const auto& key : ifits.GetKeys()) {
+        keys.push_back(key.first);
+      }
+    }
+  } catch(...) {
+    throw std::runtime_error(std::string("Could not open ZFits file table: ")+filename + " -> " + tablename);
+  }
+  return keys;
+}
+
+std::map<std::string,std::string> calin::iact_data::zfits_acada_data_source::
+get_zfits_table_key_values(std::string filename, std::string tablename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  std::map<std::string,std::string> key_values;
+  try {
+    IFits ifits(filename, tablename, /* force= */ true);
+    if(ifits) {
+      for(const auto& key : ifits.GetKeys()) {
+        key_values[key.first] = key.second.value;
+      }
+    }
+  } catch(...) {
+    throw std::runtime_error(std::string("Could not open ZFits file table: ")+filename + " -> " + tablename);
+  }
+  return key_values;
+}
+
+
 // =============================================================================
 // =============================================================================
 // =============================================================================

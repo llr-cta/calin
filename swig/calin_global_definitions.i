@@ -27,6 +27,9 @@
 
 %{
 #include <iostream>
+#include <string>
+#include <vector>
+#include <map>
 #include "calin_global_definitions.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -36,6 +39,7 @@
 %include <std_pair.i>
 %include <std_vector.i>
 %include <std_string.i>
+%include <std_map.i>
 %include "calin_stdint.i"
 
 %init %{
@@ -65,5 +69,7 @@
 
 %template (PairUnsignedUnsigned) std::pair<unsigned,unsigned>;
 %template (VectorPairUnsignedUnsigned) std::vector<std::pair<unsigned,unsigned> >;
+
+%template (MapStringString)      std::map<std::string,std::string>;
 
 %import "calin_global_definitions.hpp"

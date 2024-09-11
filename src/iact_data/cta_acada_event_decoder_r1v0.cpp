@@ -61,28 +61,6 @@ bool CTA_ACADACameraEventDecoder_R1v0::decode(
   const event_type* cta_event)
 {
   ensure_deligate(cta_event, nullptr);    
-
-  if(this->delegate()==nullptr) {
-    if((config_.camera_type() == CTACameraEventDecoderConfig::NECTARCAM) or
-      ((config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT) and
-        (cta_event!=nullptr and cta_event->has_nectarcam())))
-      this->set_delegate(new NectarCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.nectarcam()),true);
-    else if((config_.camera_type() == CTACameraEventDecoderConfig::LSTCAM) or
-      ((config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT) and
-        (cta_event!=nullptr and cta_event->has_lstcam())))
-      this->set_delegate(new LSTCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.lstcam()),true);
-    else
-      throw std::runtime_error("CTA_ACADACameraEventDecoder_R1v0: event does not "
-        "have NectarCAM or LSTCam extensions");
-  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
-      and dynamic_cast<LSTCam_ACADACameraEventDecoder_R1v0*>(this->delegate())
-      and cta_event!=nullptr and cta_event->has_nectarcam()) {
-    this->set_delegate(new NectarCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.nectarcam()),true);
-  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
-      and dynamic_cast<NectarCam_ACADACameraEventDecoder_R1v0*>(this->delegate())
-      and cta_event!=nullptr and cta_event->has_lstcam()) {
-    this->set_delegate(new LSTCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.lstcam()),true);
-  }
   return this->delegate()->decode(event, cta_event);
 }
 
