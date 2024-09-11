@@ -213,13 +213,13 @@ NectarCamZFITSDataSource::construct_delegate(std::string filename,
 
   bool use_r1 = true;
   if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
+      calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
     use_r1 = zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name());
   } else if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
+      calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0) {
     use_r1 = false;
   } else if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
+      calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0) {
     use_r1 = true;
   } else {
     throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known");

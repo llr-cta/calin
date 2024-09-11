@@ -27,6 +27,8 @@
 #include <iact_data/acada_data_source.hpp>
 #include <iact_data/zfits_data_source.pb.h>
 
+#include <ProtobufIFits.h>
+
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
 
 template<typename EventMessage, typename HeaderMessage>
@@ -59,7 +61,7 @@ public:
 
 private:
   std::string filename_;
-  ACTL::IO::ProtobufIFits* zfits_ = nullptr;
+  ADH::IO::ProtobufIFits* zfits_ = nullptr;
   calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
   uint64_t next_event_index_ = 0;
   header_type* run_header_ = nullptr;

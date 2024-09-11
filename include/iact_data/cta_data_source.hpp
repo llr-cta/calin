@@ -28,7 +28,6 @@
 #include <calin_global_config.hpp>
 #include <iact_data/cta_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
-#include <iact_data/zfits_actl_data_source.hpp>
 #include <pattern/delegation.hpp>
 
 namespace calin { namespace iact_data { namespace cta_data_source {

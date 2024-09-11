@@ -119,12 +119,8 @@ if(XercesC_FOUND)
 	set(CALIN_HAVE_XERCESC TRUE)
 endif()
 
-## Find the CTA CamerasToACTL package
-set(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
-find_package(CTA_CAMERASTOACTL)
-if(CTA_CAMERASTOACTL_FOUND)
-	set(CALIN_HAVE_CTA_CAMERASTOACTL TRUE)
-endif()
+## Find the CTA ADH_APIS package
+find_package(CTA_ADH_APIS)
 
 ## Find Geant4 if requested
 SET(CALIN_HAVE_GEANT4 FALSE)

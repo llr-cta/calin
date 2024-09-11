@@ -47,13 +47,12 @@ ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>:
 
 namespace calin { namespace iact_data { namespace acada_data_source {
 
-template class ACADACameraEventDataSource<ACADA_L0_EventMessage>;
-template class ACADACameraEventDataSource<ACADA_R1v0_EventMessage>;
+template class ACADACameraEventDataSource<ACADA_EventMessage_L0>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class ACADACameraEventDataSourceWithRunHeader<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ACADACameraEventDataSourceWithRunHeader<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
-
-template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ACADACameraEventDataSource<ACADA_EventMessage_R1v0>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
 } } } // namespace calin::iact_data::acada_data_source

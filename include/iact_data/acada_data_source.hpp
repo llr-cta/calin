@@ -29,11 +29,9 @@
 #include <io/data_source.hpp>
 #include <io/chained_data_source.hpp>
 
-using std::streamoff; // needed for IFits.h
-
-#include <L0.pb.h>
-#include <R1.pb.h>
-#include <ProtobufIFits.h>
+#include <ProtoDataModel.pb.h>
+#include <ProtoR1.pb.h>
+#include <R1v1.pb.h>
 
 namespace calin { namespace iact_data { namespace acada_data_source {
 
@@ -105,8 +103,8 @@ public:
 
 */
 
-CALIN_TYPEALIAS(ACADA_L0_EventMessage, DataModel::CameraEvent);
-CALIN_TYPEALIAS(ACADA_L0_HeaderMessage, DataModel::CameraRunHeader);
+CALIN_TYPEALIAS(ACADA_EventMessage_L0, ProtoDataModel::CameraEvent);
+CALIN_TYPEALIAS(ACADA_HeaderMessage_L0, ProtoDataModel::CameraRunHeader);
 
 /*
 
@@ -129,8 +127,8 @@ CALIN_TYPEALIAS(ACADA_L0_HeaderMessage, DataModel::CameraRunHeader);
 
 */
 
-CALIN_TYPEALIAS(ACADA_R1v0_EventMessage, R1::CameraEvent);
-CALIN_TYPEALIAS(ACADA_R1v0_HeaderMessage, R1::CameraConfiguration);
+CALIN_TYPEALIAS(ACADA_EventMessage_R1v0, ProtoR1::CameraEvent);
+CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v0, ProtoR1::CameraConfiguration);
 
 /*
 
@@ -154,6 +152,8 @@ CALIN_TYPEALIAS(ACADA_R1v0_HeaderMessage, R1::CameraConfiguration);
 
 */
 
+CALIN_TYPEALIAS(ACADA_EventMessage_R1v1, R1v1::Event);
+CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v1, R1v1::CameraConfiguration);
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
 

@@ -100,7 +100,7 @@ calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig
 CTAZFITSDataSource::default_config()
 {
   config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1::default_config();
-  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
+  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
   config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
   return config;
 }
@@ -167,18 +167,18 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
       "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
 
   if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
+      calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
     if(zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name())) {
-      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1);
+      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0);
     } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
-      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
+      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0);
     } else {
       throw std::runtime_error(
         "CTAZFITSDataSource::construct_delegate: could not auto-detect data model: " + filename);
     }
   }
 
-  if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
+  if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0) {
     if(decoder_config.camera_type() ==
           calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT
         or decoder_config.camera_type() ==
@@ -188,7 +188,7 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: L0 data format not supported with camera type: "
       + calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::CameraType_Name(decoder_config.camera_type()));
-  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
+  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0) {
     if(decoder_config.camera_type()
         == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT)
     {
@@ -220,7 +220,7 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
   } else {
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: unsupported data format: "
-      + calin::ix::iact_data::zfits_data_source::ACTLDataModel_Name(config.data_model()));
+      + calin::ix::iact_data::zfits_data_source::ACADADataModel_Name(config.data_model()));
   }
   return nullptr;
 }

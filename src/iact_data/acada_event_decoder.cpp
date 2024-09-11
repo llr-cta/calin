@@ -37,11 +37,6 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
-#include <L0.pb.h>
-#include <R1.pb.h>
-#include <ProtobufIFits.h>
-#include <CoreMessages.pb.h>
-
 template<typename EventMessage, typename HeaderMessage>
 ACADACameraEventDecoder<EventMessage, HeaderMessage>::~ACADACameraEventDecoder()
 {
@@ -190,14 +185,13 @@ ensure_run_config()
 
 namespace calin { namespace iact_data { namespace acada_event_decoder {
 
-template class ACADACameraEventDecoder<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ACADACameraEventDecoder<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ACADACameraEventDecoder<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class DecodedACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class DecodedACADACameraEventDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class DecodedACADACameraEventDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
-
-template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ACADACameraEventDecoder<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class DecodedACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
 } } } // namespace calin::iact_data::acada_event_decoder
 
@@ -209,7 +203,7 @@ template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_R1v0_EventMe
 
 void calin::iact_data::acada_event_decoder::
 decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data,
-  const DataModel::AnyArray& cta_array)
+  const AnyArray& cta_array)
 {
   // Reference : https://forge.in2p3.fr/projects/cta/repository/entry/ACTL/ExternalDevicesCommunication/trunk/TiCkSdecode/ticks_decode.c
   struct CDTSMessageData_V0 { // 31 bytes
@@ -297,7 +291,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
 
   const auto& cta_cdts_data = cta_array.data();
 #if TEST_ANYARRAY_TYPES
-  if(cta_cdts_data.type() != DataModel::AnyArray::U32)
+  if(cta_cdts_data.type() != AnyArray::U32)
     throw std::runtime_error("CDTS counters type not U32");
 #endif
   if(cta_cdts_data.size() == sizeof(CDTSMessageData_V3)) {
@@ -415,7 +409,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
 
 void calin::iact_data::acada_event_decoder::
 decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
-  const DataModel::AnyArray& cta_array)
+  const AnyArray& cta_array)
 {
   // No of bits            Data
   // 95 - 64 (32 bits)     Event Counter
@@ -448,7 +442,7 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
 
   const auto& cta_tib_data = cta_array.data();
 #if TEST_ANYARRAY_TYPES
-  if(cta_array.type() != DataModel::AnyArray::U8)
+  if(cta_array.type() != AnyArray::U8)
     throw std::runtime_error("TIB type not U8");
 #endif
   if(cta_tib_data.size() != sizeof(TIBMessageData))

@@ -23,12 +23,13 @@ set(CALIN_SOURCES algorithms.cpp
 	nectarcam_layout.cpp nectarcam_configuration.cpp
 	lstcam_layout.cpp
 	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp
-	nectarcam_ancillary_data.cpp)
+	nectarcam_ancillary_data.cpp
+	acada_data_source.cpp zfits_acada_data_source.cpp acada_event_decoder.cpp
+	zfits_data_source.cpp)
+
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
-		acada_data_source.cpp zfits_acada_data_source.cpp acada_event_decoder.cpp
-		zfits_data_source.cpp
 		actl_event_decoder.cpp 
 		nectarcam_actl_l0_event_decoder.cpp nectarcam_actl_r1_event_decoder.cpp
 		lstcam_actl_r1_event_decoder.cpp
@@ -44,9 +45,7 @@ add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
 	calin_proto_io calin_proto_iact_data calin_io calin_math calin_util)
 
-if(CTA_CAMERASTOACTL_FOUND)
-	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
-	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CTA_CAMERASTOACTL_LIBRARIES})
-endif()
+include_directories(${CTA_ADH_APIS_INCLUDE_DIRS})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${CTA_ADH_APIS_LIBRARIES})
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

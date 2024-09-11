@@ -31,11 +31,9 @@
 #include <iact_data/zfits_data_source.pb.h>
 #include <iact_data/telescope_data_source.hpp>
 
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 #include <CoreMessages.pb.h>
 #include <L0.pb.h>
 #include <R1.pb.h>
-#endif
 
 namespace calin { namespace iact_data { namespace actl_event_decoder {
 

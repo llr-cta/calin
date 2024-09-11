@@ -314,10 +314,10 @@ std::string ZFITSDataSource<EventMessage,HeaderMessage>::fragment_name(unsigned 
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
-template class ZFITSSingleFileDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ZFITSSingleFileDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ZFITSSingleFileDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ZFITSDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class ZFITSDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ZFITSDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ZFITSDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
 } } } // namespace calin::iact_data::zfits_data_source

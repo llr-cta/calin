@@ -24,7 +24,6 @@
 %feature(autodoc,2);
 
 %{
-using std::streamoff;
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/zfits_acada_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
@@ -80,38 +79,38 @@ using std::streamoff;
 
 */
 
-namespace R1 {
+namespace ProtoR1 {
   class CameraEvent: public google::protobuf::Message { };
   class CameraConfiguration: public google::protobuf::Message { };
 }
 
-%typemap(in, numinputs=0) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT
-  (R1::CameraEvent* temp = nullptr) {
-    // typemap(in) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(in, numinputs=0) ProtoR1::CameraEvent** CALIN_PROTOBUF_OUTPUT
+  (ProtoR1::CameraEvent* temp = nullptr) {
+    // typemap(in) ProtoR1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     $1 = &temp;
 }
 
-%typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-    // typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(argout) ProtoR1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) ProtoR1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }
 
-%apply R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-  R1::CameraEvent** event_out };
+%apply ProtoR1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+  ProtoR1::CameraEvent** event_out };
 
 %template(DataSource_R1v0) 
-  calin::io::data_source::DataSource<R1::CameraEvent>;
+  calin::io::data_source::DataSource<ProtoR1::CameraEvent>;
 %template(RandomAccessDataSource_R1v0)
-  calin::io::data_source::RandomAccessDataSource<R1::CameraEvent>;
+  calin::io::data_source::RandomAccessDataSource<ProtoR1::CameraEvent>;
 
-%extend calin::io::data_source::DataSource<R1::CameraEvent> {
-  R1::CameraEvent* simple_get_next()
+%extend calin::io::data_source::DataSource<ProtoR1::CameraEvent> {
+  ProtoR1::CameraEvent* simple_get_next()
   {
     uint64_t unused_seq_index = 0;
     return $self->get_next(unused_seq_index);
   }
 
-  void get_next(uint64_t& seq_index_out, R1::CameraEvent** event_out)
+  void get_next(uint64_t& seq_index_out, ProtoR1::CameraEvent** event_out)
   {
     seq_index_out = 0;
     *event_out = $self->get_next(seq_index_out);
@@ -119,36 +118,36 @@ namespace R1 {
 }
 
 %template(ACADACameraEventDataSource_R1v0) 
-  calin::iact_data::acada_data_source::ACADACameraEventDataSource<R1::CameraEvent>;
+  calin::iact_data::acada_data_source::ACADACameraEventDataSource<ProtoR1::CameraEvent>;
 %template(ACADACameraEventDataSourceWithRunHeader_R1v0)
   calin::iact_data::acada_data_source::ACADACameraEventDataSourceWithRunHeader<
-    R1::CameraEvent,R1::CameraConfiguration>;
+    ProtoR1::CameraEvent,ProtoR1::CameraConfiguration>;
 %template(ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
   calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-    R1::CameraEvent,R1::CameraConfiguration>;
+    ProtoR1::CameraEvent,ProtoR1::CameraConfiguration>;
 
 %template(DataSourceOpener_R1v0)
   calin::io::data_source::DataSourceOpener<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      R1::CameraEvent,R1::CameraConfiguration> >;
+      ProtoR1::CameraEvent,ProtoR1::CameraConfiguration> >;
 
 %template(BasicChainedDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
   calin::io::data_source::BasicChainedDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      R1::CameraEvent,R1::CameraConfiguration> >;
+      ProtoR1::CameraEvent,ProtoR1::CameraConfiguration> >;
 
 %template(BasicChainedRandomAccessDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v0)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      R1::CameraEvent,R1::CameraConfiguration> >;
+      ProtoR1::CameraEvent,ProtoR1::CameraConfiguration> >;
 
 %template(ZFITSACADACameraEventDataSourceOpener_R1v0) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSourceOpener<
-    R1::CameraEvent,R1::CameraConfiguration>;
+    ProtoR1::CameraEvent,ProtoR1::CameraConfiguration>;
 
 %template(ZFITSSingleFileACADACameraEventDataSource_R1v0) 
   calin::iact_data::zfits_acada_data_source::ZFITSSingleFileACADACameraEventDataSource<
-    R1::CameraEvent,R1::CameraConfiguration>;
+    ProtoR1::CameraEvent,ProtoR1::CameraConfiguration>;
 %template(ZFITSACADACameraEventDataSource_R1v0) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSource<
-    R1::CameraEvent,R1::CameraConfiguration>;
+    ProtoR1::CameraEvent,ProtoR1::CameraConfiguration>;

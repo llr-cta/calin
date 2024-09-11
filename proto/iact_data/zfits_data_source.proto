@@ -26,14 +26,15 @@ import "calin.proto";
 
 package calin.ix.iact_data.zfits_data_source;
 
-enum ACTLDataModel {
-  ACTL_DATA_MODEL_AUTO_DETECT                              = 0;
-  ACTL_DATA_MODEL_L0                                       = 1;
-  ACTL_DATA_MODEL_R1                                       = 2;
+enum ACADADataModel {
+  ACADA_DATA_MODEL_AUTO_DETECT                              = 0;
+  ACADA_DATA_MODEL_L0                                       = 1;
+  ACADA_DATA_MODEL_R1V0                                     = 2;
+  ACADA_DATA_MODEL_R1V1                                     = 3;
 };
 
 message ZFITSDataSourceConfig {
-  ACTLDataModel data_model                                 = 1 [
+  ACADADataModel data_model                                 = 1 [
     (CFO).desc = "Data model type serialized into file." ];
   string extension                                         = 2 [
     (CFO).desc = "Standard extension for ZFits filenames, used for building "

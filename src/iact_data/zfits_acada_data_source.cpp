@@ -28,8 +28,8 @@
 #include <provenance/chronicle.hpp>
 #include <util/file.hpp>
 #include <iact_data/zfits_acada_data_source.hpp>
+
 #include <ProtobufIFits.h>
-#include <L0.pb.h>
 
 using namespace calin::iact_data::zfits_acada_data_source;
 using namespace calin::iact_data::acada_data_source;
@@ -40,10 +40,10 @@ using calin::util::file::expand_filename;
 
 namespace {
   template<typename Message> std::string default_message_table_name() { return "unknown"; }
-  template<> std::string default_message_table_name<ACADA_L0_HeaderMessage>() { return "RunHeader"; }
-  template<> std::string default_message_table_name<ACADA_L0_EventMessage>() { return "Events"; }
-  template<> std::string default_message_table_name<ACADA_R1v0_HeaderMessage>() { return "CameraConfig"; }
-  template<> std::string default_message_table_name<ACADA_R1v0_EventMessage>() { return "Events"; }
+  template<> std::string default_message_table_name<ACADA_HeaderMessage_L0>() { return "RunHeader"; }
+  template<> std::string default_message_table_name<ACADA_EventMessage_L0>() { return "Events"; }
+  template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v0>() { return "CameraConfig"; }
+  template<> std::string default_message_table_name<ACADA_EventMessage_R1v0>() { return "Events"; }
 } // anonymous namespace
 
 // =============================================================================
@@ -76,7 +76,7 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
   {
     try
     {
-      ACTL::IO::ProtobufIFits rh_zfits(filename_.c_str(),
+      ADH::IO::ProtobufIFits rh_zfits(filename_.c_str(),
         config_.run_header_table_name(), HeaderMessage::descriptor());
       if(rh_zfits.eof() && !rh_zfits.bad())
         throw std::runtime_error("ZFits reader found no table:" +
@@ -115,7 +115,7 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
     }
   }
 
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(),
+  zfits_ = new ADH::IO::ProtobufIFits(filename_.c_str(),
     config_.events_table_name(), EventMessage::descriptor());
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
@@ -243,7 +243,7 @@ typename ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
 ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
 {
   config_type config = config_type::default_instance();
-  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
+  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0);
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_message_table_name<HeaderMessage>());
   config.set_events_table_name(default_message_table_name<EventMessage>());
@@ -484,13 +484,12 @@ ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::default_confi
 
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
 
-template class ZFITSSingleFileACADACameraEventDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ZFITSSingleFileACADACameraEventDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class ZFITSACADACameraEventDataSource<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ZFITSACADACameraEventDataSource<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
-
-template class ZFITSACADACameraEventDataSourceOpener<ACADA_L0_EventMessage, ACADA_L0_HeaderMessage>;
-template class ZFITSACADACameraEventDataSourceOpener<ACADA_R1v0_EventMessage, ACADA_R1v0_HeaderMessage>;
+template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
 } } } // namespace calin::iact_data::zfits_acada_data_source

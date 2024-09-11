@@ -24,7 +24,6 @@
 %feature(autodoc,2);
 
 %{
-using std::streamoff;
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/zfits_acada_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
@@ -80,38 +79,38 @@ using std::streamoff;
 
 */
 
-namespace DataModel {
+namespace ProtoDataModel {
   class CameraEvent: public google::protobuf::Message { };
   class CameraRunHeader: public google::protobuf::Message { };
 }
 
-%typemap(in, numinputs=0) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT
-  (DataModel::CameraEvent* temp = nullptr) {
-    // typemap(in) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(in, numinputs=0) ProtoDataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT
+  (ProtoDataModel::CameraEvent* temp = nullptr) {
+    // typemap(in) ProtoDataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     $1 = &temp;
 }
 
-%typemap(argout) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-    // typemap(argout) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(argout) ProtoDataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) ProtoDataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }
 
-%apply DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-  DataModel::CameraEvent** event_out };
+%apply ProtoDataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+  ProtoDataModel::CameraEvent** event_out };
 
 %template(DataSource_L0) 
-  calin::io::data_source::DataSource<DataModel::CameraEvent>;
+  calin::io::data_source::DataSource<ProtoDataModel::CameraEvent>;
 %template(RandomAccessDataSource_L0)
-  calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>;
+  calin::io::data_source::RandomAccessDataSource<ProtoDataModel::CameraEvent>;
 
-%extend calin::io::data_source::DataSource<DataModel::CameraEvent> {
-  DataModel::CameraEvent* simple_get_next()
+%extend calin::io::data_source::DataSource<ProtoDataModel::CameraEvent> {
+  ProtoDataModel::CameraEvent* simple_get_next()
   {
     uint64_t unused_seq_index = 0;
     return $self->get_next(unused_seq_index);
   }
 
-  void get_next(uint64_t& seq_index_out, DataModel::CameraEvent** event_out)
+  void get_next(uint64_t& seq_index_out, ProtoDataModel::CameraEvent** event_out)
   {
     seq_index_out = 0;
     *event_out = $self->get_next(seq_index_out);
@@ -119,36 +118,36 @@ namespace DataModel {
 }
 
 %template(ACADACameraEventDataSource_L0) 
-  calin::iact_data::acada_data_source::ACADACameraEventDataSource<DataModel::CameraEvent>;
+  calin::iact_data::acada_data_source::ACADACameraEventDataSource<ProtoDataModel::CameraEvent>;
 %template(ACADACameraEventDataSourceWithRunHeader_L0)
   calin::iact_data::acada_data_source::ACADACameraEventDataSourceWithRunHeader<
-    DataModel::CameraEvent,DataModel::CameraRunHeader>;
+    ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader>;
 %template(ACADACameraEventRandomAccessDataSourceWithRunHeader_L0)
   calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-    DataModel::CameraEvent,DataModel::CameraRunHeader>;
+    ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader>;
 
 %template(DataSourceOpener_L0)
   calin::io::data_source::DataSourceOpener<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      DataModel::CameraEvent,DataModel::CameraRunHeader> >;
+      ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader> >;
 
 %template(BasicChainedDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_L0)
   calin::io::data_source::BasicChainedDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      DataModel::CameraEvent,DataModel::CameraRunHeader> >;
+      ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader> >;
 
 %template(BasicChainedRandomAccessDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_L0)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
-      DataModel::CameraEvent,DataModel::CameraRunHeader> >;
+      ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader> >;
 
 %template(ZFITSACADACameraEventDataSourceOpener_L0) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSourceOpener<
-    DataModel::CameraEvent,DataModel::CameraRunHeader>;
+    ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader>;
 
 %template(ZFITSSingleFileACADACameraEventDataSource_L0) 
   calin::iact_data::zfits_acada_data_source::ZFITSSingleFileACADACameraEventDataSource<
-    DataModel::CameraEvent,DataModel::CameraRunHeader>;
+    ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader>;
 %template(ZFITSACADACameraEventDataSource_L0) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSource<
-    DataModel::CameraEvent,DataModel::CameraRunHeader>;
+    ProtoDataModel::CameraEvent,ProtoDataModel::CameraRunHeader>;
