@@ -26,7 +26,7 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
+#include <iact_data/nectarcam_acada_event_decoder.hpp>
 #include <iact_data/nectarcam_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
 #include <pattern/delegation.hpp>
@@ -173,7 +173,7 @@ public:
 
   static calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig default_config() {
     config_type config = NectarCamZFITSDataSource_R1::default_config();
-    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
+    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
     config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
     return config;
   }

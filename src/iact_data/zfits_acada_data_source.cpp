@@ -39,6 +39,19 @@ using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
 namespace {
+  template<typename Message> calin::ix::iact_data::zfits_data_source::ACADADataModel 
+  default_data_model() { 
+    return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT; }
+  template<> calin::ix::iact_data::zfits_data_source::ACADADataModel 
+  default_data_model<ACADA_EventMessage_L0>() {
+    return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0; }
+  template<> calin::ix::iact_data::zfits_data_source::ACADADataModel 
+  default_data_model<ACADA_EventMessage_R1v0>() {
+    return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0; }
+  template<> calin::ix::iact_data::zfits_data_source::ACADADataModel 
+  default_data_model<ACADA_EventMessage_R1v1>() {
+    return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1; }
+
   template<typename Message> std::string default_message_table_name() { return "unknown"; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_L0>() { return "RunHeader"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_L0>() { return "Events"; }
@@ -245,7 +258,7 @@ typename ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
 ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
 {
   config_type config = config_type::default_instance();
-  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0);
+  config.set_data_model(default_data_model<EventMessage>());
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_message_table_name<HeaderMessage>());
   config.set_events_table_name(default_message_table_name<EventMessage>());

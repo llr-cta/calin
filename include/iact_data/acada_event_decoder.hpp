@@ -204,5 +204,9 @@ CALIN_TYPEALIAS(ACADACameraEventDecoder_R1v0,
 
 */
 
+CALIN_TYPEALIAS(ACADACameraEventDecoder_R1v1, 
+  ACADACameraEventDecoder<
+    calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>);
 
 } } } // namespace calin::iact_data::acada_event_decoder

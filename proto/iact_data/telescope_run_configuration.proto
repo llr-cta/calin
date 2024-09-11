@@ -34,8 +34,9 @@ package calin.ix.iact_data.telescope_run_configuration;
 
 enum SerializedRawHeaderType {
   SERIALIZED_RAW_HEADER_NONE                               = 0;
-  SERIALIZED_RAW_HEADER_ACTL_L0_PROTOBUF                   = 1;
-  SERIALIZED_RAW_HEADER_ACTL_R1_PROTOBUF                   = 2;
+  SERIALIZED_RAW_HEADER_ACADA_L0_PROTOBUF                  = 1;
+  SERIALIZED_RAW_HEADER_ACADA_R1V0_PROTOBUF                = 2;
+  SERIALIZED_RAW_HEADER_ACADA_R1V1_PROTOBUF                = 3;
 };
 
 message TelescopeRunConfiguration {

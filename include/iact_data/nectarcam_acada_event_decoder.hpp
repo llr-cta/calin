@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/nectarcam_actl_event_decoder.hpp -- Stephen Fegan -- 2016-01-11
+   calin/iact_data/nectarcam_acada_event_decoder.hpp -- Stephen Fegan -- 2016-01-11
 
    A supplier of single telescope data from NectarCam DAQ data files
 
@@ -27,11 +27,10 @@
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <iact_data/nectarcam_data_source.pb.h>
-#include <iact_data/zfits_data_source.hpp>
+#include <iact_data/acada_data_source.hpp>
+#include <iact_data/acada_event_decoder.hpp>
 
-namespace calin { namespace iact_data { namespace nectarcam_actl_event_decoder {
-
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+namespace calin { namespace iact_data { namespace nectarcam_acada_event_decoder {
 
 /*
 
@@ -54,19 +53,20 @@ namespace calin { namespace iact_data { namespace nectarcam_actl_event_decoder {
 
 */
 
-class NectarCam_ACTL_L0_CameraEventDecoder:
-  public actl_event_decoder::ACTL_L0_CameraEventDecoder
+class NectarCam_ACADACameraEventDecoder_L0:
+  public calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCam_ACTL_L0_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0::event_type;
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0::header_type;
+
+  NectarCam_ACADACameraEventDecoder_L0(const std::string& filename, unsigned run_number = 0,
     const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& config = default_config());
 
-  //void set_config(const config_type& config) { config_.CopyFrom(config); }
   calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
-  //config_type* mutable_config() { return &config_; }
   static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
@@ -74,36 +74,35 @@ public:
     return config;
   }
 
-  virtual ~NectarCam_ACTL_L0_CameraEventDecoder();
+  virtual ~NectarCam_ACADACameraEventDecoder_L0();
 
   bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const DataModel::CameraEvent* cta_event) override;
+    const event_type* cta_event) override;
 
   bool decode_run_config(
     calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-    const DataModel::CameraRunHeader* cta_run_header,
-    const DataModel::CameraEvent* cta_event) override;
+    const header_type* cta_run_header, const event_type* cta_event) override;
 
-  NectarCam_ACTL_L0_CameraEventDecoder* clone() const override;
+  NectarCam_ACADACameraEventDecoder_L0* clone() const override;
 
 protected:
-  void copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
+  void copy_single_gain_integrals(const event_type* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-    const DataModel::PixelsChannel& cta_image,
+    const ProtoDataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const std::string& which_gain,
     calin::ix::iact_data::telescope_event::SignalType signal_type) const;
 
-  virtual void copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
+  virtual void copy_single_gain_waveforms(const event_type* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-    const DataModel::PixelsChannel& cta_image,
+    const ProtoDataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const std::string& which_gain,
     calin::ix::iact_data::telescope_event::SignalType signal_type) const;
 
-  unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
+  unsigned get_nmod_from_event(const ProtoDataModel::CameraEvent* cta_event) const;
 
   config_type config_;
   std::string filename_;
@@ -133,29 +132,31 @@ protected:
 
 */
 
-class NectarCam_ACTL_R1_CameraEventDecoder:
-  public actl_event_decoder::ACTL_R1_CameraEventDecoder
+class NectarCam_ACADACameraEventDecoder_R1v0:
+  public calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCam_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0::event_type;
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0::header_type;
+
+  NectarCam_ACADACameraEventDecoder_R1v0(const std::string& filename, unsigned run_number = 0,
     const config_type& config = default_config());
 
-  ~NectarCam_ACTL_R1_CameraEventDecoder();
+  ~NectarCam_ACADACameraEventDecoder_R1v0();
 
   virtual bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const R1::CameraEvent* cta_event) override;
+    const event_type* cta_event) override;
 
   virtual bool decode_run_config(
     calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-    const R1::CameraConfiguration* cta_run_header,
-    const R1::CameraEvent* cta_event) override;
+    const header_type* cta_run_header, const event_type* cta_event) override;
 
-  NectarCam_ACTL_R1_CameraEventDecoder* clone() const override;
+  NectarCam_ACADACameraEventDecoder_R1v0* clone() const override;
 
   calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
 
@@ -167,9 +168,9 @@ public:
   }
 
 protected:
-  void copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
+  void copy_single_gain_integrals(const event_type* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-    const DataModel::PixelsChannel& cta_image,
+    const int16_t* cta_charges, const uint8_t* cta_pixel_mask,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const std::string& which_gain) const;
 
@@ -177,7 +178,7 @@ protected:
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask,
     calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
-    uint8 has_gain_mask, const std::string& which_gain) const;
+    uint8_t has_gain_mask, const std::string& which_gain) const;
 
   config_type config_;
   std::string filename_;
@@ -189,6 +190,4 @@ protected:
   int64_t run_start_time_ = 0;
 };
 
-#endif
-
-} } } // namespace calin::iact_data::nectarcam_data_source
+} } } // namespace calin::iact_data::nectarcam_acada_event_decoder

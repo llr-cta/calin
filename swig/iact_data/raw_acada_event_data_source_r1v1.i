@@ -26,9 +26,6 @@
 %{
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/zfits_acada_data_source.hpp>
-#include <iact_data/nectarcam_data_source.hpp>
-#include <iact_data/lstcam_data_source.hpp>
-#include <iact_data/cta_data_source.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -42,6 +39,7 @@
 
 %import "google_protobuf.i"
 %import "io/data_source.i"
+%import "iact_data/zfits_data_source.pb.i"
 
 %ignore get_next(uint64_t& seq_index_out);
 %ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);
@@ -50,7 +48,6 @@
 %newobject get_run_header();
 
 %include "io/chained_data_source.hpp"
-%import "iact_data/telescope_data_source.i"
 %include "iact_data/acada_data_source.hpp"
 %include "iact_data/zfits_acada_data_source.hpp"
 

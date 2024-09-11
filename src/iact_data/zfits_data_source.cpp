@@ -320,4 +320,7 @@ template class ZFITSDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
+template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ZFITSDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+
 } } } // namespace calin::iact_data::zfits_data_source
