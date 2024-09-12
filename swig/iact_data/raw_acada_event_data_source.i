@@ -83,22 +83,40 @@ namespace calin::iact_data::acada_data_source {
 
 %typemap(in, numinputs=0) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT
   (calin::iact_data::acada_data_source::ACADA_EventMessage_L0* temp = nullptr) {
-    // typemap(in) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_acada_event_data_source.i
+    // typemap(in) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     $1 = &temp;
 }
 
 %typemap(argout) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT {
-    // typemap(argout) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_acada_event_data_source.i
+    // typemap(argout) calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
+}
+
+%typemap(in, numinputs=0) calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** CALIN_PROTOBUF_OUTPUT
+  (calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0* temp = nullptr) {
+    // typemap(in) calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+    $1 = &temp;
+}
+
+%typemap(argout) calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }
 
 %apply calin::iact_data::acada_data_source::ACADA_EventMessage_L0** CALIN_PROTOBUF_OUTPUT {
-  calin::iact_data::acada_data_source::ACADA_EventMessage_L0** event_out };
+  calin::iact_data::acada_data_source::ACADA_EventMessage_L0** message_out };
+%apply calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** CALIN_PROTOBUF_OUTPUT {
+  calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** message_out };
 
-%template(DataSource_L0) 
+%template(DataSource_ACADAEventMessage_L0)
   calin::io::data_source::DataSource<calin::iact_data::acada_data_source::ACADA_EventMessage_L0>;
-%template(RandomAccessDataSource_L0)
+%template(DataSource_ACADAHeaderMessage_L0)
+  calin::io::data_source::DataSource<calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0>;
+
+%template(RandomAccessDataSource_ACADAEventMessage_L0)
   calin::io::data_source::RandomAccessDataSource<calin::iact_data::acada_data_source::ACADA_EventMessage_L0>;
+%template(RandomAccessDataSource_ACADAHeaderMessage_L0)
+  calin::io::data_source::RandomAccessDataSource<calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0>;
 
 %extend calin::io::data_source::DataSource<calin::iact_data::acada_data_source::ACADA_EventMessage_L0> {
   calin::iact_data::acada_data_source::ACADA_EventMessage_L0* simple_get_next()
@@ -107,10 +125,24 @@ namespace calin::iact_data::acada_data_source {
     return $self->get_next(unused_seq_index);
   }
 
-  void get_next(uint64_t& seq_index_out, calin::iact_data::acada_data_source::ACADA_EventMessage_L0** event_out)
+  void get_next(uint64_t& seq_index_out, calin::iact_data::acada_data_source::ACADA_EventMessage_L0** message_out)
   {
     seq_index_out = 0;
-    *event_out = $self->get_next(seq_index_out);
+    *message_out = $self->get_next(seq_index_out);
+  }
+}
+
+%extend calin::io::data_source::DataSource<calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0> {
+  calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0* simple_get_next()
+  {
+    uint64_t unused_seq_index = 0;
+    return $self->get_next(unused_seq_index);
+  }
+
+  void get_next(uint64_t& seq_index_out, calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0** message_out)
+  {
+    seq_index_out = 0;
+    *message_out = $self->get_next(seq_index_out);
   }
 }
 
@@ -148,6 +180,13 @@ namespace calin::iact_data::acada_data_source {
 %template(ZFITSACADACameraEventDataSource_L0) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSource<
     calin::iact_data::acada_data_source::ACADA_EventMessage_L0,calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0>;
+
+%template(ZFITSSingleFileSingleMessageDataSource_ACADAEventMessage_L0)
+  calin::iact_data::zfits_acada_data_source::
+    ZFITSSingleFileSingleMessageDataSource<calin::iact_data::acada_data_source::ACADA_EventMessage_L0>;
+%template(ZFITSSingleFileSingleMessageDataSource_ACADAHeaderMessage_L0)
+  calin::iact_data::zfits_acada_data_source::
+    ZFITSSingleFileSingleMessageDataSource<calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0>;
 
 /*
 
@@ -201,7 +240,6 @@ namespace calin::iact_data::acada_data_source {
   calin::iact_data::acada_data_source::ACADA_EventMessage_R1v0** message_out };
 %apply calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v0** CALIN_PROTOBUF_OUTPUT {
   calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v0** message_out };
-
 
 %template(DataSource_ACADAEventMessage_R1v0)
   calin::io::data_source::DataSource<calin::iact_data::acada_data_source::ACADA_EventMessage_R1v0>;
