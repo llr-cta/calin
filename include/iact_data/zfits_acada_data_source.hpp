@@ -36,6 +36,29 @@ std::vector<std::string> get_zfits_table_column_names(std::string filename, std:
 std::vector<std::string> get_zfits_table_keys(std::string filename, std::string tablename);
 std::map<std::string,std::string> get_zfits_table_key_values(std::string filename, std::string tablename);
 
+template<typename Message>
+class ZFITSSingleFileSingleMessageDataSource:
+  public virtual calin::io::data_source::RandomAccessDataSource<Message>
+{
+public:
+  CALIN_TYPEALIAS(message_type, Message);
+
+  ZFITSSingleFileSingleMessageDataSource(const std::string& filename, const std::string& tablename = {});
+  virtual ~ZFITSSingleFileSingleMessageDataSource();
+
+  message_type* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+  uint64_t size() override;
+  void set_next_index(uint64_t next_index) override;
+
+private:
+  std::string filename_;
+  std::string tablename_;
+  ADH::IO::ProtobufIFits* zfits_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
+  uint64_t next_message_index_ = 0;
+};
+
 template<typename EventMessage, typename HeaderMessage>
 class ZFITSSingleFileACADACameraEventDataSource:
   public calin::iact_data::acada_data_source::

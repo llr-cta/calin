@@ -59,6 +59,7 @@ namespace {
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v0>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v1>() { return "CameraConfiguration"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
+  template<> std::string default_message_table_name<ACADA_DataStreamMessage_R1v1>() { return "DataStream"; }
 } // anonymous namespace
 
 std::vector<std::string> calin::iact_data::zfits_acada_data_source::
@@ -135,6 +136,84 @@ get_zfits_table_key_values(std::string filename, std::string tablename)
   return key_values;
 }
 
+// =============================================================================
+// =============================================================================
+// =============================================================================
+//
+// ZFITSSingleFileSingleMessageDataSource - single ZFits file source of 
+// single message type (for debugging purposes)
+// 
+// =============================================================================
+// =============================================================================
+// =============================================================================
+
+template<typename Message> ZFITSSingleFileSingleMessageDataSource<Message>::
+ZFITSSingleFileSingleMessageDataSource(
+    const std::string& filename, const std::string& tablename):
+  calin::io::data_source::RandomAccessDataSource<Message>(),
+  filename_(expand_filename(filename)), 
+  tablename_(tablename.empty() ? default_message_table_name<Message>() : tablename)
+{
+  if(!is_file(filename_))
+    throw std::runtime_error(std::string("No such file: ")+filename_);
+  if(!is_readable(filename_))
+    throw std::runtime_error(std::string("File not readable: ")+filename_);
+
+  zfits_ = new ADH::IO::ProtobufIFits(filename_, tablename_, Message::descriptor());
+  if(zfits_->eof() && !zfits_->bad())
+    throw std::runtime_error("ZFits file " + filename_ + " has no table: " + tablename_);
+
+  file_record_ = calin::provenance::chronicle::register_file_open(filename_,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+}
+
+template<typename Message> ZFITSSingleFileSingleMessageDataSource<Message>::
+~ZFITSSingleFileSingleMessageDataSource()
+{
+  delete zfits_;
+  calin::provenance::chronicle::register_file_close(file_record_);
+}
+
+template<typename Message> Message* 
+ZFITSSingleFileSingleMessageDataSource<Message>::get_next(uint64_t& seq_index_out,
+  google::protobuf::Arena** arena)
+{
+  if(arena)*arena = nullptr;
+
+  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  if(next_message_index_ >= max_seq_index)return nullptr;
+
+  seq_index_out = next_message_index_;
+  const Message* message {
+    zfits_->borrowTypedMessage<Message>(++next_message_index_) };
+  if(message == nullptr)throw std::runtime_error("ZFits reader returned NULL");
+
+  Message* message_copy = nullptr;
+  if(arena && *arena)
+    throw std::runtime_error("ZFITSSingleFileSingleMessageDataSource::get_next: "
+      " pre-allocated arena not supported."); // ADH library does not support arenas
+  
+  message_copy = new Message;
+  message_copy->CopyFrom(*message);
+
+  zfits_->returnBorrowedMessage(message);
+
+  return message_copy;
+}
+
+template<typename Message> uint64_t
+ZFITSSingleFileSingleMessageDataSource<Message>::size()
+{
+  return zfits_->getNumMessagesInTable();
+}
+
+template<typename Message> void
+ZFITSSingleFileSingleMessageDataSource<Message>::
+set_next_index(uint64_t next_index)
+{
+  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  next_message_index_ = std::min(next_index, max_seq_index);
+}
 
 // =============================================================================
 // =============================================================================
@@ -574,14 +653,21 @@ ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::default_confi
 
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
 
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_EventMessage_L0>;
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_HeaderMessage_L0>;
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_EventMessage_R1v0>;
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_HeaderMessage_R1v0>;
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_EventMessage_R1v1>;
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_HeaderMessage_R1v1>;
+template class ZFITSSingleFileSingleMessageDataSource<ACADA_DataStreamMessage_R1v1>;
 template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
 template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
 template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;

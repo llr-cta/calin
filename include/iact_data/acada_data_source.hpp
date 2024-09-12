@@ -154,6 +154,7 @@ CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v0, ProtoR1::CameraConfiguration);
 
 CALIN_TYPEALIAS(ACADA_EventMessage_R1v1, R1v1::Event);
 CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v1, R1v1::CameraConfiguration);
+CALIN_TYPEALIAS(ACADA_DataStreamMessage_R1v1, R1v1::TelescopeDataStream);
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
 
