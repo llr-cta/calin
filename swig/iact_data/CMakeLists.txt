@@ -17,7 +17,7 @@ set(CALIN_SWIG_FILES algorithms.i # telescope_data_source.i
 	event_visitor.i event_dispatcher.i
 	instrument_layout.i nectarcam_layout.i lstcam_layout.i
 	waveform_treatment_event_visitor.i nectarcam_ancillary_data.i
-	raw_acada_event_data_source.i)
+	raw_acada_event_data_source.i acada_event_decoder.i)
 set(CALIN_SWIG_TARGET iact_data)
 
 include_directories(${CTA_ADH_APIS_INCLUDE_DIRS})
