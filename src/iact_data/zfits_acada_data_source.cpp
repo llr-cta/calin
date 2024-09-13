@@ -392,10 +392,7 @@ template<typename EventMessage, typename HeaderMessage, typename DataStreamMessa
 HeaderMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 get_run_header()
 {
-  if(!run_header_)return nullptr;
-  auto* run_header = new HeaderMessage;
-  run_header->CopyFrom(*run_header_);
-  return run_header;
+  return copy_message(run_header_);
 }
 
 template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
@@ -441,16 +438,20 @@ ZFITSACADACameraEventDataSource(const std::string& filename, const config_type& 
 {
   if(source_) {
     run_header_ = source_->get_run_header();
+    data_stream_ = source_->get_data_stream();
   }
-  if(run_header_ == nullptr and opener_->num_sources() > 1) {
-    // In this case the first file fragment is missing the RunHeader, search
+  if((run_header_ == nullptr or data_stream_ == nullptr) and opener_->num_sources() > 1) {
+    // In this case the first file fragment is missing the RunHeader or DataStream, search
     // for it in later fragments then reopen the first fragment
 
-    while(run_header_ == nullptr and isource_ < opener_->num_sources())
+    while((run_header_ == nullptr or data_stream_ == nullptr) and isource_ < opener_->num_sources())
     {
       ++isource_;
       open_file();
-      run_header_ = source_ ? source_->get_run_header() : nullptr;
+      if(run_header_ == nullptr)
+        run_header_ = source_ ? source_->get_run_header() : nullptr;
+      if(data_stream_ == nullptr)
+        data_stream_ = source_ ? source_->get_data_stream() : nullptr;
     }
 
     isource_ = 0;
