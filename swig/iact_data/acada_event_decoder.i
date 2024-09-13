@@ -60,7 +60,8 @@
 %template(ACADACameraEventDecoder_R1v1) 
   calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 
 %import <iact_data/nectarcam_configuration.pb.i>
 %include <iact_data/nectarcam_acada_event_decoder.hpp>

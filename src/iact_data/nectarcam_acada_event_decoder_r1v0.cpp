@@ -549,9 +549,10 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode(
 }
 
 bool NectarCam_ACADACameraEventDecoder_R1v0::decode_run_config(
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* calin_run_config,
-  const header_type* cta_run_header, const event_type* cta_event)
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* calin_run_config,
+  const header_type* cta_run_header, 
+  const event_type* cta_event, 
+  const data_stream_type* cta_data_stream)
 {
   calin_run_config->set_data_transcoder(
     "calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0");

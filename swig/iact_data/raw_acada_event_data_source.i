@@ -469,43 +469,51 @@ namespace calin::iact_data::acada_data_source {
 %template(ACADACameraEventDataSourceWithRunHeader_R1v1)
   calin::iact_data::acada_data_source::ACADACameraEventDataSourceWithRunHeader<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 %template(ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v1)
   calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 
 %template(DataSourceOpener_R1v1)
   calin::io::data_source::DataSourceOpener<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
       calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1> >;
+      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+      calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1> >;
 
 %template(BasicChainedDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v1)
   calin::io::data_source::BasicChainedDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
       calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1> >;
+      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+      calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1> >;
 
 %template(BasicChainedRandomAccessDataSource_ACADACameraEventRandomAccessDataSourceWithRunHeader_R1v1)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::ACADACameraEventRandomAccessDataSourceWithRunHeader<
       calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1> >;
+      calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+      calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1> >;
 
 %template(ZFITSACADACameraEventDataSourceOpener_R1v1) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSourceOpener<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 
 %template(ZFITSSingleFileACADACameraEventDataSource_R1v1) 
   calin::iact_data::zfits_acada_data_source::ZFITSSingleFileACADACameraEventDataSource<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 %template(ZFITSACADACameraEventDataSource_R1v1) 
   calin::iact_data::zfits_acada_data_source::ZFITSACADACameraEventDataSource<
     calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>;
+    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1,
+    calin::iact_data::acada_data_source::ACADA_DataStreamMessage_R1v1>;
 
 %template(ZFITSSingleFileSingleMessageDataSource_ACADAEventMessage_R1v1)
   calin::iact_data::zfits_acada_data_source::

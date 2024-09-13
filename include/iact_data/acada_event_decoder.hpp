@@ -44,12 +44,13 @@ calin::ix::iact_data::telescope_event::TriggerType determine_trigger_type(
     const calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
     const calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data);
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ACADACameraEventDecoder
 {
 public:
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
 
   virtual ~ACADACameraEventDecoder();
   virtual bool decode(
@@ -59,7 +60,8 @@ public:
     calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
     const HeaderMessage* cta_run_header,
-    const EventMessage* cta_event) = 0;
+    const EventMessage* cta_event,
+    const DataStreamMessage* cta_data_stream = nullptr) = 0;
   virtual ACADACameraEventDecoder* clone() const = 0;
 };
 

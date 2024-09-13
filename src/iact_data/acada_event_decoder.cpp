@@ -37,8 +37,9 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
-template<typename EventMessage, typename HeaderMessage>
-ACADACameraEventDecoder<EventMessage, HeaderMessage>::~ACADACameraEventDecoder()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ACADACameraEventDecoder<EventMessage, HeaderMessage, DataStreamMessage>::
+~ACADACameraEventDecoder()
 {
   // nothing to see here
 }

@@ -43,13 +43,19 @@ class ZFITSSingleFileSingleMessageDataSource:
 public:
   CALIN_TYPEALIAS(message_type, Message);
 
-  ZFITSSingleFileSingleMessageDataSource(const std::string& filename, const std::string& tablename = {});
+  ZFITSSingleFileSingleMessageDataSource(const std::string& filename, const std::string& tablename = {},
+    bool suppress_file_record = false);
   virtual ~ZFITSSingleFileSingleMessageDataSource();
+
+  const message_type* borrow_next_message(uint64_t& seq_index_out);
+  void release_borrowed_message(const message_type* message);
 
   message_type* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
+
   uint64_t size() override;
   void set_next_index(uint64_t next_index) override;
+  uint64_t get_next_index() const { return next_message_index_; };
 
 private:
   std::string filename_;
@@ -59,16 +65,17 @@ private:
   uint64_t next_message_index_ = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ZFITSSingleFileACADACameraEventDataSource:
   public calin::iact_data::acada_data_source::
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
 
   ZFITSSingleFileACADACameraEventDataSource(const std::string& filename,
     const config_type& config = default_config());
@@ -83,39 +90,41 @@ public:
   void set_next_index(uint64_t next_index) override;
 
   header_type* get_run_header() override;
+  data_stream_type* get_data_stream() override;
 
   static config_type default_config();
   const config_type& config() const { return config_; }
 
 private:
   std::string filename_;
-  ADH::IO::ProtobufIFits* zfits_ = nullptr;
-  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
-  uint64_t next_event_index_ = 0;
+  ZFITSSingleFileSingleMessageDataSource<event_type>* zfits_;
   header_type* run_header_ = nullptr;
+  data_stream_type* data_stream_ = nullptr;
   config_type config_;
 };
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ZFITSACADACameraEventDataSource:
   public calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
   CALIN_TYPEALIAS(BaseDataSource, calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >);
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >);
 
   ZFITSACADACameraEventDataSource(const std::string& filename,
     const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSource();
 
   header_type* get_run_header() override;
+  data_stream_type* get_data_stream() override;
 
   const event_type* borrow_next_event(uint64_t& seq_index_out) override;
   void release_borrowed_event(const event_type* event) override;
@@ -138,26 +147,28 @@ protected:
 private:
   config_type config_;
   header_type* run_header_ = nullptr;
+  data_stream_type* data_stream_ = nullptr;
 };
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ZFITSACADACameraEventDataSourceOpener:
   public calin::io::data_source::DataSourceOpener<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
 
   ZFITSACADACameraEventDataSourceOpener(std::string filename,
     const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSourceOpener();
   unsigned num_sources() const override;
   std::string source_name(unsigned isource) const override;
-  ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>* open(unsigned isource) override;
+  ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 
   static config_type default_config();

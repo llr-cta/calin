@@ -112,8 +112,10 @@ register_file_open(const std::string& file_name,
 void calin::provenance::chronicle::
 register_file_close(calin::ix::provenance::chronicle::FileIORecord* record)
 {
-  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  ts.as_proto(record->mutable_close_timestamp());
+  if(record) {
+    calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+    ts.as_proto(record->mutable_close_timestamp());
+  }
 }
 
 calin::ix::provenance::chronicle::NetworkIORecord* calin::provenance::chronicle::
@@ -139,10 +141,12 @@ void calin::provenance::chronicle::
 register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record,
   int64_t nbytes_received, int64_t nbytes_sent)
 {
-  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  ts.as_proto(record->mutable_close_timestamp());
-  if(nbytes_received>=0)record->set_nbytes_received(nbytes_received);
-  if(nbytes_sent>=0)record->set_nbytes_sent(nbytes_sent);
+  if(record) {
+    calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+    ts.as_proto(record->mutable_close_timestamp());
+    if(nbytes_received>=0)record->set_nbytes_received(nbytes_received);
+    if(nbytes_sent>=0)record->set_nbytes_sent(nbytes_sent);
+  }
 }
 
 calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
@@ -221,9 +225,11 @@ register_external_rng_open(uint64_t seed, const std::string& rng_type,
 void calin::provenance::chronicle::
 register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record, uint64_t ncore_calls)
 {
-  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  ts.as_proto(record->mutable_close_timestamp());
-  if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
+  if(record) {
+    calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+    ts.as_proto(record->mutable_close_timestamp());
+    if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
+  }
 }
 
 calin::ix::provenance::chronicle::CommandLineProcessingRecord*
@@ -271,6 +277,8 @@ calin::provenance::chronicle::register_processing_start(
 void calin::provenance::chronicle::register_processing_finish(
   calin::ix::provenance::chronicle::ProcessingRecord* record)
 {
-  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  ts.as_proto(record->mutable_close_timestamp());
+  if(record) {
+    calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+    ts.as_proto(record->mutable_close_timestamp());
+  }
 }

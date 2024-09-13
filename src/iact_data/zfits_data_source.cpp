@@ -37,6 +37,20 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
+namespace { // anonymous
+  template<typename Message> void delete_message(Message* message)
+  {
+    delete message;
+  }
+
+  template<> void delete_message<void>(void*)
+  {
+    // nothing to see here
+  }
+} // anonymous namespace
+
+#if 0 // UNUSED
+
 // =============================================================================
 // ZFITSSingleFileDataSource_R1 - single ZFits file with decoder
 // Uses ZFITSSingleFileACTL_R1_CameraEventDataSource to read events and
@@ -169,25 +183,27 @@ ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::default_config()
   return calin::iact_data::zfits_acada_data_source::
     ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config(); 
 }
+#endif // UNUSED
 
 // =============================================================================
 // ZFITSDataSource - chained ZFits files with decoder
 // =============================================================================
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ZFITSDataSource(const std::string& filename,
     calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
+      ACADACameraEventDecoder<EventMessage,HeaderMessage,DataStreamMessage>* decoder,
     bool adopt_decoder, const config_type& config):
   TelescopeRandomAccessDataSourceWithRunConfig(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   acada_zfits_(new calin::iact_data::zfits_acada_data_source::
-    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>(filename, config)), 
+    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>(filename, config)), 
   adopt_acada_zfits_(true)
 {
   const EventMessage* acada_sample_event = nullptr;
   const HeaderMessage* acada_run_header = nullptr;
+  const DataStreamMessage* acada_data_stream = nullptr;
   try {
     acada_zfits_->set_next_index(0);
     uint64_t unused_seq_index = 0;
@@ -200,9 +216,15 @@ ZFITSDataSource(const std::string& filename,
   } catch(...) {
     // ignore errors that occur reading run header
   }
+  try {
+    acada_data_stream = acada_zfits_->get_data_stream();
+  } catch(...) {
+    // ignore errors that occur reading run header
+  }
   run_config_ = new TelescopeRunConfiguration;
-  decoder_->decode_run_config(run_config_, acada_run_header, acada_sample_event);
+  decoder_->decode_run_config(run_config_, acada_run_header, acada_sample_event, acada_data_stream);
   delete acada_run_header;
+  delete_message(acada_data_stream);
   if(acada_sample_event)acada_zfits_->release_borrowed_event(acada_sample_event);
   run_config_->clear_fragment_filename();
   for(const auto& ffn : acada_zfits_->all_fragment_names()) {
@@ -213,31 +235,32 @@ ZFITSDataSource(const std::string& filename,
   acada_zfits_->set_next_index(0);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ZFITSDataSource(const std::string& filename,
-    ZFITSDataSource<EventMessage,HeaderMessage>* base_datasource, const config_type& config):
+    ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>* base_datasource, 
+    const config_type& config):
   TelescopeRandomAccessDataSourceWithRunConfig(),
   decoder_(base_datasource->decoder_->clone()), adopt_decoder_(true),
   acada_zfits_(new calin::iact_data::zfits_acada_data_source::
-    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>(filename, config)), 
+    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>(filename, config)), 
   adopt_acada_zfits_(true),
   run_config_(base_datasource->get_run_configuration())
 {
   // nothing to see here
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSDataSource<EventMessage,HeaderMessage>::~ZFITSDataSource()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::~ZFITSDataSource()
 {
   delete run_config_;
   if(adopt_acada_zfits_)delete acada_zfits_;
   if(adopt_decoder_)delete decoder_;
 }
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
 calin::ix::iact_data::telescope_event::TelescopeEvent* 
-ZFITSDataSource<EventMessage,HeaderMessage>::get_next(
+ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   const EventMessage* cta_event =
@@ -272,21 +295,22 @@ ZFITSDataSource<EventMessage,HeaderMessage>::get_next(
   return event;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-uint64_t ZFITSDataSource<EventMessage,HeaderMessage>::size()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+uint64_t ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::size()
 {
   return acada_zfits_->size();
 }
 
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSDataSource<EventMessage,HeaderMessage>::set_next_index(uint64_t next_index)
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+void ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+set_next_index(uint64_t next_index)
 {
   acada_zfits_->set_next_index(next_index);
 }
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
 calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* 
-ZFITSDataSource<EventMessage,HeaderMessage>::get_run_configuration()
+ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::get_run_configuration()
 {
   if(!run_config_)return nullptr;
   auto* run_config = new TelescopeRunConfiguration();
@@ -294,33 +318,37 @@ ZFITSDataSource<EventMessage,HeaderMessage>::get_run_configuration()
   return run_config;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-unsigned ZFITSDataSource<EventMessage,HeaderMessage>::current_fragment_index() const
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+unsigned ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+current_fragment_index() const
 {
   return acada_zfits_->current_fragment_index();
 }
 
-template<typename EventMessage, typename HeaderMessage>
-unsigned ZFITSDataSource<EventMessage,HeaderMessage>::num_fragments() const
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+unsigned ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+num_fragments() const
 {
   return acada_zfits_->num_fragments();
 }
 
-template<typename EventMessage, typename HeaderMessage>
-std::string ZFITSDataSource<EventMessage,HeaderMessage>::fragment_name(unsigned index) const
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+std::string ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+fragment_name(unsigned index) const
 {
   return acada_zfits_->fragment_name(index);
 }
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
-template class ZFITSSingleFileDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+// template class ZFITSSingleFileDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 template class ZFITSDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+// template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 template class ZFITSDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
 
-template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
-template class ZFITSDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+// template class ZFITSSingleFileDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ZFITSDataSource<
+  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
 
 } } } // namespace calin::iact_data::zfits_data_source

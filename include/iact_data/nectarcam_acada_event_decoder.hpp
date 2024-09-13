@@ -62,6 +62,7 @@ public:
 
   using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0::event_type;
   using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0::header_type;
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0::data_stream_type;
 
   NectarCam_ACADACameraEventDecoder_L0(const std::string& filename, unsigned run_number = 0,
     const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& config = default_config());
@@ -81,9 +82,9 @@ public:
     const event_type* cta_event) override;
 
   bool decode_run_config(
-    calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config,
-    const header_type* cta_run_header, const event_type* cta_event) override;
+    calin::ix::iact_data::telescope_run_configuration:: TelescopeRunConfiguration* run_config,
+    const header_type* cta_run_header, const event_type* cta_event, 
+    const data_stream_type* cta_data_stream = nullptr) override;
 
   NectarCam_ACADACameraEventDecoder_L0* clone() const override;
 
@@ -141,6 +142,7 @@ public:
 
   using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0::event_type;
   using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0::header_type;
+  using calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0::data_stream_type;
 
   NectarCam_ACADACameraEventDecoder_R1v0(const std::string& filename, unsigned run_number = 0,
     const config_type& config = default_config());
@@ -151,10 +153,10 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const event_type* cta_event) override;
 
-  virtual bool decode_run_config(
-    calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config,
-    const header_type* cta_run_header, const event_type* cta_event) override;
+  bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration:: TelescopeRunConfiguration* run_config,
+    const header_type* cta_run_header, const event_type* cta_event, 
+    const data_stream_type* cta_data_stream = nullptr) override;
 
   NectarCam_ACADACameraEventDecoder_R1v0* clone() const override;
 

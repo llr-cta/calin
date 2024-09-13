@@ -60,6 +60,44 @@ namespace {
   template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v1>() { return "CameraConfiguration"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_DataStreamMessage_R1v1>() { return "DataStream"; }
+
+  template<typename Message> Message* read_one_message_from_zfits_table(
+    const std::string& filename, const std::string& tablename, bool suppress_file_record = false) 
+  {
+    ZFITSSingleFileSingleMessageDataSource<Message> zfits(filename, tablename, suppress_file_record);
+    uint64_t seq_index_out;
+    return zfits.get_next(seq_index_out);
+  }
+
+  template<> void* read_one_message_from_zfits_table<void>(
+    const std::string& filename, const std::string& tablename, bool suppress_file_record) 
+  {
+    return nullptr;
+  }
+
+  template<typename Message> Message* copy_message(const Message* message)
+  {
+    if(message == nullptr)return nullptr;
+    Message* new_message = new Message;
+    new_message->CopyFrom(*message);
+    return new_message;
+  }
+
+  template<> void* copy_message<void>(const void*)
+  {
+    return nullptr;
+  }
+
+  template<typename Message> void delete_message(Message* message)
+  {
+    delete message;
+  }
+
+  template<> void delete_message<void>(void*)
+  {
+    // nothing to see here
+  }
+
 } // anonymous namespace
 
 std::vector<std::string> calin::iact_data::zfits_acada_data_source::
@@ -149,7 +187,7 @@ get_zfits_table_key_values(std::string filename, std::string tablename)
 
 template<typename Message> ZFITSSingleFileSingleMessageDataSource<Message>::
 ZFITSSingleFileSingleMessageDataSource(
-    const std::string& filename, const std::string& tablename):
+    const std::string& filename, const std::string& tablename, bool suppress_file_record):
   calin::io::data_source::RandomAccessDataSource<Message>(),
   filename_(expand_filename(filename)), 
   tablename_(tablename.empty() ? default_message_table_name<Message>() : tablename)
@@ -163,8 +201,10 @@ ZFITSSingleFileSingleMessageDataSource(
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " + tablename_);
 
-  file_record_ = calin::provenance::chronicle::register_file_open(filename_,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+  if(not suppress_file_record) {
+    file_record_ = calin::provenance::chronicle::register_file_open(filename_,
+      calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+  }
 }
 
 template<typename Message> ZFITSSingleFileSingleMessageDataSource<Message>::
@@ -172,6 +212,28 @@ template<typename Message> ZFITSSingleFileSingleMessageDataSource<Message>::
 {
   delete zfits_;
   calin::provenance::chronicle::register_file_close(file_record_);
+}
+
+template<typename Message> const Message* 
+ZFITSSingleFileSingleMessageDataSource<Message>::
+borrow_next_message(uint64_t& seq_index_out)
+{
+  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  if(next_message_index_ >= max_seq_index)return nullptr;
+
+  seq_index_out = next_message_index_;
+  const Message* message {
+    zfits_->borrowTypedMessage<Message>(++next_message_index_) };
+  if(message == nullptr)throw std::runtime_error("ZFits reader returned NULL");
+
+  return message;
+}
+  
+template<typename Message> void 
+ZFITSSingleFileSingleMessageDataSource<Message>::
+release_borrowed_message(const message_type* message)
+{
+  zfits_->returnBorrowedMessage(message);
 }
 
 template<typename Message> Message* 
@@ -225,12 +287,14 @@ set_next_index(uint64_t next_index)
 // =============================================================================
 // =============================================================================
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const config_type& config):
-  ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage>(),
+  ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>(),
   filename_(expand_filename(filename)), config_(config)
 {
+  if(config_.data_stream_table_name().empty())
+    config_.set_data_stream_table_name(default_message_table_name<DataStreamMessage>());
   if(config_.run_header_table_name().empty())
     config_.set_run_header_table_name(default_message_table_name<HeaderMessage>());
   if(config_.events_table_name().empty())
@@ -243,162 +307,89 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
 
   if(!config_.dont_read_run_header())
   {
-    try
-    {
-      ADH::IO::ProtobufIFits rh_zfits(filename_.c_str(),
-        config_.run_header_table_name(), HeaderMessage::descriptor());
-      if(rh_zfits.eof() && !rh_zfits.bad())
-        throw std::runtime_error("ZFits reader found no table:" +
-          config_.run_header_table_name());
-      if(config_.verify_file_after_open() or config_.repair_broken_file())
-      {
-        try
-        {
-          rh_zfits.CheckIfFileIsConsistent(false);
-        }
-        catch (std::exception& e)
-        {
-          if(config_.repair_broken_file())
-          {
-            LOG(WARNING) << "ZFits file " + filename_ +
-              ": integrity verification failed, attempting to repair.";
-            rh_zfits.CheckIfFileIsConsistent(true);
-          }
-        }
-      }
-      if(rh_zfits.getNumMessagesInTable() > 0)
-      {
-        HeaderMessage* run_header =
-          rh_zfits.readTypedMessage<HeaderMessage>(1);
-        run_header_ = new HeaderMessage(*run_header);
-        rh_zfits.recycleMessage(run_header);
-        //LOG(INFO) << run_header_->DebugString();
-      }
-    }
-    catch(...)
-    {
+    try {
+      run_header_ = read_one_message_from_zfits_table<header_type>(
+        filename_, config_.run_header_table_name(), /* suppress_file_record = */true);
+    } catch(...) {
       if(!config_.ignore_run_header_errors())
         LOG(WARNING)
           << "ZFITSSingleFileACADACameraEventDataSource: Could not read run header from "
           << filename_;
     }
-  }
 
-  zfits_ = new ADH::IO::ProtobufIFits(filename_.c_str(),
-    config_.events_table_name(), EventMessage::descriptor());
-  if(zfits_->eof() && !zfits_->bad())
-    throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
-      config_.events_table_name());
-
-  file_record_ = calin::provenance::chronicle::register_file_open(filename_,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
-
-  if(config_.verify_file_after_open() or config_.repair_broken_file())
-  {
-    try
-    {
-      zfits_->CheckIfFileIsConsistent(false);
-    }
-    catch (std::exception& e)
-    {
-      if(config_.repair_broken_file())
-      {
-        LOG(WARNING) << "ZFits file " + filename_ +
-          ": integrity verification failed, attempting to repair.";
-        zfits_->CheckIfFileIsConsistent(true);
-      }
+    try {
+      data_stream_ = read_one_message_from_zfits_table<data_stream_type>(
+        filename_, config_.data_stream_table_name(), /* suppress_file_record = */true);
+    } catch(...) {
+      if(!config_.ignore_run_header_errors())
+        LOG(WARNING)
+          << "ZFITSSingleFileACADACameraEventDataSource: Could not read data stream from "
+          << filename_;
     }
   }
+
+  zfits_ = new ZFITSSingleFileSingleMessageDataSource<event_type>(filename_, config_.events_table_name());
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ~ZFITSSingleFileACADACameraEventDataSource()
 {
   delete zfits_;
-  calin::provenance::chronicle::register_file_close(file_record_);
   delete run_header_;
+  delete_message(data_stream_);
 }
 
-template<typename EventMessage, typename HeaderMessage> const EventMessage* 
-ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage,typename DataStreamMessage> const EventMessage* 
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 borrow_next_event(uint64_t& seq_index_out)
 {
-  if(zfits_ == nullptr)
-    throw std::runtime_error(std::string("File not open: ")+filename_);
-
-  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
-  if(config_.max_seq_index())
-    max_seq_index = std::min(max_seq_index, config_.max_seq_index());
-  if(next_event_index_ >= max_seq_index)return nullptr;
-
-  seq_index_out = next_event_index_;
-  const EventMessage* event {
-    zfits_->borrowTypedMessage<EventMessage>(++next_event_index_) };
-  if(!event)throw std::runtime_error("ZFits reader returned NULL");
-
-  return event;
+  if(config_.max_seq_index() and zfits_->get_next_index()>=config_.max_seq_index()) {
+    return nullptr;
+  } else {
+    return zfits_->borrow_next_message(seq_index_out);
+  }
 }
 
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+void ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage, DataStreamMessage>::
 release_borrowed_event(const EventMessage* event)
 {
-  zfits_->returnBorrowedMessage(event);
+  zfits_->release_borrowed_message(event);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-EventMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+EventMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
-  if(arena)*arena = nullptr;
-  const EventMessage* event = borrow_next_event(seq_index_out);
-  if(event == nullptr)return nullptr;
-
-  EventMessage* event_copy = nullptr;
-#if 0
-  if(arena) {
-    if(!*arena)*arena = new google::protobuf::Arena;
-    event_copy =
-      google::protobuf::Arena::CreateMessage<EventMessage>(*arena);
+  if(config_.max_seq_index() and zfits_->get_next_index()>=config_.max_seq_index()) {
+    return nullptr;
+  } else {
+    return zfits_->get_next(seq_index_out, arena);
   }
-  else event_copy = new EventMessage;
-#else
-  if(arena && *arena)
-    throw std::runtime_error("ZFITSSingleFileACADACameraEventDataSource::get_next: "
-      " pre-allocated arena not supported.");
-  event_copy = new EventMessage;
-#endif
-  event_copy->CopyFrom(*event);
-  release_borrowed_event(event);
-
-  return event_copy;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-uint64_t ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::size()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+uint64_t ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::size()
 {
-  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  uint64_t max_seq_index = zfits_->size();
   if(config_.max_seq_index())
     max_seq_index = std::min(max_seq_index, config_.max_seq_index());
   return max_seq_index;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+void ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 set_next_index(uint64_t next_index)
 {
-  if(zfits_ == nullptr)next_event_index_ = 0;
-  else {
-    uint64_t max_seq_index = zfits_->getNumMessagesInTable();
-    if(config_.max_seq_index())
-      max_seq_index = std::min(max_seq_index, config_.max_seq_index());
-    next_event_index_ = std::min(next_index, max_seq_index);
+  if(config_.max_seq_index()) {
+    next_index = std::min(next_index, config_.max_seq_index());
   }
+  zfits_->set_next_index(next_index);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-HeaderMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+HeaderMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 get_run_header()
 {
   if(!run_header_)return nullptr;
@@ -407,13 +398,22 @@ get_run_header()
   return run_header;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-typename ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::config_type
-ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+DataStreamMessage* ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+get_data_stream()
+{
+  return copy_message(data_stream_);
+}
+
+
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+typename ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::config_type
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::default_config()
 {
   config_type config = config_type::default_instance();
   config.set_data_model(default_data_model<EventMessage>());
   config.set_extension(".fits.fz");
+  config.set_data_stream_table_name(default_message_table_name<DataStreamMessage>());
   config.set_run_header_table_name(default_message_table_name<HeaderMessage>());
   config.set_events_table_name(default_message_table_name<EventMessage>());
   config.set_file_fragment_stride(1);
@@ -430,12 +430,13 @@ ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_c
 // =============================================================================
 // =============================================================================
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ZFITSACADACameraEventDataSource(const std::string& filename, const config_type& config):
   calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >(
-      new ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>(filename, config), true),
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >(
+      new ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>(
+        filename, config), true),
   config_(config), run_header_(nullptr)
 {
   if(source_) {
@@ -457,15 +458,17 @@ ZFITSACADACameraEventDataSource(const std::string& filename, const config_type& 
   }
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 ~ZFITSACADACameraEventDataSource()
 {
   delete run_header_;
+  delete_message(data_stream_);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-HeaderMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::get_run_header()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+HeaderMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+get_run_header()
 {
   if(!run_header_)return nullptr;
   auto* run_header = new HeaderMessage();
@@ -473,8 +476,15 @@ HeaderMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::get_
   return run_header;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-const EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+DataStreamMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
+get_data_stream()
+{
+  return copy_message(data_stream_);
+}
+
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+const EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 borrow_next_event(uint64_t& seq_index_out)
 {
   if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
@@ -494,8 +504,8 @@ borrow_next_event(uint64_t& seq_index_out)
   return nullptr;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 release_borrowed_event(const EventMessage* event)
 {
   if(source_)
@@ -504,44 +514,39 @@ release_borrowed_event(const EventMessage* event)
     delete event;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+EventMessage* ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
     return nullptr;
   else
-    return calin::io::data_source::BasicChainedRandomAccessDataSource<
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::
-        get_next(seq_index_out, arena);
+    return BaseDataSource::get_next(seq_index_out, arena);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-uint64_t ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::size()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+uint64_t ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::size()
 {
-  uint64_t max_seq_index = calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::size();
+  uint64_t max_seq_index = BaseDataSource::size();
   if(config_.max_seq_index() and max_seq_index>config_.max_seq_index())
     max_seq_index = config_.max_seq_index();
   return max_seq_index;
 }
 
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+void ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::
 set_next_index(uint64_t next_index)
 {
   if(config_.max_seq_index() and next_index>config_.max_seq_index())
     next_index = config_.max_seq_index();
-  calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >::
-      set_next_index(next_index);
+  BaseDataSource::set_next_index(next_index);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-typename ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::config_type
-ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+typename ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::config_type
+ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::default_config()
 {
-  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config();
+  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::default_config();
 }
 
 // =============================================================================
@@ -554,11 +559,11 @@ ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config()
 // =============================================================================
 // =============================================================================
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::
 ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& config):
   calin::io::data_source::DataSourceOpener<
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage> >(),
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >(),
   config_(config)
 {
   const unsigned istride = std::max(1U,config.file_fragment_stride());
@@ -608,30 +613,30 @@ ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& c
   }
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::
 ~ZFITSACADACameraEventDataSourceOpener()
 {
     // nothing to see here
 }
 
-template<typename EventMessage, typename HeaderMessage>
-unsigned ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::num_sources() const
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+unsigned ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::num_sources() const
 {
   return filenames_.size();
 }
 
-template<typename EventMessage, typename HeaderMessage>
-std::string ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+std::string ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::
 source_name(unsigned isource) const
 {
   if(isource >= filenames_.size())return {};
   return filenames_[isource];
 }
 
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>*
-ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>*
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::
 open(unsigned isource)
 {
   if(isource >= filenames_.size())return nullptr;
@@ -641,14 +646,14 @@ open(unsigned isource)
   if(has_opened_file_)config.set_dont_read_run_header(true);
   config.set_max_seq_index(0);
   has_opened_file_ = true;
-  return new ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>(filenames_[isource], config);
+  return new ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>(filenames_[isource], config);
 }
 
-template<typename EventMessage, typename HeaderMessage>
-typename ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::config_type
-ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage>::default_config()
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
+typename ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::config_type
+ZFITSACADACameraEventDataSourceOpener<EventMessage,HeaderMessage,DataStreamMessage>::default_config()
 {
-  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config();
+  return ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>::default_config();
 }
 
 namespace calin { namespace iact_data { namespace zfits_acada_data_source {
@@ -668,8 +673,11 @@ template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v0, AC
 template class ZFITSSingleFileSingleMessageDataSource<ACADA_EventMessage_R1v1>;
 template class ZFITSSingleFileSingleMessageDataSource<ACADA_HeaderMessage_R1v1>;
 template class ZFITSSingleFileSingleMessageDataSource<ACADA_DataStreamMessage_R1v1>;
-template class ZFITSSingleFileACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
-template class ZFITSACADACameraEventDataSource<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
-template class ZFITSACADACameraEventDataSourceOpener<ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1>;
+template class ZFITSSingleFileACADACameraEventDataSource<
+  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
+template class ZFITSACADACameraEventDataSource<
+  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
+template class ZFITSACADACameraEventDataSourceOpener<
+  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
 
 } } } // namespace calin::iact_data::zfits_acada_data_source

@@ -54,18 +54,13 @@ message ZFITSDataSourceConfig {
     (CFO).desc = "Maximum event sequence number. This effectively sets the "
       "number of events that can be read. Zero means there is no limit." ];
   bool dont_read_run_header                                = 11 [
-    (CFO).desc = "Don't read the run header." ];
+    (CFO).desc = "Don't read the run header or data stream." ];
   bool ignore_run_header_errors                            = 12 [
-    (CFO).desc = "Don't log missing run header." ];
-  bool verify_file_after_open                              = 20 [
-    (CFO).desc = "Verify ZFits file consistency after opening it. This may "
-      "be slow." ];
-  bool repair_broken_file                                  = 21 [
-    (CFO).desc = "Attempt to repair any files that fail the verification step. "
-      "If this is selected it implicitly means \"verify_file_after_open\" is "
-      "also." ];
-  string run_header_table_name                             = 22 [
+    (CFO).desc = "Don't log missing run header or data stream." ];
+  string data_stream_table_name                            = 20 [
+    (CFO).desc = "Name of the telescope data stream table in the ZFits file" ];
+  string run_header_table_name                             = 21 [
     (CFO).desc = "Name of the run header table in the ZFits file" ];
-  string events_table_name                                 = 23 [
+  string events_table_name                                 = 22 [
     (CFO).desc = "Name of the events table in the ZFits file" ];
 };

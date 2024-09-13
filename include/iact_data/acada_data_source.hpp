@@ -51,33 +51,36 @@ public:
   virtual void release_borrowed_event(const EventMessage* event) = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ACADACameraEventDataSourceWithRunHeader:
   public virtual ACADACameraEventDataSource<EventMessage>
 {
 public:
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
 
   ACADACameraEventDataSourceWithRunHeader(): 
       ACADACameraEventDataSource<EventMessage>() {
     /* nothing to see here */ }
   virtual ~ACADACameraEventDataSourceWithRunHeader();
   virtual header_type* get_run_header() = 0;
+  virtual data_stream_type* get_data_stream() = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage>
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ACADACameraEventRandomAccessDataSourceWithRunHeader:
   public virtual calin::io::data_source::RandomAccessDataSource<EventMessage>,
-  public virtual ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage>
+  public virtual ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>
 {
 public:
   CALIN_TYPEALIAS(event_type, EventMessage);
   CALIN_TYPEALIAS(header_type, HeaderMessage);
+  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
 
   ACADACameraEventRandomAccessDataSourceWithRunHeader(): 
       calin::io::data_source::RandomAccessDataSource<EventMessage>(), 
-      ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage>() {
+      ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>() {
     /* nothing to see here */ }
   virtual ~ACADACameraEventRandomAccessDataSourceWithRunHeader();
 };

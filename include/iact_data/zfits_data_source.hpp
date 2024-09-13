@@ -39,6 +39,7 @@
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
+#if 0 // UNUSED
 template<typename EventMessage, typename HeaderMessage>
 class ZFITSSingleFileDataSource:
   public calin::iact_data::telescope_data_source::
@@ -85,8 +86,10 @@ private:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
+#endif // UNUSED
 
-template<typename EventMessage, typename HeaderMessage>
+
+template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
 class ZFITSDataSource:
   public calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig,
@@ -98,12 +101,12 @@ public:
 
   ZFITSDataSource(const std::string& filename,
     calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
+      ACADACameraEventDecoder<EventMessage,HeaderMessage,DataStreamMessage>* decoder,
     bool adopt_decoder = false,
     const config_type& config = default_config());
 
   ZFITSDataSource(const std::string& filename,
-    ZFITSDataSource<EventMessage,HeaderMessage>* base_datasource, 
+    ZFITSDataSource<EventMessage,HeaderMessage,DataStreamMessage>* base_datasource, 
     const config_type& config = default_config());
 
   virtual ~ZFITSDataSource();
@@ -126,10 +129,10 @@ public:
 protected:
 
   calin::iact_data::acada_event_decoder::
-    ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder_;
+    ACADACameraEventDecoder<EventMessage,HeaderMessage,DataStreamMessage>* decoder_;
   bool adopt_decoder_ = false;
   calin::iact_data::zfits_acada_data_source::
-    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage>* acada_zfits_ = nullptr;
+    ZFITSACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>* acada_zfits_ = nullptr;
   bool adopt_acada_zfits_ = false;
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config_ = nullptr;
