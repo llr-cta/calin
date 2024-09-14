@@ -37,13 +37,14 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
-ACADACameraEventDecoder<EventMessage, HeaderMessage, DataStreamMessage>::
+template<typename MessageSet>
+ACADACameraEventDecoder<MessageSet>::
 ~ACADACameraEventDecoder()
 {
   // nothing to see here
 }
 
+#if 0
 // =============================================================================
 // DecodedACADACameraEventDataSource - extract ACTL events from an
 // ACADACameraEventDataSource and decode them using a supplied decoder
@@ -183,16 +184,19 @@ ensure_run_config()
     delete run_header;
   }
 }
+#endif
 
 namespace calin { namespace iact_data { namespace acada_event_decoder {
 
-template class ACADACameraEventDecoder<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
-template class DecodedACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
-template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ACADACameraEventDecoder<ACADA_MessageSet_L0>;
+// template class DecodedACADACameraEventDataSource<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+// template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
 
-template class ACADACameraEventDecoder<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
-template class DecodedACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
-template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ACADACameraEventDecoder<ACADA_MessageSet_R1v0>;
+// template class DecodedACADACameraEventDataSource<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+// template class DecodedACADACameraEventDataSourceWithRunConfig<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+
+template class ACADACameraEventDecoder<ACADA_MessageSet_R1v1>;
 
 } } } // namespace calin::iact_data::acada_event_decoder
 

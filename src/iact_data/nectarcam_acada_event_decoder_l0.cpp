@@ -64,8 +64,9 @@ using namespace calin::util::log;
 NectarCam_ACADACameraEventDecoder_L0::NectarCam_ACADACameraEventDecoder_L0(
   const std::string& filename,
   unsigned run_number, const config_type& config):
-  calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_L0(), config_(config),
-  filename_(filename), run_number_(run_number)
+  calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_L0>(), 
+  config_(config), filename_(filename), run_number_(run_number)
 {
   switch(config.exchange_gain_channels()) {
     case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
@@ -90,8 +91,9 @@ NectarCam_ACADACameraEventDecoder_L0::~NectarCam_ACADACameraEventDecoder_L0()
 
 bool NectarCam_ACADACameraEventDecoder_L0::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-  const event_type* cta_event)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_L0& cta_messages)
 {
+  const event_type* cta_event = cta_messages.event;
   calin_event->set_telescope_id(cta_event->telescopeid());
   calin_event->set_local_event_number(cta_event->eventnumber());
   calin_event->set_trigger_type(TRIGGER_UNKNOWN);
@@ -440,10 +442,11 @@ bool NectarCam_ACADACameraEventDecoder_L0::decode(
 
 bool NectarCam_ACADACameraEventDecoder_L0::decode_run_config(
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* calin_run_config,
-  const header_type* cta_run_header,
-  const event_type* cta_event,
-  const data_stream_type* cta_data_stream)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_L0& cta_messages)
 {
+  const header_type* cta_run_header = cta_messages.header;
+  const event_type* cta_event = cta_messages.event;
+
   calin_run_config->set_data_transcoder(
     "calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_L0");
   calin_run_config->set_filename(filename_);

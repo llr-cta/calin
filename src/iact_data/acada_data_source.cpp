@@ -31,15 +31,15 @@ ACADACameraEventDataSource<EventMessage>::
   // nothing to see here
 }
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
-ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>::
+template<typename MessageSet>
+ACADACameraEventDataSourceWithRunHeader<MessageSet>::
 ~ACADACameraEventDataSourceWithRunHeader()
 {
   // nothing to see here
 }
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage>
-ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>::
+template<typename MessageSet>
+ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet>::
 ~ACADACameraEventRandomAccessDataSourceWithRunHeader()
 {
   // nothing to see here
@@ -48,17 +48,15 @@ ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,D
 namespace calin { namespace iact_data { namespace acada_data_source {
 
 template class ACADACameraEventDataSource<ACADA_EventMessage_L0>;
-template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
-template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_L0, ACADA_HeaderMessage_L0>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_MessageSet_L0>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_MessageSet_L0>;
 
 template class ACADACameraEventDataSource<ACADA_EventMessage_R1v0>;
-template class ACADACameraEventDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
-template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_EventMessage_R1v0, ACADA_HeaderMessage_R1v0>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_MessageSet_R1v0>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_MessageSet_R1v0>;
 
 template class ACADACameraEventDataSource<ACADA_EventMessage_R1v1>;
-template class ACADACameraEventDataSourceWithRunHeader<
-  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
-template class ACADACameraEventRandomAccessDataSourceWithRunHeader<
-  ACADA_EventMessage_R1v1, ACADA_HeaderMessage_R1v1, ACADA_DataStreamMessage_R1v1>;
+template class ACADACameraEventDataSourceWithRunHeader<ACADA_MessageSet_R1v1>;
+template class ACADACameraEventRandomAccessDataSourceWithRunHeader<ACADA_MessageSet_R1v1>;
 
 } } } // namespace calin::iact_data::acada_data_source

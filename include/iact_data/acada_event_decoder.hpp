@@ -44,27 +44,26 @@ calin::ix::iact_data::telescope_event::TriggerType determine_trigger_type(
     const calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
     const calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data);
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ACADACameraEventDecoder
 {
 public:
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
 
   virtual ~ACADACameraEventDecoder();
   virtual bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const EventMessage* cta_event) = 0;
+    const MessageSet& cta_messages) = 0;
   virtual bool decode_run_config(
-    calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config,
-    const HeaderMessage* cta_run_header,
-    const EventMessage* cta_event,
-    const DataStreamMessage* cta_data_stream = nullptr) = 0;
+    calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    const MessageSet& cta_messages) = 0;
   virtual ACADACameraEventDecoder* clone() const = 0;
 };
 
+#if 0
 template<typename EventMessage, typename HeaderMessage>
 class DecodedACADACameraEventDataSource:
   public calin::iact_data::telescope_data_source::TelescopeDataSource
@@ -131,6 +130,7 @@ private:
   uint64_t saved_seq_index_ = 0;
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 };
+#endif
 
 /*
 
@@ -154,9 +154,7 @@ private:
 */
 
 CALIN_TYPEALIAS(ACADACameraEventDecoder_L0, 
-  ACADACameraEventDecoder<
-    calin::iact_data::acada_data_source::ACADA_EventMessage_L0,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_L0>);
+  ACADACameraEventDecoder<calin::iact_data::acada_data_source::ACADA_MessageSet_L0>);
 
 /*
 
@@ -180,9 +178,7 @@ CALIN_TYPEALIAS(ACADACameraEventDecoder_L0,
 */
 
 CALIN_TYPEALIAS(ACADACameraEventDecoder_R1v0, 
-  ACADACameraEventDecoder<
-    calin::iact_data::acada_data_source::ACADA_EventMessage_R1v0,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v0>);
+  ACADACameraEventDecoder<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>);
 
 /*
 
@@ -207,8 +203,6 @@ CALIN_TYPEALIAS(ACADACameraEventDecoder_R1v0,
 */
 
 CALIN_TYPEALIAS(ACADACameraEventDecoder_R1v1, 
-  ACADACameraEventDecoder<
-    calin::iact_data::acada_data_source::ACADA_EventMessage_R1v1,
-    calin::iact_data::acada_data_source::ACADA_HeaderMessage_R1v1>);
+  ACADACameraEventDecoder<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>);
 
 } } } // namespace calin::iact_data::acada_event_decoder

@@ -51,36 +51,38 @@ public:
   virtual void release_borrowed_event(const EventMessage* event) = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ACADACameraEventDataSourceWithRunHeader:
-  public virtual ACADACameraEventDataSource<EventMessage>
+  public virtual ACADACameraEventDataSource<typename MessageSet::event_type>
 {
 public:
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
 
   ACADACameraEventDataSourceWithRunHeader(): 
-      ACADACameraEventDataSource<EventMessage>() {
+      ACADACameraEventDataSource<event_type>() {
     /* nothing to see here */ }
   virtual ~ACADACameraEventDataSourceWithRunHeader();
   virtual header_type* get_run_header() = 0;
   virtual data_stream_type* get_data_stream() = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ACADACameraEventRandomAccessDataSourceWithRunHeader:
-  public virtual calin::io::data_source::RandomAccessDataSource<EventMessage>,
-  public virtual ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>
+  public virtual calin::io::data_source::RandomAccessDataSource<typename MessageSet::event_type>,
+  public virtual ACADACameraEventDataSourceWithRunHeader<MessageSet>
 {
 public:
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
 
   ACADACameraEventRandomAccessDataSourceWithRunHeader(): 
-      calin::io::data_source::RandomAccessDataSource<EventMessage>(), 
-      ACADACameraEventDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>() {
+      calin::io::data_source::RandomAccessDataSource<event_type>(), 
+      ACADACameraEventDataSourceWithRunHeader<MessageSet>() {
     /* nothing to see here */ }
   virtual ~ACADACameraEventRandomAccessDataSourceWithRunHeader();
 };
@@ -109,6 +111,16 @@ public:
 CALIN_TYPEALIAS(ACADA_EventMessage_L0, ProtoDataModel::CameraEvent);
 CALIN_TYPEALIAS(ACADA_HeaderMessage_L0, ProtoDataModel::CameraRunHeader);
 
+struct ACADA_MessageSet_L0 {
+  CALIN_TYPEALIAS(event_type, ACADA_EventMessage_L0);
+  CALIN_TYPEALIAS(header_type, ACADA_HeaderMessage_L0);
+  CALIN_TYPEALIAS(data_stream_type, void);
+
+  const event_type* event = nullptr;
+  const header_type* header = nullptr;
+  const data_stream_type* data_stream = nullptr;
+};
+
 /*
 
     RRRRRRRRRRRRRRRRR     1111111                              000000000     
@@ -132,6 +144,16 @@ CALIN_TYPEALIAS(ACADA_HeaderMessage_L0, ProtoDataModel::CameraRunHeader);
 
 CALIN_TYPEALIAS(ACADA_EventMessage_R1v0, ProtoR1::CameraEvent);
 CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v0, ProtoR1::CameraConfiguration);
+
+struct ACADA_MessageSet_R1v0 {
+  CALIN_TYPEALIAS(event_type, ACADA_EventMessage_R1v0);
+  CALIN_TYPEALIAS(header_type, ACADA_HeaderMessage_R1v0);
+  CALIN_TYPEALIAS(data_stream_type, void);
+
+  const event_type* event = nullptr;
+  const header_type* header = nullptr;
+  const data_stream_type* data_stream = nullptr;
+};
 
 /*
 
@@ -158,6 +180,16 @@ CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v0, ProtoR1::CameraConfiguration);
 CALIN_TYPEALIAS(ACADA_EventMessage_R1v1, R1v1::Event);
 CALIN_TYPEALIAS(ACADA_HeaderMessage_R1v1, R1v1::CameraConfiguration);
 CALIN_TYPEALIAS(ACADA_DataStreamMessage_R1v1, R1v1::TelescopeDataStream);
+
+struct ACADA_MessageSet_R1v1 {
+  CALIN_TYPEALIAS(event_type, ACADA_EventMessage_R1v1);
+  CALIN_TYPEALIAS(header_type, ACADA_HeaderMessage_R1v1);
+  CALIN_TYPEALIAS(data_stream_type, ACADA_DataStreamMessage_R1v1);
+
+  const event_type* event = nullptr;
+  const header_type* header = nullptr;
+  const data_stream_type* data_stream = nullptr;
+};
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
 

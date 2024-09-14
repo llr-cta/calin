@@ -65,17 +65,18 @@ private:
   uint64_t next_message_index_ = 0;
 };
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ZFITSSingleFileACADACameraEventDataSource:
   public calin::iact_data::acada_data_source::
-    ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage>
+    ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet>
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
 
   ZFITSSingleFileACADACameraEventDataSource(const std::string& filename,
     const config_type& config = default_config());
@@ -103,21 +104,22 @@ private:
   config_type config_;
 };
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ZFITSACADACameraEventDataSource:
   public calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet> >
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
   CALIN_TYPEALIAS(BaseDataSource, calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >);
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet> >);
 
   ZFITSACADACameraEventDataSource(const std::string& filename,
     const config_type& config = default_config());
@@ -150,25 +152,26 @@ private:
   data_stream_type* data_stream_ = nullptr;
 };
 
-template<typename EventMessage, typename HeaderMessage, typename DataStreamMessage = void>
+template<typename MessageSet>
 class ZFITSACADACameraEventDataSourceOpener:
   public calin::io::data_source::DataSourceOpener<
     calin::iact_data::acada_data_source::
-      ACADACameraEventRandomAccessDataSourceWithRunHeader<EventMessage,HeaderMessage,DataStreamMessage> >
+      ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet> >
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
-  CALIN_TYPEALIAS(event_type, EventMessage);
-  CALIN_TYPEALIAS(header_type, HeaderMessage);
-  CALIN_TYPEALIAS(data_stream_type, DataStreamMessage);
+  CALIN_TYPEALIAS(message_set_type, MessageSet);
+  CALIN_TYPEALIAS(event_type, typename MessageSet::event_type);
+  CALIN_TYPEALIAS(header_type, typename MessageSet::header_type);
+  CALIN_TYPEALIAS(data_stream_type, typename MessageSet::data_stream_type);
 
   ZFITSACADACameraEventDataSourceOpener(std::string filename,
     const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSourceOpener();
   unsigned num_sources() const override;
   std::string source_name(unsigned isource) const override;
-  ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage,DataStreamMessage>* open(unsigned isource) override;
+  ZFITSSingleFileACADACameraEventDataSource<MessageSet>* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 
   static config_type default_config();

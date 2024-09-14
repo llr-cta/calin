@@ -64,8 +64,9 @@ using namespace calin::util::log;
 
 NectarCam_ACADACameraEventDecoder_R1v0::NectarCam_ACADACameraEventDecoder_R1v0(
     const std::string& filename, unsigned run_number, const config_type& config):
-  calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0(), config_(config),
-  filename_(filename), run_number_(run_number)
+  calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>(), 
+  config_(config), filename_(filename), run_number_(run_number)
 {
   if(config_.demand_configured_module_id_size() != 0)
     LOG(WARNING) << "Decoder option \"demand_configured_module_id_size\" not "
@@ -84,8 +85,10 @@ NectarCam_ACADACameraEventDecoder_R1v0::~NectarCam_ACADACameraEventDecoder_R1v0(
 
 bool NectarCam_ACADACameraEventDecoder_R1v0::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-  const event_type* cta_event)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages)
 {
+  const event_type* cta_event = cta_messages.event;
+
   if(!cta_event->has_nectarcam())
     throw(std::runtime_error("NectarCam_ACADACameraEventDecoder_R1v0::decode: "
       "ACADA event does not have NectarCAM extension"));
@@ -550,10 +553,11 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode(
 
 bool NectarCam_ACADACameraEventDecoder_R1v0::decode_run_config(
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* calin_run_config,
-  const header_type* cta_run_header, 
-  const event_type* cta_event, 
-  const data_stream_type* cta_data_stream)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages)
 {
+  const header_type* cta_run_header = cta_messages.header;
+  const event_type* cta_event = cta_messages.event;
+
   calin_run_config->set_data_transcoder(
     "calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0");
   calin_run_config->set_filename(filename_);
