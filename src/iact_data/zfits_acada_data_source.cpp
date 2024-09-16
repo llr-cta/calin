@@ -179,6 +179,45 @@ get_zfits_table_key_values(std::string filename, std::string tablename)
   return key_values;
 }
 
+calin::ix::iact_data::zfits_data_source::ACADADataModel 
+calin::iact_data::zfits_acada_data_source::get_zfits_data_model(const std::string& filename)
+{
+  calin::ix::iact_data::zfits_data_source::ACADADataModel model = 
+    calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT;
+  try {
+    auto tables = get_zfits_table_names(filename);
+    std::set<std::string> valid_messages;
+    std::string header_tablename;
+    if(std::count(tables.begin(), tables.end(), default_message_table_name<ACADA_HeaderMessage_L0>())) {
+      // L0 maybe
+      model = calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0;
+      header_tablename = default_message_table_name<ACADA_HeaderMessage_L0>();
+      valid_messages = std::set<std::string>{ "ProtoDataModel.CameraRunHeader","DataModel.CameraRunHeader" };
+    } else if(std::count(tables.begin(), tables.end(), default_message_table_name<ACADA_HeaderMessage_R1v0>())) {
+      // R1v0 maybe
+      model = calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0;
+      header_tablename = default_message_table_name<ACADA_HeaderMessage_R1v0>();
+      valid_messages = std::set<std::string>{ "ProtoR1.CameraConfiguration","R1.CameraConfiguration" };
+    } else if(std::count(tables.begin(), tables.end(), default_message_table_name<ACADA_HeaderMessage_R1v1>())) {
+      // R1v1 maybe
+      model = calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1;
+      header_tablename = default_message_table_name<ACADA_HeaderMessage_R1v1>();
+      valid_messages = std::set<std::string>{ "R1v1.CameraConfiguration","CTAR1.CameraConfiguration" };
+    }
+
+    if(not header_tablename.empty()) {
+      auto keys = get_zfits_table_key_values(filename, header_tablename);
+      if(keys.count("PBFHEAD")==0 or valid_messages.count(keys["PBFHEAD"])==0) {
+        // Not the correct model after all, the message is the wrong type
+        model = calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT;
+      }
+    }
+  } catch(...) {
+    model = calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT;
+  }
+  return model;
+}
+
 // =============================================================================
 // =============================================================================
 // =============================================================================

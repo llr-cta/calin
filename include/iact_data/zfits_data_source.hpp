@@ -156,7 +156,12 @@ protected:
               L::::::::::::::::::::::L        00:::::::::00
               LLLLLLLLLLLLLLLLLLLLLLLL          000000000
 
+*/
 
+CALIN_TYPEALIAS(ZFITSDataSource_L0,
+  ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_L0>);
+
+/*
 
     RRRRRRRRRRRRRRRRR     1111111                              000000000     
     R::::::::::::::::R   1::::::1                            00:::::::::00   
@@ -175,7 +180,12 @@ protected:
     R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
     RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
+*/
 
+CALIN_TYPEALIAS(ZFITSDataSource_R1v0,
+  ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>);
+
+/*
 
         RRRRRRRRRRRRRRRRR     1111111                        1111111   
         R::::::::::::::::R   1::::::1                       1::::::1   
@@ -196,5 +206,8 @@ protected:
                                                                
 
 */
+
+CALIN_TYPEALIAS(ZFITSDataSource_R1v1,
+  ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>);
 
 } } } // namespace calin::iact_data::zfits_data_source

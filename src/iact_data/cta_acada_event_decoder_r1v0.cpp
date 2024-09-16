@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/cta_actl_r1_event_decoder.cpp -- Stephen Fegan -- 2018-11-23
+   calin/iact_data/cta_acada_event_decoder_r1v0.cpp -- Stephen Fegan -- 2018-11-23
 
    A supplier of single telescope data from CTA DAQ data files
 
@@ -23,21 +23,21 @@
 #include <string>
 
 #include <util/log.hpp>
-#include <iact_data/cta_actl_event_decoder.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
-#include <iact_data/lstcam_actl_event_decoder.hpp>
+#include <iact_data/cta_acada_event_decoder.hpp>
+#include <iact_data/nectarcam_acada_event_decoder.hpp>
+#include <iact_data/lstcam_acada_event_decoder.hpp>
 
 using namespace calin::ix::iact_data::cta_data_source;
-using namespace calin::iact_data::cta_actl_event_decoder;
-using namespace calin::iact_data::nectarcam_actl_event_decoder;
-using namespace calin::iact_data::lstcam_actl_event_decoder;
+using namespace calin::iact_data::acada_event_decoder;
+using namespace calin::iact_data::cta_acada_event_decoder;
+using namespace calin::iact_data::nectarcam_acada_event_decoder;
+using namespace calin::iact_data::lstcam_acada_event_decoder;
 using namespace calin::pattern::delegation;
 
 CTA_ACADACameraEventDecoder_R1v0::
-CTA_ACADACameraEventDecoder_R1v0(
-    calin::iact_data::actl_event_decoder::CTA_ACADACameraEventDecoder_R1v0* decoder,
+CTA_ACADACameraEventDecoder_R1v0(ACADACameraEventDecoder_R1v0* decoder,
     bool adopt_decoder):
-  ACADACameraEventDecoder_R1v0(), Delegator<CTA_ACADACameraEventDecoder_R1>(decoder, adopt_decoder)
+  ACADACameraEventDecoder_R1v0(), Delegator<ACADACameraEventDecoder_R1v0>(decoder, adopt_decoder)
 {
   // nothing to see here
 }
@@ -58,24 +58,27 @@ CTA_ACADACameraEventDecoder_R1v0::~CTA_ACADACameraEventDecoder_R1v0()
 
 bool CTA_ACADACameraEventDecoder_R1v0::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-  const event_type* cta_event)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages)
 {
-  ensure_deligate(cta_event, nullptr);    
-  return this->delegate()->decode(event, cta_event);
+  ensure_deligate(cta_messages);    
+  return this->delegate()->decode(event, cta_messages);
 }
 
 bool CTA_ACADACameraEventDecoder_R1v0::decode_run_config(
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config,
-  const header_type* cta_run_header, const event_type* cta_event)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages)
 {
-  ensure_deligate(cta_event, cta_run_header);    
-  return this->delegate()->decode_run_config(run_config, cta_run_header, cta_event);
+  ensure_deligate(cta_messages);    
+  return this->delegate()->decode_run_config(run_config, cta_messages);
 }
 
 void CTA_ACADACameraEventDecoder_R1v0::ensure_deligate(
-  const event_type* cta_event, const header_type* cta_run_header)
+  const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages)
 {
+  const header_type* cta_run_header = cta_messages.header;
+  const event_type* cta_event = cta_messages.event;
+
   if(this->delegate()==nullptr) {
     if((config_.camera_type() == CTACameraEventDecoderConfig::NECTARCAM) or
       ((config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT) and

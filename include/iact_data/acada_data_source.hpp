@@ -191,5 +191,5 @@ struct ACADA_MessageSet_R1v1 {
   const data_stream_type* data_stream = nullptr;
 };
 
-} } } // namespace calin::iact_data::zfits_actl_data_source
+} } } // namespace calin::iact_data::acada_data_source
 

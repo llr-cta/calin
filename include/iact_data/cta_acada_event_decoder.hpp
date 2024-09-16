@@ -27,7 +27,7 @@
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <iact_data/cta_data_source.pb.h>
-#include <iact_data/acada_data_source.hpp>
+#include <iact_data/acada_event_decoder.hpp>
 #include <pattern/delegation.hpp>
 
 namespace calin { namespace iact_data { namespace cta_acada_event_decoder {
@@ -54,19 +54,21 @@ namespace calin { namespace iact_data { namespace cta_acada_event_decoder {
 */
 
 class CTA_ACADACameraEventDecoder_R1v0:
-  public calin::iact_data::actl_event_decoder::ACADACameraEventDecoder_R1v0,
+  public calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0,
   public calin::pattern::delegation::Delegator<
-    calin::iact_data::actl_event_decoder::ACADACameraEventDecoder_R1v0>
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0>
 {
 public:
-  using calin::iact_data::actl_event_decoder::ACADACameraEventDecoder_R1v0::event_type;
-  using calin::iact_data::actl_event_decoder::ACADACameraEventDecoder_R1v0::header_type;
+  CALIN_TYPEALIAS(message_set_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0);
+  CALIN_TYPEALIAS(event_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0::event_type);
+  CALIN_TYPEALIAS(header_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0::header_type);
+  CALIN_TYPEALIAS(data_stream_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0::data_stream_type);
 
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig);
 
   CTA_ACADACameraEventDecoder_R1v0(
-    calin::iact_data::actl_event_decoder::ACADACameraEventDecoder_R1v0* decoder,
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder_R1v0* decoder,
     bool adopt_decoder = false);
 
   CTA_ACADACameraEventDecoder_R1v0(const std::string& filename, unsigned run_number = 0,
@@ -74,15 +76,13 @@ public:
 
   ~CTA_ACADACameraEventDecoder_R1v0();
 
-  virtual bool decode(
+  bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const event_type* cta_event) override;
+    const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages) override;
 
-  virtual bool decode_run_config(
-    calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config,
-    const header_type* cta_run_header,
-    const event_type* cta_event) override;
+  bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration:: TelescopeRunConfiguration* run_config,
+    const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages) override;
 
   CTA_ACADACameraEventDecoder_R1v0  * clone() const override;
 
@@ -91,12 +91,10 @@ public:
   static calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig default_config();
 
 protected:
-  void ensure_deligate(const event_type* cta_event, const header_type* cta_run_header);
+  void ensure_deligate(const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0& cta_messages);
   std::string filename_;
   unsigned run_number_ = 0;
   calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig config_ = default_config();
 };
 
-#endif
-
-} } } // namespace calin::iact_data::cta_actl_event_decoder
+} } } // namespace calin::iact_data::cta_acada_event_decoder

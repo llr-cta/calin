@@ -182,6 +182,8 @@ private:
   bool has_opened_file_ = false;
 };
 
+calin::ix::iact_data::zfits_data_source::ACADADataModel get_zfits_data_model(const std::string& filename);
+
 /*
 
               LLLLLLLLLLL                       000000000
@@ -204,6 +206,9 @@ private:
 */
 
 // bool is_zfits_l0(std::string filename, std::string events_table_name = "");
+
+CALIN_TYPEALIAS(ZFITSACADACameraEventDataSource_L0,
+  ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_L0>);
 
 /*
 
@@ -228,6 +233,9 @@ private:
 
 // bool is_zfits_r1v0(std::string filename, std::string events_table_name = "");
 
+CALIN_TYPEALIAS(ZFITSACADACameraEventDataSource_R1v0,
+  ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>);
+
 /*
 
         RRRRRRRRRRRRRRRRR     1111111                        1111111   
@@ -249,6 +257,9 @@ private:
                                                                
 
 */
+
+CALIN_TYPEALIAS(ZFITSACADACameraEventDataSource_R1v1,
+  ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>);
 
 
 } } } // namespace calin::iact_data::zfits_acada_data_source
