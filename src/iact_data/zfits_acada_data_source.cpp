@@ -61,7 +61,7 @@ namespace {
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_DataStreamMessage_R1v1>() { return "DataStream"; }
 
-  template<typename Message> Message* read_one_message_from_zfits_table(
+  template<typename Message> inline Message* read_one_message_from_zfits_table(
     const std::string& filename, const std::string& tablename, bool suppress_file_record = false) 
   {
     ZFITSSingleFileSingleMessageDataSource<Message> zfits(filename, tablename, suppress_file_record);
@@ -69,13 +69,13 @@ namespace {
     return zfits.get_next(seq_index_out);
   }
 
-  template<> void* read_one_message_from_zfits_table<void>(
+  template<> inline void* read_one_message_from_zfits_table<void>(
     const std::string& filename, const std::string& tablename, bool suppress_file_record) 
   {
     return nullptr;
   }
 
-  template<typename Message> Message* copy_message(const Message* message)
+  template<typename Message> inline Message* copy_message(const Message* message)
   {
     if(message == nullptr)return nullptr;
     Message* new_message = new Message;
@@ -83,22 +83,17 @@ namespace {
     return new_message;
   }
 
-  template<> void* copy_message<void>(const void*)
+  template<> inline void* copy_message<void>(const void*)
   {
     return nullptr;
   }
 
-  template<typename Message> void delete_message(Message* message)
+  template<typename Message> inline void delete_message(Message* message)
   {
     delete message;
   }
 
-  template<> void delete_message<void>(void*)
-  {
-    // nothing to see here
-  }
-
-  template<> void delete_message<const void>(const void*)
+  template<> inline void delete_message<void>(void*)
   {
     // nothing to see here
   }
