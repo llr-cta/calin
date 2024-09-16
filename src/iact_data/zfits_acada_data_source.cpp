@@ -98,6 +98,11 @@ namespace {
     // nothing to see here
   }
 
+  template<> void delete_message<const void>(const void*)
+  {
+    // nothing to see here
+  }
+
 } // anonymous namespace
 
 std::vector<std::string> calin::iact_data::zfits_acada_data_source::

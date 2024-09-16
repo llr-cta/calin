@@ -430,7 +430,7 @@ bool NectarCam_ACADACameraEventDecoder_L0::decode(
   if(config_.include_serialized_raw_data())
   {
     calin_event->set_serialized_raw_event_type(
-      SerializedRawEventType::SERIALIZED_RAW_EVENT_ACADA_PROTOBUF);
+      SerializedRawEventType::SERIALIZED_RAW_EVENT_ACADA_PROTOBUF_L0);
     cta_event->SerializeToString(calin_event->mutable_serialized_raw_event());
   } else {
     calin_event->set_serialized_raw_event_type(
@@ -681,7 +681,7 @@ bool NectarCam_ACADACameraEventDecoder_L0::decode_run_config(
   if(cta_run_header and config_.include_serialized_raw_data())
   {
     calin_run_config->set_serialized_raw_header_type(
-      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACADA_L0_PROTOBUF);
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACADA_PROTOBUF_L0);
     cta_run_header->SerializeToString(calin_run_config->mutable_serialized_raw_header());
   } else {
     calin_run_config->set_serialized_raw_header_type(

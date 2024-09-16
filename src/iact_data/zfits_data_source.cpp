@@ -47,6 +47,11 @@ namespace { // anonymous
   {
     // nothing to see here
   }
+
+  template<> void delete_message<const void>(const void*)
+  {
+    // nothing to see here
+  }
 } // anonymous namespace
 
 #if 0 // UNUSED

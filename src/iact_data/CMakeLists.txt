@@ -28,17 +28,13 @@ set(CALIN_SOURCES algorithms.cpp
 	acada_event_decoder.cpp
 	nectarcam_acada_event_decoder_l0.cpp 
 	nectarcam_acada_event_decoder_r1v0.cpp
+	lstcam_acada_event_decoder_r1v0.cpp
 	zfits_data_source.cpp)
 
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
-		actl_event_decoder.cpp 
-		nectarcam_actl_l0_event_decoder.cpp 
-		lstcam_actl_r1_event_decoder.cpp
 		cta_actl_r1_event_decoder.cpp
-		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp
-		zfits_data_source_l0.cpp zfits_data_source_r1.cpp
 		nectarcam_data_source.cpp
 		lstcam_data_source.cpp
 		cta_data_source.cpp)

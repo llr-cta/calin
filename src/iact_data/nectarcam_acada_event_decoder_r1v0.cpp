@@ -43,22 +43,22 @@ using namespace calin::util::log;
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
 */
 
@@ -541,7 +541,7 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode(
   if(config_.include_serialized_raw_data())
   {
     calin_event->set_serialized_raw_event_type(
-      SerializedRawEventType::SERIALIZED_RAW_EVENT_ACADA_PROTOBUF);
+      SerializedRawEventType::SERIALIZED_RAW_EVENT_ACADA_PROTOBUF_R1V0);
     cta_event->SerializeToString(calin_event->mutable_serialized_raw_event());
   } else {
     calin_event->set_serialized_raw_event_type(
@@ -835,7 +835,7 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode_run_config(
   if(cta_run_header and config_.include_serialized_raw_data())
   {
     calin_run_config->set_serialized_raw_header_type(
-      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACADA_R1V0_PROTOBUF);
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACADA_PROTOBUF_R1V0);
     cta_run_header->SerializeToString(calin_run_config->mutable_serialized_raw_header());
   } else {
     calin_run_config->set_serialized_raw_header_type(

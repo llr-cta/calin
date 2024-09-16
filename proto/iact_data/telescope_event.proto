@@ -392,7 +392,9 @@ enum ImageTreatmentMode {
 
 enum SerializedRawEventType {
   SERIALIZED_RAW_EVENT_NONE                                 = 0;
-  SERIALIZED_RAW_EVENT_ACADA_PROTOBUF                       = 1;
+  SERIALIZED_RAW_EVENT_ACADA_PROTOBUF_L0                    = 1;
+  SERIALIZED_RAW_EVENT_ACADA_PROTOBUF_R1V0                  = 2;
+  SERIALIZED_RAW_EVENT_ACADA_PROTOBUF_R1V1                  = 3;
 };
 
 message TelescopeEvent {
