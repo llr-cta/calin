@@ -55,9 +55,12 @@ namespace calin { namespace iact_data { namespace nectarcam_data_source {
 */
 
 class NectarCamZFITSDataSource_L0:
-  public calin::iact_data::zfits_data_source::ZFITSDataSource_L0
+  public calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_L0>
 {
 public:
+  CALIN_TYPEALIAS(config_type, 
+    ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_L0>::config_type);
   CALIN_TYPEALIAS(decoder_config_type,
     calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
@@ -80,29 +83,32 @@ private:
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
 */
 
 class NectarCamZFITSDataSource_R1v0:
-  public calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0
+  public calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>
 {
 public:
+  CALIN_TYPEALIAS(config_type, 
+    ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>::config_type);
   CALIN_TYPEALIAS(decoder_config_type,
     calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 

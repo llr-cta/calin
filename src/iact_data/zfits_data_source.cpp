@@ -38,17 +38,12 @@ using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
 namespace { // anonymous
-  template<typename Message> void delete_message(Message* message)
+  template<typename Message> inline void delete_message(Message* message)
   {
     delete message;
   }
 
-  template<> void delete_message<void>(void*)
-  {
-    // nothing to see here
-  }
-
-  template<> void delete_message<const void>(const void*)
+  template<> inline void delete_message<const void>(const void*)
   {
     // nothing to see here
   }
@@ -341,6 +336,14 @@ std::string ZFITSDataSource<MessageSet>::
 fragment_name(unsigned index) const
 {
   return acada_zfits_->fragment_name(index);
+}
+
+template<typename MessageSet>
+typename ZFITSDataSource<MessageSet>::config_type ZFITSDataSource<MessageSet>::
+default_config()
+{
+  return calin::iact_data::zfits_acada_data_source::
+    ZFITSACADACameraEventDataSource<MessageSet>::default_config();
 }
 
 namespace calin { namespace iact_data { namespace zfits_data_source {

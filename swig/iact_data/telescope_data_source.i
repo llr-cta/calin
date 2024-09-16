@@ -14,7 +14,7 @@
    later, as published by the Free Software Foundation.
 
    "calin" is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
+   WITHOUT ANY WARRANTY; without even the implied warranty of 
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
 
@@ -28,8 +28,8 @@
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
-#include <iact_data/lstcam_data_source.hpp>
-#include <iact_data/cta_data_source.hpp>
+// #include <iact_data/lstcam_data_source.hpp>
+// #include <iact_data/cta_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -195,6 +195,16 @@ using namespace calin::io;
 
 %include "iact_data/zfits_data_source.hpp"
 
+%template(ZFITSDataSource_L0)
+  calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_L0>;
+%template(ZFITSDataSource_R1v0)
+  calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>;
+%template(ZFITSDataSource_R1v1)
+  calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>;
+
 %include "iact_data/nectarcam_data_source.hpp"
-%include "iact_data/lstcam_data_source.hpp"
-%include "iact_data/cta_data_source.hpp"
+// %include "iact_data/lstcam_data_source.hpp"
+// %include "iact_data/cta_data_source.hpp"
