@@ -103,10 +103,10 @@ From: ubuntu:22.04
     curl -L $G4URL/G4RealSurface.2.2.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
 
-    export CAMERASTOACTL_REL=ubuntu-22.04
+    export CTA_ADH_APIS_REL=ubuntu-22.04
     export GEANT4_REL=ubuntu-22.04-11.2.2-OFF
 
-    curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | tar -zxf - -C /
+    curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/$CTA_ADH_APIS_REL/cta_adh_apis_installed.tgz | tar -zxf - -C /
     curl -L https://github.com/llr-cta/Geant4Build/releases/download/$GEANT4_REL/Geant4-$GEANT4_REL.tbz2 | tar -jxf - -C /
 
     tar -zxf /tmp/calin_installed.tgz -C /
