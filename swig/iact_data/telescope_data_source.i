@@ -29,7 +29,7 @@
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
 #include <iact_data/lstcam_data_source.hpp>
-// #include <iact_data/cta_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -207,4 +207,4 @@ using namespace calin::io;
 
 %include "iact_data/nectarcam_data_source.hpp"
 %include "iact_data/lstcam_data_source.hpp"
-// %include "iact_data/cta_data_source.hpp"
+%include "iact_data/cta_data_source.hpp"
