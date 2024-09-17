@@ -160,7 +160,6 @@ using namespace calin::io;
   calin::io::data_source::DataSourceOpener<
     calin::io::data_source::RandomAccessDataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent> >;
-//    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
 
 %template(BasicChainedDataSourceTelescopeRandomAccessDataSource)
   calin::io::data_source::BasicChainedDataSource<

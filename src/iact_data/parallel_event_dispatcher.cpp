@@ -204,7 +204,6 @@ process_run(std::vector<calin::io::data_source::DataSource<
   write_final_log_message(log_frequency, start_time, ndispatched);
 }
 
-#if 0
 void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
@@ -254,6 +253,7 @@ process_cta_zfits_run(const std::string& filename,
   delete run_config;
 }
 
+#if 0
 void ParallelEventDispatcher::
 process_cta_zmq_run(const std::vector<std::string>& endpoints,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
@@ -300,11 +300,11 @@ ParallelEventDispatcher::default_config()
   config.set_log_frequency(10000);
   config.set_nthread(1);
   config.set_run_number(0);
-#if 0
   config.mutable_decoder()->CopyFrom(
-    calin::iact_data::cta_acada_event_decoder::CTA_ACADA_CameraEventDecoder_R1::default_config());
+    calin::iact_data::cta_acada_event_decoder::CTA_ACADACameraEventDecoder_R1v0::default_config());
   config.mutable_zfits()->CopyFrom(
     calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
+#if 0
   config.mutable_zmq()->CopyFrom(
     calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
 #endif
