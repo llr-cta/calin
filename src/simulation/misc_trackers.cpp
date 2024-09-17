@@ -346,6 +346,28 @@ replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
   visitor->leave_event();
 }
 
+void RecordingTrackVisitor::
+replay_event_with_new_origin(calin::simulation::tracker::TrackVisitor* visitor, double x0, double y0) const
+{
+  bool kill_event = false;
+  Event shifted_event = event_;
+  shifted_event.x0.x() -= x0;
+  shifted_event.x0.y() -= y0;
+  visitor->visit_event(shifted_event, kill_event);
+  if(!kill_event) {
+    for(const auto& track : tracks_) {
+      Track shifted_track = track;
+      shifted_track.x0.x() -= x0;
+      shifted_track.x0.y() -= y0;
+      shifted_track.x1.x() -= x0;
+      shifted_track.x1.y() -= y0;
+      bool kill_track = false;
+      visitor->visit_track(shifted_track, kill_track);
+    }
+  }
+  visitor->leave_event();
+}
+
 // =============================================================================
 // =============================================================================
 //

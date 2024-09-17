@@ -253,7 +253,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
       } else {
         double drho_dx;
         double d2rho_dx2;
-        rho = rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
+        rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
 
         for(unsigned ipar=0;ipar<npar_;ipar++)
           gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);

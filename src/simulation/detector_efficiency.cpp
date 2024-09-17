@@ -625,6 +625,7 @@ double SplinePEAmplitudeGenerator::generate_amplitude()
 {
   double x;
   switch(spline_mode_) {
+  default:
   case SM_LINEAR:
     x = get_rng()->uniform_double();
     break;

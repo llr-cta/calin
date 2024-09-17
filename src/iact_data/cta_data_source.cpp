@@ -28,30 +28,26 @@
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <iact_data/cta_data_source.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
+#include <iact_data/nectarcam_acada_event_decoder.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/nectarcam_data_source.pb.h>
-#include <iact_data/lstcam_actl_event_decoder.hpp>
+#include <iact_data/lstcam_acada_event_decoder.hpp>
 #include <iact_data/lstcam_data_source.hpp>
 #include <iact_data/lstcam_data_source.pb.h>
 
+using namespace calin::ix::iact_data::cta_data_source;
 using namespace calin::iact_data::cta_data_source;
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::nectarcam_data_source;
-using namespace calin::iact_data::nectarcam_actl_event_decoder;
+using namespace calin::iact_data::nectarcam_acada_event_decoder;
 using namespace calin::iact_data::lstcam_data_source;
 using namespace calin::ix::iact_data::lstcam_data_source;
-using namespace calin::iact_data::lstcam_actl_event_decoder;
+using namespace calin::iact_data::lstcam_acada_event_decoder;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
-using namespace calin::iact_data::zfits_actl_data_source;
+using namespace calin::iact_data::zfits_acada_data_source;
 using namespace calin::util::log;
 using namespace calin::util::file;
-
-#include <ProtobufIFits.h>
-#include <IFits.h>
-#include <L0.pb.h>
-#include <R1.pb.h>
 
 CTAZFITSDataSource::
 CTAZFITSDataSource(const std::string& filename,
@@ -99,20 +95,21 @@ CTAZFITSDataSource::~CTAZFITSDataSource()
 calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig
 CTAZFITSDataSource::default_config()
 {
-  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1::default_config();
-  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
-  config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
+  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0::default_config();
+  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
+  config.set_events_table_name(""); // Differs between R1v0 and R1v1 so let downstream decode
+  config.set_run_header_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decode
   return config;
 }
 
-calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig
+CTACameraEventDecoderConfig
 CTAZFITSDataSource::default_decoder_config()
 {
-  calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig config;
+  CTACameraEventDecoderConfig config;
   config.mutable_nectarcam()->CopyFrom(
-    NectarCamZFITSDataSource_R1::default_decoder_config());
+    NectarCamZFITSDataSource_R1v0::default_decoder_config());
   config.mutable_lstcam()->CopyFrom(
-    LSTCamZFITSDataSource_R1::default_decoder_config());
+    LSTCamZFITSDataSource_R1v0::default_decoder_config());
   return config;
 }
 
@@ -167,60 +164,65 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
       "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
 
   if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
-    if(zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name())) {
-      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1);
-    } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
-      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
-    } else {
+      calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
+    config.set_data_model(calin::iact_data::zfits_acada_data_source::get_zfits_data_model(filename));
+
+    if(config.data_model() ==
+        calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
       throw std::runtime_error(
         "CTAZFITSDataSource::construct_delegate: could not auto-detect data model: " + filename);
     }
   }
 
-  if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
-    if(decoder_config.camera_type() ==
-          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT
-        or decoder_config.camera_type() ==
-          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
+  if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0) {
+    if(decoder_config.camera_type() == AUTO_DETECT
+        or decoder_config.camera_type() == NECTARCAM) {
       return new NectarCamZFITSDataSource_L0(filename, config, decoder_config.nectarcam());
     }
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: L0 data format not supported with camera type: "
-      + calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::CameraType_Name(decoder_config.camera_type()));
-  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
+      + CameraType_Name(decoder_config.camera_type()));
+  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0) {
     if(decoder_config.camera_type()
-        == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT)
+        == AUTO_DETECT)
     {
-      ZFITSSingleFileACTL_R1_CameraEventDataSource src(filename, config);
-      auto* header = src.get_run_header();
+      auto* src = new ZFITSACADACameraEventDataSource_R1v0(filename, config);
+      auto* header = src->get_run_header();
       if(header == nullptr) {
+        delete src;
         throw std::runtime_error(
           "CTAZFITSDataSource::construct_delegate: no run header found: " + filename);
       }
       if(header->has_nectarcam()) {
         decoder_config.set_camera_type(
-          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM);
+          NECTARCAM);
+        delete header;
+        return new NectarCamZFITSDataSource_R1v0(filename, src, decoder_config.nectarcam(), /* adopt_zfits_src= */ true);
       } else if(header->has_lstcam()) {
         decoder_config.set_camera_type(
-          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::LSTCAM);
+          LSTCAM);
+        delete header;
+        return new LSTCamZFITSDataSource_R1v0(filename, src, decoder_config.lstcam(), /* adopt_zfits_src= */ true);
       } else {
         delete header;
+        delete src;
         throw std::runtime_error(
           "CTAZFITSDataSource::construct_delegate: no known camera extension found");
       }
       delete header;
-    }
-
-    if(decoder_config.camera_type() == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
-      return new NectarCamZFITSDataSource_R1(filename, config, decoder_config.nectarcam());
+    } else if(decoder_config.camera_type() == NECTARCAM) {
+      return new NectarCamZFITSDataSource_R1v0(filename, config, decoder_config.nectarcam());
+    } else if(decoder_config.camera_type() == LSTCAM) {
+      return new LSTCamZFITSDataSource_R1v0(filename, config, decoder_config.lstcam());
     } else {
-      return new LSTCamZFITSDataSource_R1(filename, config, decoder_config.lstcam());
+      throw std::runtime_error(
+        "CTAZFITSDataSource::construct_delegate: R1v0 data format not supported with camera type: "
+        + CameraType_Name(decoder_config.camera_type()));
     }
   } else {
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: unsupported data format: "
-      + calin::ix::iact_data::zfits_data_source::ACTLDataModel_Name(config.data_model()));
+      + calin::ix::iact_data::zfits_data_source::ACADADataModel_Name(config.data_model()));
   }
   return nullptr;
 }
@@ -235,8 +237,8 @@ CTAZFITSDataSource::copy_base_data_source(
     throw std::runtime_error(
       "CTAZFITSDataSource::copy_base_data_source: File not found: " + filename);
 
-  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1*>(base_data_source->delegate())) {
-    return new zfits_data_source::ZFITSDataSource_R1(filename, zfits, config);
+  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v0*>(base_data_source->delegate())) {
+    return new zfits_data_source::ZFITSDataSource_R1v0(filename, zfits, config);
   }else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_L0*>(base_data_source->delegate())) {
     return new zfits_data_source::ZFITSDataSource_L0(filename, zfits, config);
   } else {

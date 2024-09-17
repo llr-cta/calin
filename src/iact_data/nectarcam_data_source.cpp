@@ -29,9 +29,9 @@
 #include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/zfits_data_source.hpp>
-#include <iact_data/zfits_actl_data_source.hpp>
+#include <iact_data/zfits_acada_data_source.hpp>
 #include <iact_data/nectarcam_layout.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
+#include <iact_data/nectarcam_acada_event_decoder.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
 #include <provenance/system_info.hpp>
 
@@ -41,12 +41,8 @@ using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::ix::iact_data::nectarcam_data_source;
 using namespace calin::util::log;
 using namespace calin::util::file;
-using namespace calin::iact_data::nectarcam_actl_event_decoder;
+using namespace calin::iact_data::nectarcam_acada_event_decoder;
 
-#include <ProtobufIFits.h>
-#include <IFits.h>
-#include <L0.pb.h>
-#include <R1.pb.h>
 
 /*
 
@@ -73,7 +69,7 @@ NectarCamZFITSDataSource_L0::
 NectarCamZFITSDataSource_L0(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_L0(filename,
-    decoder_ = new NectarCam_ACTL_L0_CameraEventDecoder(filename,
+    decoder_ = new NectarCam_ACADACameraEventDecoder_L0(filename,
       calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
@@ -95,48 +91,85 @@ NectarCamZFITSDataSource_L0::~NectarCamZFITSDataSource_L0()
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
 */
 
-NectarCamZFITSDataSource_R1::
-NectarCamZFITSDataSource_R1(const std::string& filename,
-  const config_type& config, const decoder_config_type& decoder_config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource_R1(filename,
-    decoder_ = new NectarCam_ACTL_R1_CameraEventDecoder(filename,
+NectarCamZFITSDataSource_R1v0::
+NectarCamZFITSDataSource_R1v0(const std::string& filename,
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>* acada_zfits,
+    const decoder_config_type& decoder_config, bool adopt_acada_zfits):
+  calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0(
+    acada_zfits, 
+    decoder_ = new NectarCam_ACADACameraEventDecoder_R1v0(filename,
+      calin::util::file::extract_run_number_from_filename(filename),
+      decoder_config), 
+    adopt_acada_zfits, /* adopt_decoder_= */ false)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource_R1v0::
+NectarCamZFITSDataSource_R1v0(const std::string& filename,
+    const config_type& config, const decoder_config_type& decoder_config):
+  calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0(filename,
+    decoder_ = new NectarCam_ACADACameraEventDecoder_R1v0(filename,
       calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
 }
 
-NectarCamZFITSDataSource_R1::
-NectarCamZFITSDataSource_R1(const std::string& filename,
+NectarCamZFITSDataSource_R1v0::
+NectarCamZFITSDataSource_R1v0(const std::string& filename,
   const decoder_config_type& decoder_config, const config_type& config):
-    NectarCamZFITSDataSource_R1(filename, config, decoder_config)
+    NectarCamZFITSDataSource_R1v0(filename, config, decoder_config)
 {
   // nothing to see here
 }
 
-NectarCamZFITSDataSource_R1::~NectarCamZFITSDataSource_R1()
+NectarCamZFITSDataSource_R1v0::~NectarCamZFITSDataSource_R1v0()
 {
   delete decoder_;
 }
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
 
 /*
 
@@ -211,20 +244,23 @@ NectarCamZFITSDataSource::construct_delegate(std::string filename,
 {
   expand_filename_in_place(filename);
 
-  bool use_r1 = true;
-  if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
-    use_r1 = zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name());
-  } else if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
-    use_r1 = false;
-  } else if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
-    use_r1 = true;
-  } else {
+  auto model = config.data_model();
+  if(model == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
+    model = calin::iact_data::zfits_acada_data_source::get_zfits_data_model(filename);
+  }
+
+  switch(model) {
+  case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT:
+    throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known");
+  case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_L0:
+    return new NectarCamZFITSDataSource_L0(filename, config, decoder_config);
+  case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0:
+    return new NectarCamZFITSDataSource_R1v0(filename, config, decoder_config);
+  case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1:
+    throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: R1v1 not supported yet");
+  default:
     throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known");
   }
 
-  if(use_r1)return new NectarCamZFITSDataSource_R1(filename, config, decoder_config);
-  else return new NectarCamZFITSDataSource_L0(filename, config, decoder_config);
+  return nullptr;
 }

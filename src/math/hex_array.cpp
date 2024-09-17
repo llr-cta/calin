@@ -26,6 +26,13 @@
 
 #include <math/hex_array.hpp>
 
+// Set of multipliers that calculate the division by 1..32 to determine
+// segment ID : n/d = (n*divisor_M13[d-1]) >> 13 for n in [0,6*d]
+const unsigned calin::math::hex_array::divisor_M13[32] =  {
+       8192, 4096, 2816, 2048, 1664, 1376, 1184, 1024,  912,  832,  752,
+        688,  632,  592,  552,  512,  484,  456,  432,  412,  392,  374,
+        358,  342,  328,  316,  304,  294,  284,  274,  265,  256 };
+
 void calin::math::hex_array::hexid_to_uv_ccw(unsigned hexid, int& u, int& v)
 {
   if(hexid==0) { u = v = 0; return; }

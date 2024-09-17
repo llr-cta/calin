@@ -130,6 +130,8 @@ public:
   calin::simulation::tracker::Event event() const { return event_; }
   const std::vector<calin::simulation::tracker::Track>& tracks() const { return tracks_; }
   void replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
+  void replay_event_with_new_origin(calin::simulation::tracker::TrackVisitor* visitor, 
+    double x0, double y0) const;
   void clear_tracks() { tracks_.clear(); }
 private:
   calin::simulation::tracker::Event event_;

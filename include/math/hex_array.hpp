@@ -47,6 +47,8 @@ void nh_to_xy(int *, double *, double *);
 } // namespace vinoutv
 #endif
 
+extern const unsigned divisor_M13[32];
+
 // *****************************************************************************
 //
 // General functions for the hex array building to UV <-> HexID and neighbors

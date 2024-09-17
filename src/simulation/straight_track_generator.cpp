@@ -46,27 +46,29 @@ void StraightTrackGenerator::generate_showers(
   const Eigen::Vector3d& x0, const Eigen::Vector3d& u0, double weight)
 {
   tracker::Event event;
-  event.type     = type;
-  event.pdg_type = calin::simulation::tracker::particle_type_to_pdg_type(type);
-  event.q        = calin::simulation::tracker::particle_type_to_charge(type);
-  event.mass     = calin::simulation::tracker::particle_type_to_mass(type);
-  event.x0       = x0;
-  event.u0       = u0;
+  event.type            = type;
+  event.pdg_type        = calin::simulation::tracker::particle_type_to_pdg_type(type);
+  event.q               = calin::simulation::tracker::particle_type_to_charge(type);
+  event.mass            = calin::simulation::tracker::particle_type_to_mass(type);
+  event.x0              = x0;
+  event.u0              = u0;
   event.u0.normalize();
-  event.e0       = total_energy;
-  event.t0       = 0.0;
-  event.weight   = weight;
+  event.e0              = total_energy;
+  event.t0              = 0.0;
+  event.weight          = weight;
 
   tracker::Track track;
-  track.type     = event.type;
-  track.pdg_type = event.pdg_type;
-  track.q        = event.q;
-  track.mass     = event.mass;
+  track.track_id        = 1;
+  track.parent_track_id = 0;
+  track.type            = event.type;
+  track.pdg_type        = event.pdg_type;
+  track.q               = event.q;
+  track.mass            = event.mass;
 
-  track.x0       = event.x0;
-  track.u0       = event.u0;
-  track.e0       = event.e0;
-  track.t0       = event.t0;
+  track.x0              = event.x0;
+  track.u0              = event.u0;
+  track.e0              = event.e0;
+  track.t0              = event.t0;
 
   const double dz = zground_ - event.x0(2);
   const double dx = dz/track.u0(2);
@@ -75,17 +77,17 @@ void StraightTrackGenerator::generate_showers(
   const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::g4_c;
   const double dt = dx/v;
 
-  track.x1       = track.x0 + track.u0 * dx;
-  track.u1       = track.u0;
-  track.e1       = track.e0;
-  track.t1       = track.t0 + dt;
+  track.x1              = track.x0 + track.u0 * dx;
+  track.u1              = track.u0;
+  track.e1              = track.e0;
+  track.t1              = track.t0 + dt;
 
-  track.dx_hat   = track.u0;
-  track.dx       = dx;
-  track.de       = 0.0;
-  track.dt       = dt;
+  track.dx_hat          = track.u0;
+  track.dx              = dx;
+  track.de              = 0.0;
+  track.dt              = dt;
 
-  track.weight   = event.weight;
+  track.weight          = event.weight;
 
   while(num_events--)
   {

@@ -16,99 +16,102 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 Bootstrap: library
-From: ubuntu:20.04
+From: ubuntu:22.04
 
 %files
     /tmp/calin_installed.tgz
 
 %environment
-    export G4DATADIR=/usr/share/Geant4-10.7.2/data
-    export G4NEUTRONHPDATA="$G4DATADIR/G4NDL4.6"
-    export G4LEDATA="$G4DATADIR/G4EMLOW7.13"
-    export G4LEVELGAMMADATA="$G4DATADIR/PhotonEvaporation5.7"
-    export G4RADIOACTIVEDATA="$G4DATADIR/RadioactiveDecay5.6"
-    export G4PARTICLEXSDATA="$G4DATADIR/G4PARTICLEXS3.1.1"
-    export G4PIIDATA="$G4DATADIR/G4PII1.3"
-    export G4REALSURFACEDATA="$G4DATADIR/RealSurface2.2"
-    export G4SAIDXSDATA="$G4DATADIR/G4SAIDDATA2.0"
-    export G4ABLADATA="$G4DATADIR/G4ABLA3.1"
-    export G4INCLDATA="$G4DATADIR/G4INCL1.0"
-    export G4ENSDFSTATEDATA="$G4DATADIR/G4ENSDFSTATE2.3"
+    export GEANT4_DATA_DIR="/usr/share/Geant4/data"
+    export G4NEUTRONHPDATA="$GEANT4_DATA_DIR/G4NDL4.7.1"
+    export G4LEDATA="$GEANT4_DATA_DIR/G4EMLOW8.5"
+    export G4LEVELGAMMADATA="$GEANT4_DATA_DIR/PhotonEvaporation5.7"
+    export G4RADIOACTIVEDATA="$GEANT4_DATA_DIR/RadioactiveDecay5.6"
+    export G4PARTICLEXSDATA="$GEANT4_DATA_DIR/G4PARTICLEXS4.0"
+    export G4PIIDATA="$GEANT4_DATA_DIR/G4PII1.3"
+    export G4REALSURFACEDATA="$GEANT4_DATA_DIR/RealSurface2.2"
+    export G4SAIDXSDATA="$GEANT4_DATA_DIR/G4SAIDDATA2.0"
+    export G4ABLADATA="$GEANT4_DATA_DIR/G4ABLA3.3"
+    export G4INCLDATA="$GEANT4_DATA_DIR/G4INCL1.2"
+    export G4ENSDFSTATEDATA="$GEANT4_DATA_DIR/G4ENSDFSTATE2.3"
     export OMP_NUM_THREADS=1
     export SHELL=/bin/bash
 
 %post
-    echo "deb http://us.archive.ubuntu.com/ubuntu focal main universe" > /etc/apt/sources.list
-    echo "deb http://us.archive.ubuntu.com/ubuntu/ focal-security main universe" >> /etc/apt/sources.list
+    export DEBIAN_FRONTEND=noninteractive
+    
+    echo "deb http://us.archive.ubuntu.com/ubuntu jammy main universe" > /etc/apt/sources.list
+    echo "deb http://us.archive.ubuntu.com/ubuntu/ jammy-security main universe" >> /etc/apt/sources.list
     apt-get -y update
     apt-get -y upgrade
     apt-get -y install                                             \
         wget                                                       \
-        libgsl23                                                   \
+        libgsl27                                                   \
         libzmq5                                                    \
         libpcre3                                                   \
         libpcap0.8                                                 \
-        zlibc                                                      \
+        zlib1g                                                     \
         python3                                                    \
         python3-pip                                                \
         python3-numpy                                              \
         python3-scipy                                              \
         python3-matplotlib                                         \
         cython3                                                    \
-        ipython3                                                   \
-        jupyter-notebook                                           \
         fftw3                                                      \
         sqlite3                                                    \
         libxerces-c3.2                                             \
         vim                                                        \
         curl                                                       \
         ffmpeg                                                     \
-        libgeos-3.8.0                                              \
+        libgeos3.10.2                                              \
         libgeos-c1v5                                               \
         hdf5-tools                                                 \
         libjpeg8                                                   \
-        libnetcdf15                                                \
+        libnetcdf19                                                \
         netcdf-bin                                                 \
         netcdf-doc                                                 \
         proj-bin                                                   \
-        libproj15                                                  \
+        libproj22                                                  \
         libopenjp2-7                                               \
         libopenjp2-tools                                           \
         zstd                                                       \
         libprotobuf-c1                                             \
-        libprotobuf17                                              \
-        libprotoc17                                                \
-        python3-ipywidgets                                         \
+        libprotobuf23                                              \
+        libprotoc23                                                \
         gdb
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install ipyparallel cdsapi ecmwf-api-client
+    pip3 install notebook cdsapi ecmwf-api-client astropy gammapy
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
-    export G4DATADIR=/usr/share/Geant4-10.7.2/data
-    export G4URL=http://geant4-data.web.cern.ch/datasets
+    export G4DATADIR=/usr/share/Geant4/data
+    # export G4URL=http://geant4-data.web.cern.ch/datasets
+    export G4URL=https://cern.ch/geant4-data/datasets
     mkdir -p $G4DATADIR
-    curl -L $G4URL/G4NDL.4.6.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4EMLOW.7.13.tar.gz | tar -C $G4DATADIR -zxf -
+
+    curl -L $G4URL/G4NDL.4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4EMLOW.8.5.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4PhotonEvaporation.5.7.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4RadioactiveDecay.5.6.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4SAIDDATA.2.0.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4PARTICLEXS.3.1.1.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4ABLA.3.1.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4INCL.1.0.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4PARTICLEXS.4.0.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4ABLA.3.3.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4INCL.1.2.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4PII.1.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4ENSDFSTATE.2.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4RealSurface.2.2.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4TENDL.1.3.2.tar.gz | tar -C $G4DATADIR -zxf -
+    curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
 
-    curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-20.04-10.7.2/Geant4-ubuntu-20.04-10.7.2.tbz2 | tar -jxf - -C /
-    curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz | tar -zxf - -C /
+    export CTA_ADH_APIS_REL=ubuntu-22.04
+    export GEANT4_REL=ubuntu-22.04-11.2.2-OFF
+
+    curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/$CTA_ADH_APIS_REL/cta_adh_apis_installed.tgz | tar -zxf - -C /
+    curl -L https://github.com/llr-cta/Geant4Build/releases/download/$GEANT4_REL/Geant4-$GEANT4_REL.tbz2 | tar -jxf - -C /
 
     tar -zxf /tmp/calin_installed.tgz -C /
     rm -f /tmp/calin_installed.tgz
 
-    ipython3 profile create default
     jupyter notebook --allow-root --generate-config
     sed -i -e '/c.NotebookApp.ip/s/^#//'                           \
            -e '/c.NotebookApp.ip/s/localhost/*/'                   \

@@ -19,7 +19,7 @@ set(CALIN_SOURCES sql_statement.cpp sqlite3_statement.cpp
 	data_source.cpp chained_data_source.cpp packet_stream.cpp
 	zmq_inproc_push_pull.cpp json.cpp options_processor.cpp)
 
-include_directories(${PYTHON_INCLUDE_PATH})
+include_directories(${Python3_INCLUDE_DIRS})
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util calin_provenance calin_proto_io
 	${SQLITE3_LIBRARY} ${ZMQ_LIBRARIES} ${PROTOBUF_LIBRARY} -lutil)

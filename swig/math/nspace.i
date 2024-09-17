@@ -58,7 +58,6 @@
   %}
 }
 
-
 %extend calin::math::nspace::BlockSparseNSpace {
   %pythoncode %{
     def __getstate__(self):

@@ -772,7 +772,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
       shift = -p0_*scale;
     }
 
-    hcvec_copy_with_scale_and_add_real(OUTPUT.mutable_pn()->begin(),
+    hcvec_copy_with_scale_and_add_real(OUTPUT.mutable_pn()->mutable_data(),
       fkmo.get(), scale, shift, npoint);
   } else {
     // Renomalize the inverse DFT as required, but also correct for any error
@@ -905,8 +905,8 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
     precision, log_progress, /* skip_inverse_fft = */ true, fftw_rigor);
 
   if(OUTPUT.suppress_zero()) {
-    double p0 = hcvec_avg_real(OUTPUT.pn().begin(), npoint);
-    hcvec_scale_and_add_real(OUTPUT.mutable_pn()->begin(), 1/(1-p0), -p0/(1-p0), npoint);
+    double p0 = hcvec_avg_real(OUTPUT.pn().data(), npoint);
+    hcvec_scale_and_add_real(OUTPUT.mutable_pn()->mutable_data(), 1/(1-p0), -p0/(1-p0), npoint);
   }
 
   // FFT of multi-electron spectrum
@@ -920,7 +920,7 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
   assert(ppe.size() < npoint);
 
   // Do the PE convolution
-  hcvec_polynomial(fmes.get(), OUTPUT.pn().begin(), ppe, npoint);
+  hcvec_polynomial(fmes.get(), OUTPUT.pn().data(), ppe, npoint);
   nflop_ += ppe.size() * npoint * 2;
 
   // Add the arbitrary pedestal noise if requested

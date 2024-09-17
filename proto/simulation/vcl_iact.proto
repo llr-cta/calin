@@ -84,3 +84,41 @@ message VCLIACTArrayConfiguration
   RefractionMode refraction_mode                           = 30
     [(CFO).desc = "Atmospheric refraction mode." ];
 };
+
+message VCLIACTGroundMapDetectorConfiguration
+{
+  double x_gnd                                             = 1
+    [(CFO).desc = "X-osition of center of detector on ground.",
+     (CFO).units = "cm" ];
+  double y_gnd                                             = 2
+    [(CFO).desc = "Y-position of center of detector on ground.",
+     (CFO).units = "cm" ];
+  double r_gnd                                             = 3
+    [(CFO).desc = "Radius of detector on ground.",
+     (CFO).units = "cm" ];
+  bool store_position                                      = 4
+    [(CFO).desc = "Store the position of photons in this detector." ];
+  bool store_direction                                     = 5
+    [(CFO).desc = "Store the dirction of photons in this detector." ];
+  bool store_time                                          = 6
+    [(CFO).desc = "Store the dirction of photons in this detector." ];
+  bool store_emission_point                                = 7
+    [(CFO).desc = "Store the emission point of the photons in this detector." ];
+  double store_fraction                                    = 8
+    [(CFO).desc = "Fraction of photons to store." ];
+};
+
+message VCLIACTGroundMapConfiguration
+{
+  VCLIACTConfiguration base_config                         = 1
+    [(CFO).desc = "Base configuration." ];
+  repeated VCLIACTGroundMapDetectorConfiguration detector  = 2
+    [(CFO).desc = "Ground detectors." ];
+  double dzatm_profile                                     = 3
+    [(CFO).desc = "Width of bins in atmospheric profile.", 
+     (CFO).units = "cm" ];
+  uint32 observation_level                                 = 4
+    [(CFO).desc = "In the current implementation all telescopes must belong to "
+      "a single observation level." ];
+};
+

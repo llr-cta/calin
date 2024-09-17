@@ -28,12 +28,9 @@
 #include <calin_global_config.hpp>
 #include <iact_data/cta_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
-#include <iact_data/zfits_actl_data_source.hpp>
 #include <pattern/delegation.hpp>
 
 namespace calin { namespace iact_data { namespace cta_data_source {
-
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 class CTAZFITSDataSource:
   public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
@@ -83,8 +80,5 @@ private:
   static TelescopeRandomAccessDataSourceWithRunConfig* copy_base_data_source(
     std::string filename, config_type config, CTAZFITSDataSource* base_data_source);
 };
-
-
-#endif
 
 } } } // namespace calin::iact_data::cta_data_source

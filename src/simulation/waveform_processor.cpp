@@ -168,14 +168,14 @@ WaveformProcessor(const calin::ix::iact_data::instrument_layout::CameraLayout* c
   }
 
   num_trigger_patches_ = camera->trigger_patches_size();
-  for(int ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
+  for(int ipatch=0; ipatch<int(num_trigger_patches_); ++ipatch) {
     max_num_channels_per_trigger_patch = std::max(max_num_channels_per_trigger_patch,
       unsigned(camera->trigger_patches(ipatch).channels_in_patch_size()));
   }
   if(num_trigger_patches_ > 0 and max_num_channels_per_trigger_patch > 0) {
     trigger_patch_map_ = new int[num_trigger_patches_ * max_num_channels_per_trigger_patch];
     std::fill(trigger_patch_map_, trigger_patch_map_ + num_trigger_patches_ * max_num_channels_per_trigger_patch, -1);
-    for(int ipatch=0; ipatch<num_trigger_patches_; ++ipatch) {
+    for(int ipatch=0; ipatch<int(num_trigger_patches_); ++ipatch) {
       for(int ichannel=0; ichannel<camera->trigger_patches(ipatch).channels_in_patch_size(); ++ichannel) {
         trigger_patch_map_[ipatch*max_num_channels_per_trigger_patch + ichannel] =
           camera->trigger_patches(ipatch).channels_in_patch(ichannel);

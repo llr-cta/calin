@@ -244,7 +244,7 @@ void WaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_i
 {
   if(pixel_id < 0) {
     return;
-  } else if (pixel_id >= npix_) {
+  } else if (pixel_id >= int(npix_)) {
     throw std::out_of_range("WaveformPEProcessor::process_focal_plane_hit : pixel_id out of range : "
       + std::to_string(pixel_id) + " >= " + std::to_string(npix_));
   }
@@ -375,7 +375,7 @@ void UnbinnedWaveformPEProcessor::process_focal_plane_hit(unsigned scope_id, int
 {
   if(pixel_id < 0) {
     return;
-  } else if (pixel_id >= npix_) {
+  } else if (pixel_id >= int(npix_)) {
     throw std::out_of_range("UnbinnedWaveformPEProcessor::process_focal_plane_hit : pixel_id out of range : "
       + std::to_string(pixel_id) + " >= " + std::to_string(npix_));
   }
@@ -449,7 +449,7 @@ void UnbinnedWaveformPEProcessor::pixel_traces_into_buffer(
     for(unsigned ipe=0;ipe<pe_iscope_.size();++ipe) {
       if(pe_iscope_[ipe] == iscope) {
         int n = std::round(pe_t_[ipe] * trace_delta_t_inv) - tstart;
-        if(n>=0 and n<=trace_nsamp) {
+        if(n>=0 and n<=int(trace_nsamp)) {
           pe_waveform_buffer[pe_ipix_[ipe]*pe_waveform_buffer_stride + n] += pe_q_[ipe];
         } else if(pe_overflow_buffer) {
           pe_overflow_buffer[pe_ipix_[ipe]] += pe_q_[ipe];
@@ -508,7 +508,7 @@ Eigen::MatrixXd UnbinnedWaveformPEProcessor::pixel_traces(
     for(unsigned ipe=0;ipe<pe_iscope_.size();++ipe) {
       if(pe_iscope_[ipe] == iscope) {
         int n = std::round(pe_t_[ipe] * trace_delta_t_inv) - tstart;
-        if(n>=0 and n<=trace_nsamp) {
+        if(n>=0 and n<=int(trace_nsamp)) {
           pix_traces(n, pe_ipix_[ipe]) += pe_q_[ipe];
         } else {
           pix_overflow(pe_ipix_[ipe]) += pe_q_[ipe];

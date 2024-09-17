@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto atmosphere.proto
 	ray_processor.proto pe_processor.proto vcl_iact.proto geant4_shower_generator.proto
-	sct_optics.proto)
+	corsika8_shower_generator.proto sct_optics.proto)
 set(CALIN_PACKAGE simulation)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

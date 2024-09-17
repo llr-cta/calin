@@ -26,14 +26,12 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
+#include <iact_data/nectarcam_acada_event_decoder.hpp>
 #include <iact_data/nectarcam_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
 #include <pattern/delegation.hpp>
 
 namespace calin { namespace iact_data { namespace nectarcam_data_source {
-
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 /*
 
@@ -57,24 +55,20 @@ namespace calin { namespace iact_data { namespace nectarcam_data_source {
 */
 
 class NectarCamZFITSDataSource_L0:
-  public calin::iact_data::zfits_data_source::ZFITSDataSource_L0
+  public calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_L0>
 {
 public:
+  CALIN_TYPEALIAS(config_type, 
+    ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_L0>::config_type);
   CALIN_TYPEALIAS(decoder_config_type,
     calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-#if 0
-  void set_decoder_config(const decoder_config_type& config) {
-    decoder_->set_config(config); }
-#endif
   calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig decoder_config() const {
     return decoder_->config(); }
-#if 0
-  decoder_config_type* mutable_decoder_config() {
-    return decoder_->mutable_config(); }
-#endif
+
   static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_decoder_config() {
-    return nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder::default_config(); }
+    return nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_L0::default_config(); }
 
   NectarCamZFITSDataSource_L0(const std::string& filename,
     const config_type& config,
@@ -84,60 +78,84 @@ public:
     const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource_L0();
 private:
-  nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder* decoder_;
+  nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_L0* decoder_;
 };
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
 */
 
-class NectarCamZFITSDataSource_R1:
-  public calin::iact_data::zfits_data_source::ZFITSDataSource_R1
+class NectarCamZFITSDataSource_R1v0:
+  public calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>
 {
 public:
+  CALIN_TYPEALIAS(config_type, 
+    ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>::config_type);
   CALIN_TYPEALIAS(decoder_config_type,
     calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-#if 0
-  void set_decoder_config(const decoder_config_type& config) {
-    decoder_->set_config(config); }
-#endif
   calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig decoder_config() const {
     return decoder_->config(); }
-#if 0
-  decoder_config_type* mutable_decoder_config() {
-    return decoder_->mutable_config(); }
-#endif
-  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_decoder_config() {
-    return nectarcam_actl_event_decoder::NectarCam_ACTL_R1_CameraEventDecoder::default_config(); }
 
-  NectarCamZFITSDataSource_R1(const std::string& filename,
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_decoder_config() {
+    return nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0::default_config(); }
+
+  NectarCamZFITSDataSource_R1v0(const std::string& filename,
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>* acada_zfits,
+    const decoder_config_type& decoder_config = default_decoder_config(),
+    bool adopt_acada_zfits = false);
+  NectarCamZFITSDataSource_R1v0(const std::string& filename,
     const config_type& config,
     const decoder_config_type& decoder_config = default_decoder_config());
-  NectarCamZFITSDataSource_R1(const std::string& filename,
+  NectarCamZFITSDataSource_R1v0(const std::string& filename,
     const decoder_config_type& decoder_config = default_decoder_config(),
     const config_type& config = default_config());
-  virtual ~NectarCamZFITSDataSource_R1();
+  virtual ~NectarCamZFITSDataSource_R1v0();
 private:
-  nectarcam_actl_event_decoder::NectarCam_ACTL_R1_CameraEventDecoder* decoder_;
+  nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0* decoder_;
 };
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
+
 
 /*
 
@@ -172,14 +190,14 @@ public:
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
   static calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig default_config() {
-    config_type config = NectarCamZFITSDataSource_R1::default_config();
-    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
+    config_type config = NectarCamZFITSDataSource_R1v0::default_config();
+    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
     config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
     return config;
   }
 
   static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_decoder_config() {
-    return NectarCamZFITSDataSource_R1::default_decoder_config(); }
+    return NectarCamZFITSDataSource_R1v0::default_decoder_config(); }
 
   NectarCamZFITSDataSource(const std::string& filename,
     const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
@@ -202,7 +220,5 @@ private:
     std::string filename, const config_type& config,
     const decoder_config_type& decoder_config);
 };
-
-#endif
 
 } } } // namespace calin::iact_data::nectarcam_data_source

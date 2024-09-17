@@ -32,9 +32,8 @@
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/cta_data_source.hpp>
-#include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/cta_acada_event_decoder.hpp>
 #include <iact_data/event_dispatcher.pb.h>
-//#include <iact_data/cta_actl_event_decoder.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
@@ -84,10 +83,10 @@ public:
       telescope_run_configuration::TelescopeRunConfiguration* merged_run_config,
     unsigned log_frequency = 0);
 
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
   void process_cta_zfits_run(const std::string& filename,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
+#if 0
   void process_cta_zmq_run(const std::vector<std::string>& endpoints,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
