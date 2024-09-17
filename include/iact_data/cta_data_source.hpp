@@ -32,8 +32,6 @@
 
 namespace calin { namespace iact_data { namespace cta_data_source {
 
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-
 class CTAZFITSDataSource:
   public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
   public calin::io::data_source::FragmentList,
@@ -82,8 +80,5 @@ private:
   static TelescopeRandomAccessDataSourceWithRunConfig* copy_base_data_source(
     std::string filename, config_type config, CTAZFITSDataSource* base_data_source);
 };
-
-
-#endif
 
 } } } // namespace calin::iact_data::cta_data_source

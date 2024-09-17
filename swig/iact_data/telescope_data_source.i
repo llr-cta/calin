@@ -28,7 +28,7 @@
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
-// #include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/lstcam_data_source.hpp>
 // #include <iact_data/cta_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
@@ -206,5 +206,5 @@ using namespace calin::io;
     calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>;
 
 %include "iact_data/nectarcam_data_source.hpp"
-// %include "iact_data/lstcam_data_source.hpp"
+%include "iact_data/lstcam_data_source.hpp"
 // %include "iact_data/cta_data_source.hpp"

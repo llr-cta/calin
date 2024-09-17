@@ -98,6 +98,13 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
+  ZFITSDataSource(
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<MessageSet>* acada_zfits,
+    calin::iact_data::acada_event_decoder::
+      ACADACameraEventDecoder<MessageSet>* decoder,
+    bool adopt_acada_zfits = false, bool adopt_decoder = false);
+
   ZFITSDataSource(const std::string& filename,
     calin::iact_data::acada_event_decoder::
       ACADACameraEventDecoder<MessageSet>* decoder,

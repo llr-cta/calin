@@ -28,13 +28,13 @@ import "iact_data/lstcam_data_source.proto";
 
 package calin.ix.iact_data.cta_data_source;
 
-message CTACameraEventDecoderConfig {
-  enum CameraType {
-    AUTO_DETECT                                            = 0;
-    NECTARCAM                                              = 1;
-    LSTCAM                                                 = 2;
-  };
+enum CameraType {
+  AUTO_DETECT                                            = 0;
+  NECTARCAM                                              = 1;
+  LSTCAM                                                 = 2;
+};
 
+message CTACameraEventDecoderConfig {
   CameraType camera_type                                   = 1 [
     (CFO).desc = "Camera type." ];
 

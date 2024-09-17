@@ -91,28 +91,43 @@ NectarCamZFITSDataSource_L0::~NectarCamZFITSDataSource_L0()
 
 /*
 
-                      RRRRRRRRRRRRRRRRR          1111111
-                      R::::::::::::::::R        1::::::1
-                      R::::::RRRRRR:::::R      1:::::::1
-                      RR:::::R     R:::::R     111:::::1
-                        R::::R     R:::::R        1::::1
-                        R::::R     R:::::R        1::::1
-                        R::::RRRRRR:::::R         1::::1
-                        R:::::::::::::RR          1::::l
-                        R::::RRRRRR:::::R         1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                        R::::R     R:::::R        1::::l
-                      RR:::::R     R:::::R     111::::::111
-                      R::::::R     R:::::R     1::::::::::1
-                      R::::::R     R:::::R     1::::::::::1
-                      RRRRRRRR     RRRRRRR     111111111111
+    RRRRRRRRRRRRRRRRR     1111111                              000000000     
+    R::::::::::::::::R   1::::::1                            00:::::::::00   
+    R::::::RRRRRR:::::R 1:::::::1                          00:::::::::::::00 
+    RR:::::R     R:::::R111:::::1                         0:::::::000:::::::0
+      R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv0::::::0   0::::::0
+      R::::R     R:::::R   1::::1 v:::::v         v:::::v 0:::::0     0:::::0
+      R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  0:::::0     0:::::0
+      R:::::::::::::RR     1::::l   v:::::v     v:::::v   0:::::0 000 0:::::0
+      R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    0:::::0 000 0:::::0
+      R::::R     R:::::R   1::::l     v:::::v v:::::v     0:::::0     0:::::0
+      R::::R     R:::::R   1::::l      v:::::v:::::v      0:::::0     0:::::0
+      R::::R     R:::::R   1::::l       v:::::::::v       0::::::0   0::::::0
+    RR:::::R     R:::::R111::::::111     v:::::::v        0:::::::000:::::::0
+    R::::::R     R:::::R1::::::::::1      v:::::v          00:::::::::::::00 
+    R::::::R     R:::::R1::::::::::1       v:::v             00:::::::::00   
+    RRRRRRRR     RRRRRRR111111111111        vvv                000000000     
 
 */
 
 NectarCamZFITSDataSource_R1v0::
 NectarCamZFITSDataSource_R1v0(const std::string& filename,
-  const config_type& config, const decoder_config_type& decoder_config):
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>* acada_zfits,
+    const decoder_config_type& decoder_config, bool adopt_acada_zfits):
+  calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0(
+    acada_zfits, 
+    decoder_ = new NectarCam_ACADACameraEventDecoder_R1v0(filename,
+      calin::util::file::extract_run_number_from_filename(filename),
+      decoder_config), 
+    adopt_acada_zfits, /* adopt_decoder_= */ false)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource_R1v0::
+NectarCamZFITSDataSource_R1v0(const std::string& filename,
+    const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0(filename,
     decoder_ = new NectarCam_ACADACameraEventDecoder_R1v0(filename,
       calin::util::file::extract_run_number_from_filename(filename),
@@ -133,6 +148,28 @@ NectarCamZFITSDataSource_R1v0::~NectarCamZFITSDataSource_R1v0()
 {
   delete decoder_;
 }
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
 
 /*
 

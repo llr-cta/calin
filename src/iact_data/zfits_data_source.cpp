@@ -191,15 +191,15 @@ ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::default_config()
 
 template<typename MessageSet>
 ZFITSDataSource<MessageSet>::
-ZFITSDataSource(const std::string& filename,
+ZFITSDataSource(
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<MessageSet>* acada_zfits,
     calin::iact_data::acada_event_decoder::
       ACADACameraEventDecoder<MessageSet>* decoder,
-    bool adopt_decoder, const config_type& config):
+    bool adopt_acada_zfits, bool adopt_decoder):
   TelescopeRandomAccessDataSourceWithRunConfig(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
-  acada_zfits_(new calin::iact_data::zfits_acada_data_source::
-    ZFITSACADACameraEventDataSource<MessageSet>(filename, config)), 
-  adopt_acada_zfits_(true)
+  acada_zfits_(acada_zfits),  adopt_acada_zfits_(adopt_acada_zfits)
 {
   MessageSet acada_message_set;
   try {
@@ -223,7 +223,9 @@ ZFITSDataSource(const std::string& filename,
   decoder_->decode_run_config(run_config_, acada_message_set);
   delete acada_message_set.header;
   delete_message(acada_message_set.data_stream);
-  if(acada_message_set.event)acada_zfits_->release_borrowed_event(acada_message_set.event);
+  if(acada_message_set.event) {
+    acada_zfits_->release_borrowed_event(acada_message_set.event);
+  }
   run_config_->clear_fragment_filename();
   for(const auto& ffn : acada_zfits_->all_fragment_names()) {
     run_config_->add_fragment_filename(ffn);
@@ -231,6 +233,19 @@ ZFITSDataSource(const std::string& filename,
   run_config_->set_file_size(calin::util::file::total_size(
     acada_zfits_->all_fragment_names()));
   acada_zfits_->set_next_index(0);
+}
+
+template<typename MessageSet>
+ZFITSDataSource<MessageSet>::
+ZFITSDataSource(const std::string& filename,
+    calin::iact_data::acada_event_decoder::
+      ACADACameraEventDecoder<MessageSet>* decoder,
+    bool adopt_decoder, const config_type& config):
+  ZFITSDataSource(new calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<MessageSet>(filename, config),
+    decoder, /* adopt_acada_zfits= */ true, adopt_decoder)
+{
+  // nothing to see here
 }
 
 template<typename MessageSet>

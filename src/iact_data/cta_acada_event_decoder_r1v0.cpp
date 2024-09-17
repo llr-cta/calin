@@ -80,25 +80,25 @@ void CTA_ACADACameraEventDecoder_R1v0::ensure_deligate(
   const event_type* cta_event = cta_messages.event;
 
   if(this->delegate()==nullptr) {
-    if((config_.camera_type() == CTACameraEventDecoderConfig::NECTARCAM) or
-      ((config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT) and
+    if((config_.camera_type() == NECTARCAM) or
+      ((config_.camera_type() == AUTO_DETECT) and
         ((cta_event!=nullptr and cta_event->has_nectarcam()) or
         (cta_run_header!=nullptr and cta_run_header->has_nectarcam()))))
       this->set_delegate(new NectarCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.nectarcam()),true);
-    else if((config_.camera_type() == CTACameraEventDecoderConfig::LSTCAM) or
-      ((config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT) and
+    else if((config_.camera_type() == LSTCAM) or
+      ((config_.camera_type() == AUTO_DETECT) and
         ((cta_event!=nullptr and cta_event->has_lstcam()) or
         (cta_run_header!=nullptr and cta_run_header->has_lstcam()))))
       this->set_delegate(new LSTCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.lstcam()),true);
     else
       throw std::runtime_error("CTA_ACADACameraEventDecoder_R1v0: event does not "
         "have NectarCAM or LSTCam extensions");
-  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+  } else if(config_.camera_type() == AUTO_DETECT
       and dynamic_cast<LSTCam_ACADACameraEventDecoder_R1v0*>(this->delegate())
       and ((cta_event!=nullptr and cta_event->has_nectarcam()) or
         (cta_run_header!=nullptr and cta_run_header->has_nectarcam()))) {
     this->set_delegate(new NectarCam_ACADACameraEventDecoder_R1v0(filename_, run_number_, config_.nectarcam()),true);
-  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+  } else if(config_.camera_type() == AUTO_DETECT
       and dynamic_cast<NectarCam_ACADACameraEventDecoder_R1v0*>(this->delegate())
       and ((cta_event!=nullptr and cta_event->has_lstcam()) or
         (cta_run_header!=nullptr and cta_run_header->has_lstcam()))) {

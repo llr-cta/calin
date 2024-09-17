@@ -119,6 +119,11 @@ public:
     return nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0::default_config(); }
 
   NectarCamZFITSDataSource_R1v0(const std::string& filename,
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0>* acada_zfits,
+    const decoder_config_type& decoder_config = default_decoder_config(),
+    bool adopt_acada_zfits = false);
+  NectarCamZFITSDataSource_R1v0(const std::string& filename,
     const config_type& config,
     const decoder_config_type& decoder_config = default_decoder_config());
   NectarCamZFITSDataSource_R1v0(const std::string& filename,
@@ -128,6 +133,29 @@ public:
 private:
   nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0* decoder_;
 };
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
+
 
 /*
 
