@@ -73,17 +73,24 @@ message TelescopeRunConfiguration {
 
   uint32 num_samples                                       = 31 [
     (CFO).desc = "Number of samples in each trace." ];
-  double nominal_sampling_frequency                        = 32 [
+  uint32 num_samples_long                                  = 32 [
+    (CFO).desc = "Number of samples in each trace in long events." ];
+  double nominal_sampling_frequency                        = 33 [
     (CFO).desc = "Nominal DAQ waveform sampling frequency, or zero if unknown. May "
       "not be calibrated.", (CFO).units = "MHz" ];
+  float waveform_scale                                     = 34 [
+    (CFO).desc = "Scale applied to samples in conversion from PEs to store as uint16." ];
+  float   waveform_offset                                  = 35 [
+    (CFO).desc = "Offset applied to samples when stored as uint16." ];
 
   uint64 configuration_id                                  = 50 [
     (CFO).desc = "Key into database describing camera configuration." ];
-  string camera_server_serial_number                       = 51 [
-    (CFO).desc = "Serial number of the computer that the camera server is "
-      "running on." ];
   string data_model_version                                = 52 [
     (CFO).desc = "Version of data model." ];
+  int64 calibration_service_id                             = 53;
+  int32 calibration_algorithm_id                           = 54;
+  map<string, string> configuration_elements               = 55 [
+    (CFO).desc = "Various version or serial number strings that may be propagaged by DAQ." ];
 
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [

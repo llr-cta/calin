@@ -172,6 +172,39 @@ decode_run_config(
     }
   }
 
+  // **************************************************************************
+  // Waveform details
+  // **************************************************************************
+
+  calin_run_config->set_num_samples(cta_run_header->num_samples_nominal());
+  calin_run_config->set_num_samples_long(cta_run_header->num_samples_long());
+  calin_run_config->set_nominal_sampling_frequency(1000.0);
+  calin_run_config->set_waveform_scale(cta_data_stream->waveform_scale());
+  calin_run_config->set_waveform_offset(cta_data_stream->waveform_offset());
+
+  // **************************************************************************
+  // Various configuration parameters
+  // **************************************************************************
+
+  calin_run_config->set_configuration_id(cta_run_header->camera_config_id());
+  calin_run_config->set_data_model_version(cta_run_header->data_model_version());
+  calin_run_config->set_calibration_service_id(cta_run_header->calibration_service_id());
+  calin_run_config->set_calibration_algorithm_id(cta_run_header->calibration_algorithm_id());
+  (*calin_run_config->mutable_configuration_elements())["data_model_version"] = 
+    cta_run_header->data_model_version();
+  if(cta_run_header->has_debug()) {
+    auto& cta_run_header_debug = cta_run_header->debug();
+    if(cta_run_header_debug.cs_serial().size())
+      (*calin_run_config->mutable_configuration_elements())["camera_server_serial_number"] = 
+        cta_run_header_debug.cs_serial();
+    if(cta_run_header_debug.evb_version().size())
+      (*calin_run_config->mutable_configuration_elements())["event_builder_version"] = 
+        cta_run_header_debug.evb_version();
+    if(cta_run_header_debug.cdhs_version().size())
+      (*calin_run_config->mutable_configuration_elements())["common_data_handling_system_version"] = 
+        cta_run_header_debug.cdhs_version();
+  }
+
   return true;
 }
 

@@ -296,11 +296,11 @@ message CameraLayout {
 
   repeated string camera_clock_name                        = 60;
   repeated double camera_clock_frequency                   = 61 [
-    (CFO).desc = "Frequency of camera clock.", (CFO).units = "GHz" ];
+    (CFO).desc = "Frequency of camera clock.", (CFO).units = "Hz" ];
 
   repeated string module_clock_name                        = 62;
   repeated double module_clock_frequency                   = 63 [
-    (CFO).desc = "Frequency of module clock.", (CFO).units = "GHz" ];
+    (CFO).desc = "Frequency of module clock.", (CFO).units = "Hz" ];
 
   repeated string module_counter_name                      = 64;
 
