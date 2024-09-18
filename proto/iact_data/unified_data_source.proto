@@ -1,0 +1,36 @@
+/*
+
+   calin/proto/iact_data/unified_data_source.proto -- Stephen Fegan -- 2024-09-17
+
+   Protobufs for configuration of unified data source
+
+   Copyright 2024, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.iact_data.unified_data_source;
+
+message UnifiedCameraEventDecoderConfig {
+  bool separate_channel_waveforms                          = 1 [
+    (CFO).desc = "Copy the waveforms for each channel out into separete arrays. "
+      "If this option is not set then the ChannelWaveform structures will not be "
+      "present in the telescope event structure." ];
+  bool include_serialized_raw_data                         = 2 [
+    (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
+};

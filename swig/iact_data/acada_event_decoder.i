@@ -29,8 +29,9 @@
 #include <iact_data/acada_event_decoder.hpp>
 #include <iact_data/instrument_layout.pb.h>
 #include <iact_data/nectarcam_acada_event_decoder.hpp>
-// #include <iact_data/lstcam_actl_event_decoder.hpp>
-// #include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/lstcam_acada_event_decoder.hpp>
+#include <iact_data/unified_acada_event_decoder.hpp>
+#include <iact_data/cta_acada_event_decoder.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -61,6 +62,6 @@
 
 %import <iact_data/nectarcam_configuration.pb.i>
 %include <iact_data/nectarcam_acada_event_decoder.hpp>
-
-// %include <iact_data/lstcam_acada_event_decoder.hpp>
-// %include <iact_data/cta_acada_event_decoder.hpp>
+%include <iact_data/lstcam_acada_event_decoder.hpp>
+%include <iact_data/unified_acada_event_decoder.hpp>
+%include <iact_data/cta_acada_event_decoder.hpp>

@@ -54,7 +54,11 @@ message TelescopeRunConfiguration {
       "camera server." ];
   uint32 telescope_id                                      = 6 [
     (CFO).desc = "Telescope ID." ];
-
+  uint32 scheduling_block_id                               = 7 [
+    (CFO).desc = "Scheduling block ID.", (CFO).ref="https://gitlab.cta-observatory.org/cta-computing/documentation/ctao-time-intervals" ];
+  uint32 observation_id                                    = 8 [
+    (CFO).desc = "Observation ID.", (CFO).ref="https://gitlab.cta-observatory.org/cta-computing/documentation/ctao-time-intervals" ];
+      
   repeated int32 configured_channel_index                  = 11 [
     (CFO).desc = "Index within list of configured channels for each channel "
       "in the camera, or -1 if channel is not configued." ];
