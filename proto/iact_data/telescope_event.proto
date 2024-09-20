@@ -321,7 +321,7 @@ message Waveforms {
     (CFO).desc = "Raw samples array. Sample j of channel i is stored as a U16 in "
       "little endian order starting at position "
       "2*(i*num_samples_per_channel+j). The size "
-      "of raw_samples_array be larger than the data to allow for the system "
+      "of raw_samples_array may be larger than the data to allow for the system "
       "SIMD vector data type to be used on all samples." ];
 
   oneof camera_specific_waveforms_data {
@@ -383,6 +383,7 @@ enum TriggerType {
   TRIGGER_FORCED_BY_ARRAY       = 6;
   TRIGGER_UCTS_AUX              = 7;
   TRIGGER_MULTIPLE              = 8;
+  TRIGGER_MUON                  = 9;
 };
 
 enum ImageTreatmentMode {

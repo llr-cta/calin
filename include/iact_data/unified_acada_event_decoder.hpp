@@ -27,7 +27,7 @@
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <iact_data/acada_event_decoder.hpp>
-#include <iact_data/unified_data_source.pb.h>
+#include <iact_data/cta_data_source.pb.h>
 
 namespace calin { namespace iact_data { namespace unified_acada_event_decoder {
 
@@ -58,8 +58,7 @@ class Unified_ACADACameraEventDecoder_R1v1:
     calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>
 {
 public:
-  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
-    unified_data_source::UnifiedCameraEventDecoderConfig);
+  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig);
 
   CALIN_TYPEALIAS(message_set_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1);
   CALIN_TYPEALIAS(event_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1::event_type);
@@ -81,19 +80,28 @@ public:
 
   Unified_ACADACameraEventDecoder_R1v1* clone() const override;
 
-  calin::ix::iact_data::unified_data_source::UnifiedCameraEventDecoderConfig config() const { return config_; }
+  calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig config() const { return config_; }
 
-  static calin::ix::iact_data::unified_data_source::UnifiedCameraEventDecoderConfig default_config() {
+  static calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig default_config() {
     config_type config;
     return config;
   }
 
 protected:
+  void copy_single_gain_waveforms(
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask, unsigned nsample,
+    calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
+    uint8_t has_gain_mask, const std::string& which_gain) const;
+
+
   config_type config_;
   std::string filename_;
   int64_t run_start_time_ = 0;
   int32_t nmod_configured_ = 0;
   int32_t nchan_configured_ = 0;
+  int32_t ncamera_clock_ = 0;
+  int32_t nmodule_clock_ = 0;
 };
 
 } } } // namespace calin::iact_data::unified_event_decoder

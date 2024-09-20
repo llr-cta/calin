@@ -90,7 +90,8 @@ message TelescopeRunConfiguration {
   int64 calibration_service_id                             = 53;
   int32 calibration_algorithm_id                           = 54;
   map<string, string> configuration_elements               = 55 [
-    (CFO).desc = "Various version or serial number strings that may be propagaged by DAQ." ];
+    (CFO).desc = "Various version or serial number strings, or other configuration items "
+      " that may be propagaged by DAQ." ];
 
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [
@@ -103,11 +104,13 @@ message TelescopeRunConfiguration {
       (CFO).desc = "LSTCam configuration elements." ];
   }
 
-  SerializedRawHeaderType serialized_raw_header_type        = 998 [
+  SerializedRawHeaderType serialized_raw_header_type        = 990 [
     (CFO).desc = "Flag describing type of serialized raw header data included.",
     (CFO).sql.dont_store = true ];
-  bytes serialized_raw_header                               = 999 [
+  bytes serialized_raw_header                               = 991 [
     (CFO).desc = "Serialized raw header.", (CFO).sql.dont_store = true ];
+  bytes serialized_data_stream                              = 992 [
+    (CFO).desc = "Serialized data stream.", (CFO).sql.dont_store = true ];
   string data_transcoder                                    = 1000 [
     (CFO).desc = "Class name of data encoder / decoder that is producing this "
       "header and accociated events." ];
