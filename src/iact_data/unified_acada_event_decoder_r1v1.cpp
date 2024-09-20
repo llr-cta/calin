@@ -309,6 +309,39 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_event->set_camera_clock_index(7,-1);
   }
 
+  // **************************************************************************
+  // SWAT data
+  // **************************************************************************
+
+  if(cta_event->has_debug() and cta_event->debug().has_swat_data() 
+      and cta_event->debug().swat_data().has_data())
+  {
+    calin::iact_data::acada_event_decoder::decode_swat_data(
+      calin_event->mutable_swat_data(), cta_event->debug().swat_data());
+
+    const auto& swat = calin_event->swat_data();
+
+    if(swat.trigger_id() != cta_event->event_id()) {
+      calin_event->clear_swat_data();
+    }
+  } else {
+    calin_event->clear_swat_data();
+  }
+
+  if(calin_event->has_swat_data()) {
+    const auto& swat = calin_event->swat_data();
+
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(8,camera_clock_index++);
+    calin_clock->set_clock_id(8);
+    calin_clock->set_time_value(uint64_t(swat.trigger_time_s())*1000000000ULL + (swat.trigger_time_qns()>>2));
+    calin_clock->set_time_sequence_id(0);
+  } else {
+    calin_event->set_camera_clock_index(8,-1);
+  }
+
+
   while(calin_event->camera_clock_size()>camera_clock_index) {
     calin_event->mutable_camera_clock()->RemoveLast();
   }
@@ -391,8 +424,10 @@ decode_run_config(
   ADD_CAMERA_CLOCK("TIB pps counter",                       1.0);
   ADD_CAMERA_CLOCK("TIB combined 10MHz and pps counter",    1.0e7);
 
-  ncamera_clock_ = 8;
-  nmodule_clock_ = 0;
+  ADD_CAMERA_CLOCK("SWAT timestamp",                        1.0e9);
+
+  ncamera_clock_ = calin_run_config->camera_layout().camera_clock_name_size();
+  nmodule_clock_ = calin_run_config->camera_layout().module_clock_name_size();
 
   // **************************************************************************
   // Build configured-module list

@@ -235,8 +235,62 @@ message TIBData {
     (CFO).desc = "Busy trigger type bit set." ];
 };
 
-message SWATData {
+enum SwatTriggerType {
+  SWAT_TRIGGER_STORE_EXCLUDE            = 0;
+  SWAT_TRIGGER_STORE_INCLUDE            = 1;
+  SWAT_TRIGGER_ACADA_REQUEST            = 2;
+  SWAT_TRIGGER_SWAT_DECTSION            = 3;
+};
 
+message SWATData {
+  uint64 trigger_id                                         = 1 [
+    (CFO).desc = "Needs documentation." ];
+  uint64 bunch_id                                           = 2 [
+    (CFO).desc = "Needs documentation." ];
+  uint32 trigger_type_code                                   = 3 [
+    (CFO).desc = "Needs documentation." ];
+  uint32 trigger_time_s                                     = 4 [
+    (CFO).desc = "Needs documentation." ];
+  uint32 trigger_time_qns                                   = 5 [
+    (CFO).desc = "Needs documentation." ];
+  bool readout_requested                                    = 6 [
+    (CFO).desc = "Needs documentation." ];
+  bool data_available                                       = 7 [
+    (CFO).desc = "Needs documentation." ];
+  uint32 hardware_stereo_trigger_mask                       = 8 [
+    (CFO).desc = "Needs documentation." ];
+
+  bool mono_trigger                                         = 10 [
+    (CFO).desc = "Mono trigger mask bit set." ];
+  bool stereo_trigger                                       = 11 [
+    (CFO).desc = "Stereo trigger mask bit set." ];
+  bool calibration_trigger                                  = 12 [
+    (CFO).desc = "Calibration trigger mask bit set." ];
+  bool photo_electron_trigger                               = 13 [
+    (CFO).desc = "Photoelectron trigger mask bit set." ];
+  bool software_trigger                                     = 14 [
+    (CFO).desc = "Software trigger mask bit set." ];
+  bool pedestal_trigger                                     = 15 [
+    (CFO).desc = "Pedestal trigger mask bit set." ];
+  bool slow_control_trigger                                 = 16 [
+    (CFO).desc = "Slow-control trigger mask bit set." ];
+  bool neighbour_1_trigger                                  = 17 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_2_trigger                                  = 18 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_3_trigger                                  = 19 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_4_trigger                                  = 20 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_5_trigger                                  = 21 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_6_trigger                                  = 22 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+  bool neighbour_7_trigger                                  = 23 [
+    (CFO).desc = "Neighbour 1 trigger mask bit set." ];
+                                                
+  SwatTriggerType trigger_type                              = 30 [
+    (CFO).desc = "Needs documentation." ];
 };
 
 enum SignalType {

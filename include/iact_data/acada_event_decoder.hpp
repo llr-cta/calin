@@ -40,6 +40,9 @@ void decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdt
 void decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   const AnyArray& cta_array);
 
+void decode_swat_data(calin::ix::iact_data::telescope_event::SWATData* calin_swat_data,
+  const AnyArray& cta_array);
+
 calin::ix::iact_data::telescope_event::TriggerType determine_trigger_type(
     const calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
     const calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data);
