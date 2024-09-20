@@ -45,7 +45,9 @@ std::string join(std::vector<std::string>::const_iterator begin,
 
 std::string join(const std::vector<std::string>& vec, const std::string& sep);
 
-std::string chomp(const std::string& s_in);
+std::string chomp_front(const std::string& s_in);
+std::string chomp_back(const std::string& s_in);
+inline std::string chomp(const std::string& s_in) { return chomp_back(s_in); }
 
 std::string string_escape(const std::string& s_in);
 
