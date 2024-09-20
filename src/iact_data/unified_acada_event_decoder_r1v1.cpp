@@ -188,10 +188,11 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_event->absolute_event_time().time_ns() - run_start_time_);
 
   calin_event->mutable_camera_clock_index()->Resize(ncamera_clock_,-1);
-  calin_event->clear_camera_clock();
+  unsigned camera_clock_index = 0;
 
-  calin_event->set_camera_clock_index(0,calin_event->camera_clock_size());
-  auto* calin_clock = calin_event->add_camera_clock();
+  auto* calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+    calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+  calin_event->set_camera_clock_index(0,camera_clock_index++);
   calin_clock->set_clock_id(0);
   calin_clock->set_time_value(calin_event->absolute_event_time().time_ns());
   calin_clock->set_time_sequence_id(0);
@@ -222,29 +223,33 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     bool clock_may_be_suspect =
       (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
 
-    calin_event->set_camera_clock_index(1,calin_event->camera_clock_size());
-    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(1,camera_clock_index++);
     calin_clock->set_clock_id(1);
     calin_clock->set_time_value(cdts.ucts_timestamp());
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
-    calin_event->set_camera_clock_index(2,calin_event->camera_clock_size());
-    calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(2,camera_clock_index++);
     calin_clock->set_clock_id(2);
     calin_clock->set_time_value(cdts.clock_counter());
     calin_clock->set_time_sequence_id(cdts.pps_counter());
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
-    calin_event->set_camera_clock_index(3,calin_event->camera_clock_size());
-    calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(3,camera_clock_index++);
     calin_clock->set_clock_id(3);
     calin_clock->set_time_value(cdts.pps_counter());
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
-    calin_event->set_camera_clock_index(4,calin_event->camera_clock_size());
-    calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(4,camera_clock_index++);
     calin_clock->set_clock_id(4);
     calin_clock->set_time_value(cdts.pps_counter()*10000000ULL + cdts.clock_counter());
     calin_clock->set_time_sequence_id(0);
@@ -260,7 +265,6 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   // TIB data
   // **************************************************************************
 
-  // SJF : TIB has bit 0x01 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->has_debug() and cta_event->debug().has_tib_data() 
       and cta_event->debug().tib_data().has_data())
   {
@@ -279,20 +283,23 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   if(calin_event->has_tib_data()) {
     const auto& tib = calin_event->tib_data();
 
-    calin_event->set_camera_clock_index(5,calin_event->camera_clock_size());
-    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(5,camera_clock_index++);
     calin_clock->set_clock_id(5);
     calin_clock->set_time_value(tib.clock_counter());
     calin_clock->set_time_sequence_id(tib.pps_counter());
 
-    calin_event->set_camera_clock_index(6,calin_event->camera_clock_size());
-    calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(6,camera_clock_index++);
     calin_clock->set_clock_id(6);
     calin_clock->set_time_value(tib.pps_counter());
     calin_clock->set_time_sequence_id(0);
 
-    calin_event->set_camera_clock_index(7,calin_event->camera_clock_size());
-    calin_clock = calin_event->add_camera_clock();
+    calin_clock = (calin_event->camera_clock_size()>camera_clock_index) ? 
+      calin_event->mutable_camera_clock(camera_clock_index) : calin_event->add_camera_clock();
+    calin_event->set_camera_clock_index(7,camera_clock_index++);
     calin_clock->set_clock_id(7);
     calin_clock->set_time_value(tib.pps_counter()*10000000ULL + tib.clock_counter());
     calin_clock->set_time_sequence_id(0);
@@ -300,6 +307,10 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_event->set_camera_clock_index(5,-1);
     calin_event->set_camera_clock_index(6,-1);
     calin_event->set_camera_clock_index(7,-1);
+  }
+
+  while(calin_event->camera_clock_size()>camera_clock_index) {
+    calin_event->mutable_camera_clock()->RemoveLast();
   }
 
   return true;
