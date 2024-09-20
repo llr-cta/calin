@@ -29,6 +29,7 @@
 #include <iact_data/nectarcam_data_source.pb.h>
 #include <iact_data/acada_data_source.hpp>
 #include <iact_data/acada_event_decoder.hpp>
+#include <iact_data/unified_acada_event_decoder.hpp>
 
 namespace calin { namespace iact_data { namespace nectarcam_acada_event_decoder {
 
@@ -193,5 +194,58 @@ protected:
   bool exchange_gain_channels_ = false;
   int64_t run_start_time_ = 0;
 };
+
+/*
+
+        RRRRRRRRRRRRRRRRR     1111111                        1111111   
+        R::::::::::::::::R   1::::::1                       1::::::1   
+        R::::::RRRRRR:::::R 1:::::::1                      1:::::::1   
+        RR:::::R     R:::::R111:::::1                      111:::::1   
+          R::::R     R:::::R   1::::1vvvvvvv           vvvvvvv1::::1   
+          R::::R     R:::::R   1::::1 v:::::v         v:::::v 1::::1   
+          R::::RRRRRR:::::R    1::::1  v:::::v       v:::::v  1::::1   
+          R:::::::::::::RR     1::::l   v:::::v     v:::::v   1::::l   
+          R::::RRRRRR:::::R    1::::l    v:::::v   v:::::v    1::::l   
+          R::::R     R:::::R   1::::l     v:::::v v:::::v     1::::l   
+          R::::R     R:::::R   1::::l      v:::::v:::::v      1::::l   
+          R::::R     R:::::R   1::::l       v:::::::::v       1::::l   
+        RR:::::R     R:::::R111::::::111     v:::::::v     111::::::111
+        R::::::R     R:::::R1::::::::::1      v:::::v      1::::::::::1
+        R::::::R     R:::::R1::::::::::1       v:::v       1::::::::::1
+        RRRRRRRR     RRRRRRR111111111111        vvv        111111111111
+                                                               
+
+*/
+
+class NectarCam_ACADACameraEventDecoder_R1v1:
+  public calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1
+{
+public:
+  CALIN_TYPEALIAS(config_type, 
+    calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1::config_type);
+
+  CALIN_TYPEALIAS(message_set_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1);
+  CALIN_TYPEALIAS(event_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1::event_type);
+  CALIN_TYPEALIAS(header_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1::header_type);
+  CALIN_TYPEALIAS(data_stream_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1::data_stream_type);
+
+  NectarCam_ACADACameraEventDecoder_R1v1(const std::string& filename, 
+    const config_type& config = default_config());
+
+  ~NectarCam_ACADACameraEventDecoder_R1v1();
+
+  virtual bool decode(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1& cta_messages) override;
+
+  bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration:: TelescopeRunConfiguration* run_config,
+    const calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1& cta_messages) override;
+
+  NectarCam_ACADACameraEventDecoder_R1v1* clone() const override;
+
+protected:
+};
+
 
 } } } // namespace calin::iact_data::nectarcam_acada_event_decoder

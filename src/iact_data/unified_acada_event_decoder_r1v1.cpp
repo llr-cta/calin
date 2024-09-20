@@ -341,6 +341,9 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_event->set_camera_clock_index(8,-1);
   }
 
+  // **************************************************************************
+  // Clean up
+  // **************************************************************************
 
   while(calin_event->camera_clock_size()>camera_clock_index) {
     calin_event->mutable_camera_clock()->RemoveLast();

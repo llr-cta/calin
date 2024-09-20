@@ -28,6 +28,7 @@ set(CALIN_SOURCES algorithms.cpp
 	acada_event_decoder.cpp
 	nectarcam_acada_event_decoder_l0.cpp 
 	nectarcam_acada_event_decoder_r1v0.cpp
+	nectarcam_acada_event_decoder_r1v1.cpp
 	lstcam_acada_event_decoder_r1v0.cpp
 	unified_acada_event_decoder_r1v1.cpp
 	cta_acada_event_decoder_r1v0.cpp
@@ -35,13 +36,6 @@ set(CALIN_SOURCES algorithms.cpp
 	nectarcam_data_source.cpp
 	lstcam_data_source.cpp
 	cta_data_source.cpp)
-
-
-if(CTA_CAMERASTOACTL_FOUND)
-	set(CALIN_SOURCES ${CALIN_SOURCES}
-		
-		)
-endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
