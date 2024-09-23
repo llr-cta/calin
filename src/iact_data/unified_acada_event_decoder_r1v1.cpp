@@ -407,6 +407,7 @@ decode_run_config(
   calin_run_config->mutable_camera_layout()->clear_camera_clock_frequency();
   calin_run_config->mutable_camera_layout()->clear_module_clock_name();
   calin_run_config->mutable_camera_layout()->clear_module_clock_frequency();
+  calin_run_config->mutable_camera_layout()->clear_module_counter_name();
 
   #define ADD_CAMERA_CLOCK(name, freq) \
     calin_run_config->mutable_camera_layout()->add_camera_clock_name(name); \
@@ -416,18 +417,18 @@ decode_run_config(
     calin_run_config->mutable_camera_layout()->add_module_clock_name(name); \
     calin_run_config->mutable_camera_layout()->add_module_clock_frequency(freq)
 
-  ADD_CAMERA_CLOCK("EVB timestamp",                         1.0e9);
+  ADD_CAMERA_CLOCK("EVB timestamp",                         1.0e9); // 0
 
-  ADD_CAMERA_CLOCK("UCTS timestamp",                        1.0e9);
-  ADD_CAMERA_CLOCK("UCTS 10MHz counter",                    1.0e7);
-  ADD_CAMERA_CLOCK("UCTS pps counter",                      1.0);
-  ADD_CAMERA_CLOCK("UCTS combined 10MHz and pps counter",   1.0e7);
+  ADD_CAMERA_CLOCK("UCTS timestamp",                        1.0e9); // 1
+  ADD_CAMERA_CLOCK("UCTS 10MHz counter",                    1.0e7); // 2
+  ADD_CAMERA_CLOCK("UCTS pps counter",                      1.0);   // 3
+  ADD_CAMERA_CLOCK("UCTS combined 10MHz and pps counter",   1.0e7); // 4
 
-  ADD_CAMERA_CLOCK("TIB 10MHz counter",                     1.0e7);
-  ADD_CAMERA_CLOCK("TIB pps counter",                       1.0);
-  ADD_CAMERA_CLOCK("TIB combined 10MHz and pps counter",    1.0e7);
+  ADD_CAMERA_CLOCK("TIB 10MHz counter",                     1.0e7); // 5
+  ADD_CAMERA_CLOCK("TIB pps counter",                       1.0);   // 6
+  ADD_CAMERA_CLOCK("TIB combined 10MHz and pps counter",    1.0e7); // 7
 
-  ADD_CAMERA_CLOCK("SWAT timestamp",                        1.0e9);
+  ADD_CAMERA_CLOCK("SWAT timestamp",                        1.0e9); // 8
 
   ncamera_clock_ = calin_run_config->camera_layout().camera_clock_name_size();
   nmodule_clock_ = calin_run_config->camera_layout().module_clock_name_size();

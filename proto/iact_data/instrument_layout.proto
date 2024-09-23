@@ -275,7 +275,7 @@ message CameraLayout {
     (CFO).desc = "Maximum radius of vertices of camera boundary.",
     (CFO).units = "cm" ];
 
-  uint32 channels_per_modules                              = 30 [
+  uint32 channels_per_module                               = 30 [
     (CFO).desc = "Number of channels per module." ];
   repeated ModuleLayout module                             = 31 [
     (CFO).desc = "Layout of each module." ];

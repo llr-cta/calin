@@ -244,7 +244,17 @@ public:
 
   NectarCam_ACADACameraEventDecoder_R1v1* clone() const override;
 
+  static calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig default_config() {
+    return force_nectarcam_camera_type(Unified_ACADACameraEventDecoder_R1v1::default_config());
+  }
+
 protected:
+  static inline calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig force_nectarcam_camera_type(
+      config_type config) {
+    config.set_camera_type(calin::ix::iact_data::cta_data_source::NECTARCAM);
+    return config;
+  }
+
 };
 
 
