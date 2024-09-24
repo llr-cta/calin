@@ -302,6 +302,58 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
   ncamera_clock_ = calin_run_config->camera_layout().camera_clock_name_size();
   nmodule_clock_ = calin_run_config->camera_layout().module_clock_name_size();
 
+  // **************************************************************************
+  // Try to read the NectarCam module configuration XML file
+  // **************************************************************************
+
+  std::vector<std::string> nmc_file_tried;
+  std::string nmc_file;
+
+  if(not config_.demand_nmc_xml_file().empty()) {
+    if(calin::util::file::is_readable(config_.demand_nmc_xml_file())) {
+      nmc_file = config_.demand_nmc_xml_file();
+    } else {
+      nmc_file_tried.emplace_back(config_.demand_nmc_xml_file());
+    }
+  } else {
+    std::string nmc_dirname = calin::util::file::dirname(filename_);
+    if(nmc_dirname == ".") {
+      nmc_dirname = "";
+    } else {
+      nmc_dirname += '/';
+    }
+    std::string nmc_basename = calin::util::file::basename(filename_);
+    while(not nmc_basename.empty()) {
+      std::string test_file = nmc_dirname + nmc_basename + config_.nmc_xml_suffix();
+      if(calin::util::file::is_readable(test_file)) {
+        nmc_file = test_file;
+        break;
+      } else {
+        nmc_file_tried.emplace_back(test_file);
+      }
+      nmc_basename = calin::util::file::strip_extension(nmc_basename);
+    }
+  }
+
+  if(not nmc_file.empty()) {
+    calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc =
+      calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(nmc_file);
+    if(nccc) {
+      calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
+    } else {
+      LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
+        << nmc_file;
+    }
+  } else {
+    auto logger = LOG(WARNING);
+    logger << "Could not find NectarCAM module configuration XML file, tried:\n";
+    for(auto try_fn : nmc_file_tried) {
+      logger << "- " << try_fn << '\n';
+    }
+    logger << "Set the \"demand_nmc_xml_file\" decoder option if you wish to "
+      "specify a different file.";
+  }
+
   return true;
 }
 
