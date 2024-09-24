@@ -87,8 +87,49 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode(
 
   const event_type* cta_event = cta_messages.event;
 
+  bool all_modules_present = true;
   bool mod_sum_clock_set = false;
   if(cta_event->has_debug()) {
+
+    if(cta_event->debug().has_module_status() and cta_event->debug().module_status().has_data()) {
+      // **************************************************************************
+      // Decode NectarCAM module status (presence)
+      // **************************************************************************
+
+      const auto& cta_status = cta_event->debug().module_status();
+
+      calin_event->mutable_module_index()->Resize(nmod_configured_,-1);
+      calin_event->mutable_module_id()->Resize(nmod_configured_,-1);
+
+      if(nmod_configured_ != cta_status.data().size())
+        throw std::runtime_error("NectarCam_ACADACameraEventDecoder_R1v1::decode: "
+          "Module status array size does not match number of modules (" + 
+          std::to_string(cta_status.data().size()) + " != " + 
+          std::to_string(nmod_configured_) + ")");
+    
+      const auto* mod_status = reinterpret_cast<const uint8_t*>(&cta_status.data().front());
+      unsigned mod_index=0;
+      for(unsigned imod=0;imod<nmod_configured_;imod++)
+      {
+        if(*(mod_status++)&0x01)
+        {
+          calin_event->set_module_index(imod,mod_index);
+          calin_event->set_module_id(mod_index,imod);
+          mod_index++;
+        }
+        else
+        {
+          calin_event->set_module_index(imod,-1);
+          all_modules_present = false;
+        }
+      }
+      calin_event->mutable_module_id()->Resize(mod_index,-1);
+    } else {
+      throw(std::runtime_error("NectarCam_ACADACameraEventDecoder_R1v1::decode: "
+        "ACADA event does not have NectarCAM module_status"));
+    }
+    calin_event->set_all_modules_present(all_modules_present);
+    
     if(cta_event->debug().has_counters() and cta_event->debug().counters().has_data()) {
       // **************************************************************************
       // Decode NectarCAM module counter data
