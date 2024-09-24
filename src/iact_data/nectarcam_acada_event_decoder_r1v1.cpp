@@ -172,7 +172,7 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode(
       {
         const auto* mod_data_struct = reinterpret_cast<const NectarCountersWithTriggerPattern*>(mod_data_string);
 
-        if(imod < static_cast<unsigned>(calin_event->module_index_size()) and
+        if(imod >= static_cast<unsigned>(calin_event->module_index_size()) or
           calin_event->module_index(imod) == -1)continue;
 
         auto* module_counters = calin_event->add_module_counter();
