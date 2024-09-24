@@ -74,7 +74,7 @@ From: ubuntu:22.04
         libproj22                                                  \
         libopenjp2-7                                               \
         libopenjp2-tools                                           \
-        zstd                                                       \
+        libzstd-dev                                                \
         libprotobuf-c1                                             \
         libprotobuf23                                              \
         libprotoc23                                                \
