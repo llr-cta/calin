@@ -244,7 +244,9 @@ public:
 
   NectarCam_ACADACameraEventDecoder_R1v1* clone() const override;
 
-  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const;
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const {
+    return config_;
+  }
 
   static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
@@ -256,7 +258,7 @@ public:
 protected:
   static inline calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig unified_decoder_config(
       config_type config);
-
+  config_type config_;
 };
 
 

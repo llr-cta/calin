@@ -52,7 +52,7 @@ namespace {
   default_data_model<ACADA_EventMessage_R1v1>() {
     return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1; }
 
-  template<typename Message> std::string default_message_table_name() { return "unknown"; }
+  template<typename Message> std::string default_message_table_name() { return ""; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_L0>() { return "RunHeader"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_L0>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v0>() { return "CameraConfig"; }
@@ -352,8 +352,9 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
     } catch(...) {
       if(!config_.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource: Could not read run header from "
-          << filename_;
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read run header from "
+          << filename_ << " -> " << config_.run_header_table_name();
     }
 
     try {
@@ -362,8 +363,9 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
     } catch(...) {
       if(!config_.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource: Could not read data stream from "
-          << filename_;
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read data stream from "
+          << filename_ << " -> " << config_.data_stream_table_name();
     }
   }
 

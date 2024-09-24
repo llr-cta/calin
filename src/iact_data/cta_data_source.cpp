@@ -95,10 +95,11 @@ CTAZFITSDataSource::~CTAZFITSDataSource()
 calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig
 CTAZFITSDataSource::default_config()
 {
-  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0::default_config();
+  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1v1::default_config();
   config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
-  config.set_events_table_name(""); // Differs between R1v0 and R1v1 so let downstream decode
-  config.set_run_header_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decode
+  config.set_events_table_name(""); // Differs between R1v0 and R1v1 so let downstream decide
+  config.set_run_header_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decide
+  config.set_data_stream_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decide
   return config;
 }
 
