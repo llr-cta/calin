@@ -84,6 +84,7 @@ public:
 
   static calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig default_config() {
     config_type config;
+    config.set_separate_channel_waveforms(true);
     return config;
   }
 
