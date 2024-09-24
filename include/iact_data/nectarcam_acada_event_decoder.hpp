@@ -221,8 +221,8 @@ class NectarCam_ACADACameraEventDecoder_R1v1:
   public calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1
 {
 public:
-  CALIN_TYPEALIAS(config_type, 
-    calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1::config_type);
+  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
+    nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
   CALIN_TYPEALIAS(message_set_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1);
   CALIN_TYPEALIAS(event_type, calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1::event_type);
@@ -244,16 +244,18 @@ public:
 
   NectarCam_ACADACameraEventDecoder_R1v1* clone() const override;
 
-  static calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig default_config() {
-    return force_nectarcam_camera_type(Unified_ACADACameraEventDecoder_R1v1::default_config());
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const;
+
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
+    config_type config = config_type::default_instance();
+    // config.set_nmc_xml_suffix(".NMC.xml");
+    config.set_separate_channel_waveforms(true);
+    return config;
   }
 
 protected:
-  static inline calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig force_nectarcam_camera_type(
-      config_type config) {
-    config.set_camera_type(calin::ix::iact_data::cta_data_source::NECTARCAM);
-    return config;
-  }
+  static inline calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig unified_decoder_config(
+      config_type config);
 
 };
 

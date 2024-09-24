@@ -65,7 +65,7 @@ NectarCam_ACADACameraEventDecoder_R1v1::
 NectarCam_ACADACameraEventDecoder_R1v1(const std::string& filename, 
     const config_type& config):
   calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1(
-    filename, force_nectarcam_camera_type(config))
+    filename, unified_decoder_config(config))
 {
   // nothing to see here
 }
@@ -307,4 +307,26 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
 NectarCam_ACADACameraEventDecoder_R1v1* NectarCam_ACADACameraEventDecoder_R1v1::clone() const
 {
   return new NectarCam_ACADACameraEventDecoder_R1v1(*this);
+}
+
+calin::ix::iact_data::cta_data_source::UnifiedCameraEventDecoderConfig 
+NectarCam_ACADACameraEventDecoder_R1v1::unified_decoder_config(config_type config) {
+  auto unified_config = 
+    calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1::default_config();  
+  unified_config.set_camera_type(calin::ix::iact_data::cta_data_source::NECTARCAM);
+  unified_config.set_separate_channel_waveforms(config.separate_channel_waveforms());
+  unified_config.set_include_serialized_raw_data(config.separate_channel_waveforms());
+  return unified_config;
+}
+
+calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig 
+NectarCam_ACADACameraEventDecoder_R1v1::config() const
+{
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config;
+  auto unified_config = 
+    calin::iact_data::unified_acada_event_decoder::Unified_ACADACameraEventDecoder_R1v1::config();
+  config.set_camera_type(calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::NECTARCAM);
+  config.set_separate_channel_waveforms(unified_config.separate_channel_waveforms());
+  config.set_include_serialized_raw_data(unified_config.separate_channel_waveforms());
+  return config;
 }
