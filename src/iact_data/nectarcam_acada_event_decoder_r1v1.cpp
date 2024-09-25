@@ -276,14 +276,14 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode(
       // **************************************************************************
 
       if(mod_clock_num==nmod_configured_) {
-        calin_event->add_camera_clock_index(calin_event->camera_clock_size());
+        calin_event->set_camera_clock_index(9, calin_event->camera_clock_size());
         auto* calin_clock = calin_event->add_camera_clock();
         calin_clock->set_clock_id(9);
         calin_clock->set_time_value(mod_clock_sum);
         calin_clock->set_time_sequence_id(mod_clock_seq_sum);
         calin_clock->set_time_value_may_be_suspect(mod_clock_is_suspect);
 
-        calin_event->add_camera_clock_index(calin_event->camera_clock_size());
+        calin_event->set_camera_clock_index(10, calin_event->camera_clock_size());
         calin_clock = calin_event->add_camera_clock();
         calin_clock->set_clock_id(10);
         calin_clock->set_time_value(mod_clock_seq_sum*1000000000ULL + mod_clock_sum);
@@ -331,6 +331,9 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
   ADD_MODULE_CLOCK("local 2ns TDC time",                    1.0e9);   // 0
   ADD_MODULE_CLOCK("local 125MHz oscillator counter",       1.25e8);  // 1
   ADD_MODULE_CLOCK("pps counter",                           1.0);     // 2
+ 
+  ncamera_clock_ = calin_run_config->camera_layout().camera_clock_name_size();
+  nmodule_clock_ = calin_run_config->camera_layout().module_clock_name_size();
 
   calin_run_config->mutable_camera_layout()->add_module_counter_name("global_event_counter");
   calin_run_config->mutable_camera_layout()->add_module_counter_name("bunch_counter");
