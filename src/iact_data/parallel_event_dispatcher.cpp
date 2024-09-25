@@ -171,8 +171,14 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
   }
-  dispatch_leave_run();
   write_final_log_message(log_frequency, start_time, ndispatched);
+  LOG(INFO) << "Finishing up ...";
+  start_time = std::chrono::system_clock::now();
+  dispatch_leave_run();
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "             ... completed in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
 
 void ParallelEventDispatcher::
@@ -200,8 +206,14 @@ process_run(std::vector<calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
       log_frequency, start_time, ndispatched);
   }
-  dispatch_leave_run();
   write_final_log_message(log_frequency, start_time, ndispatched);
+  LOG(INFO) << "Finishing up ...";
+  start_time = std::chrono::system_clock::now();
+  dispatch_leave_run();
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "             ... completed in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
 
 void ParallelEventDispatcher::
