@@ -46,6 +46,7 @@
 
 %newobject simple_get_next();
 %newobject get_run_header();
+%newobject get_data_stream();
 
 %include "io/chained_data_source.hpp"
 %include "iact_data/acada_data_source.hpp"
