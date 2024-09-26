@@ -51,7 +51,7 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
-          libseccomp-dev pkg-config
+          libseccomp-dev pkg-config libfuse3-dev
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
         curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
 
