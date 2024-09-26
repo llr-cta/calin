@@ -163,7 +163,7 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(nthread <= 0)
   {
-    do_dispatcher_loop(src, log_frequency, start_time, ndispatched);
+    do_dispatcher_loop(src, log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
   {
@@ -171,12 +171,11 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
   }
-  write_final_log_message(log_frequency, start_time, ndispatched);
   LOG(INFO) << "Finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "             ... completed in "
+  LOG(INFO) << "Finishing up ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
@@ -198,7 +197,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(src_list.size() == 1)
   {
-    do_dispatcher_loop(src_list[0], log_frequency, start_time, ndispatched);
+    do_dispatcher_loop(src_list[0], log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
   {
@@ -206,7 +205,6 @@ process_run(std::vector<calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
       log_frequency, start_time, ndispatched);
   }
-  write_final_log_message(log_frequency, start_time, ndispatched);
   LOG(INFO) << "Finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
@@ -366,10 +364,10 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   for(auto* d : sub_dispatchers)
   {
     ++threads_active;
-    threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,start_time,&ndispatched](){
+    threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,run_config,start_time,&ndispatched](){
       auto* bsrc = src_factory->new_data_source();
       try {
-        d->do_dispatcher_loop(bsrc, log_frequency, start_time, ndispatched);
+        d->do_dispatcher_loop(bsrc, log_frequency, run_config->num_events(), start_time, ndispatched);
       } catch(const std::exception& x) {
         util::log::LOG(util::log::FATAL) << x.what();
         ++exceptions_raised;
@@ -399,7 +397,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 void ParallelEventDispatcher::do_dispatcher_loop(
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-  unsigned log_frequency,
+  unsigned log_frequency, unsigned nevents_to_dispatch,
   const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
@@ -408,8 +406,14 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
-    unsigned ndispatched_val = ndispatched.fetch_add(1);
-    if(log_frequency and ndispatched_val and ndispatched_val % log_frequency == 0)
+    add_event_to_keep(event, seq_index, arena);
+    keep_event(event);
+    dispatch_event(seq_index, event);
+    release_event(event);
+    arena = nullptr;
+
+    unsigned ndispatched_val = ndispatched.fetch_add(1) + 1;
+    if(log_frequency and ndispatched_val % log_frequency == 0)
     {
       auto dt = std::chrono::system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
@@ -417,11 +421,14 @@ void ParallelEventDispatcher::do_dispatcher_loop(
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
     }
 
-    add_event_to_keep(event, seq_index, arena);
-    keep_event(event);
-    dispatch_event(seq_index, event);
-    release_event(event);
-    arena = nullptr;
+    if(nevents_to_dispatch and ndispatched_val == nevents_to_dispatch) {
+      auto dt = std::chrono::system_clock::now() - start_time;
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(ndispatched_val) << " events in "
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+        << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched_val)
+        << " us/event (finished)";
+    }
   }
 }
 
@@ -449,6 +456,11 @@ void ParallelEventDispatcher::write_initial_log_message(
   }
   if(run_config->file_size() > 0) {
     logger << ")";
+  }
+
+  if(run_config->num_events()>0) {
+    logger << "\nNumber of events to process: " 
+      << to_string_with_commas(run_config->num_events());
   }
 
   if(run_config->run_number() > 0 and run_config->run_start_time().time_ns()>0) {

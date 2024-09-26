@@ -96,6 +96,7 @@ ZFITSDataSource(
   }
   run_config_->set_file_size(calin::util::file::total_size(
     acada_zfits_->all_fragment_names()));
+  run_config_->set_num_events(acada_zfits->size());
   acada_zfits_->set_next_index(0);
 }
 
