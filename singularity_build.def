@@ -78,6 +78,7 @@ From: ubuntu:22.04
         libprotobuf-c1                                             \
         libprotobuf23                                              \
         libprotoc23                                                \
+        valgrind                                                   \
         gdb
     apt-get -y autoremove
     apt-get -y clean
