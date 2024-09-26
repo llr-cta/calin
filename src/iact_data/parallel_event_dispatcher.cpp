@@ -171,6 +171,7 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
   }
+  write_final_log_message(run_config, start_time, ndispatched);
   LOG(INFO) << "Finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
@@ -205,6 +206,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
       log_frequency, start_time, ndispatched);
   }
+  write_final_log_message(run_config, start_time, ndispatched);
   LOG(INFO) << "Finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
@@ -218,8 +220,7 @@ void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
-  auto zfits_config = config.zfits();
-  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
+  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), config.zfits());
   TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
 
   auto fragments = cta_file->all_fragment_names();
@@ -239,13 +240,15 @@ process_cta_zfits_run(const std::string& filename,
       throw;
     }
   } else {
-    zfits_config.set_file_fragment_stride(
-      nthread*std::max(1U, zfits_config.file_fragment_stride()));
-
     std::vector<calin::iact_data::telescope_data_source::
       TelescopeDataSource*> src_list(nthread);
     try {
       for(unsigned ithread=0; ithread<nthread; ithread++) {
+        CTAZFITSDataSource::config_type zfits_config = config.zfits();
+        zfits_config.clear_forced_file_fragments_list();
+        for(unsigned iff=ithread;iff<fragments.size();iff+=nthread) {
+          zfits_config.add_forced_file_fragments_list(fragments[iff]);
+        }
         src_list[ithread] =
           new CTAZFITSDataSource(fragments[ithread], cta_file, zfits_config);
       }
@@ -475,24 +478,25 @@ void ParallelEventDispatcher::write_initial_log_message(
 }
 
 void ParallelEventDispatcher::write_final_log_message(
-  unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
   using namespace std::chrono;
-  if(log_frequency)
-  {
-    auto dt = system_clock::now() - start_time;
-    if(ndispatched) {
-      LOG(INFO) << "Dispatched "
-        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
-        << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
-        << " us/event (finished)";
-    } else {
-      LOG(INFO) << "Dispatched "
-        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec (finished)";
-    }
+  auto dt = system_clock::now() - start_time;
+  if(run_config->num_events() == 0) {
+    LOG(INFO) << "Dispatched "
+      << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+      << " us/event (finished)";
+  } else if(ndispatched != run_config->num_events()) {
+    LOG(WARNING) << "Dispatched "
+      << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+      << " us/event (finished)\n"
+      << "Number of dispatched event does not match number of expected events: " << run_config->num_events();
   }
 }
 

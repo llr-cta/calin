@@ -53,6 +53,9 @@ message ZFITSDataSourceConfig {
   uint64 max_seq_index                                     = 7 [
     (CFO).desc = "Maximum event sequence number. This effectively sets the "
       "number of events that can be read. Zero means there is no limit." ];
+  repeated string forced_file_fragments_list               = 8 [
+    (CFO).desc = "Forced file fragments list. If set the file fragments are not found through globbing." ];
+
   bool dont_read_run_header                                = 11 [
     (CFO).desc = "Don't read the run header or data stream." ];
   bool ignore_run_header_errors                            = 12 [
