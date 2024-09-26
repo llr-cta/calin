@@ -45,6 +45,7 @@ From: ubuntu:22.04
     apt-get -y update
     apt-get -y upgrade
     apt-get -y install                                             \
+        less                                                       \
         wget                                                       \
         libgsl27                                                   \
         libzmq5                                                    \
