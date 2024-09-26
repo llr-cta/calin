@@ -55,6 +55,7 @@ SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
   for(auto* h : chan_hists_)delete h;
   delete camera_hists_;
+  delete data_order_camera_;
 }
 
 SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
