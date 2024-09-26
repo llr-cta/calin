@@ -127,7 +127,7 @@ private:
     calin::io::data_source::DataSourceFactory<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
     unsigned nthread, unsigned log_frequency,
-    const std::chrono::system_clock::time_point& start_time,
+    std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
   void do_dispatcher_loop(

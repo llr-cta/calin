@@ -163,6 +163,11 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(nthread <= 0)
   {
+    auto dt = std::chrono::system_clock::now() - start_time;
+    LOG(INFO) << "Configured analysis in "
+      << to_string_with_commas(double(std::chrono::duration_cast<
+        std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+    start_time = std::chrono::system_clock::now();
     do_dispatcher_loop(src, log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
@@ -198,6 +203,11 @@ process_run(std::vector<calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(src_list.size() == 1)
   {
+    auto dt = std::chrono::system_clock::now() - start_time;
+    LOG(INFO) << "Configured analysis in "
+      << to_string_with_commas(double(std::chrono::duration_cast<
+        std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+    start_time = std::chrono::system_clock::now();
     do_dispatcher_loop(src_list[0], log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
@@ -341,7 +351,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   calin::io::data_source::DataSourceFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
   unsigned nthread, unsigned log_frequency,
-  const std::chrono::system_clock::time_point& start_time,
+  std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
   std::vector<ParallelEventDispatcher*> sub_dispatchers;
@@ -365,6 +375,12 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   std::vector<std::thread> threads;
   std::atomic<unsigned> threads_active { 0 };
   std::atomic<unsigned> exceptions_raised { 0 };
+
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Configured analysis in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+  start_time = std::chrono::system_clock::now();
 
   // Go go gadget threads
   for(auto* d : sub_dispatchers)
