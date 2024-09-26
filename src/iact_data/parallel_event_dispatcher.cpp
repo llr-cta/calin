@@ -209,7 +209,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "             ... completed in "
+  LOG(INFO) << "Finishing up ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
