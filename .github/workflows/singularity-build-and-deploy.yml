@@ -88,16 +88,16 @@ jobs:
         tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
         ls -l /tmp/calin_installed.tgz
 
-    - name: Set up Go 1.13
+    - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
       with:
-        go-version: 1.13
+        go-version: 1.21.1
         cache: false
       id: go
 
     - name: Install Singularity
       env:
-        SINGULARITY_VERSION: 3.8.3
+        SINGULARITY_VERSION: 4.2.1
         GOPATH: /tmp/go
       run: |
         mkdir -p $GOPATH
