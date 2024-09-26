@@ -76,17 +76,17 @@ jobs:
     - name: Install calin
       shell: bash
       run: |
-        sudo find /usr -print > /tmp/files_before.txt
+        sudo find /usr -print > files_before.txt
         cd mybuild
         sudo make install
 
     - name: Package calin in TGZ file
       shell: bash
       run: |
-        sudo find /usr -print > /tmp/files_after.txt
-        cat /tmp/files_before.txt /tmp/files_after.txt | sort | uniq -u > /tmp/files_added.txt
-        tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
-        ls -l /tmp/calin_installed.tgz
+        sudo find /usr -print > files_after.txt
+        cat files_before.txt files_after.txt | sort | uniq -u > files_added.txt
+        tar -zcvf calin_installed.tgz -C / -T files_added.txt
+        ls -l calin_installed.tgz
 
     - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
@@ -98,7 +98,7 @@ jobs:
     - name: Install Singularity
       env:
         SINGULARITY_VERSION: 4.2.1
-        GOPATH: /tmp/go
+        GOPATH: go
       run: |
         mkdir -p $GOPATH
         sudo mkdir -p /usr/local/var/singularity/mnt
