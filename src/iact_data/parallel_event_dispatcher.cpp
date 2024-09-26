@@ -242,6 +242,7 @@ process_cta_zfits_run(const std::string& filename,
   } else {
     std::vector<calin::iact_data::telescope_data_source::
       TelescopeDataSource*> src_list(nthread);
+    unsigned max_seq_index = config.zfits().max_seq_index()/nthread;
     try {
       for(unsigned ithread=0; ithread<nthread; ithread++) {
         CTAZFITSDataSource::config_type zfits_config = config.zfits();
@@ -249,6 +250,8 @@ process_cta_zfits_run(const std::string& filename,
         for(unsigned iff=ithread;iff<fragments.size();iff+=nthread) {
           zfits_config.add_forced_file_fragments_list(fragments[iff]);
         }
+        zfits_config.set_max_seq_index(
+          ithread==0 ? config.zfits().max_seq_index() - (nthread-1)*max_seq_index : max_seq_index);
         src_list[ithread] =
           new CTAZFITSDataSource(fragments[ithread], cta_file, zfits_config);
       }
@@ -491,12 +494,13 @@ void ParallelEventDispatcher::write_final_log_message(
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
       << " us/event (finished)";
   } else if(ndispatched != run_config->num_events()) {
-    LOG(WARNING) << "Dispatched "
+    LOG(ERROR) << "Dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
       << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
       << " us/event (finished)\n"
-      << "Number of dispatched event does not match number of expected events: " << run_config->num_events();
+      << "Number of dispatched event does not match number of expected events: " 
+      << to_string_with_commas(run_config->num_events());
   }
 }
 
