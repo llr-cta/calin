@@ -146,6 +146,7 @@ jobs:
         make -C builddir
         sudo make -C builddir install
         singularity remote list
+        singularity remote add ghcr ghcr.io
         echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin ghcr.io
 
     - name: Build calin singularity container
