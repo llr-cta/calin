@@ -98,7 +98,7 @@ jobs:
         retention-days: 5        
 
   deploy:
-    needs: build
+    #needs: build
 
     strategy:
       fail-fast: false
@@ -144,7 +144,7 @@ jobs:
         ./mconfig -p /usr/local
         make -C builddir
         sudo make -C builddir install
-        df -h
+        singularity remote list
 
     - name: Build calin singularity container
       run: |
