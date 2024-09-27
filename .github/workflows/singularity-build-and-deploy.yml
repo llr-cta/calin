@@ -145,7 +145,7 @@ jobs:
         ./mconfig -p /usr/local
         make -C builddir
         sudo make -C builddir install
-1
+
     - name: Build calin singularity container
       run: |
         sudo -E singularity build calin-${{ matrix.arch }}.sif singularity_build.def
@@ -156,7 +156,14 @@ jobs:
       run: |
         echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
         singularity push -U calin-${{ matrix.arch }}.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
-        
+    
+    - name: Store calin SIF file
+      uses: actions/upload-artifact@v4
+      with:
+        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+        path: /tmp/calin_installed.tgz
+        retention-days: 5        
+
     # - name: Pull container and compare
     #   run: |
     #     singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
