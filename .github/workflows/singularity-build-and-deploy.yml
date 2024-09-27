@@ -117,11 +117,12 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
           libseccomp-dev pkg-config libfuse3-dev
-    - name: Retrieve calin TGZ file
-      uses: actions/download-artifact@v4
-      with:
-        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
-        path: /tmp
+
+    # - name: Retrieve calin TGZ file
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+    #     path: /tmp
 
     - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
