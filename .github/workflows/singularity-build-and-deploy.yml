@@ -133,7 +133,7 @@ jobs:
 
     - name: Install Singularity
       env:
-        SINGULARITY_VERSION: 4.2.1
+        SINGULARITY_VERSION: 3.8.3
         GOPATH: /tmp/go
       run: |
         mkdir -p $GOPATH
@@ -145,7 +145,7 @@ jobs:
         ./mconfig -p /usr/local
         make -C builddir
         sudo make -C builddir install
-
+1
     - name: Build calin singularity container
       run: |
         sudo -E singularity build calin-${{ matrix.arch }}.sif singularity_build.def
@@ -154,12 +154,19 @@ jobs:
 
     - name: Login and deploy Container
       run: |
-        singularity remote add --no-login ghcr ghcr.io
-        singularity remote list
-        echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin ghcr
+        echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
         singularity push -U calin-${{ matrix.arch }}.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
+        
+    # - name: Pull container and compare
+    #   run: |
+    #     singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
+    #     diff calin-${{ matrix.arch }}.sif calin-pulled.sif
 
-    - name: Pull container and compare
-      run: |
-        singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
-        diff calin-${{ matrix.arch }}.sif calin-pulled.sif
+    # - name: Publish SIF file as Github release
+    #   uses: softprops/action-gh-release@v2
+    #   with: 
+    #     files: calin-${{ matrix.arch }}.sif
+    #     name: "Build of calin container for ${{ matrix.arch }}"
+    #     tag_name: "${{ matrix.arch }}"
+    #     body: Automated build of calin container
+    #     prerelease: true
