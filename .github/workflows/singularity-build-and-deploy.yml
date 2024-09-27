@@ -122,7 +122,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: calin_installed_${{matrix.os}}_${{matrix.arch}}
-        path: /tmp/calin_installed.tgz
+        path: /tmp
 
     - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
