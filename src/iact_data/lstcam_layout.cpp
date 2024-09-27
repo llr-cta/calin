@@ -124,7 +124,7 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   layout->set_pixel_grid_offset_y(0);
   layout->set_pixel_grid_geometric_area(
     SQR(layout->pixel_grid_spacing())*sqrt(3)/2);
-  layout->set_channels_per_modules(7);
+  layout->set_channels_per_module(7);
   //  ModuleLayout module                                      = 21 [
   //    (CFO).desc = "Layout of each module." ];
   layout->set_adc_gains(CameraLayout::PARALLEL_DUAL_GAIN);

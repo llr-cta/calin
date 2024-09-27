@@ -119,6 +119,8 @@ struct ACADA_MessageSet_L0 {
   const event_type* event = nullptr;
   const header_type* header = nullptr;
   const data_stream_type* data_stream = nullptr;
+
+  static std::string name() { return "ACADA_MessageSet_L0"; }
 };
 
 /*
@@ -153,6 +155,8 @@ struct ACADA_MessageSet_R1v0 {
   const event_type* event = nullptr;
   const header_type* header = nullptr;
   const data_stream_type* data_stream = nullptr;
+
+  static std::string name() { return "ACADA_MessageSet_R1v0"; }
 };
 
 /*
@@ -189,6 +193,8 @@ struct ACADA_MessageSet_R1v1 {
   const event_type* event = nullptr;
   const header_type* header = nullptr;
   const data_stream_type* data_stream = nullptr;
+
+  static std::string name() { return "ACADA_MessageSet_R1v1"; }
 };
 
 } } } // namespace calin::iact_data::acada_data_source

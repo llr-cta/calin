@@ -28,13 +28,15 @@ on:
       - azure-pipelines.yml
       - Dockerfile
 
+env:
+  geant_version: 11.2.2
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04]
-        geant: [11.2.2]
         arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
 
     runs-on: ${{ matrix.os }}
@@ -51,9 +53,9 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
-          libseccomp-dev pkg-config
+          libseccomp-dev pkg-config libfuse3-dev
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
-        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
+        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{env.geant_version}}-OFF/Geant4-${{matrix.os}}-${{env.geant_version}}-OFF.tbz2 | sudo tar -jxf - -C /
 
     - name: Configure calin
       shell: bash
@@ -61,7 +63,7 @@ jobs:
         mkdir mybuild
         cd mybuild
         cmake -DCALIN_BUILD_ARCH=${{ matrix.arch }}                       \
-              -DCMAKE_BUILD_TYPE=Release                                  \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo                           \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
               -DCALIN_PYTHON_SUB_DIR=lib/python3.10                       \
               -DNO_GEANT4_TEST:BOOLEAN=TRUE                               \
@@ -86,12 +88,46 @@ jobs:
         sudo find /usr -print > /tmp/files_after.txt
         cat /tmp/files_before.txt /tmp/files_after.txt | sort | uniq -u > /tmp/files_added.txt
         tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
-        ls -l /tmp/calin_installed.tgz
+        ls -l /tmp/calin_installed.tgz 
 
-    - name: Set up Go 1.13
+    - name: Store calin TGZ file
+      uses: actions/upload-artifact@v4
+      with:
+        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+        path: /tmp/calin_installed.tgz
+        retention-days: 5        
+
+  deploy:
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04]
+        arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
+          libseccomp-dev pkg-config libfuse3-dev
+
+    - name: Retrieve calin TGZ file
+      uses: actions/download-artifact@v4
+      with:
+        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+        path: /tmp
+
+    - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
       with:
-        go-version: 1.13
+        go-version: 1.21.1
         cache: false
       id: go
 
@@ -101,13 +137,13 @@ jobs:
         GOPATH: /tmp/go
       run: |
         mkdir -p $GOPATH
-        sudo mkdir -p /usr/local/var/singularity/mnt && \
-        mkdir -p $GOPATH/src/github.com/sylabs && \
-        cd $GOPATH/src/github.com/sylabs && \
-        wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-ce-${SINGULARITY_VERSION}.tar.gz | tar -zxf - && \
-        cd singularity-ce-${SINGULARITY_VERSION} && \
-        ./mconfig -p /usr/local && \
-        make -C builddir && \
+        sudo mkdir -p /usr/local/var/singularity/mnt
+        mkdir -p $GOPATH/src/github.com/sylabs
+        cd $GOPATH/src/github.com/sylabs
+        wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-ce-${SINGULARITY_VERSION}.tar.gz | tar -zxf -
+        cd singularity-ce-${SINGULARITY_VERSION}
+        ./mconfig -p /usr/local
+        make -C builddir
         sudo make -C builddir install
 
     - name: Build calin singularity container
@@ -125,8 +161,3 @@ jobs:
       run: |
         singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
         diff calin-${{ matrix.arch }}.sif calin-pulled.sif
-
-    # - uses: actions/upload-artifact@v2
-    #   with:
-    #     name: calin-${{ matrix.arch }}
-    #     path: calin-${{ matrix.arch }}.sif

@@ -29,8 +29,9 @@
 #include <iact_data/acada_event_decoder.hpp>
 #include <iact_data/instrument_layout.pb.h>
 #include <iact_data/nectarcam_acada_event_decoder.hpp>
-// #include <iact_data/lstcam_actl_event_decoder.hpp>
-// #include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/lstcam_acada_event_decoder.hpp>
+#include <iact_data/unified_acada_event_decoder.hpp>
+#include <iact_data/cta_acada_event_decoder.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -60,7 +61,18 @@
     calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>;
 
 %import <iact_data/nectarcam_configuration.pb.i>
+%include <iact_data/unified_acada_event_decoder.hpp>
 %include <iact_data/nectarcam_acada_event_decoder.hpp>
+%include <iact_data/lstcam_acada_event_decoder.hpp>
 
-// %include <iact_data/lstcam_acada_event_decoder.hpp>
-// %include <iact_data/cta_acada_event_decoder.hpp>
+%import <pattern/delegation.hpp>
+%template(Delegator_ACADACameraEventDecoder_R1v0) 
+  calin::pattern::delegation::Delegator< 
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<
+      calin::iact_data::acada_data_source::ACADA_MessageSet_R1v0> >;
+%template(Delegator_ACADACameraEventDecoder_R1v1) 
+  calin::pattern::delegation::Delegator< 
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<
+      calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1> >;
+
+%include <iact_data/cta_acada_event_decoder.hpp>

@@ -131,7 +131,7 @@ public:
     const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource_R1v0();
 private:
-  nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0* decoder_;
+  calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v0* decoder_;
 };
 
 /*
@@ -156,6 +156,38 @@ private:
 
 */
 
+class NectarCamZFITSDataSource_R1v1:
+  public calin::iact_data::zfits_data_source::ZFITSDataSource<
+    calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>
+{
+public:
+  CALIN_TYPEALIAS(config_type, 
+    ZFITSDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>::config_type);
+  CALIN_TYPEALIAS(decoder_config_type,
+    calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig);
+
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig decoder_config() const {
+    return decoder_->config(); }
+
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_decoder_config() {
+    return calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v1::default_config();
+  }
+
+  NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>* acada_zfits,
+    const decoder_config_type& decoder_config = default_decoder_config(),
+    bool adopt_acada_zfits = false);
+  NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    const config_type& config,
+    const decoder_config_type& decoder_config = default_decoder_config());
+  NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    const decoder_config_type& decoder_config = default_decoder_config(),
+    const config_type& config = default_config());
+  virtual ~NectarCamZFITSDataSource_R1v1();
+private:
+  calin::iact_data::nectarcam_acada_event_decoder::NectarCam_ACADACameraEventDecoder_R1v1* decoder_;
+};
 
 /*
 

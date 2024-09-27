@@ -49,142 +49,6 @@ namespace { // anonymous
   }
 } // anonymous namespace
 
-#if 0 // UNUSED
-
-// =============================================================================
-// ZFITSSingleFileDataSource_R1 - single ZFits file with decoder
-// Uses ZFITSSingleFileACTL_R1_CameraEventDataSource to read events and
-// decoder to translate them.
-// =============================================================================
-
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::
-ZFITSSingleFileDataSource(
-    calin::iact_data::zfits_acada_data_source::
-      ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>* acada_zfits,
-    bool dont_decode_run_configuration,
-    calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
-    bool adopt_decoder, bool adopt_acada_zfits):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
-  decoder_(decoder), adopt_decoder_(adopt_decoder),
-  acada_zfits_(acada_zfits), adopt_acada_zfits_(adopt_acada_zfits)
-{
-  if(not dont_decode_run_configuration)
-  {
-    const EventMessage* acada_sample_event = nullptr;
-    const HeaderMessage* acada_run_header = nullptr;
-    try {
-      acada_zfits_->set_next_index(0);
-      uint64_t unused_seq_index = 0;
-      acada_sample_event = acada_zfits_->borrow_next_event(unused_seq_index);
-    } catch(...) {
-      // ignore errors that occur reading sample event;
-    }
-    try {
-      acada_run_header = acada_zfits_->get_run_header();
-    } catch(...) {
-      // ignore errors that occur reading run header
-    }
-    run_config_ = new TelescopeRunConfiguration;
-    decoder_->decode_run_config(run_config_, acada_run_header, acada_sample_event);
-    delete acada_run_header;
-    if(acada_sample_event)acada_zfits_->release_borrowed_event(acada_sample_event);
-    acada_zfits_->set_next_index(0);
-  }
-}
-
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::
-ZFITSSingleFileDataSource(const std::string& filename,
-    calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
-    bool adopt_decoder,
-    const config_type& config):
-  ZFITSSingleFileDataSource(new calin::iact_data::zfits_acada_data_source::
-    ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>(filename, config), false,
-    decoder, adopt_decoder, true)
-{
-  run_config_->set_file_size(calin::util::file::size(filename));
-}
-
-template<typename EventMessage, typename HeaderMessage>
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::
-~ZFITSSingleFileDataSource()
-{
-  delete run_config_;
-  if(adopt_acada_zfits_)delete acada_zfits_;
-  if(adopt_decoder_)delete decoder_;
-}
-
-template<typename EventMessage, typename HeaderMessage>
-calin::ix::iact_data::telescope_event::TelescopeEvent*
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::get_next(
-  uint64_t& seq_index_out, google::protobuf::Arena** arena)
-{
-  const EventMessage* cta_event =
-    acada_zfits_->borrow_next_event(seq_index_out);
-  if(!cta_event){
-    if(arena)*arena = nullptr;
-    return nullptr;
-  }
-  TelescopeEvent* event = nullptr;
-  TelescopeEvent* delete_event = nullptr;
-  google::protobuf::Arena* delete_arena = nullptr;
-  if(arena) {
-    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
-    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
-  }
-  else event = delete_event = new TelescopeEvent;
-  if(!event)
-  {
-    delete delete_arena;
-    acada_zfits_->release_borrowed_event(cta_event);
-    throw std::runtime_error("Could not allocate telescpe event");
-  }
-  if(!decoder_->decode(event, cta_event))
-  {
-    delete delete_arena;
-    delete delete_event;
-    acada_zfits_->release_borrowed_event(cta_event);
-    throw std::runtime_error("Could not decode ACTL event");
-  }
-  acada_zfits_->release_borrowed_event(cta_event);
-  event->set_source_event_index(seq_index_out);
-  return event;
-}
-
-template<typename EventMessage, typename HeaderMessage>
-uint64_t ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::size()
-{
-  return acada_zfits_->size();
-}
-
-template<typename EventMessage, typename HeaderMessage>
-void ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::set_next_index(uint64_t next_index)
-{
-  acada_zfits_->set_next_index(next_index);
-}
-
-template<typename EventMessage, typename HeaderMessage>
-calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* 
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::get_run_configuration()
-{
-  if(!run_config_)return nullptr;
-  auto* run_config = new TelescopeRunConfiguration();
-  run_config->CopyFrom(*run_config_);
-  return run_config;
-}
-
-template<typename EventMessage, typename HeaderMessage>
-typename ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::config_type
-ZFITSSingleFileDataSource<EventMessage,HeaderMessage>::default_config() 
-{
-  return calin::iact_data::zfits_acada_data_source::
-    ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>::default_config(); 
-}
-#endif // UNUSED
-
 // =============================================================================
 // ZFITSDataSource - chained ZFits files with decoder
 // =============================================================================
@@ -232,6 +96,7 @@ ZFITSDataSource(
   }
   run_config_->set_file_size(calin::util::file::total_size(
     acada_zfits_->all_fragment_names()));
+  run_config_->set_num_events(acada_zfits->size());
   acada_zfits_->set_next_index(0);
 }
 
@@ -295,7 +160,7 @@ ZFITSDataSource<MessageSet>::get_next(
   {
     delete delete_arena;
     acada_zfits_->release_borrowed_event(acada_message_set.event);
-    throw std::runtime_error("Could not allocate telescpe event");
+    throw std::runtime_error("Could not allocate telescope event");
   }
   if(!decoder_->decode(event, acada_message_set))
   {

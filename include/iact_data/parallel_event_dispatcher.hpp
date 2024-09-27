@@ -114,9 +114,6 @@ private:
     calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr;
   };
 
-  // These functions allow events to be passed on to the visitors - they
-  // are not meant to be called directly as the visiors expect them to be
-  // called in a specific order. They are liable to be made private.
   void dispatch_run_configuration(calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config, bool register_processor);
   void dispatch_event(uint64_t seq_index,
@@ -130,13 +127,13 @@ private:
     calin::io::data_source::DataSourceFactory<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
     unsigned nthread, unsigned log_frequency,
-    const std::chrono::system_clock::time_point& start_time,
+    std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
   void do_dispatcher_loop(
     calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-    unsigned log_frequency,
+    unsigned log_frequency, unsigned nevents_to_dispatch,
     const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
@@ -144,7 +141,8 @@ private:
     telescope_run_configuration::TelescopeRunConfiguration* run_config, int nthread);
 
   void write_final_log_message(
-    unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
+    calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
   std::vector<calin::iact_data::event_visitor::ParallelEventVisitor*> adopted_visitors_;

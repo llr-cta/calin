@@ -20,8 +20,8 @@
 import sys
 import traceback
 import numpy
+import time
 
-import calin.iact_data.raw_actl_r1_event_data_source
 import calin.ix.io.zmq_data_source
 import calin.iact_data.event_dispatcher
 import calin.io.sql_serializer
@@ -132,9 +132,12 @@ else:
             calin.util.log.prune_default_protobuf_log()
             calin.provenance.chronicle.prune_the_chronicle()
             dispatcher.process_cta_zfits_run(filename, cfg)
-            good, oid = sql.insert(opt.db_stage1_table_name(), s1pev.stage1_results())
+            s1res = s1pev.stage1_results()
+            print(f"Inserting stage1 results into database, size: {s1res.SpaceUsedLong()/1024**2:,.1f} MB",)
+            start_time = time.time()
+            good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
             if(good):
-                print("Inserted stage1 results into database with OID:",oid)
+                print(f"Inserted results into database in {time.time()-start_time:,.3f} sec, OID : {oid}")
                 nsuccess += 1
             else:
                 print("Failed to insert stage1 results into database")

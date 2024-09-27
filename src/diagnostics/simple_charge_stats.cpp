@@ -55,6 +55,7 @@ SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
   for(auto* h : chan_hists_)delete h;
   delete camera_hists_;
+  delete data_order_camera_;
 }
 
 SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
@@ -500,15 +501,19 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
   }
   auto* hp = camera_hists_->num_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_num_channel_triggered_hist()->IntegrateFrom(*hp);
+  delete hp;
 
   hp = camera_hists_->num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
+  delete hp;
 
   hp = camera_hists_->phys_trig_num_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_phys_trig_num_channel_triggered_hist()->IntegrateFrom(*hp);
+  delete hp;
 
   hp = camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_phys_trig_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
+  delete hp;
 
   if(parent_)return true;
 

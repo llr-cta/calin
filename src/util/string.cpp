@@ -79,9 +79,19 @@ std::string calin::util::string::string_escape(const std::string& s_in)
   return s_out;
 }
 
-std::string calin::util::string::chomp(const std::string& s_in)
+std::string calin::util::string::chomp_back(const std::string& s_in)
 {
-  std::string::size_type ifind = s_in.find_first_not_of(" \t");
+  std::string::size_type ifind = s_in.find_last_not_of(" \t\n\r\v\f");
+  if(ifind == std::string::npos) {
+    return std::string();
+  } else {
+    return s_in.substr(0,ifind+1);
+  }
+}
+
+std::string calin::util::string::chomp_front(const std::string& s_in)
+{
+  std::string::size_type ifind = s_in.find_first_not_of(" \t\n\r\v\f");
   if(ifind == std::string::npos) {
     return std::string();
   } else {

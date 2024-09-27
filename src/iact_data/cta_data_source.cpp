@@ -95,10 +95,11 @@ CTAZFITSDataSource::~CTAZFITSDataSource()
 calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig
 CTAZFITSDataSource::default_config()
 {
-  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1v0::default_config();
+  config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1v1::default_config();
   config.set_data_model(calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT);
-  config.set_events_table_name(""); // Differs between R1v0 and R1v1 so let downstream decode
-  config.set_run_header_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decode
+  config.set_events_table_name(""); // Differs between R1v0 and R1v1 so let downstream decide
+  config.set_run_header_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decide
+  config.set_data_stream_table_name(""); // Differs between L0, R1v0 and R1v1 so let downstream decide
   return config;
 }
 
@@ -219,6 +220,16 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
         "CTAZFITSDataSource::construct_delegate: R1v0 data format not supported with camera type: "
         + CameraType_Name(decoder_config.camera_type()));
     }
+  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1) {
+      if(decoder_config.camera_type() == AUTO_DETECT) {
+        return new NectarCamZFITSDataSource_R1v1(filename, config, decoder_config.nectarcam());
+      } else if(decoder_config.camera_type() == NECTARCAM) {
+        return new NectarCamZFITSDataSource_R1v1(filename, config, decoder_config.nectarcam());
+      } else {
+        throw std::runtime_error(
+          "CTAZFITSDataSource::construct_delegate: R1v1 data format not supported with camera type: "
+          + CameraType_Name(decoder_config.camera_type()));
+      }
   } else {
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: unsupported data format: "
@@ -237,7 +248,9 @@ CTAZFITSDataSource::copy_base_data_source(
     throw std::runtime_error(
       "CTAZFITSDataSource::copy_base_data_source: File not found: " + filename);
 
-  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v0*>(base_data_source->delegate())) {
+  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v1*>(base_data_source->delegate())) {
+    return new zfits_data_source::ZFITSDataSource_R1v1(filename, zfits, config);
+  } else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v0*>(base_data_source->delegate())) {
     return new zfits_data_source::ZFITSDataSource_R1v0(filename, zfits, config);
   }else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_L0*>(base_data_source->delegate())) {
     return new zfits_data_source::ZFITSDataSource_L0(filename, zfits, config);

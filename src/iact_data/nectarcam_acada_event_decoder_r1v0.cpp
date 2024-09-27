@@ -618,6 +618,7 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode_run_config(
       calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(nmc_file);
     if(nccc) {
       calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
+      delete nccc;
     } else {
       LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
         << nmc_file;
@@ -642,9 +643,14 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode_run_config(
   {
     telescope_id_ = cta_run_header->telescope_id();
     calin_run_config->set_telescope_id(telescope_id_);
-    calin_run_config->set_camera_server_serial_number(cta_run_header->cs_serial());
+    if(cta_run_header->cs_serial().size())
+      (*calin_run_config->mutable_configuration_elements())["camera_server_serial_number"] = 
+        cta_run_header->cs_serial();
     calin_run_config->set_configuration_id(cta_run_header->configuration_id());
     calin_run_config->set_data_model_version(cta_run_header->data_model_version());
+    if(cta_run_header->data_model_version().size())
+      (*calin_run_config->mutable_configuration_elements())["data_model_version"] = 
+        cta_run_header->data_model_version();
     run_start_time_ = uint64_t(cta_run_header->date()) * uint64_t(1000000000);
     calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
     if(cta_run_header->has_nectarcam()) {

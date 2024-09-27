@@ -140,6 +140,8 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
       std::max(camera_layout->camera_boundary_max_r(),x*x+y*y));
   }
   camera_layout->set_camera_boundary_max_r(std::sqrt(camera_layout->camera_boundary_max_r()));
+
+  delete grid;
 }
 
 void calin::iact_data::instrument_layout::map_channels_using_grid(

@@ -91,11 +91,11 @@ public:
       nsamp_block_ = (nsamp_+num_int16-1)/num_int16;
       nsamp_inv_ = 1.0/nsamp_;
 
-      calin::util::memory::safe_aligned_recalloc(signal_type_, nchan_);
-      calin::util::memory::safe_aligned_recalloc(samples_, nsamp_block_*num_int16);
-      calin::util::memory::safe_aligned_recalloc(waveform_x_, nsamp_);
-      calin::util::memory::safe_aligned_recalloc(waveform_f_, nsamp_);
-      calin::util::memory::safe_aligned_recalloc(waveform_p_, nfreq_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(signal_type_, nchan_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(samples_, nsamp_block_*num_int16);
+      calin::util::memory::safe_aligned_recalloc_and_fill(waveform_x_, nsamp_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(waveform_f_, nsamp_);
+      calin::util::memory::safe_aligned_recalloc_and_fill(waveform_p_, nfreq_);
       calin::util::memory::safe_aligned_recalloc_and_fill(psd_count_hg_, nchan_block_*num_int16);
       calin::util::memory::safe_aligned_recalloc_and_fill(dc_sum_hg_, nchan_block_*num_int16);
       calin::util::memory::safe_aligned_recalloc_and_fill(psd_sum_hg_, nchan_block_*num_int16 * nfreq_);

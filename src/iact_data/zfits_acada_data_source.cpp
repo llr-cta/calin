@@ -52,7 +52,7 @@ namespace {
   default_data_model<ACADA_EventMessage_R1v1>() {
     return calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1; }
 
-  template<typename Message> std::string default_message_table_name() { return "unknown"; }
+  template<typename Message> std::string default_message_table_name() { return ""; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_L0>() { return "RunHeader"; }
   template<> std::string default_message_table_name<ACADA_EventMessage_L0>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_HeaderMessage_R1v0>() { return "CameraConfig"; }
@@ -352,8 +352,9 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
     } catch(...) {
       if(!config_.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource: Could not read run header from "
-          << filename_;
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read run header from "
+          << filename_ << " -> " << config_.run_header_table_name();
     }
 
     try {
@@ -362,8 +363,9 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
     } catch(...) {
       if(!config_.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource: Could not read data stream from "
-          << filename_;
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read data stream from "
+          << filename_ << " -> " << config_.data_stream_table_name();
     }
   }
 
@@ -606,48 +608,54 @@ ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& c
     ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet> >(),
   config_(config)
 {
-  const unsigned istride = std::max(1U,config.file_fragment_stride());
-  filename = expand_filename(filename);
-  if(is_file(filename))
-    filenames_.emplace_back(filename);
-  else
-    throw(std::runtime_error("File not found: " + filename));
+  if(config.forced_file_fragments_list_size() > 0) {
+    for(auto& ffn : config.forced_file_fragments_list()) {
+      filenames_.emplace_back(ffn);
+    }
+  } else {
+    const unsigned istride = std::max(1U,config.file_fragment_stride());
+    filename = expand_filename(filename);
+    if(is_file(filename))
+      filenames_.emplace_back(filename);
+    else
+      throw(std::runtime_error("File not found: " + filename));
 
-  if(not config_.exact_filename_only())
-  {
-    const std::string extension = config_.extension();
-    auto ifind = filename.rfind(extension);
-    if(ifind == filename.size()-extension.size())
+    if(not config_.exact_filename_only())
     {
-      filename = filename.substr(0, ifind);
-
-      unsigned istart = 0;
-      if(not is_file(filename+".1"+extension))
+      const std::string extension = config_.extension();
+      auto ifind = filename.rfind(extension);
+      if(ifind == filename.size()-extension.size())
       {
-        ifind = filename.rfind('.');
-        if(ifind != std::string::npos and
-          std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+        filename = filename.substr(0, ifind);
+
+        unsigned istart = 0;
+        if(not is_file(filename+".1"+extension))
         {
-          istart = std::stoi(filename.substr(ifind + 1));
-          filename = filename.substr(0, ifind);
-        }
-      }
-
-      bool fragment_found = true;
-      for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
-        filenames_.size()<config_.max_file_fragments()) ; i+=istride)
-      {
-        fragment_found = false;
-        std::string fragment_i { std::to_string(i) };
-        do {
-          std::string filename_i { filename+"."+fragment_i+extension };
-          if(is_file(filename_i)) {
-            filenames_.emplace_back(filename_i);
-            fragment_found = true;
-          } else {
-            fragment_i = std::string("0") + fragment_i;
+          ifind = filename.rfind('.');
+          if(ifind != std::string::npos and
+            std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+          {
+            istart = std::stoi(filename.substr(ifind + 1));
+            filename = filename.substr(0, ifind);
           }
-        }while(not fragment_found and fragment_i.size() <= 6);
+        }
+
+        bool fragment_found = true;
+        for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
+          filenames_.size()<config_.max_file_fragments()) ; i+=istride)
+        {
+          fragment_found = false;
+          std::string fragment_i { std::to_string(i) };
+          do {
+            std::string filename_i { filename+"."+fragment_i+extension };
+            if(is_file(filename_i)) {
+              filenames_.emplace_back(filename_i);
+              fragment_found = true;
+            } else {
+              fragment_i = std::string("0") + fragment_i;
+            }
+          }while(not fragment_found and fragment_i.size() <= 6);
+        }
       }
     }
   }

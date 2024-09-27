@@ -163,7 +163,12 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(nthread <= 0)
   {
-    do_dispatcher_loop(src, log_frequency, start_time, ndispatched);
+    auto dt = std::chrono::system_clock::now() - start_time;
+    LOG(INFO) << "Configured analysis in "
+      << to_string_with_commas(double(std::chrono::duration_cast<
+        std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+    start_time = std::chrono::system_clock::now();
+    do_dispatcher_loop(src, log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
   {
@@ -171,8 +176,14 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
   }
+  write_final_log_message(run_config, start_time, ndispatched);
+  LOG(INFO) << "Finishing up ...";
+  start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
-  write_final_log_message(log_frequency, start_time, ndispatched);
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Finishing up ... completed in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
 
 void ParallelEventDispatcher::
@@ -192,7 +203,12 @@ process_run(std::vector<calin::io::data_source::DataSource<
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(src_list.size() == 1)
   {
-    do_dispatcher_loop(src_list[0], log_frequency, start_time, ndispatched);
+    auto dt = std::chrono::system_clock::now() - start_time;
+    LOG(INFO) << "Configured analysis in "
+      << to_string_with_commas(double(std::chrono::duration_cast<
+        std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+    start_time = std::chrono::system_clock::now();
+    do_dispatcher_loop(src_list[0], log_frequency, run_config->num_events(), start_time, ndispatched);
   }
   else
   {
@@ -200,16 +216,21 @@ process_run(std::vector<calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
       log_frequency, start_time, ndispatched);
   }
+  write_final_log_message(run_config, start_time, ndispatched);
+  LOG(INFO) << "Finishing up ...";
+  start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
-  write_final_log_message(log_frequency, start_time, ndispatched);
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Finishing up ... completed in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
 
 void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
-  auto zfits_config = config.zfits();
-  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
+  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), config.zfits());
   TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
 
   auto fragments = cta_file->all_fragment_names();
@@ -229,13 +250,18 @@ process_cta_zfits_run(const std::string& filename,
       throw;
     }
   } else {
-    zfits_config.set_file_fragment_stride(
-      nthread*std::max(1U, zfits_config.file_fragment_stride()));
-
     std::vector<calin::iact_data::telescope_data_source::
       TelescopeDataSource*> src_list(nthread);
+    unsigned max_seq_index = config.zfits().max_seq_index()/nthread;
     try {
       for(unsigned ithread=0; ithread<nthread; ithread++) {
+        CTAZFITSDataSource::config_type zfits_config = config.zfits();
+        zfits_config.clear_forced_file_fragments_list();
+        for(unsigned iff=ithread;iff<fragments.size();iff+=nthread) {
+          zfits_config.add_forced_file_fragments_list(fragments[iff]);
+        }
+        zfits_config.set_max_seq_index(
+          ithread==0 ? config.zfits().max_seq_index() - (nthread-1)*max_seq_index : max_seq_index);
         src_list[ithread] =
           new CTAZFITSDataSource(fragments[ithread], cta_file, zfits_config);
       }
@@ -325,7 +351,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   calin::io::data_source::DataSourceFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
   unsigned nthread, unsigned log_frequency,
-  const std::chrono::system_clock::time_point& start_time,
+  std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
   std::vector<ParallelEventDispatcher*> sub_dispatchers;
@@ -350,14 +376,20 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   std::atomic<unsigned> threads_active { 0 };
   std::atomic<unsigned> exceptions_raised { 0 };
 
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Configured analysis in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+  start_time = std::chrono::system_clock::now();
+
   // Go go gadget threads
   for(auto* d : sub_dispatchers)
   {
     ++threads_active;
-    threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,start_time,&ndispatched](){
+    threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,run_config,start_time,&ndispatched](){
       auto* bsrc = src_factory->new_data_source();
       try {
-        d->do_dispatcher_loop(bsrc, log_frequency, start_time, ndispatched);
+        d->do_dispatcher_loop(bsrc, log_frequency, run_config->num_events(), start_time, ndispatched);
       } catch(const std::exception& x) {
         util::log::LOG(util::log::FATAL) << x.what();
         ++exceptions_raised;
@@ -387,7 +419,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 void ParallelEventDispatcher::do_dispatcher_loop(
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-  unsigned log_frequency,
+  unsigned log_frequency, unsigned nevents_to_dispatch,
   const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
@@ -396,8 +428,14 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
-    unsigned ndispatched_val = ndispatched.fetch_add(1);
-    if(log_frequency and ndispatched_val and ndispatched_val % log_frequency == 0)
+    add_event_to_keep(event, seq_index, arena);
+    keep_event(event);
+    dispatch_event(seq_index, event);
+    release_event(event);
+    arena = nullptr;
+
+    unsigned ndispatched_val = ndispatched.fetch_add(1) + 1;
+    if(log_frequency and ndispatched_val % log_frequency == 0)
     {
       auto dt = std::chrono::system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
@@ -405,11 +443,14 @@ void ParallelEventDispatcher::do_dispatcher_loop(
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
     }
 
-    add_event_to_keep(event, seq_index, arena);
-    keep_event(event);
-    dispatch_event(seq_index, event);
-    release_event(event);
-    arena = nullptr;
+    if(nevents_to_dispatch and ndispatched_val == nevents_to_dispatch) {
+      auto dt = std::chrono::system_clock::now() - start_time;
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(ndispatched_val) << " events in "
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+        << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched_val)
+        << " us/event (finished)";
+    }
   }
 }
 
@@ -439,6 +480,11 @@ void ParallelEventDispatcher::write_initial_log_message(
     logger << ")";
   }
 
+  if(run_config->num_events()>0) {
+    logger << "\nNumber of events to process: " 
+      << to_string_with_commas(run_config->num_events());
+  }
+
   if(run_config->run_number() > 0 and run_config->run_start_time().time_ns()>0) {
     logger << "\nRun number: " << run_config->run_number() << ", run start time: "
       << Timestamp(run_config->run_start_time().time_ns()).as_string(/* utc= */ true);
@@ -451,24 +497,26 @@ void ParallelEventDispatcher::write_initial_log_message(
 }
 
 void ParallelEventDispatcher::write_final_log_message(
-  unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
   using namespace std::chrono;
-  if(log_frequency)
-  {
-    auto dt = system_clock::now() - start_time;
-    if(ndispatched) {
-      LOG(INFO) << "Dispatched "
-        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
-        << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
-        << " us/event (finished)";
-    } else {
-      LOG(INFO) << "Dispatched "
-        << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec (finished)";
-    }
+  auto dt = system_clock::now() - start_time;
+  if(run_config->num_events() == 0) {
+    LOG(INFO) << "Dispatched "
+      << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+      << " us/event (finished)";
+  } else if(ndispatched != run_config->num_events()) {
+    LOG(ERROR) << "Dispatched "
+      << to_string_with_commas(uint64_t(ndispatched)) << " events in "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
+      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+      << " us/event (finished)\n"
+      << "Number of dispatched event does not match number of expected events: " 
+      << to_string_with_commas(run_config->num_events());
   }
 }
 

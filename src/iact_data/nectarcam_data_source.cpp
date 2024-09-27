@@ -171,6 +171,43 @@ NectarCamZFITSDataSource_R1v0::~NectarCamZFITSDataSource_R1v0()
 
 */
 
+NectarCamZFITSDataSource_R1v1::
+NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    calin::iact_data::zfits_acada_data_source::
+      ZFITSACADACameraEventDataSource<calin::iact_data::acada_data_source::ACADA_MessageSet_R1v1>* acada_zfits,
+    const decoder_config_type& decoder_config, bool adopt_acada_zfits):
+  calin::iact_data::zfits_data_source::ZFITSDataSource_R1v1(
+    acada_zfits, 
+    decoder_ = new NectarCam_ACADACameraEventDecoder_R1v1(filename, decoder_config), 
+    adopt_acada_zfits, /* adopt_decoder_= */ false)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource_R1v1::
+NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    const config_type& config, const decoder_config_type& decoder_config):
+  calin::iact_data::zfits_data_source::ZFITSDataSource_R1v1(filename,
+    decoder_ = new NectarCam_ACADACameraEventDecoder_R1v1(filename, decoder_config), 
+    /* adopt_decoder_= */ false /* we delete it! */, config)
+{
+  // nothing to see here
+}
+
+
+NectarCamZFITSDataSource_R1v1::
+NectarCamZFITSDataSource_R1v1(const std::string& filename,
+    const decoder_config_type& decoder_config, const config_type& config):
+  NectarCamZFITSDataSource_R1v1(filename, config, decoder_config)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource_R1v1::~NectarCamZFITSDataSource_R1v1()
+{
+  delete decoder_;
+}
+
 /*
 
                AAA                                     tttt
@@ -257,7 +294,7 @@ NectarCamZFITSDataSource::construct_delegate(std::string filename,
   case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V0:
     return new NectarCamZFITSDataSource_R1v0(filename, config, decoder_config);
   case calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_R1V1:
-    throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: R1v1 not supported yet");
+    return new NectarCamZFITSDataSource_R1v1(filename, config, decoder_config);
   default:
     throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known");
   }

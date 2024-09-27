@@ -37,9 +37,9 @@ using namespace std;
 
 namespace {
 
-string chomp(const string& s_in)
+string chomp_front(const string& s_in)
 {
-  string::size_type ifind = s_in.find_first_not_of(" \t");
+  string::size_type ifind = s_in.find_first_not_of(" \t\r\n\v\f");
   if(ifind == string::npos) {
     return string();
   } else {
@@ -136,11 +136,11 @@ int main(int argc, char** argv)
   string sep;
   while(std::getline(stream, line))
   {
-    line = chomp(line);
+    line = chomp_front(line);
     if(line.size()>=7 and line.substr(0,7) == "%import")
-      line = chomp(line.substr(7));
+      line = chomp_front(line.substr(7));
     else if(line.size()>=8 and line.substr(0,8) == "%include")
-      line = chomp(line.substr(8));
+      line = chomp_front(line.substr(8));
     else continue;
     if(line.empty())continue;
     size_t closing_delim = string::npos;
