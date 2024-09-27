@@ -160,6 +160,7 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete wf_psd_ped_pev_;
   delete wf_psd_ext_pev_;
   delete wf_psd_int_pev_;
+  delete nectarcam_ancillary_data_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(

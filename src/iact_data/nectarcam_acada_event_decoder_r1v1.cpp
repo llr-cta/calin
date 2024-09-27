@@ -384,6 +384,7 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
       calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(nmc_file);
     if(nccc) {
       calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
+      delete nccc;
     } else {
       LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
         << nmc_file;
