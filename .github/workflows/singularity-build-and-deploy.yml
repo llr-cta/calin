@@ -28,13 +28,15 @@ on:
       - azure-pipelines.yml
       - Dockerfile
 
+env:
+  geant_version: 11.2.2
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04]
-        geant: [11.2.2]
         arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
 
     runs-on: ${{ matrix.os }}
@@ -53,7 +55,7 @@ jobs:
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
           libseccomp-dev pkg-config libfuse3-dev
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
-        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
+        curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{env.geant_version}}-OFF/Geant4-${{matrix.os}}-${{env.geant_version}}-OFF.tbz2 | sudo tar -jxf - -C /
 
     - name: Configure calin
       shell: bash
@@ -86,7 +88,32 @@ jobs:
         sudo find /usr -print > /tmp/files_after.txt
         cat /tmp/files_before.txt /tmp/files_after.txt | sort | uniq -u > /tmp/files_added.txt
         tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
-        ls -l /tmp/calin_installed.tgz
+        ls -l /tmp/calin_installed.tgz 
+
+    - name: Store calin TGZ file
+      uses: actions/upload-artifact@v4
+      with:
+        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+        path: /tmp/calin_installed.tgz
+
+  deploy:
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04]
+        arch: [ 'generic', 'ivybridge', 'broadwell', 'cascadelake' ]
+
+    runs-on: ${{ matrix.os }}
+
+
+    steps:
+    - name: Retrieve calin TGZ file
+      uses: actions/download-artifact@v4
+      with:
+        name: calin_installed_${{matrix.os}}_${{matrix.arch}}
+        path: /tmp/calin_installed.tgz
 
     - name: Set up Go 1.21.1
       uses: actions/setup-go@v5
@@ -126,8 +153,3 @@ jobs:
       run: |
         singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
         diff calin-${{ matrix.arch }}.sif calin-pulled.sif
-
-    # - uses: actions/upload-artifact@v2
-    #   with:
-    #     name: calin-${{ matrix.arch }}
-    #     path: calin-${{ matrix.arch }}.sif
