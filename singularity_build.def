@@ -19,7 +19,7 @@ Bootstrap: library
 From: ubuntu:22.04
 
 %files
-    calin_installed.tgz
+    /tmp/calin_installed.tgz
 
 %environment
     export GEANT4_DATA_DIR="/usr/share/Geant4/data"
