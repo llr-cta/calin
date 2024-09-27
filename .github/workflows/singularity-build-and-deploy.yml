@@ -95,6 +95,7 @@ jobs:
       with:
         name: calin_installed_${{matrix.os}}_${{matrix.arch}}
         path: /tmp/calin_installed.tgz
+        retention-days: 5        
 
   deploy:
     needs: build
@@ -107,8 +108,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-
     steps:
+    - uses: actions/checkout@v4
+
     - name: Install prerequisites
       shell: bash
       run: |
