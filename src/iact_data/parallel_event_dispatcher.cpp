@@ -258,13 +258,8 @@ process_cta_zfits_run(const std::string& filename,
   CTAZFITSDataSource cta_file(filename, config.decoder(), config.zfits());
   TelescopeRunConfiguration* run_config = cta_file.get_run_configuration();
 
-  auto fragments = cta_file.all_fragment_names();
-  if(fragments.empty()) {
-    // This should never happen (I guess) as we should already have had an exception
-    throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
-  }
-
-  unsigned nthread = std::min(std::max(config.nthread(), 1U), unsigned(fragments.size()));
+  unsigned nfragments = cta_file.num_fragments();
+  unsigned nthread = std::min(std::max(config.nthread(), 1U), nfragments);
 
   if(nthread == 1) {
     try {
@@ -400,6 +395,9 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
         } catch(const std::exception& x) {
           util::log::LOG(util::log::FATAL) << x.what();
           ++exceptions_raised;
+          delete bsrc;
+          --threads_active;
+          return;
         }
         delete bsrc;
         bsrc = src_factory->new_data_source();

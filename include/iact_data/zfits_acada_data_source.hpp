@@ -147,7 +147,9 @@ protected:
   using BaseDataSource::open_file;
 
 private:
+  void load_run_header();
   config_type config_;
+  bool run_header_loaded_ = false;  
   header_type* run_header_ = nullptr;
   data_stream_type* data_stream_ = nullptr;
 };
