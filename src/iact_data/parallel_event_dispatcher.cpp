@@ -276,7 +276,7 @@ process_cta_zfits_run(const std::string& filename,
   } else {
     try {
       CTAZFITSDataSourceFactory src_factory(&cta_file);
-      process_src_factory(&src_factory, run_config, config.log_frequency());
+      process_src_factory(&src_factory, run_config, config.log_frequency(), nthread);
     } catch(...) {
       delete run_config;
       throw;
