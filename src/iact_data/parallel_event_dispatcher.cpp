@@ -101,56 +101,15 @@ add_visitor(ParallelEventVisitor* visitor,
 }
 
 void ParallelEventDispatcher::
-process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
+process_src(TelescopeRandomAccessDataSourceWithRunConfig* src,
   unsigned log_frequency, int nthread)
 {
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
-  process_run(src, run_config, log_frequency, nthread);
+  process_src(src, run_config, log_frequency, nthread);
   delete run_config;
 }
 
-void ParallelEventDispatcher::
-process_run(std::vector<calin::iact_data::telescope_data_source::
-  TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
-  unsigned log_frequency)
-{
-  if(src_list.empty())
-    throw std::runtime_error("process_run: empty data source list");
-  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
-  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
-    TelescopeRunConfiguration* from_run_config =
-      src_list[isrc]->get_run_configuration();
-    merge_run_config(run_config, *from_run_config);
-    delete from_run_config;
-  }
-  std::vector<calin::io::data_source::DataSource<
-    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
-  for(auto* src: src_list)src_list_upcast.push_back(src);
-  this->process_run(src_list_upcast, run_config, log_frequency);
-  delete run_config;
-}
-
-void ParallelEventDispatcher::
-process_run(std::vector<calin::iact_data::telescope_data_source::
-  TelescopeDataSourceWithRunConfig*> src_list, unsigned log_frequency)
-{
-  if(src_list.empty())
-    throw std::runtime_error("process_run: empty data source list");
-  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
-  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
-    TelescopeRunConfiguration* from_run_config =
-      src_list[isrc]->get_run_configuration();
-    merge_run_config(run_config, *from_run_config);
-    delete from_run_config;
-  }
-  std::vector<calin::io::data_source::DataSource<
-    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
-  for(auto* src: src_list)src_list_upcast.push_back(src);
-  this->process_run(src_list_upcast, run_config, log_frequency);
-  delete run_config;
-}
-
-void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
+void ParallelEventDispatcher::process_src(calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
   calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config,
@@ -187,7 +146,48 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
 }
 
 void ParallelEventDispatcher::
-process_run(std::vector<calin::io::data_source::DataSource<
+process_src_list(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+  unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = new TelescopeRunConfiguration();
+  for(unsigned isrc=0; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_src_list(src_list_upcast, run_config, log_frequency);
+  delete run_config;
+}
+
+void ParallelEventDispatcher::
+process_src_list(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeDataSourceWithRunConfig*> src_list, unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = new TelescopeRunConfiguration();
+  for(unsigned isrc=0; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_src_list(src_list_upcast, run_config, log_frequency);
+  delete run_config;
+}
+
+void ParallelEventDispatcher::
+process_src_list(std::vector<calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
   calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config,
@@ -213,9 +213,34 @@ process_run(std::vector<calin::io::data_source::DataSource<
   else
   {
     io::data_source::VectorDataSourceFactory<TelescopeEvent> src_factory(src_list);
-    do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
-      log_frequency, start_time, ndispatched);
   }
+  write_final_log_message(run_config, start_time, ndispatched);
+  LOG(INFO) << "Finishing up ...";
+  start_time = std::chrono::system_clock::now();
+  dispatch_leave_run();
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Finishing up ... completed in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
+}
+
+void ParallelEventDispatcher::
+process_src_factory(calin::io::data_source::DataSourceFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
+  calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  unsigned log_frequency, int nthread) 
+{
+  auto start_time = std::chrono::system_clock::now();
+  std::atomic<uint_fast64_t> ndispatched { 0 };
+
+  write_initial_log_message(run_config, nthread);
+  dispatch_run_configuration(run_config, /*register_processor=*/ true);
+
+  nthread = std::max(nthread, 1);
+  do_parallel_dispatcher_loops(run_config, src_factory, nthread,
+    log_frequency, start_time, ndispatched);
+
   write_final_log_message(run_config, start_time, ndispatched);
   LOG(INFO) << "Finishing up ...";
   start_time = std::chrono::system_clock::now();
@@ -230,10 +255,10 @@ void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
-  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), config.zfits());
-  TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
+  CTAZFITSDataSource cta_file(filename, config.decoder(), config.zfits());
+  TelescopeRunConfiguration* run_config = cta_file.get_run_configuration();
 
-  auto fragments = cta_file->all_fragment_names();
+  auto fragments = cta_file.all_fragment_names();
   if(fragments.empty()) {
     // This should never happen (I guess) as we should already have had an exception
     throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
@@ -243,38 +268,19 @@ process_cta_zfits_run(const std::string& filename,
 
   if(nthread == 1) {
     try {
-      process_run(cta_file, run_config, config.log_frequency());
+      process_src(&cta_file, run_config, config.log_frequency());
     } catch(...) {
-      delete cta_file;
       delete run_config;
       throw;
     }
   } else {
-    std::vector<calin::iact_data::telescope_data_source::
-      TelescopeDataSource*> src_list(nthread);
-    unsigned max_seq_index = config.zfits().max_seq_index()/nthread;
     try {
-      for(unsigned ithread=0; ithread<nthread; ithread++) {
-        CTAZFITSDataSource::config_type zfits_config = config.zfits();
-        zfits_config.clear_forced_file_fragments_list();
-        for(unsigned iff=ithread;iff<fragments.size();iff+=nthread) {
-          zfits_config.add_forced_file_fragments_list(fragments[iff]);
-        }
-        zfits_config.set_max_seq_index(
-          ithread==0 ? config.zfits().max_seq_index() - (nthread-1)*max_seq_index : max_seq_index);
-        src_list[ithread] =
-          new CTAZFITSDataSource(fragments[ithread], cta_file, zfits_config);
-      }
-      delete cta_file;
-      cta_file = nullptr;
-      process_run(src_list, run_config, config.log_frequency());
+      CTAZFITSDataSourceFactory src_factory(&cta_file);
+      process_src_factory(&src_factory, run_config, config.log_frequency());
     } catch(...) {
-      for(auto* src: src_list)delete src;
-      delete cta_file;
       delete run_config;
       throw;
     }
-    for(auto* src: src_list)delete src;
   }
   delete run_config;
 }
@@ -388,13 +394,16 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
     ++threads_active;
     threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,run_config,start_time,&ndispatched](){
       auto* bsrc = src_factory->new_data_source();
-      try {
-        d->do_dispatcher_loop(bsrc, log_frequency, run_config->num_events(), start_time, ndispatched);
-      } catch(const std::exception& x) {
-        util::log::LOG(util::log::FATAL) << x.what();
-        ++exceptions_raised;
+      while(bsrc) {
+        try {
+          d->do_dispatcher_loop(bsrc, log_frequency, run_config->num_events(), start_time, ndispatched);
+        } catch(const std::exception& x) {
+          util::log::LOG(util::log::FATAL) << x.what();
+          ++exceptions_raised;
+        }
+        delete bsrc;
+        bsrc = src_factory->new_data_source();
       }
-      delete bsrc;
       --threads_active;
     });
   }
@@ -428,20 +437,18 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
+    unsigned ndispatched_val = ndispatched.fetch_add(1) + 1;
+    if(nevents_to_dispatch and ndispatched_val > nevents_to_dispatch) {
+      if(arena)delete arena;
+      else delete event;
+      return;
+    }
+
     add_event_to_keep(event, seq_index, arena);
     keep_event(event);
     dispatch_event(seq_index, event);
     release_event(event);
     arena = nullptr;
-
-    unsigned ndispatched_val = ndispatched.fetch_add(1) + 1;
-    if(log_frequency and ndispatched_val % log_frequency == 0)
-    {
-      auto dt = std::chrono::system_clock::now() - start_time;
-      LOG(INFO) << "Dispatched "
-        << to_string_with_commas(ndispatched_val) << " events in "
-        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
-    }
 
     if(nevents_to_dispatch and ndispatched_val == nevents_to_dispatch) {
       auto dt = std::chrono::system_clock::now() - start_time;
@@ -450,6 +457,11 @@ void ParallelEventDispatcher::do_dispatcher_loop(
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
         << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched_val)
         << " us/event (finished)";
+    } else if(log_frequency and ndispatched_val % log_frequency == 0) {
+      auto dt = std::chrono::system_clock::now() - start_time;
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(ndispatched_val) << " events in "
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
     }
   }
 }

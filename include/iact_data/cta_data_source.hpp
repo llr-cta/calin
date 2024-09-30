@@ -74,11 +74,35 @@ public:
   unsigned num_fragments() const override;
   std::string fragment_name(unsigned index) const override;
 
+  config_type config() const { return config_; }
+  decoder_config_type decoder_config() const { return decoder_config_; }
+
 private:
+  config_type config_;
+  decoder_config_type decoder_config_;
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
     std::string filename, config_type config, decoder_config_type decoder_config);
   static TelescopeRandomAccessDataSourceWithRunConfig* copy_base_data_source(
     std::string filename, config_type config, CTAZFITSDataSource* base_data_source);
+};
+
+class CTAZFITSDataSourceFactory:
+  public calin::io::data_source::DataSourceFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>
+{
+public:
+  CTAZFITSDataSourceFactory(CTAZFITSDataSource* base_data_source, 
+      bool adopt_base_data_source = false):
+    calin::io::data_source::DataSourceFactory<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>(),
+    base_data_source_(base_data_source), adopt_base_data_source_(adopt_base_data_source) { }
+  virtual ~CTAZFITSDataSourceFactory();
+  calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* new_data_source() override;
+private:
+  CTAZFITSDataSource* base_data_source_ = 0;
+  bool adopt_base_data_source_ = false;
+  std::atomic<uint_fast32_t> isource_ { 0 };
 };
 
 } } } // namespace calin::iact_data::cta_data_source

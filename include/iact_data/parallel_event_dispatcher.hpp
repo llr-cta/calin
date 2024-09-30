@@ -59,29 +59,35 @@ public:
     add_visitor(visitor, std::string{}, adopt_visitor);
   }
 
-  void process_run(calin::iact_data::telescope_data_source::
+  void process_src(calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
 
-  void process_run(std::vector<calin::iact_data::telescope_data_source::
-    TelescopeDataSourceWithRunConfig*> src_list,
-    unsigned log_frequency = 0);
-
-  void process_run(std::vector<calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
-    unsigned log_frequency = 0);
-
-  void process_run(calin::io::data_source::DataSource<
+  void process_src(calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
     calin::ix::iact_data::
       telescope_run_configuration::TelescopeRunConfiguration* run_config,
     unsigned log_frequency = 0, int nthread = 0);
 
-  void process_run(std::vector<calin::io::data_source::DataSource<
+  void process_src_list(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
+
+  void process_src_list(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
+
+  void process_src_list(std::vector<calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
     calin::ix::iact_data::
       telescope_run_configuration::TelescopeRunConfiguration* merged_run_config,
     unsigned log_frequency = 0);
+
+  void process_src_factory(calin::io::data_source::DataSourceFactory<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    unsigned log_frequency = 0, int nthread = 0);
 
   void process_cta_zfits_run(const std::string& filename,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());

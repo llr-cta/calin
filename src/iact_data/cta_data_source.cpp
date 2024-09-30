@@ -55,7 +55,8 @@ CTAZFITSDataSource(const std::string& filename,
   TelescopeRandomAccessDataSourceWithRunConfig(),
   Delegator<calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig>(
-      construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true)
+      construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true),
+  config_(config), decoder_config_(decoder_config)
 {
   // nothing to see here
 }
@@ -74,7 +75,8 @@ CTAZFITSDataSource(const std::string& filename,
   TelescopeRandomAccessDataSourceWithRunConfig(),
   Delegator<calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig>(
-      copy_base_data_source(filename, config, base_data_source), /* adopt_delegate=*/ true)
+      copy_base_data_source(filename, config, base_data_source), /* adopt_delegate=*/ true),
+  config_(config), decoder_config_()
 {
   // nothing to see here
 }
@@ -257,5 +259,24 @@ CTAZFITSDataSource::copy_base_data_source(
   } else {
     throw std::runtime_error(
       "CTAZFITSDataSource::copy_base_data_source: unsupported data source");
+  }
+}
+
+CTAZFITSDataSourceFactory::~CTAZFITSDataSourceFactory()
+{
+  if(adopt_base_data_source_)delete base_data_source_;
+}
+
+calin::io::data_source::DataSource< calin::ix::iact_data::telescope_event::TelescopeEvent>* 
+CTAZFITSDataSourceFactory::new_data_source()
+{
+  unsigned isource = isource_.fetch_add(1,std::memory_order_relaxed);
+  if(isource<base_data_source_->num_fragments()) {
+    auto config = base_data_source_->config();
+    config.clear_forced_file_fragments_list();
+    config.add_forced_file_fragments_list(base_data_source_->fragment_name(isource));
+    return new CTAZFITSDataSource(config.forced_file_fragments_list(0), base_data_source_, config);
+  } else {
+    return nullptr;
   }
 }
