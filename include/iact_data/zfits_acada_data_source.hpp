@@ -98,7 +98,7 @@ public:
 
 private:
   std::string filename_;
-  ZFITSSingleFileSingleMessageDataSource<event_type>* zfits_;
+  ZFITSSingleFileSingleMessageDataSource<event_type>* zfits_ = nullptr;
   header_type* run_header_ = nullptr;
   data_stream_type* data_stream_ = nullptr;
   config_type config_;
