@@ -255,28 +255,33 @@ void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
-  CTAZFITSDataSource cta_file(filename, config.decoder(), config.zfits());
-  TelescopeRunConfiguration* run_config = cta_file.get_run_configuration();
+  auto* cta_file = new CTAZFITSDataSource (filename, config.decoder(), config.zfits());
+  TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
 
-  unsigned nfragments = cta_file.num_fragments();
+  unsigned nfragments = cta_file->num_fragments();
   unsigned nthread = std::min(std::max(config.nthread(), 1U), nfragments);
 
   if(nthread == 1) {
     try {
-      process_src(&cta_file, run_config, config.log_frequency());
+      process_src(cta_file, run_config, config.log_frequency());
     } catch(...) {
+      delete cta_file;
       delete run_config;
       throw;
     }
   } else {
+    auto* src_factory = new CTAZFITSDataSourceFactory(cta_file);
     try {
-      CTAZFITSDataSourceFactory src_factory(&cta_file);
-      process_src_factory(&src_factory, run_config, config.log_frequency(), nthread);
+      process_src_factory(src_factory, run_config, config.log_frequency(), nthread);
     } catch(...) {
+      delete src_factory;
+      delete cta_file;
       delete run_config;
       throw;
     }
+    delete src_factory;
   }
+  delete cta_file;
   delete run_config;
 }
 

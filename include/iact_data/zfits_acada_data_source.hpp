@@ -94,7 +94,7 @@ public:
   data_stream_type* get_data_stream() override;
 
   static config_type default_config();
-  const config_type& config() const { return config_; }
+  config_type config() const { return config_; }
 
 private:
   std::string filename_;
@@ -137,7 +137,7 @@ public:
   void set_next_index(uint64_t next_index) override;
 
   static config_type default_config();
-  const config_type& config() const { return config_; }
+  config_type config() const { return config_; }
 
 protected:
   using BaseDataSource::source_;
