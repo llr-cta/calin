@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <memory>
 #include <cctype>
+#include <mutex>
 
 #include <util/log.hpp>
 #include <provenance/chronicle.hpp>
@@ -101,6 +102,7 @@ namespace {
     // nothing to see here
   }
 
+  std::mutex global_ifits_lock;
 } // anonymous namespace
 
 std::vector<std::string> calin::iact_data::zfits_acada_data_source::
@@ -109,6 +111,7 @@ get_zfits_table_names(std::string filename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> tables;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, "", /* force= */ true);
     if(ifits) {
       tables.push_back(ifits.GetTable().name);
@@ -129,6 +132,7 @@ get_zfits_table_column_names(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> columns;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& col : ifits.GetColumns()) {
@@ -147,6 +151,7 @@ get_zfits_table_keys(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> keys;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& key : ifits.GetKeys()) {
@@ -165,6 +170,7 @@ get_zfits_table_key_values(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::map<std::string,std::string> key_values;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& key : ifits.GetKeys()) {
@@ -239,7 +245,10 @@ ZFITSSingleFileSingleMessageDataSource(
   if(!is_readable(filename_))
     throw std::runtime_error(std::string("File not readable: ")+filename_);
 
-  zfits_ = new ADH::IO::ProtobufIFits(filename_, tablename_, Message::descriptor());
+  {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
+    zfits_ = new ADH::IO::ProtobufIFits(filename_, tablename_, Message::descriptor());
+  }
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " + tablename_);
 
