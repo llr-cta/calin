@@ -290,7 +290,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
      11 NB4 Stereo Pattern
      12 NB5
      13 NB6
-     14 NB7
+     14 NB7  <- Replaced by Muon Candidate Flag MCF https://indico.cta-observatory.org/event/1293/attachments/23531/33935/NectarCAM-MuonCandidateFlag_210423_v3.pdf
      15 Busy Busy  (put the SPI busy into the whiteRabbitResetBusyStatus)
    */
 
@@ -325,7 +325,9 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
@@ -352,7 +354,9 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
@@ -379,7 +383,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V0)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V0*>(&cta_cdts_data.front());
@@ -406,7 +410,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
   } else {
     throw std::runtime_error("CDTS data array not expected size");
   }

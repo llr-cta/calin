@@ -195,7 +195,11 @@ message CDTSData {
     (CFO).desc = "Pedestal trigger type bit set." ];
   bool slow_control_trigger                                 = 36 [
     (CFO).desc = "Slow control trigger type bit set." ];
-  bool busy_trigger                                         = 37 [
+  bool local_trigger                                        = 37 [
+    (CFO).desc = "Local trigger type bit set." ];
+  bool muon_candidate                                       = 38 [
+    (CFO).desc = "Muon candidate flag (MCF) bit set." ];
+  bool busy_trigger                                         = 39 [
     (CFO).desc = "Busy trigger type bit set." ];
 };
 
