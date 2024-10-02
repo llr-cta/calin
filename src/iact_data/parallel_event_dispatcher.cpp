@@ -104,7 +104,12 @@ void ParallelEventDispatcher::
 process_src(TelescopeRandomAccessDataSourceWithRunConfig* src,
   unsigned log_frequency, int nthread)
 {
+  auto start_time = std::chrono::system_clock::now();
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Built run configuration in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
   process_src(src, run_config, log_frequency, nthread);
   delete run_config;
 }
@@ -255,8 +260,13 @@ void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
+  auto start_time = std::chrono::system_clock::now();
   auto* cta_file = new CTAZFITSDataSource (filename, config.decoder(), config.zfits());
   TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
+  auto dt = std::chrono::system_clock::now() - start_time;
+  LOG(INFO) << "Built run configuration in "
+    << to_string_with_commas(double(std::chrono::duration_cast<
+      std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 
   unsigned nfragments = cta_file->num_fragments();
   unsigned nthread = std::min(std::max(config.nthread(), 1U), nfragments);
@@ -483,9 +493,9 @@ void ParallelEventDispatcher::write_initial_log_message(
   }
 
   if(run_config->file_size() > 0) {
-    logger << std::setprecision(3) << double(run_config->file_size())*1e-9 << " GB (";
+    logger << to_string_with_commas(double(run_config->file_size())*1e-9,3) << " GB (";
   }
-  logger << run_config->fragment_filename_size();
+  logger << to_string_with_commas(run_config->fragment_filename_size());
   if(run_config->fragment_filename_size()==1) {
     logger << " file fragment";
   } else {
