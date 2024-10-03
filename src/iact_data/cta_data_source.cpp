@@ -52,8 +52,8 @@ using namespace calin::util::file;
 CTAZFITSDataSource::
 CTAZFITSDataSource(const std::string& filename,
     const config_type& config, const decoder_config_type& decoder_config):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
-  Delegator<calin::iact_data::zfits_data_source::ZFITSDataSourceTypeCloningInterface>(
+  BasicZFITSDataSource(),
+  Delegator<calin::iact_data::zfits_data_source::BasicZFITSDataSource>(
       construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true),
   config_(config), decoder_config_(decoder_config)
 {
@@ -119,20 +119,27 @@ CTAZFITSDataSource::get_run_configuration()
 
 unsigned CTAZFITSDataSource::current_fragment_index() const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList*>(delegate_)->current_fragment_index();
+  return delegate_->current_fragment_index();
 }
 
 unsigned CTAZFITSDataSource::num_fragments() const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList*>(delegate_)->num_fragments();
+  return delegate_->num_fragments();
 }
 
 std::string CTAZFITSDataSource::fragment_name(unsigned index) const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList*>(delegate_)->fragment_name(index);
+  return delegate_->fragment_name(index);
 }
 
-calin::iact_data::zfits_data_source::ZFITSDataSourceTypeCloningInterface*
+calin::iact_data::zfits_data_source::BasicZFITSDataSource* 
+CTAZFITSDataSource::new_of_type(const std::string& filename, const config_type& config,
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* force_run_configuration)
+{
+  return delegate_->new_of_type(filename, config, force_run_configuration);
+}
+
+calin::iact_data::zfits_data_source::BasicZFITSDataSource*
 CTAZFITSDataSource::construct_delegate(std::string filename,
   config_type config, decoder_config_type decoder_config)
 {
@@ -230,7 +237,7 @@ CTAZFITSDataSourceFactory::new_data_source()
     auto config = base_data_source_->config();
     config.clear_forced_file_fragments_list();
     config.add_forced_file_fragments_list(base_data_source_->fragment_name(isource));
-    return base_data_source_->delegate()->new_of_type(config.forced_file_fragments_list(0), config, run_config_);
+    return base_data_source_->new_of_type(config.forced_file_fragments_list(0), config, run_config_);
   } else {
     return nullptr;
   }

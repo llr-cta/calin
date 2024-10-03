@@ -49,7 +49,7 @@ namespace { // anonymous
   }
 } // anonymous namespace
 
-ZFITSDataSourceTypeCloningInterface::~ZFITSDataSourceTypeCloningInterface()
+BasicZFITSDataSource::~BasicZFITSDataSource()
 {
   // nothing to see here
 }
@@ -67,7 +67,7 @@ ZFITSDataSource(
     calin::iact_data::acada_event_decoder::
       ACADACameraEventDecoder<MessageSet>* decoder,
     bool adopt_acada_zfits, bool adopt_decoder):
-  ZFITSDataSourceTypeCloningInterface(),
+  BasicZFITSDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   acada_zfits_(acada_zfits),  adopt_acada_zfits_(adopt_acada_zfits)
 {
@@ -123,7 +123,7 @@ ZFITSDataSource(const std::string& filename,
     calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<MessageSet>* decoder,
     const config_type& config,
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* forced_run_config):
-  ZFITSDataSourceTypeCloningInterface(),
+  BasicZFITSDataSource(),
   decoder_(decoder), adopt_decoder_(true),
   acada_zfits_(new calin::iact_data::zfits_acada_data_source::
     ZFITSACADACameraEventDataSource<MessageSet>(filename, config)), 

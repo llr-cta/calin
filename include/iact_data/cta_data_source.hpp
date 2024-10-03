@@ -33,10 +33,8 @@
 namespace calin { namespace iact_data { namespace cta_data_source {
 
 class CTAZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
-  public calin::io::data_source::FragmentList,
-  private calin::pattern::delegation::Delegator<
-    calin::iact_data::zfits_data_source::ZFITSDataSourceTypeCloningInterface>
+  public calin::iact_data::zfits_data_source::BasicZFITSDataSource,
+  private calin::pattern::delegation::Delegator<calin::iact_data::zfits_data_source::BasicZFITSDataSource>
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
@@ -71,12 +69,15 @@ public:
   config_type config() const { return config_; }
   decoder_config_type decoder_config() const { return decoder_config_; }
 
-  calin::iact_data::zfits_data_source::ZFITSDataSourceTypeCloningInterface* delegate() { return delegate_; }
+  calin::iact_data::zfits_data_source::BasicZFITSDataSource* 
+  new_of_type(const std::string& filename, const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* forced_run_configuration = nullptr) override;
 
 private:
   config_type config_;
   decoder_config_type decoder_config_;
-  static calin::iact_data::zfits_data_source::ZFITSDataSourceTypeCloningInterface* construct_delegate(
+  static calin::iact_data::zfits_data_source::BasicZFITSDataSource* construct_delegate(
     std::string filename, config_type config, decoder_config_type decoder_config);
 };
 

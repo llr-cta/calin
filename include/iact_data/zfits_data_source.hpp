@@ -39,23 +39,23 @@
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
-class ZFITSDataSourceTypeCloningInterface:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig
+class BasicZFITSDataSource:
+  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
+  public calin::io::data_source::FragmentList
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  virtual ~ZFITSDataSourceTypeCloningInterface();
-  virtual ZFITSDataSourceTypeCloningInterface* new_of_type(const std::string& filename, const config_type& config,
+  virtual ~BasicZFITSDataSource();
+  virtual BasicZFITSDataSource* new_of_type(const std::string& filename, const config_type& config,
     const calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* forced_run_configuration = nullptr) = 0;
 };
 
 template<typename MessageSet>
 class ZFITSDataSource:
-  public ZFITSDataSourceTypeCloningInterface,
-  public calin::io::data_source::FragmentList
+  public BasicZFITSDataSource
 {
 public:
   CALIN_TYPEALIAS(config_type,
