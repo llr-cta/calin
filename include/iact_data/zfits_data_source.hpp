@@ -39,59 +39,22 @@
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
-#if 0 // UNUSED
-template<typename EventMessage, typename HeaderMessage>
-class ZFITSSingleFileDataSource:
-  public calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig
+class ZFITSDataSourceTypeCloningInterface:
+  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  ZFITSSingleFileDataSource(
-    calin::iact_data::zfits_acada_data_source::
-      ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>* actl_zfits,
-    bool dont_decode_run_configuration,
-    calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
-    bool adopt_decoder = false,
-    bool adopt_actl_zfits = false);
-
-  ZFITSSingleFileDataSource(const std::string& filename,
-    calin::iact_data::acada_event_decoder::
-      ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder,
-    bool adopt_decoder = false,
-    const config_type& config = default_config());
-
-  virtual ~ZFITSSingleFileDataSource();
-
-  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
-    uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
-  uint64_t size() override;
-  void set_next_index(uint64_t next_index) override;
-
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* get_run_configuration() override;
-
-  static config_type default_config();
-
-private:
-  calin::iact_data::acada_event_decoder::
-    ACADACameraEventDecoder<EventMessage,HeaderMessage>* decoder_;
-  bool adopt_decoder_ = false;
-  calin::iact_data::zfits_acada_data_source::
-    ZFITSSingleFileACADACameraEventDataSource<EventMessage,HeaderMessage>* acada_zfits_ = nullptr;
-  bool adopt_acada_zfits_ = false;
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* run_config_ = nullptr;
+  virtual ~ZFITSDataSourceTypeCloningInterface();
+  virtual ZFITSDataSourceTypeCloningInterface* new_of_type(const std::string& filename, const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* forced_run_configuration = nullptr) = 0;
 };
-#endif // UNUSED
-
 
 template<typename MessageSet>
 class ZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
+  public ZFITSDataSourceTypeCloningInterface,
   public calin::io::data_source::FragmentList
 {
 public:
@@ -111,10 +74,6 @@ public:
     bool adopt_decoder = false,
     const config_type& config = default_config());
 
-  ZFITSDataSource(const std::string& filename,
-    ZFITSDataSource<MessageSet>* base_datasource, 
-    const config_type& config = default_config());
-
   virtual ~ZFITSDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
@@ -132,7 +91,14 @@ public:
 
   static config_type default_config();
 
+  ZFITSDataSource<MessageSet>* new_of_type(const std::string& filename, const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* forced_run_config) override;
+
 protected:
+  ZFITSDataSource(const std::string& filename,
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<MessageSet>* decoder,
+    const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* forced_run_config);
 
   calin::iact_data::acada_event_decoder::
     ACADACameraEventDecoder<MessageSet>* decoder_;

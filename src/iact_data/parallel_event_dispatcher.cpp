@@ -280,7 +280,7 @@ process_cta_zfits_run(const std::string& filename,
       throw;
     }
   } else {
-    auto* src_factory = new CTAZFITSDataSourceFactory(cta_file);
+    auto* src_factory = new CTAZFITSDataSourceFactory(cta_file, run_config);
     try {
       process_src_factory(src_factory, run_config, config.log_frequency(), nthread);
     } catch(...) {
