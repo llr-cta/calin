@@ -126,7 +126,9 @@ message RunInfo {
     (CFO).desc = "Histogram of elapsed time for forced array triggers." ];
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_ucts_aux = 17 [
     (CFO).desc = "Histogram of elapsed time for UCTS triggers." ];
-
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_muon_candidate = 18 [
+    (CFO).desc = "Histogram of elapsed time for UCTS triggers." ];
+      
   uint64 num_events_missing_cdts                           = 20 [
     (CFO).desc = "Number of events without CDTS information.",
     (CFO).is_counter = true ];
@@ -192,6 +194,10 @@ message RunInfo {
     (CFO).desc = "Number of events where TIB and UCTS triiger codes do not match.",
     (CFO).is_counter = true ];
 
+  uint64 num_muon_candidate                                = 51 [
+    (CFO).desc = "Number of events with muon candidate flag bit set.",
+    (CFO).is_counter = true ];
+  
   int64 min_event_time                                     = 60 [
     (CFO).desc = "Minimum absolute event time from all events.",
     (CFO).units = "ns",
@@ -276,6 +282,7 @@ message PartialRunInfo {
   uint64 num_slow_control_trigger                          = 46 [ (CFO).is_counter = true ];
   uint64 num_busy_trigger                                  = 47 [ (CFO).is_counter = true ];
   uint64 num_tib_ucts_trigger_code_mismatch                = 48 [ (CFO).is_counter = true ];
+  uint64 num_muon_candidate                                = 49 [ (CFO).is_counter = true ];
 
   int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
   int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
