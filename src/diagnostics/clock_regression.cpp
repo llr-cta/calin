@@ -247,8 +247,15 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
 
   for(auto& ct : camera_tests_)
   {
-    const auto* test_clock = find_clock(ct.config.clock_id(),event->camera_clock());
+    if(ct.config.clock_id() >= event->camera_clock_index_size()) {
+      throw std::runtime_error("ClockRegressionParallelEventVisitor::visit_telescope_event: clock index array error");
+    }
+    const auto* test_clock = event->camera_clock_index(ct.config.clock_id())==-1 ? nullptr :
+      &event->camera_clock(event->camera_clock_index(ct.config.clock_id()));
     if(test_clock) {
+      if(test_clock->clock_id() != ct.config.clock_id()) {
+        throw std::runtime_error("ClockRegressionParallelEventVisitor::visit_telescope_event: clock id mismatch");
+      }
       if(test_clock->time_value_may_be_suspect() and
           ct.config.include_possibly_suspect_time_values() == false) {
         continue;
@@ -270,15 +277,19 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
     }
 
     for(auto& imod : event->module_clock()) {
-      const auto* test_clock = find_clock(mt.config.clock_id(),imod.clock());
-      if(test_clock) {
-        if(test_clock->time_value_may_be_suspect() and
-            mt.config.include_possibly_suspect_time_values() == false) {
-          continue;
-        }
-        accumulate_clock(principal_time, event->local_event_number(), *test_clock,
-          mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
+      if(mt.config.clock_id() >= imod.clock_size()) {
+        throw std::runtime_error("ClockRegressionParallelEventVisitor::visit_telescope_event: module clock not present");
       }
+      const auto* test_clock = &imod.clock(mt.config.clock_id());
+      if(test_clock->clock_id() != mt.config.clock_id()) {
+        throw std::runtime_error("ClockRegressionParallelEventVisitor::visit_telescope_event: module clock id mismatch");
+      }
+      if(test_clock->time_value_may_be_suspect() and
+          mt.config.include_possibly_suspect_time_values() == false) {
+        continue;
+      }
+      accumulate_clock(principal_time, event->local_event_number(), *test_clock,
+        mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
     }
   }
 
