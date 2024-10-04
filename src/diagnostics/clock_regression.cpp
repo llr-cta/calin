@@ -52,6 +52,17 @@ ClockRegressionParallelEventVisitor::new_sub_visitor(
   return sub_visior;
 }
 
+namespace {
+  int find_clock_id_by_name(const std::string& name, 
+    const google::protobuf::RepeatedPtrField<std::string>& clock_names)
+  {    
+    for(int clock_id=0;clock_id<clock_names.size();++clock_id) {
+      if(clock_names[clock_id] == name)return clock_id;
+    }
+    return -1;
+  }
+}
+
 bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
@@ -105,21 +116,39 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   }
 
   if(cam_tests) {
-    for(auto& cam_test : (*cam_tests)) {
+    for(const auto& cam_test : (*cam_tests)) {
       ClockTest ct;
-      ct.config = &cam_test;
+      ct.config.CopyFrom(cam_test);
+      if(not ct.config.clock_name().empty()) {
+        ct.config.set_clock_id(find_clock_id_by_name(ct.config.clock_name(), 
+          run_config->camera_layout().camera_clock_name()));
+      } else if(ct.config.clock_id() < run_config->camera_layout().camera_clock_name_size()) {
+        ct.config.set_clock_name(run_config->camera_layout().camera_clock_name(ct.config.clock_id()));
+      }
+      if(ct.config.clock_id()<0 
+          or ct.config.clock_id()>=run_config->camera_layout().camera_clock_name_size())
+        continue;
       camera_tests_.push_back(ct);
     }
   }
 
   if(mod_tests) {
-    for(auto& mod_test : (*mod_tests)) {
+    for(const auto& mod_test : (*mod_tests)) {
       ModuleClockTest mct;
-      mct.config = &mod_test;
-      mct.modules.resize(run_config->configured_module_id_size());
-      for(auto& ct : mct.modules) {
-        ct.config = mct.config;
+      mct.config = mod_test;
+      if(not mct.config.clock_name().empty()) {
+        mct.config.set_clock_id(find_clock_id_by_name(mct.config.clock_name(), 
+          run_config->camera_layout().module_clock_name()));
+      } else if(mct.config.clock_id() < run_config->camera_layout().camera_clock_name_size()) {
+        mct.config.set_clock_name(run_config->camera_layout().camera_clock_name(mct.config.clock_id()));
       }
+      mct.modules.resize(run_config->configured_module_id_size());
+      if(mct.config.clock_id()<0 
+          or mct.config.clock_id()>=run_config->camera_layout().camera_clock_name_size())
+        continue;
+      // for(auto& ct : mct.modules) {
+      //   ct.config = mct.config;
+      // }
       module_tests_.push_back(mct);
     }
   }
@@ -206,37 +235,37 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
 
   for(auto& ct : camera_tests_)
   {
-    const auto* test_clock = find_clock(ct.config->clock_id(),event->camera_clock());
+    const auto* test_clock = find_clock(ct.config.clock_id(),event->camera_clock());
     if(test_clock) {
       if(test_clock->time_value_may_be_suspect() and
-          ct.config->include_possibly_suspect_time_values() == false) {
+          ct.config.include_possibly_suspect_time_values() == false) {
         continue;
       }
       int64_t principal_time = principal_clock->time_value();
-      if(ct.config->principal_clock_divisor() > 1) {
-        principal_time /= ct.config->principal_clock_divisor();
+      if(ct.config.principal_clock_divisor() > 1) {
+        principal_time /= ct.config.principal_clock_divisor();
       }
       accumulate_clock(principal_time, event->local_event_number(), *test_clock,
-        *ct.config, ct.bins, do_rebalance);
+        ct.config, ct.bins, do_rebalance);
     }
   }
 
   for(auto& mt : module_tests_)
   {
     int64_t principal_time = principal_clock->time_value();
-    if(mt.config->principal_clock_divisor() > 1) {
-      principal_time /= mt.config->principal_clock_divisor();
+    if(mt.config.principal_clock_divisor() > 1) {
+      principal_time /= mt.config.principal_clock_divisor();
     }
 
     for(auto& imod : event->module_clock()) {
-      const auto* test_clock = find_clock(mt.config->clock_id(),imod.clock());
+      const auto* test_clock = find_clock(mt.config.clock_id(),imod.clock());
       if(test_clock) {
         if(test_clock->time_value_may_be_suspect() and
-            mt.config->include_possibly_suspect_time_values() == false) {
+            mt.config.include_possibly_suspect_time_values() == false) {
           continue;
         }
         accumulate_clock(principal_time, event->local_event_number(), *test_clock,
-          *mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
+          mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
       }
     }
   }
@@ -283,47 +312,47 @@ ClockRegressionParallelEventVisitor::default_config()
   // NectarCAM
 
   auto* clock = config.add_default_nectarcam_camera_clocks();
-  clock->set_clock_id(1); // UCTS 10MHz
+  clock->set_clock_name("UCTS 10MHz counter"); // UCTS 10MHz
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
-  clock->set_clock_id(4); // TIB 10MHz
+  clock->set_clock_name("TIB 10MHz counter"); // TIB 10MHz
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
-  clock->set_clock_id(7); // FEB local oscillator sum
+  clock->set_clock_name("FEB local 2ns TDC counter sum"); // FEB local oscillator sum
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
-  clock->set_clock_id(7); // FEB local oscillator sum
+  clock->set_clock_name("FEB local 2ns TDC counter sum"); // FEB local oscillator sum
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_MASTER_CLOCK);
   clock->set_partition_bin_size(250000000);
 
   clock = config.add_default_nectarcam_camera_clocks();
-  clock->set_clock_id(0); // UCTS timestamp
+  clock->set_clock_name("UCTS timestamp"); // UCTS timestamp
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_LOCAL_EVENT_NUMBER);
   clock->set_partition_bin_size(10000);
 
   clock = config.add_default_nectarcam_module_clocks();
-  clock->set_clock_id(0); // local ~2ns TDC time
+  clock->set_clock_name("local 2ns TDC time"); // local ~2ns TDC time
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   // LSTCAM
 
   clock = config.add_default_lstcam_camera_clocks();
-  clock->set_clock_id(1); // UCTS 10MHz
+  clock->set_clock_name("UCTS 10MHz counter"); // UCTS 10MHz
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_lstcam_camera_clocks();
-  clock->set_clock_id(3); // TIB 10MHz
+  clock->set_clock_name("TIB 10MHz counter"); // TIB 10MHz
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_lstcam_module_clocks();
-  clock->set_clock_id(0); // backplane 10MHz counter
+  clock->set_clock_name("backplane 10MHz counter"); // backplane 10MHz counter
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::SINGLE_PARTITION);
 
   clock = config.add_default_lstcam_module_clocks();
-  clock->set_clock_id(1); // local 133MHz TDC time
+  clock->set_clock_name("local 133MHz oscillator counter"); // local 133MHz TDC time
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   return config;
@@ -333,7 +362,8 @@ void ClockRegressionParallelEventVisitor::transfer_clock_results(
   calin::ix::diagnostics::clock_regression::SingleClockRegressionResults* res,
   const ClockTest& ct) const
 {
-  res->set_clock_id(ct.config->clock_id());
+  res->set_clock_name(ct.config.clock_name());
+  res->set_clock_id(ct.config.clock_id());
   for(const auto& ibin : ct.bins) {
     const auto* reg = &ibin.second->accumulator();
 
@@ -363,6 +393,7 @@ ClockRegressionParallelEventVisitor::clock_regression(
     results = new calin::ix::diagnostics::clock_regression::ClockRegressionResults();
   }
 
+  results->set_principal_clock_name(config_.principal_clock_name());
   results->set_principal_clock_id(config_.principal_clock_id());
 
   for(const auto& ct : camera_tests_) {

@@ -36,29 +36,35 @@ enum ClockPartitionMode {
 };
 
 message SingleClockRegressionConfig {
-  int32 clock_id                                           = 1 [
-    (CFO).desc = "ID of camera or module clock to calculate regression on." ];
-  ClockPartitionMode partition_mode                        = 2 [
+  string clock_name                                        = 1 [
+    (CFO).desc = "Name of the camera of module clock to calculate regression on." ];
+  int32 clock_id                                           = 2 [
+    (CFO).desc = "ID of camera or module clock to calculate regression on. "
+      "This is overridden by the clock_name parameter if it is present," ];
+  ClockPartitionMode partition_mode                        = 3 [
     (CFO).desc = "How to partition the clock data into bins." ];
-  int64 partition_bin_size                                 = 3 [
+  int64 partition_bin_size                                 = 4 [
     (CFO).desc = "Size of clock partition bins, either in events or ticks of "
       "principal clock." ];
-  int64 principal_clock_divisor                               = 4 [
+  int64 principal_clock_divisor                            = 5 [
     (CFO).desc = "Divisor to apply to principal clock before regression. Should "
       "only be used if there is a risk of overflow of the 64-bit "
       "accumulators." ];
-  bool include_possibly_suspect_time_values                = 5 [
+  bool include_possibly_suspect_time_values                = 6 [
     (CFO).desc = "Include values of the test clock that are flagged as "
       "possibly suspicious in the regression." ];
 };
 
 message ClockRegressionConfig {
-  int32 principal_clock_id                                    = 1 [
-    (CFO).desc = "Master camera clock id to use in regression." ];
-  bool include_possibly_suspect_principal_time_values         = 2 [
+  string principal_clock_name                              = 1 [
+    (CFO).desc = "Master camera clock name to use in regression." ];
+  int32 principal_clock_id                                 = 2 [
+    (CFO).desc = "Master camera clock id to use in regression. "
+      "This is overridden by the principal_clock_name parameter if it is present." ];
+  bool include_possibly_suspect_principal_time_values      = 3 [
     (CFO).desc = "Include values of the principal clock that are flagged as "
       "possibly suspicious in the regression." ];
-  int32 rebalance_nevent                                   = 3 [
+  int32 rebalance_nevent                                   = 4 [
     (CFO).desc = "Number of events between rebalancing, if positive, or "
       "do not do rebalancing otherwise." ];
 
@@ -94,8 +100,9 @@ message ClockRegressionParameters {
 };
 
 message SingleClockRegressionResults {
-  int32 clock_id                                           = 1;
-  map<uint32, ClockRegressionParameters> bins              = 2;
+  string clock_name                                        = 1;
+  int32 clock_id                                           = 2;
+  map<uint32, ClockRegressionParameters> bins              = 3;
 };
 
 message ModuleClockRegressionResults {
@@ -103,7 +110,8 @@ message ModuleClockRegressionResults {
 };
 
 message ClockRegressionResults {
-  int32 principal_clock_id                                    = 1;
-  repeated SingleClockRegressionResults camera_clock       = 2;
-  repeated ModuleClockRegressionResults module_clock       = 3;
+  string principal_clock_name                              = 1;
+  int32 principal_clock_id                                 = 2;
+  repeated SingleClockRegressionResults camera_clock       = 3;
+  repeated ModuleClockRegressionResults module_clock       = 4;
 };

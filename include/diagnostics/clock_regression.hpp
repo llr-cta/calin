@@ -73,12 +73,12 @@ private:
 
   struct ClockTest {
     ~ClockTest() { for(auto& ibin : bins) { delete ibin.second; } }
-    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig config;
     std::map<int, RegressionAccumulator*> bins;
   };
 
   struct ModuleClockTest {
-    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig config;
     std::vector<ClockTest> modules;
   };
 
