@@ -376,6 +376,9 @@ void ClockRegressionParallelEventVisitor::transfer_clock_results(
 {
   res->set_clock_name(ct.config.clock_name());
   res->set_clock_id(ct.config.clock_id());
+  res->set_partition_mode(ct.config.partition_mode());
+  res->set_partition_bin_size(ct.config.partition_bin_size());
+  res->set_principal_clock_divisor(ct.config.principal_clock_divisor());
   for(const auto& ibin : ct.bins) {
     const auto* reg = &ibin.second->accumulator();
 

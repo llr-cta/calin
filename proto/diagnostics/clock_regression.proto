@@ -102,7 +102,10 @@ message ClockRegressionParameters {
 message SingleClockRegressionResults {
   string clock_name                                        = 1;
   int32 clock_id                                           = 2;
-  map<uint32, ClockRegressionParameters> bins              = 3;
+  ClockPartitionMode partition_mode                        = 3;
+  int64 partition_bin_size                                 = 4;
+  int64 principal_clock_divisor                            = 5;
+  map<uint32, ClockRegressionParameters> bins              = 6;
 };
 
 message ModuleClockRegressionResults {
