@@ -236,6 +236,7 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
+    calin_event->set_camera_clock_index(4,calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(4);
     calin_clock->set_time_value(cdts.pps_counter()*10000000ULL + cdts.clock_counter());
