@@ -91,6 +91,8 @@ private:
 
   calin::ix::diagnostics::clock_regression::ClockRegressionConfig config_;
   int rebalance_ = 0;
+  std::string principal_clock_name_ = {};
+  int principal_clock_id_ = 0;
   std::vector<ClockTest> camera_tests_;
   std::vector<ModuleClockTest> module_tests_;
 };

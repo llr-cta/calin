@@ -77,6 +77,16 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   }
 
   rebalance_ = config_.rebalance_nevent();
+  principal_clock_name_ = config_.principal_clock_name();
+  principal_clock_id_ = config_.principal_clock_id();
+
+  if(not principal_clock_name_.empty()) {
+    principal_clock_id_ = find_clock_id_by_name(principal_clock_name_,
+      run_config->camera_layout().camera_clock_name());
+  } else if(principal_clock_id_>=0 
+        and principal_clock_id_<run_config->camera_layout().camera_clock_name_size()) {
+    principal_clock_name_ = run_config->camera_layout().camera_clock_name(principal_clock_id_);
+  }
 
   camera_tests_.clear();
   module_tests_.clear();
@@ -122,7 +132,8 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
       if(not ct.config.clock_name().empty()) {
         ct.config.set_clock_id(find_clock_id_by_name(ct.config.clock_name(), 
           run_config->camera_layout().camera_clock_name()));
-      } else if(ct.config.clock_id() < run_config->camera_layout().camera_clock_name_size()) {
+      } else if(ct.config.clock_id()>=0 
+          and ct.config.clock_id()<run_config->camera_layout().camera_clock_name_size()) {
         ct.config.set_clock_name(run_config->camera_layout().camera_clock_name(ct.config.clock_id()));
       }
       if(ct.config.clock_id()<0 
@@ -139,12 +150,13 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
       if(not mct.config.clock_name().empty()) {
         mct.config.set_clock_id(find_clock_id_by_name(mct.config.clock_name(), 
           run_config->camera_layout().module_clock_name()));
-      } else if(mct.config.clock_id() < run_config->camera_layout().camera_clock_name_size()) {
-        mct.config.set_clock_name(run_config->camera_layout().camera_clock_name(mct.config.clock_id()));
+      } else if(mct.config.clock_id()>=0 
+          and mct.config.clock_id()<run_config->camera_layout().module_clock_name_size()) {
+        mct.config.set_clock_name(run_config->camera_layout().module_clock_name(mct.config.clock_id()));
       }
       mct.modules.resize(run_config->configured_module_id_size());
       if(mct.config.clock_id()<0 
-          or mct.config.clock_id()>=run_config->camera_layout().camera_clock_name_size())
+          or mct.config.clock_id()>=run_config->camera_layout().module_clock_name_size())
         continue;
       // for(auto& ct : mct.modules) {
       //   ct.config = mct.config;
@@ -223,7 +235,7 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
     }
   }
 
-  const auto* principal_clock = find_clock(config_.principal_clock_id(),event->camera_clock());
+  const auto* principal_clock = find_clock(principal_clock_id_,event->camera_clock());
   if(principal_clock == nullptr) {
     return true;
   }
@@ -393,8 +405,8 @@ ClockRegressionParallelEventVisitor::clock_regression(
     results = new calin::ix::diagnostics::clock_regression::ClockRegressionResults();
   }
 
-  results->set_principal_clock_name(config_.principal_clock_name());
-  results->set_principal_clock_id(config_.principal_clock_id());
+  results->set_principal_clock_name(principal_clock_name_);
+  results->set_principal_clock_id(principal_clock_id_);
 
   for(const auto& ct : camera_tests_) {
     transfer_clock_results(results->add_camera_clock(), ct);
