@@ -195,18 +195,20 @@ namespace {
     std::map<int, calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::RegressionAccumulator*>& bins,
     bool do_rebalance)
   {
+    using namespace calin::ix::diagnostics::clock_regression;
+    int64_t regressor_value = config.regressor()==EVENT_NUMBER ? local_event_number : principal_time;
     int ibin;
     switch(config.partition_mode()) {
-    case calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID:
+    case PARTITION_BY_CLOCK_SEQUENCE_ID:
       ibin = clock.time_sequence_id();
       break;
-    case calin::ix::diagnostics::clock_regression::PARTITION_BY_LOCAL_EVENT_NUMBER:
+    case PARTITION_BY_LOCAL_EVENT_NUMBER:
       ibin = local_event_number/config.partition_bin_size();
       break;
-    case calin::ix::diagnostics::clock_regression::PARTITION_BY_MASTER_CLOCK:
+    case PARTITION_BY_MASTER_CLOCK:
       ibin = principal_time/config.partition_bin_size();
       break;
-    case calin::ix::diagnostics::clock_regression::SINGLE_PARTITION:
+    case SINGLE_PARTITION:
     default:
       ibin = 0;
       break;
@@ -216,7 +218,7 @@ namespace {
       bins[ibin] = accumulator =
         new calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::RegressionAccumulator();
     }
-    accumulator->accumulate(principal_time, clock.time_value());
+    accumulator->accumulate(regressor_value, clock.time_value());
     if(do_rebalance) {
       accumulator->rebalance();
     }
@@ -328,7 +330,9 @@ bool ClockRegressionParallelEventVisitor::merge_results()
 calin::ix::diagnostics::clock_regression::ClockRegressionConfig
 ClockRegressionParallelEventVisitor::default_config()
 {
-  calin::ix::diagnostics::clock_regression::ClockRegressionConfig config;
+  using namespace calin::ix::diagnostics::clock_regression;
+
+  ClockRegressionConfig config;
   config.set_principal_clock_id(0); // UCTS timestamp
   config.set_rebalance_nevent(1000);
 
@@ -336,29 +340,30 @@ ClockRegressionParallelEventVisitor::default_config()
 
   auto* clock = config.add_default_nectarcam_camera_clocks();
   clock->set_clock_name("UCTS 10MHz counter"); // UCTS 10MHz
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+  clock->set_partition_mode(PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
   clock->set_clock_name("TIB 10MHz counter"); // TIB 10MHz
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+  clock->set_partition_mode(PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
   clock->set_clock_name("FEB local 2ns TDC counter sum"); // FEB local oscillator sum
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+  clock->set_partition_mode(PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   clock = config.add_default_nectarcam_camera_clocks();
   clock->set_clock_name("FEB local 2ns TDC counter sum"); // FEB local oscillator sum
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_MASTER_CLOCK);
+  clock->set_partition_mode(PARTITION_BY_MASTER_CLOCK);
   clock->set_partition_bin_size(250000000);
 
   clock = config.add_default_nectarcam_camera_clocks();
   clock->set_clock_name("UCTS timestamp"); // UCTS timestamp
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_LOCAL_EVENT_NUMBER);
+  clock->set_partition_mode(PARTITION_BY_LOCAL_EVENT_NUMBER);
+  clock->set_regressor(EVENT_NUMBER);
   clock->set_partition_bin_size(10000);
 
   clock = config.add_default_nectarcam_module_clocks();
   clock->set_clock_name("local 2ns TDC time"); // local ~2ns TDC time
-  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+  clock->set_partition_mode(PARTITION_BY_CLOCK_SEQUENCE_ID);
 
   // LSTCAM
 

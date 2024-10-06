@@ -27,6 +27,10 @@ import "calin.proto";
 
 package calin.ix.diagnostics.clock_regression;
 
+enum Regressor {
+  PRINCIPAL_CLOCK                                          = 0;
+  EVENT_NUMBER                                             = 1;
+};
 
 enum ClockPartitionMode {
   SINGLE_PARTITION                                         = 0;
@@ -41,16 +45,18 @@ message SingleClockRegressionConfig {
   int32 clock_id                                           = 2 [
     (CFO).desc = "ID of camera or module clock to calculate regression on. "
       "This is overridden by the clock_name parameter if it is present," ];
-  ClockPartitionMode partition_mode                        = 3 [
+  Regressor regressor                                      = 3 [
+    (CFO).desc = "Source of (independent) regressor." ];
+  ClockPartitionMode partition_mode                        = 4 [
     (CFO).desc = "How to partition the clock data into bins." ];
-  int64 partition_bin_size                                 = 4 [
+  int64 partition_bin_size                                 = 5 [
     (CFO).desc = "Size of clock partition bins, either in events or ticks of "
       "principal clock." ];
-  int64 principal_clock_divisor                            = 5 [
+  int64 principal_clock_divisor                            = 6 [
     (CFO).desc = "Divisor to apply to principal clock before regression. Should "
       "only be used if there is a risk of overflow of the 64-bit "
       "accumulators." ];
-  bool include_possibly_suspect_time_values                = 6 [
+  bool include_possibly_suspect_time_values                = 7 [
     (CFO).desc = "Include values of the test clock that are flagged as "
       "possibly suspicious in the regression." ];
 };
