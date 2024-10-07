@@ -108,7 +108,8 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   case 0: calin_event->set_trigger_type(TRIGGER_EXTERNAL_FLASHER); break;
   case 1: calin_event->set_trigger_type(TRIGGER_INTERNAL_FLASHER); break;
   case 2: calin_event->set_trigger_type(TRIGGER_PEDESTAL); break;
-  case 16: calin_event->set_trigger_type(TRIGGER_MUON); break;
+  case 16: calin_event->set_trigger_type(TRIGGER_PHYSICS); 
+    calin_event->set_is_muon_candidate(true); break;
   case 17: calin_event->set_trigger_type(TRIGGER_FORCED_BY_ARRAY); break;
   case 24: calin_event->set_trigger_type(TRIGGER_SOFTWARE); break;
   case 32:
@@ -242,6 +243,9 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_clock->set_time_value(cdts.pps_counter()*10000000ULL + cdts.clock_counter());
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+    calin_event->set_is_muon_candidate(calin_event->is_muon_candidate() 
+      || cdts.muon_candidate());
   } else {
     calin_event->set_camera_clock_index(1,-1);
     calin_event->set_camera_clock_index(2,-1);

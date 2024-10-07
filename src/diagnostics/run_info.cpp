@@ -89,7 +89,9 @@ RunInfoDiagnosticsParallelEventVisitor::RunInfoDiagnosticsParallelEventVisitor(
   partials_(google::protobuf::Arena::CreateMessage<calin::ix::diagnostics::run_info::PartialRunInfo>(arena_)),
   run_config_(google::protobuf::Arena::CreateMessage<calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration>(arena_))
 {
-  // nothing to see here
+  muon_candidate_elapsed_time_hist_ = calin::math::histogram::SimpleHist(
+    config_.event_time_histogram_resolution(),
+    config_.event_time_histogram_min(), config_.event_time_histogram_max());
 }
 
 RunInfoDiagnosticsParallelEventVisitor::~RunInfoDiagnosticsParallelEventVisitor()
@@ -147,6 +149,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
 
   trigger_type_code_hist_.clear();
   trigger_type_code_diff_hist_.clear();
+  muon_candidate_elapsed_time_hist_.clear();
 
   calin::ix::diagnostics::run_info::RunInfoConfig config = config_;
   if(config.module_counter_test_id_size() == 0 and
@@ -291,12 +294,10 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
       partials_->increment_num_mono_trigger(cdts.mono_trigger());
       partials_->increment_num_stereo_trigger(cdts.stereo_trigger());
       partials_->increment_num_busy_trigger(cdts.busy_trigger());
-      partials_->increment_num_muon_candidate(cdts.muon_candidate());
       trigger_type_code_diff_hist_.insert(int(tib.trigger_type()) - int(cdts.trigger_type() & 0x7c));
       partials_->increment_num_tib_ucts_trigger_code_mismatch_if(tib.trigger_type() != (cdts.trigger_type() & 0x7c));
     } else {
       switch(event->trigger_type()) {
-        case TRIGGER_MUON: partials_->increment_num_muon_candidate(); // FALLTHROUGH
         case TRIGGER_PHYSICS: partials_->increment_num_mono_trigger(); break;
         case TRIGGER_FORCED_BY_ARRAY: partials_->increment_num_stereo_trigger(); break;
         default: break;
@@ -312,11 +313,9 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     partials_->increment_num_pedestal_trigger(cdts.pedestal_trigger());
     partials_->increment_num_slow_control_trigger(cdts.slow_control_trigger());
     partials_->increment_num_busy_trigger(cdts.busy_trigger());
-    partials_->increment_num_muon_candidate(cdts.muon_candidate());
     trigger_type_code_hist_.insert(cdts.trigger_type());
   } else {
     switch(event->trigger_type()) {
-      case TRIGGER_MUON: partials_->increment_num_muon_candidate(); // FALLTHROUGH
       case TRIGGER_PHYSICS: partials_->increment_num_mono_trigger(); break;
       case TRIGGER_SOFTWARE: partials_->increment_num_slow_control_trigger(); break;
       case TRIGGER_PEDESTAL: partials_->increment_num_pedestal_trigger(); break;
@@ -330,11 +329,18 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     };
   }
 
+  // MUON CANDIDATE
+  partials_->increment_num_muon_candidate(event->is_muon_candidate());
+
   // EVENT TIME
   if(event->has_absolute_event_time() and event->absolute_event_time().time_ns()>0) {
     auto t = event->absolute_event_time().time_ns();
     partials_->set_max_event_time(std::max(partials_->max_event_time(), t));
     partials_->set_min_event_time(std::min(partials_->min_event_time(), t));
+    if(event->is_muon_candidate()) {
+      double elapsed_time_sec = (t-run_config_->run_start_time().time_ns())*1e-9;
+      muon_candidate_elapsed_time_hist_.insert(elapsed_time_sec);
+    }
   }
 
   // CAMERA CLOCK TIMES
@@ -396,6 +402,8 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsParallelEventV
 
   config.set_event_number_histogram_resolution(10000);
   config.set_event_time_histogram_resolution(1.0);
+  config.set_event_time_histogram_max(7200.0);
+  config.set_event_time_histogram_min(-60.0);  
   config.set_log10_delta_t_histogram_binsize(0.01);
   config.set_delta_t_timeslice(100.0);
 
@@ -454,6 +462,8 @@ bool RunInfoDiagnosticsParallelEventVisitor::merge_results()
     trigger_type_code_hist_.clear();
     parent_->trigger_type_code_diff_hist_.insert_hist(trigger_type_code_diff_hist_);
     trigger_type_code_diff_hist_.clear();
+    parent_->muon_candidate_elapsed_time_hist_.insert_hist(muon_candidate_elapsed_time_hist_);
+    muon_candidate_elapsed_time_hist_.clear();
   }
   return true;
 }
@@ -558,13 +568,17 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
   trigger_type_code_diff_hist_.dump_as_compactified_proto(0, 0,
     results_->mutable_tib_ucts_trigger_code_diff_histogram());
 
-  const double thistmin = -60.0;
-  const double thistmax = 7200.0;
+  muon_candidate_elapsed_time_hist_.dump_as_proto(
+    results_->mutable_elapsed_time_histogram_muon_candidate());
+
   if(partials_->event_number_sequence_size() > 0)
   {
     calin::math::histogram::Histogram1D event_number_hist {
       config_.event_number_histogram_resolution(), 0.0, 1.0e9,
       double(run_config_->camera_layout().first_event_number()) };
+
+    const double thistmin = config_.event_time_histogram_min();
+    const double thistmax = config_.event_time_histogram_max();
 
     calin::math::histogram::Histogram1D elapsed_time_hist {
       config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
@@ -581,8 +595,6 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
     calin::math::histogram::Histogram1D trigger_forced_array_elapsed_time_hist {
       config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_ucts_aux_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
-    calin::math::histogram::Histogram1D trigger_muon_candidate_time_hist {
       config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
 
     for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
@@ -606,8 +618,6 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
           trigger_forced_array_elapsed_time_hist.insert(elapsed_time_sec); break;
         case calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX:
           trigger_ucts_aux_elapsed_time_hist.insert(elapsed_time_sec); break;
-        case calin::ix::iact_data::telescope_event::TRIGGER_MUON:
-          trigger_muon_candidate_time_hist.insert(elapsed_time_sec); break;
         case calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN:
         case calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE:
         default:
@@ -635,8 +645,6 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       results_->mutable_elapsed_time_histogram_trigger_forced_array());
     trigger_ucts_aux_elapsed_time_hist.dump_as_proto(
       results_->mutable_elapsed_time_histogram_trigger_ucts_aux());
-    trigger_muon_candidate_time_hist.dump_as_proto(
-      results_->mutable_elapsed_time_histogram_muon_candidate());
 
     auto event_index = calin::util::algorithm::argsort(
       partials_->event_number_sequence().begin(), partials_->event_number_sequence().end());

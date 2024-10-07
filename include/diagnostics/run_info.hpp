@@ -122,6 +122,7 @@ private:
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
   calin::math::histogram::SimpleHist trigger_type_code_hist_ = { 1.0, -1.0, 256.0 };
   calin::math::histogram::SimpleHist trigger_type_code_diff_hist_ = { 1.0, -256.0, 256.0 };
+  calin::math::histogram::SimpleHist muon_candidate_elapsed_time_hist_ = { 1.0, -60.0, 7200.0 };
 };
 
 } } } // namespace calin::diagnostics::run_info

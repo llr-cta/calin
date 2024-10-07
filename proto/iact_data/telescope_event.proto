@@ -441,7 +441,6 @@ enum TriggerType {
   TRIGGER_FORCED_BY_ARRAY       = 6;
   TRIGGER_UCTS_AUX              = 7;
   TRIGGER_MULTIPLE              = 8;
-  TRIGGER_MUON                  = 9;
 };
 
 enum ImageTreatmentMode {
@@ -469,6 +468,8 @@ message TelescopeEvent {
     (CFO).desc = "Flag for whether array trigger was received." ];
   int64 array_event_number                                  = 6 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
+  bool is_muon_candidate                                    = 7 [
+    (CFO).desc = "Muon candidate flag set for event." ];
 
   bool all_modules_present                                  = 10 [
     (CFO).desc = "True if all modules are present in the image." ];
