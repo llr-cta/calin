@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <memory>
 #include <cctype>
+#include <mutex>
 
 #include <util/log.hpp>
 #include <provenance/chronicle.hpp>
@@ -61,6 +62,9 @@ namespace {
   template<> std::string default_message_table_name<ACADA_EventMessage_R1v1>() { return "Events"; }
   template<> std::string default_message_table_name<ACADA_DataStreamMessage_R1v1>() { return "DataStream"; }
 
+  template<typename Message> bool is_message_type() { return true; }
+  template<> bool is_message_type<void>() { return true; }
+
   template<typename Message> inline Message* read_one_message_from_zfits_table(
     const std::string& filename, const std::string& tablename, bool suppress_file_record = false) 
   {
@@ -98,6 +102,7 @@ namespace {
     // nothing to see here
   }
 
+  std::mutex global_ifits_lock;
 } // anonymous namespace
 
 std::vector<std::string> calin::iact_data::zfits_acada_data_source::
@@ -106,6 +111,7 @@ get_zfits_table_names(std::string filename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> tables;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, "", /* force= */ true);
     if(ifits) {
       tables.push_back(ifits.GetTable().name);
@@ -126,6 +132,7 @@ get_zfits_table_column_names(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> columns;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& col : ifits.GetColumns()) {
@@ -144,6 +151,7 @@ get_zfits_table_keys(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::vector<std::string> keys;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& key : ifits.GetKeys()) {
@@ -162,6 +170,7 @@ get_zfits_table_key_values(std::string filename, std::string tablename)
   calin::util::file::expand_filename_in_place(filename);
   std::map<std::string,std::string> key_values;
   try {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
     IFits ifits(filename, tablename, /* force= */ true);
     if(ifits) {
       for(const auto& key : ifits.GetKeys()) {
@@ -236,7 +245,10 @@ ZFITSSingleFileSingleMessageDataSource(
   if(!is_readable(filename_))
     throw std::runtime_error(std::string("File not readable: ")+filename_);
 
-  zfits_ = new ADH::IO::ProtobufIFits(filename_, tablename_, Message::descriptor());
+  {
+    std::lock_guard<std::mutex> guard(global_ifits_lock);
+    zfits_ = new ADH::IO::ProtobufIFits(filename_, tablename_, Message::descriptor());
+  }
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " + tablename_);
 
@@ -344,31 +356,6 @@ ZFITSSingleFileACADACameraEventDataSource(const std::string& filename, const con
   if(!is_readable(filename_))
     throw std::runtime_error(std::string("File not readable: ")+filename_);
 
-  if(!config_.dont_read_run_header())
-  {
-    try {
-      run_header_ = read_one_message_from_zfits_table<header_type>(
-        filename_, config_.run_header_table_name(), /* suppress_file_record = */true);
-    } catch(...) {
-      if(!config_.ignore_run_header_errors())
-        LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
-          << ">: Could not read run header from "
-          << filename_ << " -> " << config_.run_header_table_name();
-    }
-
-    try {
-      data_stream_ = read_one_message_from_zfits_table<data_stream_type>(
-        filename_, config_.data_stream_table_name(), /* suppress_file_record = */true);
-    } catch(...) {
-      if(!config_.ignore_run_header_errors())
-        LOG(WARNING)
-          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
-          << ">: Could not read data stream from "
-          << filename_ << " -> " << config_.data_stream_table_name();
-    }
-  }
-
   zfits_ = new ZFITSSingleFileSingleMessageDataSource<event_type>(filename_, config_.events_table_name());
 }
 
@@ -433,6 +420,20 @@ template<typename MessageSet>
 typename MessageSet::header_type* ZFITSSingleFileACADACameraEventDataSource<MessageSet>::
 get_run_header()
 {
+  if(run_header_ == nullptr and not config_.dont_read_run_header())
+  {
+    try {
+      run_header_ = read_one_message_from_zfits_table<header_type>(
+        filename_, config_.run_header_table_name(), /* suppress_file_record = */ true);
+    } catch(...) {
+      if(!config_.ignore_run_header_errors())
+        LOG(WARNING)
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read run header from "
+          << filename_ << " -> " << config_.run_header_table_name();
+    }
+  }
+
   return copy_message(run_header_);
 }
 
@@ -440,9 +441,22 @@ template<typename MessageSet>
 typename MessageSet::data_stream_type* ZFITSSingleFileACADACameraEventDataSource<MessageSet>::
 get_data_stream()
 {
+  if(is_message_type<data_stream_type>() and data_stream_ == nullptr and not config_.dont_read_run_header())
+  {
+    try {
+      data_stream_ = read_one_message_from_zfits_table<data_stream_type>(
+        filename_, config_.data_stream_table_name(), /* suppress_file_record = */true);
+    } catch(...) {
+      if(!config_.ignore_run_header_errors())
+        LOG(WARNING)
+          << "ZFITSSingleFileACADACameraEventDataSource<" << MessageSet::name() 
+          << ">: Could not read data stream from "
+          << filename_ << " -> " << config_.data_stream_table_name();
+    }
+  }
+
   return copy_message(data_stream_);
 }
-
 
 template<typename MessageSet>
 typename ZFITSSingleFileACADACameraEventDataSource<MessageSet>::config_type
@@ -477,27 +491,7 @@ ZFITSACADACameraEventDataSource(const std::string& filename, const config_type& 
         filename, config), true),
   config_(config), run_header_(nullptr)
 {
-  if(source_) {
-    run_header_ = source_->get_run_header();
-    data_stream_ = source_->get_data_stream();
-  }
-  if((run_header_ == nullptr or data_stream_ == nullptr) and opener_->num_sources() > 1) {
-    // In this case the first file fragment is missing the RunHeader or DataStream, search
-    // for it in later fragments then reopen the first fragment
-
-    while((run_header_ == nullptr or data_stream_ == nullptr) and isource_ < opener_->num_sources())
-    {
-      ++isource_;
-      open_file();
-      if(run_header_ == nullptr)
-        run_header_ = source_ ? source_->get_run_header() : nullptr;
-      if(data_stream_ == nullptr)
-        data_stream_ = source_ ? source_->get_data_stream() : nullptr;
-    }
-
-    isource_ = 0;
-    open_file();
-  }
+  // nothing to see here
 }
 
 template<typename MessageSet>
@@ -509,19 +503,54 @@ ZFITSACADACameraEventDataSource<MessageSet>::
 }
 
 template<typename MessageSet>
+void ZFITSACADACameraEventDataSource<MessageSet>::load_run_header()
+{
+  if(!run_header_loaded_) {
+    auto saved_isource = isource_;
+    if(isource_!=0 or source_==nullptr) {
+      isource_=0;
+      open_file();
+    }
+    if(source_) {
+      run_header_ = source_->get_run_header();
+      data_stream_ = source_->get_data_stream();
+    }
+    while((run_header_ == nullptr 
+        or (is_message_type<data_stream_type>() and data_stream_ == nullptr)) 
+      and (isource_+1)<opener_->num_sources())
+    {
+      ++isource_;
+      open_file();
+      if(source_) {
+        if(run_header_ == nullptr)run_header_ = source_->get_run_header();
+        if(data_stream_ == nullptr)data_stream_ = source_->get_data_stream();
+      }
+    }
+    if(isource_ != saved_isource) {
+      isource_ = saved_isource;
+      open_file();
+    }
+    run_header_loaded_ = true;
+  }
+}
+
+template<typename MessageSet>
 typename MessageSet::header_type* ZFITSACADACameraEventDataSource<MessageSet>::
 get_run_header()
 {
-  if(!run_header_)return nullptr;
-  auto* run_header = new header_type();
-  run_header->CopyFrom(*run_header_);
-  return run_header;
+  if(run_header_ == nullptr) {
+    load_run_header();
+  }
+  return copy_message(run_header_);
 }
 
 template<typename MessageSet>
 typename MessageSet::data_stream_type* ZFITSACADACameraEventDataSource<MessageSet>::
 get_data_stream()
 {
+  if(is_message_type<data_stream_type>() and data_stream_ == nullptr) {
+    load_run_header();
+  }
   return copy_message(data_stream_);
 }
 

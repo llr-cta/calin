@@ -49,6 +49,12 @@ namespace { // anonymous
   }
 } // anonymous namespace
 
+BasicZFITSDataSource::~BasicZFITSDataSource()
+{
+  // nothing to see here
+}
+
+
 // =============================================================================
 // ZFITSDataSource - chained ZFits files with decoder
 // =============================================================================
@@ -61,7 +67,7 @@ ZFITSDataSource(
     calin::iact_data::acada_event_decoder::
       ACADACameraEventDecoder<MessageSet>* decoder,
     bool adopt_acada_zfits, bool adopt_decoder):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
+  BasicZFITSDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   acada_zfits_(acada_zfits),  adopt_acada_zfits_(adopt_acada_zfits)
 {
@@ -100,8 +106,7 @@ ZFITSDataSource(
   acada_zfits_->set_next_index(0);
 }
 
-template<typename MessageSet>
-ZFITSDataSource<MessageSet>::
+template<typename MessageSet> ZFITSDataSource<MessageSet>::
 ZFITSDataSource(const std::string& filename,
     calin::iact_data::acada_event_decoder::
       ACADACameraEventDecoder<MessageSet>* decoder,
@@ -113,19 +118,32 @@ ZFITSDataSource(const std::string& filename,
   // nothing to see here
 }
 
-template<typename MessageSet>
-ZFITSDataSource<MessageSet>::
+template<typename MessageSet> ZFITSDataSource<MessageSet>::
 ZFITSDataSource(const std::string& filename,
-    ZFITSDataSource<MessageSet>* base_datasource, 
-    const config_type& config):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
-  decoder_(base_datasource->decoder_->clone()), adopt_decoder_(true),
+    calin::iact_data::acada_event_decoder::ACADACameraEventDecoder<MessageSet>* decoder,
+    const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* forced_run_config):
+  BasicZFITSDataSource(),
+  decoder_(decoder), adopt_decoder_(true),
   acada_zfits_(new calin::iact_data::zfits_acada_data_source::
     ZFITSACADACameraEventDataSource<MessageSet>(filename, config)), 
   adopt_acada_zfits_(true),
-  run_config_(base_datasource->get_run_configuration())
+  run_config_(new calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration(*forced_run_config))
 {
   // nothing to see here
+}
+
+template<typename MessageSet> ZFITSDataSource<MessageSet>* 
+ZFITSDataSource<MessageSet>::new_of_type(
+  const std::string& filename, const ZFITSDataSource<MessageSet>::config_type& config,
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* forced_run_configuration)
+{
+  if(forced_run_configuration) {
+    return new ZFITSDataSource<MessageSet>(filename, decoder_->clone(), config, forced_run_configuration);
+  } else {
+    return new ZFITSDataSource<MessageSet>(filename, decoder_->clone(), /* adopt_decoder= */ true, config);
+  }
 }
 
 template<typename MessageSet>

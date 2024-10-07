@@ -73,12 +73,12 @@ private:
 
   struct ClockTest {
     ~ClockTest() { for(auto& ibin : bins) { delete ibin.second; } }
-    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig config;
     std::map<int, RegressionAccumulator*> bins;
   };
 
   struct ModuleClockTest {
-    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig config;
     std::vector<ClockTest> modules;
   };
 
@@ -91,6 +91,8 @@ private:
 
   calin::ix::diagnostics::clock_regression::ClockRegressionConfig config_;
   int rebalance_ = 0;
+  std::string principal_clock_name_ = {};
+  int principal_clock_id_ = 0;
   std::vector<ClockTest> camera_tests_;
   std::vector<ModuleClockTest> module_tests_;
 };

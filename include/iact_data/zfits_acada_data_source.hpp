@@ -94,11 +94,11 @@ public:
   data_stream_type* get_data_stream() override;
 
   static config_type default_config();
-  const config_type& config() const { return config_; }
+  config_type config() const { return config_; }
 
 private:
   std::string filename_;
-  ZFITSSingleFileSingleMessageDataSource<event_type>* zfits_;
+  ZFITSSingleFileSingleMessageDataSource<event_type>* zfits_ = nullptr;
   header_type* run_header_ = nullptr;
   data_stream_type* data_stream_ = nullptr;
   config_type config_;
@@ -137,7 +137,7 @@ public:
   void set_next_index(uint64_t next_index) override;
 
   static config_type default_config();
-  const config_type& config() const { return config_; }
+  config_type config() const { return config_; }
 
 protected:
   using BaseDataSource::source_;
@@ -147,7 +147,9 @@ protected:
   using BaseDataSource::open_file;
 
 private:
+  void load_run_header();
   config_type config_;
+  bool run_header_loaded_ = false;  
   header_type* run_header_ = nullptr;
   data_stream_type* data_stream_ = nullptr;
 };

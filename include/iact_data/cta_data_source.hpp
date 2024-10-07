@@ -33,10 +33,8 @@
 namespace calin { namespace iact_data { namespace cta_data_source {
 
 class CTAZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
-  public calin::io::data_source::FragmentList,
-  private calin::pattern::delegation::Delegator<
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>
+  public calin::iact_data::zfits_data_source::BasicZFITSDataSource,
+  private calin::pattern::delegation::Delegator<calin::iact_data::zfits_data_source::BasicZFITSDataSource>
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
@@ -54,12 +52,6 @@ public:
     const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config = default_decoder_config(),
     const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config = default_config());
 
-  CTAZFITSDataSource(const std::string& filename, CTAZFITSDataSource* base_data_source,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config = default_config());
-  CTAZFITSDataSource(const std::string& filename,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
-    CTAZFITSDataSource* base_data_source);
-
   virtual ~CTAZFITSDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
@@ -74,11 +66,41 @@ public:
   unsigned num_fragments() const override;
   std::string fragment_name(unsigned index) const override;
 
+  config_type config() const { return config_; }
+  decoder_config_type decoder_config() const { return decoder_config_; }
+
+  calin::iact_data::zfits_data_source::BasicZFITSDataSource* 
+  new_of_type(const std::string& filename, const config_type& config,
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* forced_run_configuration = nullptr) override;
+
 private:
-  static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
+  config_type config_;
+  decoder_config_type decoder_config_;
+  static calin::iact_data::zfits_data_source::BasicZFITSDataSource* construct_delegate(
     std::string filename, config_type config, decoder_config_type decoder_config);
-  static TelescopeRandomAccessDataSourceWithRunConfig* copy_base_data_source(
-    std::string filename, config_type config, CTAZFITSDataSource* base_data_source);
+};
+
+class CTAZFITSDataSourceFactory:
+  public calin::io::data_source::DataSourceFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>
+{
+public:
+  CTAZFITSDataSourceFactory(CTAZFITSDataSource* base_data_source, 
+      const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+      bool adopt_base_data_source = false, bool adopt_run_config = false):
+    calin::io::data_source::DataSourceFactory<calin::ix::iact_data::telescope_event::TelescopeEvent>(),
+    base_data_source_(base_data_source), run_config_(run_config),
+    adopt_base_data_source_(adopt_base_data_source), adopt_run_config_(adopt_run_config) { }
+  virtual ~CTAZFITSDataSourceFactory();
+  calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* new_data_source() override;
+private:
+  CTAZFITSDataSource* base_data_source_ = nullptr;
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
+  bool adopt_base_data_source_ = false;
+  bool adopt_run_config_ = false;
+  std::atomic<uint_fast32_t> isource_ { 0 };
 };
 
 } } } // namespace calin::iact_data::cta_data_source

@@ -52,10 +52,10 @@ using namespace calin::util::file;
 CTAZFITSDataSource::
 CTAZFITSDataSource(const std::string& filename,
     const config_type& config, const decoder_config_type& decoder_config):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
-  Delegator<calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig>(
-      construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true)
+  BasicZFITSDataSource(),
+  Delegator<calin::iact_data::zfits_data_source::BasicZFITSDataSource>(
+      construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true),
+  config_(config), decoder_config_(decoder_config)
 {
   // nothing to see here
 }
@@ -64,25 +64,6 @@ CTAZFITSDataSource::
 CTAZFITSDataSource(const std::string& filename,
     const decoder_config_type& decoder_config, const config_type& config):
   CTAZFITSDataSource(filename, config, decoder_config)
-{
-  // nothing to see here
-}
-
-CTAZFITSDataSource::
-CTAZFITSDataSource(const std::string& filename,
-    CTAZFITSDataSource* base_data_source, const config_type& config):
-  TelescopeRandomAccessDataSourceWithRunConfig(),
-  Delegator<calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig>(
-      copy_base_data_source(filename, config, base_data_source), /* adopt_delegate=*/ true)
-{
-  // nothing to see here
-}
-
-CTAZFITSDataSource::
-CTAZFITSDataSource(const std::string& filename,
-    const config_type& config, CTAZFITSDataSource* base_data_source):
-  CTAZFITSDataSource(filename, base_data_source, config)
 {
   // nothing to see here
 }
@@ -138,23 +119,27 @@ CTAZFITSDataSource::get_run_configuration()
 
 unsigned CTAZFITSDataSource::current_fragment_index() const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList&>(
-    *this->delegate()).current_fragment_index();
+  return delegate_->current_fragment_index();
 }
 
 unsigned CTAZFITSDataSource::num_fragments() const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList&>(
-    *this->delegate()).num_fragments();
+  return delegate_->num_fragments();
 }
 
 std::string CTAZFITSDataSource::fragment_name(unsigned index) const
 {
-  return dynamic_cast<const calin::io::data_source::FragmentList&>(
-    *this->delegate()).fragment_name(index);
+  return delegate_->fragment_name(index);
 }
 
-calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
+calin::iact_data::zfits_data_source::BasicZFITSDataSource* 
+CTAZFITSDataSource::new_of_type(const std::string& filename, const config_type& config,
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* force_run_configuration)
+{
+  return delegate_->new_of_type(filename, config, force_run_configuration);
+}
+
+calin::iact_data::zfits_data_source::BasicZFITSDataSource*
 CTAZFITSDataSource::construct_delegate(std::string filename,
   config_type config, decoder_config_type decoder_config)
 {
@@ -238,24 +223,22 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
   return nullptr;
 }
 
-calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
-CTAZFITSDataSource::copy_base_data_source(
-  std::string filename, config_type config, CTAZFITSDataSource* base_data_source)
+CTAZFITSDataSourceFactory::~CTAZFITSDataSourceFactory()
 {
-  expand_filename_in_place(filename);
+  if(adopt_base_data_source_)delete base_data_source_;
+  if(adopt_run_config_)delete run_config_;
+}
 
-  if(!is_file(filename))
-    throw std::runtime_error(
-      "CTAZFITSDataSource::copy_base_data_source: File not found: " + filename);
-
-  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v1*>(base_data_source->delegate())) {
-    return new zfits_data_source::ZFITSDataSource_R1v1(filename, zfits, config);
-  } else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1v0*>(base_data_source->delegate())) {
-    return new zfits_data_source::ZFITSDataSource_R1v0(filename, zfits, config);
-  }else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_L0*>(base_data_source->delegate())) {
-    return new zfits_data_source::ZFITSDataSource_L0(filename, zfits, config);
+calin::io::data_source::DataSource< calin::ix::iact_data::telescope_event::TelescopeEvent>* 
+CTAZFITSDataSourceFactory::new_data_source()
+{
+  unsigned isource = isource_.fetch_add(1,std::memory_order_relaxed);
+  if(isource<base_data_source_->num_fragments()) {
+    auto config = base_data_source_->config();
+    config.clear_forced_file_fragments_list();
+    config.add_forced_file_fragments_list(base_data_source_->fragment_name(isource));
+    return base_data_source_->new_of_type(config.forced_file_fragments_list(0), config, run_config_);
   } else {
-    throw std::runtime_error(
-      "CTAZFITSDataSource::copy_base_data_source: unsupported data source");
+    return nullptr;
   }
 }
