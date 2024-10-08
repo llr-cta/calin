@@ -237,6 +237,9 @@ message SimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 35 [
     (CFO).desc = "Histogram of number of channels triggered in physics events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData muon_candidate_num_channel_triggered_hist = 36 [
+    (CFO).desc = "Histogram of number of channels triggered in muon-candidate events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
 message PartialOneGainChannelSimpleChargeStats {
@@ -432,6 +435,10 @@ message PartialCameraSimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData phys_trig_num_contiguous_channel_triggered_hist = 25 [
     (CFO).desc = "Histogram of number of channels triggered in physics-trigger events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData muon_candidate_num_channel_triggered_hist = 26 [
+    (CFO).desc = "Histogram of number of channels triggered in muon-candidate events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  
 };
 
 message PartialSimpleChargeStats {
