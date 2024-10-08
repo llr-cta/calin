@@ -577,25 +577,26 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       config_.event_number_histogram_resolution(), 0.0, 1.0e9,
       double(run_config_->camera_layout().first_event_number()) };
 
+    const double thistres = config_.event_time_histogram_resolution();
     const double thistmin = config_.event_time_histogram_min();
     const double thistmax = config_.event_time_histogram_max();
 
     calin::math::histogram::Histogram1D elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_software_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_pedestal_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_external_flasher_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_internal_flasher_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_forced_array_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_ucts_aux_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
+      thistres, thistmin, thistmax, 0.0 };
 
     for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
       event_number_hist.insert(partials_->event_number_sequence(ievent));
