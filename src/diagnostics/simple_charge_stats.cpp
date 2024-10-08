@@ -530,6 +530,7 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
     }
     if(partials_.camera().num_event_trigger_hitmap_found() > 0) {
       results_.add_channel_triggered_count(partials_chan.all_trig_num_events_triggered());
+      results_.add_muon_candidate_channel_triggered_count(partials_chan.muon_candidate_num_events_triggered());
       results_.add_phy_trigger_few_neighbor_channel_triggered_count(partials_chan.phy_trig_few_neighbor_channel_triggered_count());
     }
   }
@@ -758,6 +759,8 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     for(auto ichan : event->trigger_map().hit_channel_id()) {
       partials_.mutable_channel(ichan)->increment_all_trig_num_events_triggered();
+      partials_.mutable_channel(ichan)->increment_muon_candidate_num_events_triggered(
+        event->is_muon_candidate());
     }
     camera_hists_->num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
     int num_contiguous_channel_triggered = 0;
