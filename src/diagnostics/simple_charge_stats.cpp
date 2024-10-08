@@ -766,7 +766,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
         *data_order_camera_, reinterpret_cast<const int*>(event->trigger_map().hit_channel_id().data()),
         event->trigger_map().hit_channel_id_size(), channel_island_id_.data(),
         channel_island_count_.data());
-      num_contiguous_channel_triggered = channel_island_count_[0]; // guarenteed to have at least one island
+      num_contiguous_channel_triggered = channel_island_count_[0]; // guaranteed to have at least one island
       for(unsigned iisland=1; iisland<nisland; iisland++) {
         num_contiguous_channel_triggered = std::max(num_contiguous_channel_triggered, channel_island_count_[iisland]);
       }
