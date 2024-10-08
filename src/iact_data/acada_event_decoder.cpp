@@ -327,7 +327,6 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
     calin_cdts_data->set_local_trigger(cdts_data->stereo_pattern & 0x01);
     calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x80);
-    // calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
