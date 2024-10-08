@@ -414,6 +414,9 @@ bool NectarCam_ACADACameraEventDecoder_R1v0::decode(
     calin_clock->set_time_value(cdts.pps_counter()*10000000ULL + cdts.clock_counter());
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+    calin_event->set_is_muon_candidate(calin_event->is_muon_candidate() 
+      || cdts.muon_candidate());
   } else {
     calin_event->add_camera_clock_index(-1);
     calin_event->add_camera_clock_index(-1);

@@ -326,8 +326,8 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
     calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
-    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x80);
+    // calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
@@ -355,8 +355,8 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
     calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
-    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x80);
+    // calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
@@ -463,7 +463,7 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   calin_tib_data->set_pps_counter(tib_data->pps_counter);
   calin_tib_data->set_clock_counter(tib_data->clock_counter_lo16
     + (tib_data->clock_counter_hi8<<16) );
-  calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x0001FFFF);
+  calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x1FF);
   calin_tib_data->set_trigger_type(tib_data->trigger_type);
   calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
 
