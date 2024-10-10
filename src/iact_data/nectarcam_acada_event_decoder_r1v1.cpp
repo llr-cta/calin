@@ -311,6 +311,9 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
     return false;
   }
 
+  calin_run_config->set_data_transcoder(
+    "calin::iact_data::unified_event_decoder::NectarCam_ACADACameraEventDecoder_R1v1");
+
   // const data_stream_type* cta_data_stream = cta_messages.data_stream;
   // const header_type* cta_run_header = cta_messages.header;
   // const event_type* cta_event = cta_messages.event;
