@@ -28,10 +28,13 @@ import matplotlib.backends.backend_agg
 
 import pickle
 import os.path
-import googleapiclient.http
-import googleapiclient.discovery
-# import google_auth_oauthlib.flow
+
 import google.auth.transport.requests
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+import googleapiclient.http
 import socket
 
 class Uploader:
@@ -150,12 +153,14 @@ class GoogleDriveUploader(Uploader):
     def auth(self):
         self.lock()
         try:
-            # The file token.pickle stores the user's access and refresh tokens, and is
+            # The file token.json stores the user's access and refresh tokens, and is
             # created automatically when the authorization flow completes for the first
             # time.
-            if os.path.exists(self.token_file):
-                with open(self.token_file, 'rb') as token:
-                    self.creds = pickle.load(token)
+            try:
+                if os.path.exists(self.token_file):
+                    self.creds = google.oauth2.credentials.Credentials.from_authorized_user_file(self.token_file, self.scopes)
+            except:
+                pass
 
             # If there are no (valid) credentials available, let the user log in.
             if not self.creds or not self.creds.valid:
@@ -164,13 +169,13 @@ class GoogleDriveUploader(Uploader):
                 elif self.credentials_file and os.path.exists(self.credentials_file):
                     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
                         self.credentials_file, self.scopes)
-                    creds = flow.run_local_server(port=0)
+                    self.creds = flow.run_local_server(port=0)
                 else:
                     raise RuntimeError('GoogleDriveUploader: could not find valid access token')
 
                 # Save the credentials for the next run
-                with open(self.token_file, 'wb') as token:
-                    pickle.dump(self.creds, token)
+                with open(self.token_file, 'w') as token:
+                    token.write(self.creds.to_json())
         except:
             self.unlock()
             raise
