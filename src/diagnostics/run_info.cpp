@@ -345,11 +345,13 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
 
   // CAMERA CLOCK TIMES
   for(const auto& clock : event->camera_clock()) {
-    partials_->increment_camera_clock_presence(clock.clock_id());
-    partials_->set_camera_clock_min_time(clock.clock_id(),
-      std::min(partials_->camera_clock_min_time(clock.clock_id()), clock.time_value()));
-    partials_->set_camera_clock_max_time(clock.clock_id(),
-      std::max(partials_->camera_clock_max_time(clock.clock_id()), clock.time_value()));
+    if(clock.time_value()>0) {
+      partials_->increment_camera_clock_presence(clock.clock_id());
+      partials_->set_camera_clock_min_time(clock.clock_id(),
+        std::min(partials_->camera_clock_min_time(clock.clock_id()), clock.time_value()));
+      partials_->set_camera_clock_max_time(clock.clock_id(),
+        std::max(partials_->camera_clock_max_time(clock.clock_id()), clock.time_value()));
+    }
   }
 
   // MODULES
