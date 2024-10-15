@@ -31,18 +31,12 @@ def summarize_camera_clock_regressions(stage1):
     cl = stage1.const_run_config().const_camera_layout()
 
     principal_clock_id = stage1.const_clock_regression().principal_clock_id();
-    if(principal_clock_id == 0):
-        # Temporary : remove when all data has been reprocessed with new version
-        principal_clock_id = stage1.const_config().const_clock_regression().principal_clock_id()
     principal_clock_freq = cl.camera_clock_frequency(principal_clock_id)
 
     for iclock in range(len(cam_freq_offset_ppm)):
         clock = stage1.const_clock_regression().const_camera_clock(iclock)
 
         clock_id = clock.clock_id()
-        if(clock_id == 0):
-            # Temporary : remove when all data has been reprocessed with new version
-            clock_id = stage1.const_config().const_clock_regression().default_nectarcam_camera_clocks(iclock).clock_id()
         clock_freq = cl.camera_clock_frequency(clock_id)
         clock_nominal_a = clock_freq/principal_clock_freq
 
@@ -222,12 +216,23 @@ def spread_feb_temp(stage1, temperature_set=1):
 def run_duration(stage1):
     run_info = stage1.const_run_info()
     camera_layout = stage1.const_run_config().const_camera_layout()
-    camera_clocks = [ 0, 3, 6, 8, 2, 5 ]
+    camera_clocks = [ 'UCTS timestamp', '
+                      'UCTS combined 10MHz and pps counter', 
+                      'TIB combined 10MHz and pps counter', 
+                      'FEB local pps and 2ns TDC counter sum',
+                      'SWAT timestamp',
+                      'EVB timestamp' ]
     camera_clocks_run_duration = []
-    for ic in camera_clocks:
-        camera_clocks_run_duration.append(
-            (run_info.camera_clock_max_time(ic)-run_info.camera_clock_min_time(ic))/
-                camera_layout.camera_clock_frequency())
+    for cn in camera_clocks:
+        try:
+            ic = camera_layout.camera_clock_name().index(cn)
+            if(run_info.camera_clock_presence(ic) > run_info.num_events_found()//2 and 
+               run_info.camera_clock_min_time(ic) > 0):
+                camera_clocks_run_duration.append(
+                    (run_info.camera_clock_max_time(ic)-run_info.camera_clock_min_time(ic))/
+                        camera_layout.camera_clock_frequency(ic))
+        except:
+            pass
     camera_clocks_run_duration = numpy.asarray(camera_clocks_run_duration)
     camera_clocks_run_duration = camera_clocks_run_duration[camera_clocks_run_duration>0]
     if(len(camera_clocks_run_duration) == 0):
