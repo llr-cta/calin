@@ -233,6 +233,8 @@ def run_duration(stage1):
                         camera_layout.camera_clock_frequency(ic))
         except:
             pass
+    if(run_info.min_event_time()>0):
+        camera_clocks_run_duration.append((run_info.max_event_time()-run_info.min_event_time())*1e-9)
     camera_clocks_run_duration = numpy.asarray(camera_clocks_run_duration)
     camera_clocks_run_duration = camera_clocks_run_duration[camera_clocks_run_duration>0]
     if(len(camera_clocks_run_duration) == 0):
