@@ -216,7 +216,7 @@ def spread_feb_temp(stage1, temperature_set=1):
 def run_duration(stage1):
     run_info = stage1.const_run_info()
     camera_layout = stage1.const_run_config().const_camera_layout()
-    camera_clocks = [ 'UCTS timestamp', '
+    camera_clocks = [ 'UCTS timestamp',
                       'UCTS combined 10MHz and pps counter', 
                       'TIB combined 10MHz and pps counter', 
                       'FEB local pps and 2ns TDC counter sum',
