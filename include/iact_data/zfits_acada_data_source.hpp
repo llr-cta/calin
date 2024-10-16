@@ -154,6 +154,11 @@ private:
   data_stream_type* data_stream_ = nullptr;
 };
 
+void generate_fragment_list(std::string filename,
+  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
+  std::vector<std::string>& fragment_filenames,
+  unsigned& num_missing_fragments, bool log_missing_fragments = true);
+
 template<typename MessageSet>
 class ZFITSACADACameraEventDataSourceOpener:
   public calin::io::data_source::DataSourceOpener<

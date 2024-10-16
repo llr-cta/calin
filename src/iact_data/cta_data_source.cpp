@@ -148,15 +148,23 @@ calin::iact_data::zfits_data_source::BasicZFITSDataSource*
 CTAZFITSDataSource::construct_delegate(std::string filename,
   config_type config, decoder_config_type decoder_config)
 {
-  expand_filename_in_place(filename);
+  filename = expand_filename(filename);
 
-  if(!is_file(filename))
+  std::vector<std::string> fragment_filenames;
+  unsigned unused_num_missing_fragments = 0;
+  config_type fragment_find_config = config;
+  fragment_find_config.set_max_file_fragments(1);
+  calin::iact_data::zfits_acada_data_source::generate_fragment_list(filename, fragment_find_config,
+    fragment_filenames, unused_num_missing_fragments, /* log_missing_fragments = */ false);
+
+  if(fragment_filenames.empty()) {
     throw std::runtime_error(
-      "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
+      "CTAZFITSDataSource::construct_delegate: File not found: " + expand_filename(filename));
+  }
 
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {
-    config.set_data_model(calin::iact_data::zfits_acada_data_source::get_zfits_data_model(filename));
+    config.set_data_model(calin::iact_data::zfits_acada_data_source::get_zfits_data_model(fragment_filenames[0]));
 
     if(config.data_model() ==
         calin::ix::iact_data::zfits_data_source::ACADA_DATA_MODEL_AUTO_DETECT) {

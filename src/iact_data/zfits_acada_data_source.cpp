@@ -630,6 +630,73 @@ ZFITSACADACameraEventDataSource<MessageSet>::default_config()
 // =============================================================================
 // =============================================================================
 
+void calin::iact_data::zfits_acada_data_source::generate_fragment_list(std::string original_filename,
+  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
+  std::vector<std::string>& fragment_filenames,
+  unsigned& num_missing_fragments, bool log_missing_fragments)
+{
+  fragment_filenames.clear();
+  num_missing_fragments = 0;
+
+  std::string filename = expand_filename(original_filename);
+  if(config.forced_file_fragments_list_size() > 0) {
+    for(auto& ffn : config.forced_file_fragments_list()) {
+      fragment_filenames.emplace_back(ffn);
+    }
+  } else if(config.exact_filename_only()) {
+    if(is_file(filename))
+      fragment_filenames.emplace_back(filename);
+  } else {
+    const unsigned istride = std::max(1U,config.file_fragment_stride());
+
+    const std::string extension = config.extension();
+    auto ifind = filename.rfind(extension);
+    if(ifind == filename.size()-extension.size())
+    {
+      filename = filename.substr(0, ifind);
+
+      unsigned istart = 0;
+      if(not is_file(filename+".1"+extension)) // Old naming convention x.fits.fz x.1.fits.fz etc..
+      {
+        ifind = filename.rfind('.');
+        if(ifind != std::string::npos and
+          std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+        {
+          istart = std::stoi(filename.substr(ifind + 1));
+          filename = filename.substr(0, ifind);
+        }
+      }
+
+      unsigned consecutive_missing_fragments = 0;
+      for(unsigned i=istart; consecutive_missing_fragments<20 and 
+        (config.max_file_fragments()==0 or fragment_filenames.size()<config.max_file_fragments()); 
+        i+=istride)
+      {
+        std::string fragment_i { std::to_string(i) };
+        ++consecutive_missing_fragments;
+        do {
+          std::string filename_i { filename+"."+fragment_i+extension };
+          if(is_file(filename_i)) {
+            --consecutive_missing_fragments;
+            if(log_missing_fragments) {
+              for(unsigned imissing=i-consecutive_missing_fragments*istride;imissing<i;imissing+=istride) {
+                LOG(WARNING) << "Missing file fragment: " << imissing;  
+              }
+            }
+            fragment_filenames.emplace_back(filename_i);
+            num_missing_fragments += consecutive_missing_fragments;
+            consecutive_missing_fragments = 0;
+          } else {
+            fragment_i = std::string("0") + fragment_i;
+          }
+        }while(consecutive_missing_fragments>0 and fragment_i.size() <= 7);
+      }
+    } else if(is_file(filename)) {
+      fragment_filenames.emplace_back(filename);
+    }
+  }
+}
+
 template<typename MessageSet>
 ZFITSACADACameraEventDataSourceOpener<MessageSet>::
 ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& config):
@@ -637,62 +704,9 @@ ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& c
     ACADACameraEventRandomAccessDataSourceWithRunHeader<MessageSet> >(),
   config_(config)
 {
-  if(config.forced_file_fragments_list_size() > 0) {
-    for(auto& ffn : config.forced_file_fragments_list()) {
-      filenames_.emplace_back(ffn);
-    }
-  } else {
-    const unsigned istride = std::max(1U,config.file_fragment_stride());
-    filename = expand_filename(filename);
-    if(is_file(filename))
-      filenames_.emplace_back(filename);
-    else
-      throw(std::runtime_error("File not found: " + filename));
-
-    if(not config_.exact_filename_only())
-    {
-      const std::string extension = config_.extension();
-      auto ifind = filename.rfind(extension);
-      if(ifind == filename.size()-extension.size())
-      {
-        filename = filename.substr(0, ifind);
-
-        unsigned istart = 0;
-        if(not is_file(filename+".1"+extension))
-        {
-          ifind = filename.rfind('.');
-          if(ifind != std::string::npos and
-            std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
-          {
-            istart = std::stoi(filename.substr(ifind + 1));
-            filename = filename.substr(0, ifind);
-          }
-        }
-
-        unsigned consecutive_missing_fragments = 0;
-        for(unsigned i=istart+istride; consecutive_missing_fragments<20 and 
-          (config_.max_file_fragments()==0 or filenames_.size()<config_.max_file_fragments()); 
-          i+=istride)
-        {
-          std::string fragment_i { std::to_string(i) };
-          ++consecutive_missing_fragments;
-          do {
-            std::string filename_i { filename+"."+fragment_i+extension };
-            if(is_file(filename_i)) {
-              --consecutive_missing_fragments;
-              for(unsigned imissing=i-consecutive_missing_fragments*istride;imissing<i;imissing+=istride) {
-                LOG(WARNING) << "Missing file fragment: " << imissing;
-              }
-              filenames_.emplace_back(filename_i);
-              num_missing_fragments_ += consecutive_missing_fragments;
-              consecutive_missing_fragments = 0;
-            } else {
-              fragment_i = std::string("0") + fragment_i;
-            }
-          }while(consecutive_missing_fragments>0 and fragment_i.size() <= 7);
-        }
-      }
-    }
+  generate_fragment_list(filename, config, filenames_, num_missing_fragments_);
+  if(filenames_.empty()) {
+    throw(std::runtime_error("File not found: " + expand_filename(filename)));
   }
 }
 
