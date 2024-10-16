@@ -111,6 +111,7 @@ else:
     failed_files = []
     nsuccess = 0;
     nskip = 0;
+    nfile = len(endpoints[opt.start_file_index():])
     for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
         ifile += opt.start_file_index()
         if not first_file:
@@ -126,14 +127,15 @@ else:
                 continue
             if oids and opt.replace_existing():
                 for oid in oids:
+                    print(f"Deleting old stage1 results from database, OID : {oid}")
                     sql.delete_by_oid(opt.db_stage1_table_name(), oid)
-        print("#%d: processing %s"%(ifile,filename))
+        print("#%d / %d: processing %s"%(ifile+1,nfile,filename))
         try:
             calin.util.log.prune_default_protobuf_log()
             calin.provenance.chronicle.prune_the_chronicle()
             dispatcher.process_cta_zfits_run(filename, cfg)
             s1res = s1pev.stage1_results()
-            print(f"Inserting stage1 results into database, size: {s1res.SpaceUsedLong()/1024**2:,.1f} MB",)
+            print(f"Inserting stage1 results into database, size: {s1res.SpaceUsedLong()/1024**2:,.1f} MB")
             start_time = time.time()
             good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
             if(good):
