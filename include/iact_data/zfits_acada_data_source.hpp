@@ -172,6 +172,7 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSourceOpener();
   unsigned num_sources() const override;
+  unsigned num_missing_sources() const override;
   std::string source_name(unsigned isource) const override;
   ZFITSSingleFileACADACameraEventDataSource<MessageSet>* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
@@ -182,6 +183,7 @@ private:
   std::vector<std::string> filenames_;
   config_type config_;
   bool has_opened_file_ = false;
+  unsigned num_missing_fragments_ = 0;
 };
 
 calin::ix::iact_data::zfits_data_source::ACADADataModel get_zfits_data_model(const std::string& filename);

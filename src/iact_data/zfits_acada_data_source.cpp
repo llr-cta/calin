@@ -669,21 +669,27 @@ ZFITSACADACameraEventDataSourceOpener(std::string filename, const config_type& c
           }
         }
 
-        bool fragment_found = true;
-        for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
-          filenames_.size()<config_.max_file_fragments()) ; i+=istride)
+        unsigned consecutive_missing_fragments = 0;
+        for(unsigned i=istart+istride; consecutive_missing_fragments<20 and 
+          (config_.max_file_fragments()==0 or filenames_.size()<config_.max_file_fragments()); 
+          i+=istride)
         {
-          fragment_found = false;
           std::string fragment_i { std::to_string(i) };
+          ++consecutive_missing_fragments;
           do {
             std::string filename_i { filename+"."+fragment_i+extension };
             if(is_file(filename_i)) {
+              --consecutive_missing_fragments;
+              for(unsigned imissing=i-consecutive_missing_fragments*istride;imissing<i;imissing+=istride) {
+                LOG(WARNING) << "Missing file fragment: " << imissing;
+              }
               filenames_.emplace_back(filename_i);
-              fragment_found = true;
+              num_missing_fragments_ += consecutive_missing_fragments;
+              consecutive_missing_fragments = 0;
             } else {
               fragment_i = std::string("0") + fragment_i;
             }
-          }while(not fragment_found and fragment_i.size() <= 6);
+          }while(consecutive_missing_fragments>0 and fragment_i.size() <= 7);
         }
       }
     }
@@ -701,6 +707,12 @@ template<typename MessageSet>
 unsigned ZFITSACADACameraEventDataSourceOpener<MessageSet>::num_sources() const
 {
   return filenames_.size();
+}
+
+template<typename MessageSet>
+unsigned ZFITSACADACameraEventDataSourceOpener<MessageSet>::num_missing_sources() const
+{
+  return num_missing_fragments_; 
 }
 
 template<typename MessageSet>

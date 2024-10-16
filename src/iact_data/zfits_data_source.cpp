@@ -103,6 +103,7 @@ ZFITSDataSource(
   run_config_->set_file_size(calin::util::file::total_size(
     acada_zfits_->all_fragment_names()));
   run_config_->set_num_events(acada_zfits->size());
+  run_config_->set_num_missing_fragments(acada_zfits->num_missing_fragments());
   acada_zfits_->set_next_index(0);
 }
 
@@ -227,6 +228,13 @@ unsigned ZFITSDataSource<MessageSet>::
 num_fragments() const
 {
   return acada_zfits_->num_fragments();
+}
+
+template<typename MessageSet>
+unsigned ZFITSDataSource<MessageSet>::
+num_missing_fragments() const
+{
+  return acada_zfits_->num_missing_fragments();
 }
 
 template<typename MessageSet>

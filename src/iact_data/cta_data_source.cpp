@@ -127,6 +127,11 @@ unsigned CTAZFITSDataSource::num_fragments() const
   return delegate_->num_fragments();
 }
 
+unsigned CTAZFITSDataSource::num_missing_fragments() const
+{
+  return delegate_->num_missing_fragments();
+}
+
 std::string CTAZFITSDataSource::fragment_name(unsigned index) const
 {
   return delegate_->fragment_name(index);

@@ -50,6 +50,10 @@ message TelescopeRunConfiguration {
   int64 num_events                                         = 4 [
     (CFO).desc = "Total number of events (all fragments), if known. Zero "
       "otherwise.", (CFO).units="events" ];
+  int32 num_missing_fragments                              = 5 [
+    (CFO).desc = "Number of run data fragments known to be missing. Should be considered "
+     "as a lower limit as fragments missing from the end of the run may not be identifyable.",
+    (CFO).units="files" ];
 
   uint32 run_number                                        = 10 [
     (CFO).desc = "Run number." ];
