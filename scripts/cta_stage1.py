@@ -113,7 +113,6 @@ else:
     nskip = 0;
     nfile = len(endpoints[opt.start_file_index():])
     for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
-        ifile += opt.start_file_index()
         if not first_file:
             print("-"*80)
         first_file = False
@@ -122,7 +121,7 @@ else:
             selector.set_filename(filename)
             oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
             if oids and opt.skip_existing():
-                print("#%d: skipping %s"%(ifile,filename))
+                print("#%d / %d: skipping %s"%(ifile+1,nfile,filename))
                 nskip += 1
                 continue
             if oids and opt.replace_existing():
