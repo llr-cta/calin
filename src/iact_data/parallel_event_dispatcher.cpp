@@ -472,9 +472,17 @@ void ParallelEventDispatcher::do_dispatcher_loop(
         << " us/event (finished)";
     } else if(log_frequency and ndispatched_val % log_frequency == 0) {
       auto dt = std::chrono::system_clock::now() - start_time;
-      LOG(INFO) << "Dispatched "
+      auto log = LOG(INFO);
+      log << "Dispatched "
         << to_string_with_commas(ndispatched_val) << " events in "
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
+      if(nevents_to_dispatch) {
+        unsigned precision = 1;
+        if(nevents_to_dispatch>log_frequency*100000) { precision = 4; }
+        else if(nevents_to_dispatch>log_frequency*10000) { precision = 3; }
+        else if(nevents_to_dispatch>log_frequency*1000) { precision = 2; }
+        log << " (" << to_string_with_commas(double(ndispatched_val)/double(nevents_to_dispatch)*100.0,precision) << "%)";
+      }
     }
   }
 }
