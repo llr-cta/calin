@@ -490,6 +490,19 @@ def unprotected_render_oid(stage1):
             ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
             upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
 
+        if(stage1.const_charge_stats().muon_candidate_channel_triggered_count_size()>0 and 
+                sum(stage1.const_charge_stats().muon_candidate_channel_triggered_count())>0):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_muon_candidate_trigger_event_fraction(stage1, axis=ax)
+            ax.set_title('L0 trigger bit frequency (muon events), run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_frequency_muon', ax.figure)
+
+        if(stage1.const_charge_stats().const_muon_candidate_num_channel_triggered_hist().sum_w()):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,muon_candidate=True)
+            ax.set_title('L0 trigger bit histogram (muon events), run : %d'%runno)
+            upload_figure(runno, 'trigger_l0_bit_count_muon', ax.figure)
+
     ############################################################################
     # FIGURE : mean waveforms
     ############################################################################

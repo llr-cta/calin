@@ -284,11 +284,14 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r',
 
     rad = 10/120*max_xy
     additional_polygons.append(
-        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad,max_xy-rad*SQRT3_2),numVertices=6, radius=rad, orientation=RAD_30))
+        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad,max_xy-rad*SQRT3_2),
+                                          numVertices=6, radius=rad, orientation=RAD_30))
     additional_polygons.append(
-        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad,max_xy-rad*SQRT3_2-2*rad),numVertices=6, radius=rad, orientation=RAD_30))
+        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad,max_xy-rad*SQRT3_2-2*rad),
+                                          numVertices=6, radius=rad, orientation=RAD_30))
     additional_polygons.append(
-        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad+2*rad*SQRT3_2,max_xy-rad*SQRT3_2-rad),numVertices=6, radius=rad, orientation=RAD_30))
+        matplotlib.patches.RegularPolygon(xy=(-max_xy+rad+2*rad*SQRT3_2,max_xy-rad*SQRT3_2-rad),
+                                          numVertices=6, radius=rad, orientation=RAD_30))
     additional_polygons.append(
         matplotlib.patches.Circle(xy=(max_xy-1.5*rad,-max_xy+1.5*rad), radius=1.5*rad))
 
@@ -318,12 +321,13 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r',
 
     for ip, pp in enumerate(additional_polygons):
         if(draw_outline):
-            if(type(pp) is matplotlib.patches.RegularPolygon):
+            if(isinstance(pp, matplotlib.patches.RegularPolygon)):
                 xy = pp.xy
-                p = matplotlib.patches.RegularPolygon(xy, pp.numvertices, pp.radius, pp.orientation)
+                p = matplotlib.patches.RegularPolygon(xy=xy, numVertices=pp.numvertices, 
+                                                      radius=pp.radius, orientation=pp.orientation)
             else:
                 xy = pp.center
-                p = matplotlib.patches.Circle(xy, pp.radius)
+                p = matplotlib.patches.Circle(xy=xy, radius=pp.radius)
             p.set_linewidth(outline_lw)
             p.set_edgecolor(outline_color)
             p.set_fill(False)
@@ -743,6 +747,15 @@ def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
 
+def draw_muon_candidate_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75):
+    channel_count = stage1.const_charge_stats().muon_candidate_channel_triggered_count()
+    return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+        log_scale=False, cmap=cmap, axis=axis,
+        draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+        stat_label_fontsize=stat_label_fontsize)
+
 def draw_nn_failed_phy_trigger_event_fraction(stage1, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
@@ -752,16 +765,22 @@ def draw_nn_failed_phy_trigger_event_fraction(stage1, cmap = 'CMRmap_r', axis = 
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
 
-def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, zoom = False):
+def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, muon_candidate = False, 
+                                    zoom = False):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
-    mult_hist = stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist() \
-        if phys_trigger else stage1.const_charge_stats().const_num_channel_triggered_hist()
-    nn_hist = stage1.const_charge_stats().const_phy_trigger_num_contiguous_channel_triggered_hist() \
-        if phys_trigger else stage1.const_charge_stats().const_num_contiguous_channel_triggered_hist()
+    mult_hist = stage1.const_charge_stats().const_num_channel_triggered_hist()
+    nn_hist = stage1.const_charge_stats().const_num_contiguous_channel_triggered_hist()
+    if(phys_trigger):
+        mult_hist = stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist()
+        nn_hist = stage1.const_charge_stats().const_phy_trigger_num_contiguous_channel_triggered_hist()
+    elif(muon_candidate):
+        mult_hist = stage1.const_charge_stats().const_muon_candidate_num_channel_triggered_hist()
+        nn_hist = None
     calin.plotting.plot_histogram(mult_hist, hatch='/', color='C0', lw=2, label='Multiplicity',
          histtype='step', axis=axis, normalise=True)
-    calin.plotting.plot_histogram(nn_hist, hatch='\\\\', color='C1', lw=1, label='Neighbours',
-         histtype='step', axis=axis, normalise=True)
+    if(nn_hist is not None):
+        calin.plotting.plot_histogram(nn_hist, hatch='\\\\', color='C1', lw=1, label='Neighbours',
+            histtype='step', axis=axis, normalise=True)
     if(zoom):
         axis.set_xlim(-0.5,9.5)
         axis.set_xticks(numpy.arange(0,10))
