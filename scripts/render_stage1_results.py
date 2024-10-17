@@ -655,7 +655,7 @@ else:
 
 if(opt.upload_to_google_drive() and opt.summary_sheet()):
     uploader = new_uploader()
-    uploader.sort_sheet(opt.summary_sheet(), 33, row_start=3)
+    uploader.sort_sheet(opt.summary_sheet(), 35, row_start=3)
     del uploader
 
 print("=================================== RESULTS ===================================")
