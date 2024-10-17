@@ -92,8 +92,8 @@ class FilesystemUploader(Uploader):
     def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
         (rel_path, filename) = os.path.split(rel_filepath)
         abs_path = os.path.join(self.make_path(rel_path), filename)
-        mode = 'wb' if iostream is io.StringIO else 'w'
-        if(os.exists(abs_path)):
+        mode = 'wb' if isinstance(iostream, io.BytesIO) else 'w'
+        if(os.path.exists(abs_path)):
             if(self.overwrite):
                 if(self.loud):
                     print("Skipping:",rel_filepath)
