@@ -96,11 +96,11 @@ class FilesystemUploader(Uploader):
         if(os.path.exists(abs_path)):
             if(self.overwrite):
                 if(self.loud):
-                    print("Skipping:",rel_filepath)
-                return None
+                    print("Updating:",rel_filepath)
             else:
                 if(self.loud):
-                    print("Updating:",rel_filepath)
+                    print("Skipping:",rel_filepath)
+                return None
         else:
             if(self.loud):
                 print("Uploading:",rel_filepath)
