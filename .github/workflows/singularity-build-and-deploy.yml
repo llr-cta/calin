@@ -1,6 +1,6 @@
 # calin/.github/workflows/singularity-build-and-deploy.yml - Stephen Fegan - 2021-08-23
 #
-# Continuous deployment using Github Actions and apptainer
+# Continuous build and deployment using Github Actions and Apptainer
 #
 # Build and deploy calin container to the Github container repository
 #
