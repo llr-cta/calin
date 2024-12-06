@@ -1607,7 +1607,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
     cal_med = [fitres[5] for fitres in allfit]
     cal_iqr = [fitres[6] for fitres in allfit]
 
-    if(numpy.count_nonzero(~numpy.isnan(cal_med)) < 1):
+    if(numpy.count_nonzero(~numpy.isnan(cal_med)) < nchan//10):
         return None
 
     fig_dict = dict()
