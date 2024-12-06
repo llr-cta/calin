@@ -1563,3 +1563,108 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
             trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
     return fig_dict
+
+def draw_trigger_threshold(stage1, draw_camera_plots = True, 
+        waveform_sum = False, ped = None, 
+        do_mle = True, nmin = 100, mle_pmin = 1e-200,
+        figure_factory = calin.plotting.PyPlotFigureFactory(),
+        cmap = 'inferno', stat_label_fontsize=4.75, pix_lw = 0, outline_lw = 0.5,
+        outline_color = '#888888'):
+
+    cs = stage1.const_charge_stats()
+    ch_set = stage1.const_wf_hists_l0_trigger_bit_set()
+    ch_clr = stage1.const_wf_hists_l0_trigger_bit_clear()
+
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+    ri = stage1.const_run_info()
+
+    if ped is None:
+        ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1)
+
+    if(waveform_sum):
+        nsamp = stage1.config().high_gain_opt_sum().integration_n()
+        dataset = '%d-sample sum'%nsamp
+        filename = 'sum'
+        ped *= nsamp
+        aligned_range = 1000
+    else:
+        dataset = 'waveform amplitude'
+        filename = 'amplitude'
+        aligned_range = 25
+
+    allfit = []
+    nchan = ch_set.high_gain_channel_size()
+    for ichan in range(nchan):
+        if(waveform_sum):
+            hset = calin.math.histogram.densify(ch_set.const_high_gain_channel(ichan).opt_win_qsum())
+            hclr = calin.math.histogram.densify(ch_clr.const_high_gain_channel(ichan).opt_win_qsum())
+        else:
+            hset = calin.math.histogram.densify(ch_set.const_high_gain_channel(ichan).full_wf_max())
+            hclr = calin.math.histogram.densify(ch_clr.const_high_gain_channel(ichan).full_wf_max())
+        allfit.append(calin.diagnostics.stage1_analysis.analyze_trigger_thresholds(
+            hset,hclr,ped[ichan],do_mle=do_mle,nmin=nmin,mle_pmin=mle_pmin))
+
+    cal_med = [fitres[5] for fitres in allfit]
+    cal_iqr = [fitres[6] for fitres in allfit]
+
+    if(numpy.count_nonzero(~numpy.isnan(cal_med)) < 0.5*nchan):
+        return None
+
+    fig_dict = dict()
+
+    fig_frac, axis_frac = figure_factory.new_camera_figure()
+    for fitres in allfit:
+        axis_frac.plot(fitres[0],fitres[1],'k',alpha=0.1)
+    axis_frac.set_xlabel('%s [DC]'%dataset.capitalize())
+    axis_frac.set_ylabel('Trigger efficiency')
+    axis_frac.grid()
+    axis_frac.set_title('Trigger efficiency vs %s, run : %d'%(dataset, stage1.run_number()))
+
+    fig_dict['trigger_l0_efficiency_'+filename] = [ fig_frac, axis_frac ]
+
+    fig_frac_aligned, axis_frac_aligned = figure_factory.new_camera_figure()
+    for fitres in allfit:
+        if not numpy.isnan(fitres[5]):
+            axis_frac_aligned.plot(fitres[0]-fitres[5],fitres[1],'k',alpha=0.1)
+    axis_frac_aligned.set_xlabel('%s offset [DC]'%dataset.capitalize())
+    axis_frac_aligned.set_ylabel('Trigger fraction')
+    axis_frac_aligned.set_xlim(-aligned_range,aligned_range)
+    axis_frac_aligned.grid()
+    axis_frac_aligned.set_title('Trigger efficiency vs %s offset, run : %d'%(dataset, stage1.run_number()))
+
+    fig_dict['trigger_l0_efficiency_aligned_'+filename] = [ fig_frac_aligned, axis_frac_aligned ]
+
+    if(draw_camera_plots):
+        fig_threshold, axis_threshold = figure_factory.new_camera_figure()
+        pc = calin.plotting.plot_camera_image(cal_med, cl,
+                            channel_mask=~numpy.isnan(cal_med), axis=axis_threshold,
+                            cmap=cmap, draw_outline=True, draw_stats=True, hatch_missing_channels=True,
+                            outline_lw=outline_lw, outline_color=outline_color,
+                            stats_fontsize=stat_label_fontsize, draw_top12_val=False,
+                            stats_format='%.1f DC',
+                            draw_top12=True)
+        matplotlib.pyplot.colorbar(pc, label='Trigger threshold as %s [DC]'%dataset)
+        axis_threshold.get_xaxis().set_visible(False)
+        axis_threshold.get_yaxis().set_visible(False)
+        axis_threshold.set_title('Trigger threshold as %s, run : %d'%(dataset, stage1.run_number()))
+       
+        fig_dict['trigger_l0_threshold_'+filename] = [ fig_threshold, axis_threshold ]
+
+        fig_switchon, axis_switchon = figure_factory.new_camera_figure()
+        cal_iqr = [fitres[6] for fitres in allfit]
+        pc = calin.plotting.plot_camera_image(cal_iqr, cl,
+                            channel_mask=~numpy.isnan(cal_med), axis=axis_switchon,
+                            cmap=cmap, draw_outline=True, draw_stats=True, hatch_missing_channels=True,
+                            outline_lw=outline_lw, outline_color=outline_color,
+                            stats_fontsize=stat_label_fontsize, draw_top12_val=False,
+                            stats_format='%.1f DC',
+                            draw_top12=True)
+        matplotlib.pyplot.colorbar(pc, label='Trigger switch-on IQR as %s [DC]'%dataset)
+        axis_switchon.get_xaxis().set_visible(False)
+        axis_switchon.get_yaxis().set_visible(False)
+        axis_switchon.set_title('Trigger switch-on IQR as %s, run : %d'%(dataset, stage1.run_number()))
+
+        fig_dict['trigger_l0_switchon_'+filename] = [ fig_switchon, axis_switchon ]
+
+    return fig_dict

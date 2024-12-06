@@ -17,6 +17,10 @@
 
 import numpy
 import scipy.special
+import scipy.stats
+import scipy.optimize
+import collections.abc
+
 import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
 import calin.ix.math.histogram
@@ -316,3 +320,90 @@ def analyze_charge_hists(all_hist, ped=None, pedvar0=None, evf=1.2, flasher_reso
         all_intensity = all_mean/all_gain
 
     return all_xl, all_xc, all_xr, all_rms, all_gain, all_intensity
+
+def dhgauss_cdf(x, loc, lscale, rscale):
+    xx = x if isinstance(x, collections.abc.Iterable) else numpy.asarray([x])
+    lnorm = 2/(1+rscale/lscale)
+    rnorm = rscale/lscale*lnorm
+    y = numpy.zeros_like(xx,dtype=float)
+    y[xx<loc] = scipy.stats.norm.cdf(xx[xx<loc],loc=loc,scale=lscale)*lnorm
+    y[xx>=loc] = (scipy.stats.norm.cdf(xx[xx>=loc],loc=loc,scale=rscale)-0.5)*rnorm + 0.5*lnorm
+    return y if isinstance(x, collections.abc.Iterable) else y[0]
+
+def dhgauss_sf(x, loc, lscale, rscale):
+    xx = x if isinstance(x, collections.abc.Iterable) else numpy.asarray([x])
+    lnorm = 2/(1+rscale/lscale)
+    rnorm = rscale/lscale*lnorm
+    y = numpy.zeros_like(xx,dtype=float)
+    y[xx<loc] = (scipy.stats.norm.sf(xx[xx<loc],loc=loc,scale=lscale)-0.5)*lnorm + 0.5*rnorm
+    y[xx>=loc] = scipy.stats.norm.sf(xx[xx>=loc],loc=loc,scale=rscale)*rnorm
+    return y if isinstance(x, collections.abc.Iterable) else y[0]
+
+def dhgauss_percentile(frac, loc, lscale, rscale):
+    lnorm = 2/(1+rscale/lscale)
+    rnorm = rscale/lscale*lnorm
+    if(2*frac < lnorm):
+        return scipy.stats.norm.isf(1 - frac/lnorm,loc=loc,scale=lscale)
+    else:
+        return scipy.stats.norm.isf(1 - (frac - 0.5*lnorm)/rnorm - 0.5,loc=loc,scale=rscale)
+        
+def dhgauss_median(loc, lscale, rscale):
+    return dhgauss_percentile(0.5, loc, lscale, rscale)
+
+def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin=1e-200):
+    xsetl = int(hset.xval0()/hset.dxval())
+    xclrl = int(hclr.xval0()/hclr.dxval())
+    xsetr = xsetl + hset.bins_size()
+    xclrr = xclrl + hclr.bins_size()
+
+    xl = min(xsetl, xclrl)
+    xr = max(xsetr, xclrr)
+
+    x = numpy.arange(xl,xr)
+    yset = numpy.zeros_like(x)
+    yclr = numpy.zeros_like(x)
+    yset[xsetl-xl:xsetr-xl] = hset.bins()
+    yclr[xclrl-xl:xclrr-xl] = hclr.bins()
+    ytot = yset+yclr
+    
+    m = numpy.bitwise_and(numpy.bitwise_and(x>=xsetl-5, x<=xclrr+5), ytot>0)
+    xp = x[m]*hset.dxval() - ped
+    p = yset[m]/ytot[m]
+
+    nset = sum(yset[x<=xclrr])
+    nclr = sum(yclr[x>=xsetl])
+
+    xmed = numpy.nan
+    xiqr = numpy.nan
+    res_sq = numpy.nan
+    xfit = None
+    if(nset>=nmin and nclr>=nmin):
+        fitbounds=(0,numpy.inf)
+
+        x0_50 = xp[numpy.argmin((p-0.5)**2)]
+        x0_iqr = min(numpy.abs(xp[numpy.argmin((p-0.75)**2)]-xp[numpy.argmin((p-0.25)**2)]),4)
+        
+        x0 = (x0_50, 0.5*x0_iqr, 0.5*x0_iqr)
+        def residual(x):
+            return p - dhgauss_cdf(xp, *x)
+        optres = scipy.optimize.least_squares(residual, x0, bounds=fitbounds)
+
+        if(do_mle):
+            x1 = optres.x
+            def logL(x):
+                b = numpy.maximum(dhgauss_cdf(xp, *x), mle_pmin)
+                omb = numpy.maximum(dhgauss_sf(xp, *x), mle_pmin)
+                lp = yset[m]*numpy.log(b) + yclr[m]*numpy.log(omb)
+                return -sum(lp)
+            optres = scipy.optimize.minimize(logL, x1, tol=1e-3, bounds=(fitbounds,)*3)
+
+            if(optres.success==False):
+                optres = scipy.optimize.minimize(logL, x1, tol=1e-3, method='Nelder-Mead', bounds=(fitbounds,)*3)
+
+        if(optres.success==True):
+            xmed = dhgauss_median(*optres.x)
+            xiqr = dhgauss_percentile(0.75,*optres.x) - dhgauss_percentile(0.25,*optres.x)
+            res_sq = sum(residual(optres.x)**2)
+            xfit = optres.x
+
+    return xp, p, nset, nclr, xfit, xmed, xiqr, res_sq
