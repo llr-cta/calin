@@ -67,7 +67,11 @@ message SCTFacet
   calin.ix.common_types.Vector3D position                  = 4 [
     (CFO).desc = "Facet centroid position in the reflector frame.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D rotation             = 5 [
-    (CFO).desc = "Facet rotation angles, if needed." ];
+    (CFO).desc = "Facet rotation angles, if needed. The rotation is specified in the "
+      "facet frame with the y-axis corresponding to the normal to the mirror at the "
+      "centroid position, the x-axis coinciding with an axial vector in the reflector "
+      "frame, and the z-axis perpendicular to this (its major component being in the ) "
+      "radial direction in the reflector frame)." ];
 };
 
 message SCTSquareGrid
