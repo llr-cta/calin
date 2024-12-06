@@ -1571,7 +1571,6 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
         cmap = 'inferno', stat_label_fontsize=4.75, pix_lw = 0, outline_lw = 0.5,
         outline_color = '#888888'):
 
-    cs = stage1.const_charge_stats()
     ch_set = stage1.const_wf_hists_l0_trigger_bit_set()
     ch_clr = stage1.const_wf_hists_l0_trigger_bit_clear()
 
@@ -1587,7 +1586,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
         dataset = '%d-sample sum'%nsamp
         filename = 'sum'
         ped *= nsamp
-        aligned_range = 1000
+        aligned_range = 500
     else:
         dataset = 'waveform amplitude'
         filename = 'amplitude'
@@ -1608,7 +1607,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
     cal_med = [fitres[5] for fitres in allfit]
     cal_iqr = [fitres[6] for fitres in allfit]
 
-    if(numpy.count_nonzero(~numpy.isnan(cal_med)) < 0.5*nchan):
+    if(numpy.count_nonzero(~numpy.isnan(cal_med)) < 1):
         return None
 
     fig_dict = dict()
