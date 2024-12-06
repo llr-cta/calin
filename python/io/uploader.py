@@ -71,7 +71,7 @@ class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
         self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
         if(not os.path.isdir(self.root_directory)):
-            raise RuntimeError('Base path os not directory : '+self.root_directory)
+            raise RuntimeError('Base path is not directory : '+self.root_directory)
         super().__init__(overwrite=overwrite,loud=loud)
 
     def make_path(self, rel_path):
