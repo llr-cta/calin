@@ -492,7 +492,7 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
             mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
                 else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
-            mmask = mt != 0
+            mmask = numpy.bitwise_and(mt>0, mt<255.0)
             if(numpy.count_nonzero(mmask)>1):
                 tfeb.append(minmax(mt[mmask]))
                 mask.append(True)
