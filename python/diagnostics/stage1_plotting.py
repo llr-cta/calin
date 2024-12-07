@@ -399,6 +399,125 @@ def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
 
     return pc
 
+def draw_nectarcam_feb_temperatures_new(stage1, temperature_set=1, 
+        figure_factory = calin.plotting.PyPlotFigureFactory(),
+        tcmap = 'coolwarm', dtcmap = 'inferno', draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        mod_label_fontsize=4, stat_label_fontsize=4.75):
+
+    # We are assured on entry that there is some FEB data temperature in the NectarCAM ancillary data
+    ncad = stage1.const_nectarcam().const_ancillary_data()
+
+    fig_trend, axis_trend = figure_factory.new_default_figure()
+
+    def minmax(x):
+        return numpy.max(x)-numpy.min(x)
+
+    tfeb = []
+    dtfeb = []
+    mask = []
+
+    t0mt = stage1.const_run_config().const_run_start_time().time_ns()//1000000000
+
+    method = 'tfeb1' if temperature_set==1 else 'tfeb2'
+    for modid in stage1.const_run_config().configured_module_id() :
+        if(ncad.feb_temperature_has_key(int(modid))):
+            measurement_set = ncad.const_feb_temperature(int(modid))
+            num_measurments = measurement_set.measurement_size()
+            mt = numpy.asarray([getattr(measurement_set.measurement(i), method)() for i in range(num_measurments)])
+            tmt = numpy.asarray([measurement_set.measurement(i).time() for i in range(num_measurments)])
+            mmask = numpy.bitwise_and(mt>0, mt<100.0)
+            if(numpy.count_nonzero(mmask)):
+                axis_trend.plot(tmt[mmask] - t0mt, mt[mmask],'k',alpha=0.1)
+                tfeb.append(numpy.mean(mt[mmask]))
+                dtfeb.append(minmax(mt[mmask]))
+                mask.append(True)
+            else:
+                tfeb.append(numpy.nan)
+                dtfeb.append(numpy.nan)
+                mask.append(False)
+        else:
+            tfeb.append(numpy.nan)
+            dtfeb.append(numpy.nan)
+            mask.append(False)
+    axis_trend.set_xlabel('Elapsed run time [s]')
+    axis_trend.set_ylabel('FEB temperature %d [\u2103]'%temperature_set)
+    axis_trend.set_title('Temperature trend (FEB %d), run : %d'%(temperature_set, stage1.run_number()))
+
+    tecc = None
+    dtecc = None
+
+    if(ncad.has_ecc_measurements() and \
+            ncad.const_ecc_measurements().measurement_size()>0):
+        measurement_set = ncad.const_ecc_measurements()
+        num_measurments = measurement_set.measurement_size()
+
+        tecc = []
+        dtecc = []
+
+        for itemp in range(16):
+            method = f'temp_{itemp+1:02}'
+            et = numpy.asarray([getattr(measurement_set.measurement(i), method)() for i in range(num_measurments)])
+            emask = numpy.bitwise_and(et!=0, numpy.bitwise_and(et>-30.0, et<50.0))
+            if(numpy.count_nonzero(mmask)):
+                tecc.append(' %4.1f'%numpy.mean(et[emask]))
+                dtecc.append(' %4.1f'%minmax(et[emask]))
+            else:
+                tecc.append(' ====')
+                dtecc.append(' ====')
+
+    camera_layout = stage1.const_run_config().const_camera_layout()
+    configured_modules = stage1.const_run_config().configured_module_id()
+
+    def do_draw_tfeb_camera_plot(feb_dataset, ecc_dataset, label, cmap):
+        def measurement_val(m, fn):
+            m = numpy.asarray(m)
+            return ' ====' if(numpy.all(m==0) or numpy.any(m<-30) or numpy.any(m>50)) else ' %4.1f'%fn(m)
+
+        fig, axis = figure_factory.new_default_figure()
+        pc = calin.plotting.plot_camera_module_image(feb_dataset, camera_layout,
+                    configured_modules=configured_modules,
+                    module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                    mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                    hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
+                    stats_fontsize=stat_label_fontsize)
+        fig.colorbar(pc, label=u'FEB temperature %d %s[\u2103]'%(temperature_set,label))
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, camera_layout,
+                                    configured_modules=configured_modules,
+                                    pc=pc, module_values = feb_dataset, fontsize=mod_label_fontsize)
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+        if(ecc_dataset is not None):
+            text_ecc = 'ECC'
+            text_ecc += ecc_dataset[0] + ecc_dataset[1] + ecc_dataset[2] + ecc_dataset[3]
+            text_ecc += u'\n\u00b0C'
+            text_ecc += ecc_dataset[4] + ecc_dataset[5] + ecc_dataset[6] + ecc_dataset[7]
+            text_ecc += '\n'
+            text_ecc += ecc_dataset[8] + ecc_dataset[9] + ecc_dataset[10] + ecc_dataset[11]
+
+            text_ecc4 = ecc_dataset[12] + ecc_dataset[13] + ecc_dataset[14] + ecc_dataset[15]
+            if(text_ecc4 != '==== ==== ==== ===='):
+                text_ecc += '\n' + text_ecc4
+
+            max_xy = max(numpy.max(numpy.abs(camera_layout.outline_polygon_vertex_x())),
+                            numpy.max(numpy.abs(camera_layout.outline_polygon_vertex_y())))
+            axis.text(max_xy,max_xy,text_ecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
+
+        return fig, axis, pc
+    
+    fig_tfeb, axis_tfeb, _ = do_draw_tfeb_camera_plot(tfeb,tecc,'',tcmap)
+    axis_tfeb.set_title('Temperature (FEB %d), run : %d'%(temperature_set, stage1.run_number()))
+
+    fig_dtfeb, axis_dtfeb, _ = do_draw_tfeb_camera_plot(dtfeb,dtecc,'range (max-min) ',dtcmap)
+    axis_dtfeb.set_title('Temperature spread (FEB %d), run : %d'%(temperature_set, stage1.run_number()))
+
+    fig_dict = dict()
+    fig_dict['temperature_feb%d'%temperature_set] = [ fig_tfeb, axis_tfeb ]
+    fig_dict['temperature_spread_feb%d'%temperature_set] = [ fig_dtfeb, axis_dtfeb ]
+    fig_dict['temperature_trend_feb%d'%temperature_set] = [ fig_trend, axis_trend ]
+    return fig_dict
+
 def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'coolwarm', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
@@ -492,7 +611,7 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
             mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
                 else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
-            mmask = numpy.bitwise_and(mt>0, mt<255.0)
+            mmask = numpy.bitwise_and(mt>0, mt<100.0)
             if(numpy.count_nonzero(mmask)>1):
                 tfeb.append(minmax(mt[mmask]))
                 mask.append(True)
@@ -562,7 +681,7 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
     return pc
 
 def draw_all_clock_regression(stage1,
-        axis_freq = None, axis_t0 = None, axis_chi2 = None, axis_freq_spread = None, axis_t0_spread = None,
+        axis_freq = None,  axis_t0 = None, axis_chi2 = None, axis_freq_spread = None, axis_t0_spread = None,
         clockid=0, cmap = 'inferno',
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):

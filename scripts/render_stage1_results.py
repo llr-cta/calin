@@ -353,25 +353,12 @@ def unprotected_render_oid(stage1):
     if(opt.draw_temperature() or draw_all):
         if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
                 len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
-            ax.set_title('Temperature (FEB 1), run : %d'%runno)
-            upload_figure(runno, 'temperature_feb1', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
-            ax.set_title('Temperature (FEB 2), run : %d'%runno)
-            upload_figure(runno, 'temperature_feb2', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
-            ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
-            upload_figure(runno, 'temperature_spread_feb1', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
-            ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
-            upload_figure(runno, 'temperature_spread_feb2', ax.figure)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_new(stage1,1)
+            if(fig_dict):
+                upload_figure_dict(runno, fig_dict)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_new(stage1,2)
+            if(fig_dict):
+                upload_figure_dict(runno, fig_dict)
 
     ############################################################################
     # FIGURE : clock regression
