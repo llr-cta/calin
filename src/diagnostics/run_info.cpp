@@ -583,6 +583,8 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
     const double thistmin = config_.event_time_histogram_min();
     const double thistmax = config_.event_time_histogram_max();
 
+    calin::math::histogram::Histogram1D elapsed_time_hist_lr {
+      60.0, -360.0, 172800.0, 0.0 }; // Hard coded for 1 minute resolution over max of 48 hours
     calin::math::histogram::Histogram1D elapsed_time_hist {
       thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist {
@@ -605,6 +607,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       if(partials_->event_time_sequence(ievent) > 0) {
         double elapsed_time_sec =
           (partials_->event_time_sequence(ievent)-run_config_->run_start_time().time_ns())*1e-9;
+        elapsed_time_hist_lr.insert(elapsed_time_sec);
         elapsed_time_hist.insert(elapsed_time_sec);
         switch(partials_->event_type_sequence(ievent)) {
         case calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS:
@@ -632,6 +635,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
 
     event_number_hist.dump_as_proto(results_->mutable_event_number_histogram());
 
+    elapsed_time_hist_lr.dump_as_proto(results_->mutable_elapsed_time_histogram_low_res());
     elapsed_time_hist.dump_as_proto(results_->mutable_elapsed_time_histogram());
 
     trigger_physics_elapsed_time_hist.dump_as_proto(
