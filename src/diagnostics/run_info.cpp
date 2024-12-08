@@ -404,7 +404,7 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsParallelEventV
 
   config.set_event_number_histogram_resolution(10000);
   config.set_event_time_histogram_resolution(1.0);
-  config.set_event_time_histogram_max(7200.0);
+  config.set_event_time_histogram_max(86400.0);
   config.set_event_time_histogram_min(-60.0);  
   config.set_log10_delta_t_histogram_binsize(0.01);
   config.set_delta_t_timeslice(100.0);
@@ -584,7 +584,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
     double thistmax = config_.event_time_histogram_max();
 
     // Check that no more than 5 percent of events are outside the window, else hardcode
-    // histograms for 1 minute resolution over max of 48 hours. This does not work for
+    // histograms for 1 minute resolution over max of 31 days. This does not work for
     // the muon histogram unfortunately
     unsigned num_event_outside_window = 0;
     for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
@@ -594,7 +594,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
         if(num_event_outside_window*20 > partials_->event_number_sequence_size()) {
           thistres = 60.0;
           thistmin = -360.0;
-          thistmax = 172800.0;
+          thistmax = 86400.0*30.0;
           break;
         }
     }
