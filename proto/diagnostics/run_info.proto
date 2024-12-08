@@ -113,9 +113,7 @@ message RunInfo {
   calin.ix.math.histogram.Histogram1DData event_number_histogram = 3 [
     (CFO).desc = "Histogram of event numbers found." ];
 
-    calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_low_res = 9 [
-      (CFO).desc = "Histogram of elapsed time." ];
-    calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
     (CFO).desc = "Histogram of elapsed time." ];
 
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_physics = 11 [

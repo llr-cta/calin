@@ -579,12 +579,26 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       config_.event_number_histogram_resolution(), 0.0, 1.0e9,
       double(run_config_->camera_layout().first_event_number()) };
 
-    const double thistres = config_.event_time_histogram_resolution();
-    const double thistmin = config_.event_time_histogram_min();
-    const double thistmax = config_.event_time_histogram_max();
+    double thistres = config_.event_time_histogram_resolution();
+    double thistmin = config_.event_time_histogram_min();
+    double thistmax = config_.event_time_histogram_max();
 
-    calin::math::histogram::Histogram1D elapsed_time_hist_lr {
-      60.0, -360.0, 172800.0, 0.0 }; // Hard coded for 1 minute resolution over max of 48 hours
+    // Check that no more than 5 percent of events are outside the window, else hardcode
+    // histograms for 1 minute resolution over max of 48 hours. This does not work for
+    // the muon histogram unfortunately
+    unsigned num_event_outside_window = 0;
+    for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
+        double elapsed_time_sec =
+          (partials_->event_time_sequence(ievent)-run_config_->run_start_time().time_ns())*1e-9;
+        if(elapsed_time_sec > thistmax)++num_event_outside_window;
+        if(num_event_outside_window*20 > partials_->event_number_sequence_size()) {
+          thistres = 60.0;
+          thistmin = -360.0;
+          thistmax = 172800.0;
+          break;
+        }
+    }
+
     calin::math::histogram::Histogram1D elapsed_time_hist {
       thistres, thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist {
@@ -607,7 +621,6 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       if(partials_->event_time_sequence(ievent) > 0) {
         double elapsed_time_sec =
           (partials_->event_time_sequence(ievent)-run_config_->run_start_time().time_ns())*1e-9;
-        elapsed_time_hist_lr.insert(elapsed_time_sec);
         elapsed_time_hist.insert(elapsed_time_sec);
         switch(partials_->event_type_sequence(ievent)) {
         case calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS:
@@ -635,7 +648,6 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
 
     event_number_hist.dump_as_proto(results_->mutable_event_number_histogram());
 
-    elapsed_time_hist_lr.dump_as_proto(results_->mutable_elapsed_time_histogram_low_res());
     elapsed_time_hist.dump_as_proto(results_->mutable_elapsed_time_histogram());
 
     trigger_physics_elapsed_time_hist.dump_as_proto(

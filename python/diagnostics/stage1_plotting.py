@@ -1068,6 +1068,11 @@ def draw_elapsed_time_hist(stage1, axis = None):
             # xright=ri.elapsed_time_histogram().xval_max(),
             color='C4', density=True, label='Internal flasher', axis=axis))
 
+    fraclost = ri.elapsed_time_histogram().overflow_hi()/(ri.elapsed_time_histogram().sum_w()+ri.elapsed_time_histogram().overflow_hi()+ri.elapsed_time_histogram().overflow_lo())
+    if(fraclost > 0.01):
+        axis.text(0.02, 0.98, 'Warning: %.1f%% of event times exceed histogram limit'%(fraclost*100), 
+                  color='k', fontsize=10, ha='left', va='top', transform=axis.transAxes)
+
     axis.set_ylim([0,axis.get_ylim()[1]*1.15])
     axis.set_xlabel('Elapsed time [s]')
     axis.set_ylabel('Event rate on disk [Hz]')
