@@ -42,10 +42,17 @@ message SimpleChargeStatsConfig {
   double ped_time_hist_resolution                                   = 20 [
     (CFO).desc = "Resolution of pedestal mean and variance vs time histogram.",
     (CFO).units = "s" ];
-  double dual_gain_sample_resolution                                = 21 [
+  double channel_ped_time_hist_range                                = 21 [
+    (CFO).desc = "Maximum time of channel pedestal mean and variance vs time histogram.",
+    (CFO).units = "s" ];
+  double camera_ped_time_hist_range                                 = 22 [
+    (CFO).desc = "Maximum time of camera-wide pedestal mean and variance vs time histogram.",
+    (CFO).units = "s" ];
+    
+    double dual_gain_sample_resolution                              = 30 [
     (CFO).desc = "Resolution of high-gain vs low-gain max sample histogram.",
     (CFO).units = "DC" ];
-  double dual_gain_sum_resolution                                   = 22 [
+  double dual_gain_sum_resolution                                   = 40 [
     (CFO).desc = "Resolution of high-gain vs low-gain window sum histogram.",
     (CFO).units = "DC" ];
 };

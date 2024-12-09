@@ -106,12 +106,14 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   chan_hists_.resize(run_config->configured_channel_id_size());
   for(auto*& h : chan_hists_) {
     // For now on do not use per-channel low gain histograms
-    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution(), 3600.0,
+    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution(), 
+      config_.channel_ped_time_hist_range(),
       config_.dual_gain_sample_resolution(), config_.dual_gain_sum_resolution());
   }
 
   delete camera_hists_;
-  camera_hists_ = new CameraHists(has_dual_gain_, config_.ped_time_hist_resolution(), 86400.0);
+  camera_hists_ = new CameraHists(has_dual_gain_, config_.ped_time_hist_resolution(), 
+    config_.camera_ped_time_hist_range());
 
   delete data_order_camera_;
   data_order_camera_ = calin::iact_data::instrument_layout::reorder_camera_channels(
@@ -816,6 +818,8 @@ SimpleChargeStatsParallelEventVisitor::default_config()
   config.set_low_gain_wf_clipping_value(4095);
   config.set_nearest_neighbor_nchannel_threshold(3);
   config.set_ped_time_hist_resolution(5.0);
+  config.set_channel_ped_time_hist_range(86400.0);
+  config.set_camera_ped_time_hist_range(86400.0);
   config.set_dual_gain_sample_resolution(1.0);
   config.set_dual_gain_sum_resolution(5.0);
   return config;
