@@ -584,7 +584,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
     double thistmax = config_.event_time_histogram_max();
 
     // Check that no more than 5 percent of events are outside the window, else hardcode
-    // histograms for 1 minute resolution over max of 31 days. This does not work for
+    // histograms for 1 minute resolution over max of 30 days. This does not work for
     // the muon histogram unfortunately
     unsigned num_event_outside_window = 0;
     for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {

@@ -25,6 +25,32 @@ import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
 import calin.ix.math.histogram
 
+def get_camera_clock_regression_data(stage1, iclock=0):
+    cl = stage1.const_run_config().const_camera_layout()
+    clock = stage1.const_clock_regression().const_camera_clock(iclock)
+
+    clock_id = clock.clock_id()
+    clock_freq = cl.camera_clock_frequency(clock_id)
+
+    all_t = sorted(clock.bins_keys())
+    all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
+    all_y0 = numpy.zeros(len(all_t), dtype=numpy.int64)
+    all_a = numpy.zeros(len(all_t))
+    all_b = numpy.zeros(len(all_t))
+    all_d2 = numpy.zeros(len(all_t))
+    all_n = numpy.zeros(len(all_t))
+
+    for ikey, key in enumerate(all_t):
+        bin = clock.const_bins(key)
+        all_x0[ikey] = bin.x0()
+        all_y0[ikey] = bin.y0()
+        all_a[ikey] = bin.a()
+        all_b[ikey] = bin.b()
+        all_d2[ikey] = bin.d2()
+        all_n[ikey] = bin.num_entries()
+
+    return clock_id, clock_freq, all_t, all_x0, all_y0, all_a, all_b, all_d2, all_n
+
 def summarize_camera_clock_regressions(stage1):
     cam_freq_offset_ppm = numpy.zeros(stage1.const_clock_regression().camera_clock_size())
     cam_freq_spread_ppm = numpy.zeros_like(cam_freq_offset_ppm)
@@ -38,29 +64,8 @@ def summarize_camera_clock_regressions(stage1):
     principal_clock_freq = cl.camera_clock_frequency(principal_clock_id)
 
     for iclock in range(len(cam_freq_offset_ppm)):
-        clock = stage1.const_clock_regression().const_camera_clock(iclock)
-
-        clock_id = clock.clock_id()
-        clock_freq = cl.camera_clock_frequency(clock_id)
+        _, clock_freq, _, all_x0, all_y0, all_a, all_b, all_d2, all_n = get_camera_clock_regression_data(stage1, iclock)
         clock_nominal_a = clock_freq/principal_clock_freq
-
-        all_t = sorted(clock.bins_keys())
-        all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
-        all_y0 = numpy.zeros(len(all_t), dtype=numpy.int64)
-        all_a = numpy.zeros(len(all_t))
-        all_b = numpy.zeros(len(all_t))
-        all_d2 = numpy.zeros(len(all_t))
-        all_n = numpy.zeros(len(all_t))
-
-        for ikey, key in enumerate(all_t):
-            bin = clock.const_bins(key)
-            all_x0[ikey] = bin.x0()
-            all_y0[ikey] = bin.y0()
-            all_a[ikey] = bin.a()
-            all_b[ikey] = bin.b()
-            all_d2[ikey] = bin.d2()
-            all_n[ikey] = bin.num_entries()
-
         mask_n = all_n>5
 
         # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
@@ -74,6 +79,28 @@ def summarize_camera_clock_regressions(stage1):
 
     return cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_time_spread_ns, cam_d2_per_event
 
+def get_module_clock_regression_data(stage1, imod, iclock=0):
+    clock = stage1.const_clock_regression().const_module_clock(iclock).const_modules(imod)
+
+    all_t = sorted(clock.bins_keys())
+    all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
+    all_y0 = numpy.zeros(len(all_t), dtype=numpy.int64)
+    all_a = numpy.zeros(len(all_t))
+    all_b = numpy.zeros(len(all_t))
+    all_d2 = numpy.zeros(len(all_t))
+    all_n = numpy.zeros(len(all_t))
+
+    for ikey, key in enumerate(all_t):
+        bin = clock.const_bins(key)
+        all_x0[ikey] = bin.x0()
+        all_y0[ikey] = bin.y0()
+        all_a[ikey] = bin.a()
+        all_b[ikey] = bin.b()
+        all_d2[ikey] = bin.d2()
+        all_n[ikey] = bin.num_entries()
+
+    return all_t, all_x0, all_y0, all_a, all_b, all_d2, all_n
+
 def summarize_module_clock_regression(stage1, iclock=0):
     mod_freq_offset_ppm = numpy.zeros(stage1.run_config().configured_module_id_size())
     mod_freq_spread_ppm = numpy.zeros_like(mod_freq_offset_ppm)
@@ -83,25 +110,7 @@ def summarize_module_clock_regression(stage1, iclock=0):
     mod_problem_bins = numpy.zeros_like(mod_freq_offset_ppm)
 
     for imod in range(stage1.run_config().configured_module_id_size()):
-        clock = stage1.const_clock_regression().const_module_clock(iclock).const_modules(imod)
-
-        all_t = sorted(clock.bins_keys())
-        all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
-        all_y0 = numpy.zeros(len(all_t), dtype=numpy.int64)
-        all_a = numpy.zeros(len(all_t))
-        all_b = numpy.zeros(len(all_t))
-        all_d2 = numpy.zeros(len(all_t))
-        all_n = numpy.zeros(len(all_t))
-
-        for ikey, key in enumerate(all_t):
-            bin = clock.const_bins(key)
-            all_x0[ikey] = bin.x0()
-            all_y0[ikey] = bin.y0()
-            all_a[ikey] = bin.a()
-            all_b[ikey] = bin.b()
-            all_d2[ikey] = bin.d2()
-            all_n[ikey] = bin.num_entries()
-
+        all_t, all_x0, all_y0, all_a, all_b, all_d2, all_n = get_module_clock_regression_data(stage1, imod, iclock)
         mask_n = all_n>5
 
         # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a

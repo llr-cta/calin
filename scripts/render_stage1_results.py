@@ -281,7 +281,7 @@ def unprotected_render_oid(stage1):
             for low_gain in [ False, True ]:
                 fig_dict = calin.diagnostics.stage1_plotting.draw_charge_spectrum(stage1,
                     dataset=trigger_type, low_gain = low_gain,
-                    draw_median=True, draw_scale=True, figure_factory = figure_factory)
+                    draw_median=True, draw_scale=True, figure_factory=figure_factory)
                 upload_figure_dict(runno, fig_dict)
 
     ############################################################################
@@ -290,7 +290,7 @@ def unprotected_render_oid(stage1):
 
     if(opt.draw_missing_components() or draw_all):
         fig_dict = calin.diagnostics.stage1_plotting.draw_missing_components_fraction(stage1,
-            figure_factory = figure_factory, mod_label_fontsize=4, aux_label_fontsize=5.5)
+            figure_factory=figure_factory, mod_label_fontsize=4, aux_label_fontsize=5.5)
         upload_figure_dict(runno, fig_dict)
 
     ############################################################################
@@ -298,53 +298,9 @@ def unprotected_render_oid(stage1):
     ############################################################################
 
     if(opt.draw_pedestal() or draw_all):
-        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
-                and max(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())>0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
-            ax.set_title('High-gain pedestal mean (ped events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_mean_hg_ped_evt', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
-            ax.set_title('High-gain pedestal rms (ped events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_rms_hg_ped_evt', ax.figure)
-
-        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
-                and max(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())>0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
-            ax.set_title('Low-gain pedestal mean (ped events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_mean_lg_ped_evt', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
-            ax.set_title('Low-gain pedestal rms (ped events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_rms_lg_ped_evt', ax.figure)
-
-        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
-                and max(stage1.const_charge_stats().const_high_gain().all_trigger_event_count())>0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
-            ax.set_title('High-gain pedestal mean (all events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_mean_hg_all_evt', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
-            ax.set_title('High-gain pedestal rms (all events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_rms_hg_all_evt', ax.figure)
-
-        if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
-                and max(stage1.const_charge_stats().const_low_gain().all_trigger_event_count())>0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
-            ax.set_title('Low-gain pedestal mean (all events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_mean_lg_all_evt', ax.figure)
-
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
-            ax.set_title('Low-gain pedestal rms (all events), run : %d'%runno)
-            upload_figure(runno, 'pedestal_rms_lg_all_evt', ax.figure)
+        fig_dict = calin.diagnostics.stage1_plotting.draw_pedestal_plots(stage1,
+            figure_factory=figure_factory)
+        upload_figure_dict(runno, fig_dict)
 
     ############################################################################
     # FIGURE : FEB temperatures
@@ -353,10 +309,12 @@ def unprotected_render_oid(stage1):
     if(opt.draw_temperature() or draw_all):
         if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
                 len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
-            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_new(stage1,1)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,
+                                                        figure_factory=figure_factory)
             if(fig_dict):
                 upload_figure_dict(runno, fig_dict)
-            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_new(stage1,2)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,
+                                                        figure_factory=figure_factory)
             if(fig_dict):
                 upload_figure_dict(runno, fig_dict)
 
@@ -369,28 +327,10 @@ def unprotected_render_oid(stage1):
         if(stage1.has_clock_regression() and \
                 stage1.const_clock_regression().module_clock_size()>=iclock and \
                 stage1.const_clock_regression().const_module_clock(iclock).modules_size() > 0):
-            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-            ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-
-            calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4,ax5)
-
-            ax.set_title('Clock frequency error, run : %d'%runno)
-            upload_figure(runno, 'clock_frequency_error', ax.figure)
-
-            ax2.set_title('Clock offset from UCTS, run : %d'%runno)
-            upload_figure(runno, 'clock_offset', ax2.figure)
-
-            ax3.set_title('Clock vs UCTS fit RMS residual, run : %d'%runno)
-            upload_figure(runno, 'clock_residual', ax3.figure)
-
-            ax4.set_title('Clock frequency spread, run : %d'%runno)
-            upload_figure(runno, 'clock_frequency_spread', ax4.figure)
-
-            ax5.set_title('Clock offset from UCTS spread, run : %d'%runno)
-            upload_figure(runno, 'clock_offset_spread', ax5.figure)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,
+                                                        figure_factory=figure_factory)
+            if(fig_dict):
+                upload_figure_dict(runno, fig_dict)
 
     ############################################################################
     # FIGURE : channel and module data order

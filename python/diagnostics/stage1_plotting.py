@@ -245,6 +245,138 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
 
     return pc, cb
 
+def draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=False, low_gain=False, axis = None):
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    charge_stats = stage1.const_charge_stats().const_low_gain() if low_gain \
+        else stage1.const_charge_stats().const_high_gain()
+
+    if(all_events_ped_win):
+        nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.const_config().has_low_gain_opt_sum()) \
+            else stage1.const_config().const_high_gain_opt_sum().integration_n()
+        nchan = charge_stats.all_trigger_ped_win_count_vs_time_size();
+    else:
+        nsamp = rc.num_samples()
+        nchan = charge_stats.ped_trigger_full_wf_count_vs_time_size();
+
+    for ichan in range(nchan):
+        if(all_events_ped_win):
+            nevent = charge_stats.const_all_trigger_ped_win_count_vs_time(ichan)
+            values = charge_stats.const_all_trigger_ped_win_var_vs_time(ichan) if pedvar \
+                else charge_stats.const_all_trigger_ped_win_mean_vs_time(ichan)
+        else:
+            nevent = charge_stats.const_ped_trigger_full_wf_count_vs_time(ichan)
+            values = charge_stats.const_ped_trigger_full_wf_var_vs_time(ichan) if pedvar \
+                else charge_stats.const_ped_trigger_full_wf_mean_vs_time(ichan)
+
+        nevent = calin.math.histogram.densify(nevent)
+        values = calin.math.histogram.densify(values)
+
+        t = nevent.xval0() + nevent.dxval()*(numpy.arange(nevent.bins_size()) + 0.5)
+        m = nevent.bins() > 5
+        v = numpy.sqrt(values.bins()) if pedvar else values.bins()/nsamp
+        
+        axis.plot(t[m], v[m], 'k', alpha=0.1)
+
+    if(all_events_ped_win):
+        nevent = charge_stats.const_camera_all_trigger_ped_win_count_vs_time()
+        values = charge_stats.const_camera_all_trigger_ped_win_var_vs_time() if pedvar \
+            else charge_stats.const_camera_all_trigger_ped_win_mean_vs_time()
+    else:
+        nevent = charge_stats.const_camera_ped_trigger_full_wf_count_vs_time()
+        values = charge_stats.const_camera_ped_trigger_full_wf_var_vs_time() if pedvar \
+            else charge_stats.const_camera_ped_trigger_full_wf_mean_vs_time()
+
+    nevent = calin.math.histogram.densify(nevent)
+    values = calin.math.histogram.densify(values)
+
+    t = nevent.xval0() + nevent.dxval()*(numpy.arange(nevent.bins_size()) + 0.5)
+    m = nevent.bins() > 5
+    v = numpy.sqrt(values.bins()/nchan) if pedvar else values.bins()/nsamp/nchan
+    
+    axis.plot(t[m], v[m], 'r')
+    axis.set_xlabel('Elapsed time [s]')
+    if(pedvar):
+        axis.set_ylabel('Pedestal %d-sample RMS [DC]'%nsamp)
+    else:
+        axis.set_ylabel('Pedestal mean [DC]')
+
+def draw_pedestal_plots(stage1, figure_factory = calin.plotting.PyPlotFigureFactory(),
+        cmap = 'inferno', axis = None,
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75):
+    fig_dict = dict()
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+            and max(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())>0):
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal mean (ped events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_mean_hg_ped_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal rms (ped events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_rms_hg_ped_evt'] = [ fig, axis ]
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+            and max(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())>0):
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal mean (ped events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_mean_lg_ped_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal rms (ped events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_rms_lg_ped_evt'] = [ fig, axis ]
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+            and max(stage1.const_charge_stats().const_high_gain().all_trigger_event_count())>0):
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal mean (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_mean_hg_all_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal rms (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_rms_hg_all_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=True, low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal mean trend (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_trend_mean_hg_all_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_trend(stage1, pedvar=True, all_events_ped_win=True, low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal rms trend (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_trend_rms_hg_all_evt'] = [ fig, axis ]
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+            and max(stage1.const_charge_stats().const_low_gain().all_trigger_event_count())>0):
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal mean (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_mean_lg_all_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal rms (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_rms_lg_all_evt'] = [ fig, axis ]
+
+        fig, ax = figure_factory.new_camera_figure()
+        draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=True, low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal mean trend (all events), run : %d'%stage1.run_number())
+        fig_dict['pedestal_trend_mean_lg_all_evt'] = [ fig, axis ]
+
+    return fig_dict
+
 def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r',
         figure_factory = calin.plotting.PyPlotFigureFactory(),
         draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -399,7 +531,7 @@ def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
 
     return pc
 
-def draw_nectarcam_feb_temperatures_new(stage1, temperature_set=1, 
+def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, 
         figure_factory = calin.plotting.PyPlotFigureFactory(),
         tcmap = 'coolwarm', dtcmap = 'inferno', draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
@@ -407,7 +539,7 @@ def draw_nectarcam_feb_temperatures_new(stage1, temperature_set=1,
     # We are assured on entry that there is some FEB data temperature in the NectarCAM ancillary data
     ncad = stage1.const_nectarcam().const_ancillary_data()
 
-    fig_trend, axis_trend = figure_factory.new_default_figure()
+    fig_trend, axis_trend = figure_factory.new_histogram_figure()
 
     def minmax(x):
         return numpy.max(x)-numpy.min(x)
@@ -473,7 +605,7 @@ def draw_nectarcam_feb_temperatures_new(stage1, temperature_set=1,
             m = numpy.asarray(m)
             return ' ====' if(numpy.all(m==0) or numpy.any(m<-30) or numpy.any(m>50)) else ' %4.1f'%fn(m)
 
-        fig, axis = figure_factory.new_default_figure()
+        fig, axis = figure_factory.new_camera_figure()
         pc = calin.plotting.plot_camera_module_image(feb_dataset, camera_layout,
                     configured_modules=configured_modules,
                     module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
@@ -518,170 +650,7 @@ def draw_nectarcam_feb_temperatures_new(stage1, temperature_set=1,
     fig_dict['temperature_trend_feb%d'%temperature_set] = [ fig_trend, axis_trend ]
     return fig_dict
 
-def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'coolwarm', axis=None,
-        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        mod_label_fontsize=4, stat_label_fontsize=4.75):
-    tfeb = []
-    mask = []
-    for modid in stage1.run_config().configured_module_id() :
-        if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
-            measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
-                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
-            mmask = numpy.bitwise_and(mt>0, mt<255.0)
-            if(numpy.count_nonzero(mmask)):
-                tfeb.append(numpy.mean(mt[mmask]))
-                mask.append(True)
-            else:
-                tfeb.append(numpy.nan)
-                mask.append(False)
-        else:
-            tfeb.append(numpy.nan)
-            mask.append(False)
-
-    if(axis is None):
-        axis = matplotlib.pyplot.gca()
-
-    pc = calin.plotting.plot_camera_module_image(tfeb, stage1.run_config().camera_layout(),
-                    configured_modules=stage1.run_config().configured_module_id(),
-                    module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                    mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                    hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
-                    stats_fontsize=stat_label_fontsize)
-    cb = axis.get_figure().colorbar(pc, label=u'FEB temperature %d [\u2103]'%temperature_set)
-
-    if(mod_label_fontsize is not None and mod_label_fontsize>0):
-        calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                configured_modules=stage1.run_config().configured_module_id(),
-                                pc=pc, module_values = tfeb, fontsize=mod_label_fontsize)
-
-    axis.get_xaxis().set_visible(False)
-    axis.get_yaxis().set_visible(False)
-
-    def measurement_val(m):
-        m = numpy.asarray(m)
-        return ' ====' if(numpy.all(m==0) or numpy.any(m<-30) or numpy.any(m>50)) else \
-            ' %4.1f'%numpy.mean(m)
-
-    if(stage1.nectarcam().ancillary_data().has_ecc_measurements() and \
-            stage1.nectarcam().ancillary_data().ecc_measurements().measurement_size()>0):
-        measurement_set = stage1.nectarcam().ancillary_data().ecc_measurements()
-
-        tecc = 'ECC'
-        tecc += measurement_val([measurement_set.measurement(i).temp_01() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_02() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_03() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_04() for i in range(measurement_set.measurement_size())])
-        tecc += u'\n\u00b0C'
-        tecc += measurement_val([measurement_set.measurement(i).temp_05() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_06() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_07() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_08() for i in range(measurement_set.measurement_size())])
-        tecc += '\n'
-        tecc += measurement_val([measurement_set.measurement(i).temp_09() for i in range(measurement_set.measurement_size())])[1:]
-        tecc += measurement_val([measurement_set.measurement(i).temp_10() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_11() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_12() for i in range(measurement_set.measurement_size())])
-
-        tecc4 = measurement_val([measurement_set.measurement(i).temp_13() for i in range(measurement_set.measurement_size())])[1:]
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_14() for i in range(measurement_set.measurement_size())])
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_15() for i in range(measurement_set.measurement_size())])
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_16() for i in range(measurement_set.measurement_size())])
-
-        if(tecc4 != '==== ==== ==== ===='):
-            tecc += '\n' + tecc4
-
-        max_xy = max(numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_x())),
-                          numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
-        axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
-
-    return pc
-
-def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'inferno', axis = None,
-        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        mod_label_fontsize=4, stat_label_fontsize=4.75):
-
-    def minmax(x):
-        return numpy.max(x)-numpy.min(x)
-
-    tfeb = []
-    mask = []
-    for modid in stage1.run_config().configured_module_id() :
-        if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
-            measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
-                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
-            mmask = numpy.bitwise_and(mt>0, mt<100.0)
-            if(numpy.count_nonzero(mmask)>1):
-                tfeb.append(minmax(mt[mmask]))
-                mask.append(True)
-            else:
-                tfeb.append(numpy.nan)
-                mask.append(False)
-        else:
-            tfeb.append(numpy.nan)
-            mask.append(False)
-
-    if(axis is None):
-        axis = matplotlib.pyplot.gca()
-
-    pc = calin.plotting.plot_camera_module_image(tfeb, stage1.run_config().camera_layout(),
-                    configured_modules=stage1.run_config().configured_module_id(),
-                    module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                    mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                    hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
-                    stats_fontsize=stat_label_fontsize)
-    cb = axis.get_figure().colorbar(pc, label=u'FEB temperature %d range (max-min) [\u2103]'%temperature_set)
-
-    if(mod_label_fontsize is not None and mod_label_fontsize>0):
-        calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                configured_modules=stage1.run_config().configured_module_id(),
-                                pc=pc, module_values = tfeb, fontsize=mod_label_fontsize)
-
-    axis.get_xaxis().set_visible(False)
-    axis.get_yaxis().set_visible(False)
-
-    def measurement_val(m):
-        m = numpy.asarray(m)
-        return ' ====' if(numpy.all(m==0) or numpy.any(m<-30) or numpy.any(m>50)) else \
-            ' %4.1f'%minmax(m)
-
-    if(stage1.nectarcam().ancillary_data().has_ecc_measurements() and \
-            stage1.nectarcam().ancillary_data().ecc_measurements().measurement_size()>0):
-        measurement_set = stage1.nectarcam().ancillary_data().ecc_measurements()
-
-        tecc = 'ECC'
-        tecc += measurement_val([measurement_set.measurement(i).temp_01() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_02() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_03() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_04() for i in range(measurement_set.measurement_size())])
-        tecc += '\n\u00b0C'
-        tecc += measurement_val([measurement_set.measurement(i).temp_05() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_06() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_07() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_08() for i in range(measurement_set.measurement_size())])
-        tecc += '\n'
-        tecc += measurement_val([measurement_set.measurement(i).temp_09() for i in range(measurement_set.measurement_size())])[1:]
-        tecc += measurement_val([measurement_set.measurement(i).temp_10() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_11() for i in range(measurement_set.measurement_size())])
-        tecc += measurement_val([measurement_set.measurement(i).temp_12() for i in range(measurement_set.measurement_size())])
-
-        tecc4 = measurement_val([measurement_set.measurement(i).temp_13() for i in range(measurement_set.measurement_size())])[1:]
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_14() for i in range(measurement_set.measurement_size())])
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_15() for i in range(measurement_set.measurement_size())])
-        tecc4 += measurement_val([measurement_set.measurement(i).temp_16() for i in range(measurement_set.measurement_size())])
-
-        if(tecc4 != '==== ==== ==== ===='):
-            tecc += '\n' + tecc4
-
-        max_xy = max(numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_x())),
-                          numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
-        axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
-
-    return pc
-
-def draw_all_clock_regression(stage1,
-        axis_freq = None,  axis_t0 = None, axis_chi2 = None, axis_freq_spread = None, axis_t0_spread = None,
+def draw_all_clock_regression(stage1, figure_factory = calin.plotting.PyPlotFigureFactory(),
         clockid=0, cmap = 'inferno',
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
@@ -705,7 +674,7 @@ def draw_all_clock_regression(stage1,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=stats_format,
                         stats_fontsize=stat_label_fontsize, draw_top12_val=True)
-        # `cb = axis.get_figure().colorbar(pc, label=cb_label)
+        # cb = axis.get_figure().colorbar(pc, label=cb_label)
         cb = calin.plotting.add_colorbar_and_clipping(axis, pc, mod_data, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_modules=rc.configured_module_id(),
                 cb_label=cb_label)
@@ -717,8 +686,9 @@ def draw_all_clock_regression(stage1,
                                     fontsize=mod_label_fontsize)
 
         if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            fmt_string = 'UCTS 10MHz : %s\nTIB 10MHz : %s\nFEB sum : %s'%(stats_format,stats_format,stats_format)
-            axis.text(max_xy,max_xy,fmt_string%(cam_data[0], cam_data[1], cam_data[2]),
+            val_text = [stats_format%val if not numpy.isnan(val) else 'missing' for val in cam_data]
+            fmt_string = 'UCTS 10MHz : %s\nTIB 10MHz : %s\nFEB sum : %s'
+            axis.text(max_xy,max_xy,fmt_string%(val_text[0], val_text[1], val_text[2]),
                 fontsize=stat_label_fontsize, fontfamily='monospace',
                 ha='right', va='top')
 
@@ -727,28 +697,68 @@ def draw_all_clock_regression(stage1,
 
         return pc
 
-    all_pc = []
-    if(axis_freq is not None):
-        all_pc.append(draw_it(axis_freq, freq_offset_ppm, cam_freq_offset_ppm, '%.2f ppm',
-            'Mean oscillator frequency offset [ppm]'))
+    fig_dict = dict()
 
-    if(axis_t0 is not None):
-        all_pc.append(draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, '%.2f ns',
-            'Mean UCTS time at counter reset [ns]'))
+    if(numpy.count_nonzero(~numpy.isnan(freq_offset_ppm))):
+        fig_freq, axis_freq = figure_factory.new_camera_figure()
+        draw_it(axis_freq, freq_offset_ppm, cam_freq_offset_ppm, '%.2f ppm',
+                'Mean oscillator frequency offset [ppm]')
+        axis_freq.set_title('Clock frequency error, run : %d'%stage1.run_number())
+        fig_dict['clock_frequency_error'] = [ fig_freq, axis_freq ]
 
-    if(axis_chi2 is not None):
-        all_pc.append(draw_it(axis_chi2, numpy.sqrt(d2_per_event), numpy.sqrt(cam_d2_per_event), '%.2f ns',
-            'Linear-fit RMS residual per event [ns]'))
+    if(numpy.count_nonzero(~numpy.isnan(time_offset_ns))):
+        fig_t0, axis_t0 = figure_factory.new_camera_figure()
+        draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, '%.2f ns',
+                'Mean UCTS time at counter reset [ns]')
+        axis_freq.set_title('Clock offset from UCTS, run : %d'%stage1.run_number())
+        fig_dict['clock_offset'] = [ fig_t0, axis_t0 ]
 
-    if(axis_freq_spread is not None):
-        all_pc.append(draw_it(axis_freq_spread, freq_spread_ppm, cam_freq_spread_ppm, '%.3f ppm',
-            'Drift in oscillator frequency [ppm]'))
+    if(numpy.count_nonzero(~numpy.isnan(d2_per_event))):
+        fig_chi2, axis_chi2 = figure_factory.new_camera_figure()
+        draw_it(axis_chi2, numpy.sqrt(d2_per_event), numpy.sqrt(cam_d2_per_event), '%.2f ns',
+                'Linear-fit RMS residual per event [ns]')
+        axis_chi2.set_title('Clock vs UCTS fit RMS residual, run : %d'%stage1.run_number())
+        fig_dict['clock_residual'] = [ fig_chi2, axis_chi2 ]
 
-    if(axis_t0_spread is not None):
-        all_pc.append(draw_it(axis_t0_spread, time_spread_ns, cam_time_spread_ns, '%.3f ns',
-            'Drift in UCTS time at counter reset [ns]'))
+    if(numpy.count_nonzero(~numpy.isnan(freq_spread_ppm))):
+        fig_freq_spread, axis_freq_spread = figure_factory.new_camera_figure()
+        draw_it(axis_freq_spread, freq_spread_ppm, cam_freq_spread_ppm, '%.3f ppm',
+                'Drift in oscillator frequency [ppm]')
+        axis_freq_spread.set_title('Clock frequency spread, run : %d'%stage1.run_number())
+        fig_dict['clock_frequency_spread'] = [ fig_freq_spread, axis_freq_spread ]
 
-    return all_pc
+    if(numpy.count_nonzero(~numpy.isnan(time_spread_ns))):
+        fig_t0_spread, axis_t0_spread = figure_factory.new_camera_figure()
+        draw_it(axis_t0_spread, time_spread_ns, cam_time_spread_ns, '%.3f ns',
+                'Drift in UCTS time at counter reset [ns]')
+        axis_t0_spread.set_title('Clock offset from UCTS spread, run : %d'%stage1.run_number())
+        fig_dict['clock_offset_spread'] = [ fig_t0_spread, axis_t0_spread ]
+
+    if(numpy.count_nonzero(~numpy.isnan(freq_spread_ppm))):
+        t0 = stage1.const_run_config().const_run_start_time().time_ns()*1e-9
+        fig_freq_trend, axis_freq_trend = figure_factory.new_histogram_figure()
+        for imod in range(stage1.run_config().configured_module_id_size()):
+            _, all_x0, _, all_a, _, _, all_n = \
+                calin.diagnostics.stage1_analysis.get_module_clock_regression_data(stage1, imod, clockid)
+            mask_n = all_n>5
+            if(numpy.count_nonzero(mask_n)):
+                axis_freq_trend.plot(all_x0[mask_n]*1e-9 - t0, 1e6*(all_a[mask_n]-1), 'k', alpha=0.1)
+
+        _, clock_freq, _, all_x0, _, all_a, _, _, all_n = \
+                calin.diagnostics.stage1_analysis.get_camera_clock_regression_data(stage1, iclock=2)
+        mask_n = all_n>5
+        if(numpy.count_nonzero(mask_n)):
+            principal_clock_id = stage1.const_clock_regression().principal_clock_id();
+            cl = stage1.const_run_config().const_camera_layout()
+            principal_clock_freq = cl.camera_clock_frequency(principal_clock_id)
+            clock_nominal_a = clock_freq/principal_clock_freq
+            axis_freq_trend.plot(all_x0[mask_n]*1e-9 - t0, 1e6*((all_a[mask_n])/clock_nominal_a-1), 'r')
+        axis_freq_trend.set_xlabel('Elapsed run time [s]')
+        axis_freq_trend.set_ylabel('Clock frequency error [ppm]')
+        axis_freq_trend.set_title('Clock frequency trend, run : %d'%stage1.run_number())
+        fig_dict['clock_offset_trend'] = [ fig_freq_trend, axis_freq_trend ]
+
+    return fig_dict
 
 def draw_nectarcam_fpm_measurements(stage1,
         axis_voltage=None, axis_cw_current=None, axis_board_current=None,
@@ -945,8 +955,7 @@ def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
     if(numpy.max(chan_nentries) == 0):
         return None
 
-    fig_mwf, axis_mwf = figure_factory.new_default_figure()
-
+    fig_mwf, axis_mwf = figure_factory.new_histogram_figure()
     has_label = False
     for ichan in range(nchan):
         if(chan_nentries[ichan]):
