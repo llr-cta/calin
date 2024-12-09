@@ -277,11 +277,13 @@ def draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=False, low_gain
         nevent = calin.math.histogram.densify(nevent)
         values = calin.math.histogram.densify(values)
 
-        t = nevent.xval0() + nevent.dxval()*(numpy.arange(nevent.bins_size()) + 0.5)
-        m = nevent.bins() > 5
         v = numpy.sqrt(values.bins()) if pedvar else values.bins()/nsamp
-        
-        axis.plot(t[m], v[m], 'k', alpha=0.1)
+        t = values.xval0() + values.dxval()*(numpy.arange(values.bins_size()) + 0.5)
+        i0 = int(round((values.xval0()-nevent.xval0())/values.dxval()))
+        m = nevent.bins()[i0:i0+values.bins_size()] > 5
+
+        if(numpy.count_nonzero(m) > 0):
+            axis.plot(t[m], v[m], 'k', alpha=0.1)
 
     if(all_events_ped_win):
         nevent = charge_stats.const_camera_all_trigger_ped_win_count_vs_time()
@@ -295,9 +297,10 @@ def draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=False, low_gain
     nevent = calin.math.histogram.densify(nevent)
     values = calin.math.histogram.densify(values)
 
-    t = nevent.xval0() + nevent.dxval()*(numpy.arange(nevent.bins_size()) + 0.5)
-    m = nevent.bins() > 5
     v = numpy.sqrt(values.bins()/nchan) if pedvar else values.bins()/nsamp/nchan
+    t = values.xval0() + values.dxval()*(numpy.arange(values.bins_size()) + 0.5)
+    i0 = int(round((values.xval0()-nevent.xval0())/values.dxval()))
+    m = nevent.bins()[i0:i0+values.bins_size()] > 5
     
     axis.plot(t[m], v[m], 'r')
     axis.set_xlabel('Elapsed time [s]')
