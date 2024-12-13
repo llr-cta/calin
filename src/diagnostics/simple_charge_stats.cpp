@@ -841,6 +841,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
       camera_hists_->muon_candidate_num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
     }
   }
+  merge_time_histograms_if_necessary();
   return true;
 }
 
