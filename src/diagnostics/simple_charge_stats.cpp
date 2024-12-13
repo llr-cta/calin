@@ -473,6 +473,57 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_camera_hists_to_par
   delete hp;
 }
 
+void SimpleChargeStatsParallelEventVisitor::SingleGainChannelHists::insert_from_and_clear(
+  SimpleChargeStatsParallelEventVisitor::SingleGainChannelHists* from)
+{
+  all_pedwin_1_sum_vs_time->insert_hist(*from->all_pedwin_1_sum_vs_time);
+  from->all_pedwin_1_sum_vs_time->clear();
+
+  all_pedwin_q_sum_vs_time->insert_hist(*from->all_pedwin_q_sum_vs_time);
+  from->all_pedwin_q_sum_vs_time->clear();
+
+  all_pedwin_q2_sum_vs_time->insert_hist(*from->all_pedwin_q2_sum_vs_time);
+  from->all_pedwin_q2_sum_vs_time->clear();
+
+  ped_wf_1_sum_vs_time->insert_hist(*from->ped_wf_1_sum_vs_time);
+  from->ped_wf_1_sum_vs_time->clear();
+
+  ped_wf_q_sum_vs_time->insert_hist(*from->ped_wf_q_sum_vs_time);
+  from->ped_wf_q_sum_vs_time->clear();
+
+  ped_wf_q2_sum_vs_time->insert_hist(*from->ped_wf_q2_sum_vs_time);
+  from->ped_wf_q2_sum_vs_time->clear();
+}
+
+void SimpleChargeStatsParallelEventVisitor::merge_time_histograms_if_necessary()
+{
+  // This function added to do on-the-fly merging of the time histograms if they get very
+  // large. Only used on very long runs with more than 1000 bins (corresponding to 5000 
+  // seconds by default), to avoid memory problems in multi-threaded envrionment, since these
+  // histograms are duplicated across all the threads
+
+  if(parent_ == nullptr or camera_hists_->high_gain->all_pedwin_1_sum_vs_time->size()<1000) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock { parent_->on_the_fly_merge_lock_ };
+
+  for(int ichan = 0; ichan<chan_hists_.size(); ichan++) {
+    if(chan_hists_[ichan]->high_gain) {
+      parent_->chan_hists_[ichan]->high_gain->insert_from_and_clear(chan_hists_[ichan]->high_gain);
+    }
+    if(chan_hists_[ichan]->low_gain) {
+      parent_->chan_hists_[ichan]->low_gain->insert_from_and_clear(chan_hists_[ichan]->low_gain);
+    }
+  }
+  if(camera_hists_->high_gain) {
+    parent_->camera_hists_->high_gain->insert_from_and_clear(camera_hists_->high_gain);
+  }
+  if(camera_hists_->low_gain) {
+    parent_->camera_hists_->low_gain->insert_from_and_clear(camera_hists_->low_gain);
+  }
+}
+
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
