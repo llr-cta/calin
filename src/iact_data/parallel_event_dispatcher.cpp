@@ -368,7 +368,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   calin::io::data_source::DataSourceFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src_factory,
   unsigned nthread, unsigned log_frequency,
-  std::chrono::system_clock::time_point& start_time,
+  std::chrono::system_clock::time_point& start_time,  
   std::atomic<uint_fast64_t>& ndispatched)
 {
   std::vector<ParallelEventDispatcher*> sub_dispatchers;
@@ -423,6 +423,8 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   }
 
   for(auto& i : threads)i.join();
+  threads.clear();
+  threads_active = 0;
 
   if(exceptions_raised) {
     for(auto* d : sub_dispatchers) {
@@ -437,7 +439,33 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
   for(auto* d : sub_dispatchers)
   {
-    d->dispatch_leave_run();
+    ++threads_active;
+    threads.emplace_back([d,&threads_active,&exceptions_raised](){
+      try {
+        d->dispatch_leave_run();
+      } catch(const std::exception& x) {
+        util::log::LOG(util::log::FATAL) << x.what();
+        ++exceptions_raised;
+        --threads_active;
+        return;
+      }
+      --threads_active;
+    });
+  }
+
+  for(auto& i : threads)i.join();
+  threads.clear();
+  threads_active = 0;
+
+  if(exceptions_raised) {
+    for(auto* d : sub_dispatchers) {
+      delete d;
+    }
+    throw std::runtime_error("Exception(s) thrown in threaded merge processing");
+  }
+
+  for(auto* d : sub_dispatchers)
+  {
     d->dispatch_merge_results();
     delete d;
   }
