@@ -101,7 +101,10 @@ message Stage1Config {
     (CFO).desc = "Configuration of clock regression calculator." ];
 
   string ancillary_database                                = 200 [
-    (CFO).desc = "Location of ancillary database if used." ];
+    (CFO).desc = "Full path to ancillary database including filename if used." ];
+  string ancillary_database_directory                      = 201 [
+    (CFO).desc = "Directory containing ancillary database if used. Overriden by \"ancillary_database\" "
+      "if this is given. An empty value defaults to directory housing the events data file." ];
 };
 
 message NectarCamSpecificStage1 {

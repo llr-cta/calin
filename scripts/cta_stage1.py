@@ -21,6 +21,8 @@ import sys
 import traceback
 import numpy
 import time
+import shutil
+import os
 
 import calin.ix.io.zmq_data_source
 import calin.iact_data.event_dispatcher
@@ -90,7 +92,10 @@ cfg.mutable_zmq().CopyFrom(opt.zmq())
 dispatcher = calin.iact_data.event_dispatcher.ParallelEventDispatcher()
 
 # Create the stage1 visitor
-s1pev = calin.diagnostics.stage1.Stage1ParallelEventVisitor(opt.stage1())
+s1cfg = opt.const_stage1().Clone()
+if(opt.const_stage1().ancillary_database_directory() == ""):
+    s1cfg.set_ancillary_database_directory(opt.copy_ancillary_db())
+s1pev = calin.diagnostics.stage1.Stage1ParallelEventVisitor(s1cfg)
 dispatcher.add_visitor(s1pev)
 
 # Open SQL file
@@ -107,6 +112,7 @@ if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
     dispatcher.process_cta_zmq_run(endpoints, cfg)
     sql.insert(opt.db_stage1_table_name(), visitor.stage1_results())
 else:
+    copied_ancillary_db = ''
     first_file = True
     failed_files = []
     nsuccess = 0;
@@ -129,6 +135,25 @@ else:
                     print(f"Deleting old stage1 results from database, OID : {oid}")
                     sql.delete_by_oid(opt.db_stage1_table_name(), oid)
         print("#%d / %d: processing %s"%(ifile+1,nfile,filename))
+        if(opt.copy_ancillary_db() != ''):
+            src_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
+                opt.const_stage1().ancillary_database(), opt.const_stage1().ancillary_database_directory())
+            dst_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
+                s1cfg.ancillary_database(), s1cfg.ancillary_database_directory())
+            if(copied_ancillary_db != '' and copied_ancillary_db != dst_ancillary_db):
+                print("Deleting %s"%(copied_ancillary_db))
+                os.unlink(copied_ancillary_db)
+                copied_ancillary_db = ''
+            if(os.path.isfile(src_ancillary_db)):
+                try:
+                    if(not os.path.isfile(dst_ancillary_db)):
+                        print("Copying %s -> %s"%(src_ancillary_db,dst_ancillary_db))
+                        shutil.copyfile(src_ancillary_db, dst_ancillary_db)
+                        copied_ancillary_db = dst_ancillary_db
+                except Exception as x:
+                    traceback.print_exception(*sys.exc_info())
+            else:
+                print("*** Could not copy ancillary DB %s ***"%(src_ancillary_db))
         try:
             calin.util.log.prune_default_protobuf_log()
             calin.provenance.chronicle.prune_the_chronicle()
@@ -147,6 +172,11 @@ else:
             traceback.print_exception(*sys.exc_info())
             failed_files.append(filename)
             pass
+
+    if(copied_ancillary_db != ''):
+        print("Deleting %s"%(copied_ancillary_db))
+        os.unlink(copied_ancillary_db)
+        copied_ancillary_db = ''
 
     print("")
     print("="*80)

@@ -200,30 +200,16 @@ bool Stage1ParallelEventVisitor::leave_telescope_run(
     start_time = std::max(start_time-30, int64_t(0));
     end_time = end_time+30;
 
-    std::string db_filename = config_.ancillary_database();
+    std::string db_filename;
 
     switch(run_config_->camera_layout().camera_type()) {
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM:
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL:
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL:
-        if(db_filename.empty()) {
-          db_filename = calin::util::file::dirname(run_config_->filename());
-          std::string utdate = calin::util::file::basename(db_filename);
-          db_filename += "/nectarcam_monitoring_db_";
-          if(utdate.size() == 8) {
-            db_filename += utdate.substr(0,4);
-            db_filename += "-";
-            db_filename += utdate.substr(4,2);
-            db_filename += "-";
-            db_filename += utdate.substr(6,2);
-          } else {
-            db_filename += calin::util::timestamp::
-              Timestamp(run_config_->run_start_time().time_ns()).as_string().substr(0,10);
-          }
-          db_filename += ".sqlite";
-        }
-        if(calin::util::file::is_file(db_filename))
-        {
+        db_filename = nectarcam_ancillary_database_filename(run_config_->filename(), 
+          run_config_->run_start_time().time_ns(), config_.ancillary_database(),
+          config_.ancillary_database_directory());
+        if(calin::util::file::is_file(db_filename)) {
           nectarcam_ancillary_data_ =
             calin::iact_data::nectarcam_ancillary_data::
               retrieve_nectarcam_ancillary_data(db_filename, run_config_->telescope_id(),
@@ -240,6 +226,33 @@ bool Stage1ParallelEventVisitor::leave_telescope_run(
   }
 
   return good;
+}
+
+std::string Stage1ParallelEventVisitor::
+nectarcam_ancillary_database_filename(const std::string run_filename, uint64_t run_start_time_ns, 
+  const std::string forced_filename, const std::string forced_directory)
+{
+  std::string db_filename = forced_filename;
+  if(db_filename.empty()) {
+    db_filename = forced_directory;
+    if(db_filename.empty()) {
+      db_filename = calin::util::file::dirname(run_filename);
+    }
+    std::string utdate = calin::util::file::basename(calin::util::file::dirname(run_filename));
+    db_filename += "/nectarcam_monitoring_db_";
+    if(utdate.size() == 8) {
+      db_filename += utdate.substr(0,4);
+      db_filename += "-";
+      db_filename += utdate.substr(4,2);
+      db_filename += "-";
+      db_filename += utdate.substr(6,2);
+    } else {
+      db_filename += calin::util::timestamp::
+        Timestamp(run_start_time_ns).as_string().substr(0,10);
+    }
+    db_filename += ".sqlite";
+  }
+  return db_filename;
 }
 
 calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_results(

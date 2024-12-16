@@ -62,6 +62,9 @@ public:
 
   static calin::ix::diagnostics::stage1::Stage1Config default_config();
 
+  static std::string nectarcam_ancillary_database_filename(const std::string run_filename, uint64_t run_start_time_ns=0, 
+    const std::string forced_filename = "", const std::string forced_directory = "");
+
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
 

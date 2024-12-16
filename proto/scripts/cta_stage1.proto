@@ -62,6 +62,13 @@ message CommandLineOptions {
   int32 nthread                                            = 21 [
     (CFO).desc = "Number of computation threads. A value of -1 disables "
       "threading completely." ];
+  string copy_ancillary_db                                 = 22 [
+    (CFO).desc = "Specify directory to which the ancillary database should be copied "
+      "before processing the data file. If left blank no copy is made, the ancillary "
+      "database will be read from its original place. This option is useful " 
+      "when processing data on NSF filesystems as SQLITE3 perfromance is bad "
+      "on these systems. Autotomatically sents the \"stage1.ancillary_database_directory\" "
+      "option." ];
 
   calin.ix.iact_data.cta_data_source.CTACameraEventDecoderConfig decoder = 30 [
     (CFO).desc = "CTA event decoder options." ];
