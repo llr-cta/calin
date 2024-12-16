@@ -404,19 +404,26 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   {
     ++threads_active;
     threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,run_config,start_time,&ndispatched](){
-      auto* bsrc = src_factory->new_data_source();
-      while(bsrc) {
-        try {
-          d->do_dispatcher_loop(bsrc, log_frequency, run_config->num_events(), start_time, ndispatched);
-        } catch(const std::exception& x) {
-          util::log::LOG(util::log::FATAL) << x.what();
-          ++exceptions_raised;
-          delete bsrc;
-          --threads_active;
-          return;
-        }
-        delete bsrc;
+      calin::io::data_source::DataSource<calin::ix::iact_data::telescope_event::TelescopeEvent>* bsrc = nullptr;
+      try {
         bsrc = src_factory->new_data_source();
+        while(bsrc) {
+          d->do_dispatcher_loop(bsrc, log_frequency, run_config==nullptr?0:run_config->num_events(), start_time, ndispatched);
+          delete bsrc;
+          bsrc = src_factory->new_data_source();
+        }
+      } catch(const std::exception& x) {
+        util::log::LOG(util::log::FATAL) << x.what();
+        ++exceptions_raised;
+        delete bsrc;
+        --threads_active;
+        return;
+      } catch(...) {
+        util::log::LOG(util::log::FATAL) << "do_parallel_dispatcher_loops: unknown exception caught.";
+        ++exceptions_raised;
+        delete bsrc;
+        --threads_active;
+        return;
       }
       --threads_active;
     });
@@ -574,7 +581,7 @@ void ParallelEventDispatcher::write_final_log_message(
 {
   using namespace std::chrono;
   auto dt = system_clock::now() - start_time;
-  if(run_config->num_events() == 0) {
+  if(run_config == nullptr or run_config->num_events() == 0 or uint64_t(ndispatched) == 0) {
     LOG(INFO) << "Dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
       << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
