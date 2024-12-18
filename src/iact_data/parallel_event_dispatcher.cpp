@@ -455,6 +455,11 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
         ++exceptions_raised;
         --threads_active;
         return;
+      }catch(...) {
+        util::log::LOG(util::log::FATAL) << "do_parallel_dispatcher_loops: unknown exception caught in leave_run.";
+        ++exceptions_raised;
+        --threads_active;
+        return;
       }
       --threads_active;
     });
