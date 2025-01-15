@@ -1779,7 +1779,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
                             stats_fontsize=stat_label_fontsize, draw_top12_val=False,
                             stats_format='%.1f DC',
                             draw_top12=True)
-        matplotlib.pyplot.colorbar(pc, label='Trigger threshold as %s [DC]'%dataset)
+        fig_threshold.colorbar(pc, label='Trigger threshold as %s [DC]'%dataset)
         axis_threshold.get_xaxis().set_visible(False)
         axis_threshold.get_yaxis().set_visible(False)
         axis_threshold.set_title('Trigger threshold as %s, run : %d'%(dataset, stage1.run_number()))
@@ -1795,7 +1795,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
                             stats_fontsize=stat_label_fontsize, draw_top12_val=False,
                             stats_format='%.1f DC',
                             draw_top12=True)
-        matplotlib.pyplot.colorbar(pc, label='Trigger switch-on IQR as %s [DC]'%dataset)
+        fig_switchon.colorbar(pc, label='Trigger switch-on IQR as %s [DC]'%dataset)
         axis_switchon.get_xaxis().set_visible(False)
         axis_switchon.get_yaxis().set_visible(False)
         axis_switchon.set_title('Trigger switch-on IQR as %s, run : %d'%(dataset, stage1.run_number()))

@@ -382,8 +382,9 @@ def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin
     xiqr = numpy.nan
     res_sq = numpy.nan
     xfit = None
-    try:
-        if(nset>=nmin and nclr>=nmin):
+
+    if(nset>=nmin and nclr>=nmin):
+        try:
             xbnd=(0,numpy.inf)
             sbnd=(0.2,numpy.inf)
 
@@ -412,8 +413,8 @@ def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin
                 xiqr = dhgauss_percentile(0.75,*optres.x) - dhgauss_percentile(0.25,*optres.x)
                 res_sq = sum(residual(optres.x)**2)
                 xfit = optres.x
-    except ValueError:
-        # Just silently ignore problems in fitting
-        pass
+        except ValueError:
+            # Just silently ignore problems in fitting
+            pass
 
     return xp, p, nset, nclr, xfit, xmed, xiqr, res_sq
