@@ -431,10 +431,12 @@ def unprotected_render_oid(stage1):
             upload_figure(runno, 'trigger_l0_bit_count_muon', ax.figure)
 
         if(stage1.const_wf_hists_l0_trigger_bit_set().high_gain_channel_size()>0):
-            fig_dict = calin.diagnostics.stage1_plotting.draw_trigger_threshold(stage1)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_trigger_threshold(stage1, 
+                figure_factory=figure_factory)
             if(fig_dict):
                 upload_figure_dict(runno, fig_dict)
-            fig_dict = calin.diagnostics.stage1_plotting.draw_trigger_threshold(stage1,waveform_sum=True)
+            fig_dict = calin.diagnostics.stage1_plotting.draw_trigger_threshold(stage1, waveform_sum=True, 
+                figure_factory=figure_factory)
             if(fig_dict):
                 upload_figure_dict(runno, fig_dict)
 

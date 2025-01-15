@@ -331,22 +331,18 @@ def analyze_charge_hists(all_hist, ped=None, pedvar0=None, evf=1.2, flasher_reso
     return all_xl, all_xc, all_xr, all_rms, all_gain, all_intensity
 
 def dhgauss_cdf(x, loc, lscale, rscale):
-    xx = x if isinstance(x, collections.abc.Iterable) else numpy.asarray([x])
     lnorm = 2/(1+rscale/lscale)
     rnorm = rscale/lscale*lnorm
-    y = numpy.zeros_like(xx,dtype=float)
-    y[xx<loc] = scipy.stats.norm.cdf(xx[xx<loc],loc=loc,scale=lscale)*lnorm
-    y[xx>=loc] = (scipy.stats.norm.cdf(xx[xx>=loc],loc=loc,scale=rscale)-0.5)*rnorm + 0.5*lnorm
-    return y if isinstance(x, collections.abc.Iterable) else y[0]
+    y = norm.cdf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
+    y += norm.cdf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
+    return y - 0.5*rnorm
 
 def dhgauss_sf(x, loc, lscale, rscale):
-    xx = x if isinstance(x, collections.abc.Iterable) else numpy.asarray([x])
     lnorm = 2/(1+rscale/lscale)
     rnorm = rscale/lscale*lnorm
-    y = numpy.zeros_like(xx,dtype=float)
-    y[xx<loc] = (scipy.stats.norm.sf(xx[xx<loc],loc=loc,scale=lscale)-0.5)*lnorm + 0.5*rnorm
-    y[xx>=loc] = scipy.stats.norm.sf(xx[xx>=loc],loc=loc,scale=rscale)*rnorm
-    return y if isinstance(x, collections.abc.Iterable) else y[0]
+    y = norm.sf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
+    y += norm.sf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
+    return y - 0.5*lnorm
 
 def dhgauss_percentile(frac, loc, lscale, rscale):
     lnorm = 2/(1+rscale/lscale)
@@ -386,33 +382,38 @@ def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin
     xiqr = numpy.nan
     res_sq = numpy.nan
     xfit = None
-    if(nset>=nmin and nclr>=nmin):
-        fitbounds=(0,numpy.inf)
+    try:
+        if(nset>=nmin and nclr>=nmin):
+            xbnd=(0,numpy.inf)
+            sbnd=(0.2,numpy.inf)
 
-        x0_50 = xp[numpy.argmin((p-0.5)**2)]
-        x0_iqr = min(numpy.abs(xp[numpy.argmin((p-0.75)**2)]-xp[numpy.argmin((p-0.25)**2)]),4)
-        
-        x0 = (x0_50, 0.5*x0_iqr, 0.5*x0_iqr)
-        def residual(x):
-            return p - dhgauss_cdf(xp, *x)
-        optres = scipy.optimize.least_squares(residual, x0, bounds=fitbounds)
+            x0_50 = xp[numpy.argmin((p-0.5)**2)]
+            x0_iqr = min(numpy.abs(xp[numpy.argmin((p-0.75)**2)]-xp[numpy.argmin((p-0.25)**2)]),4)
+            
+            x0 = (x0_50, 0.5*x0_iqr, 0.5*x0_iqr)
+            def residual(x):
+                return p - dhgauss_cdf(xp, *x)
+            optres = scipy.optimize.least_squares(residual, x0, bounds=((xbnd[0],sbnd[0],sbnd[0]),(xbnd[1],sbnd[1],sbnd[1]))
 
-        if(do_mle):
-            x1 = optres.x
-            def logL(x):
-                b = numpy.maximum(dhgauss_cdf(xp, *x), mle_pmin)
-                omb = numpy.maximum(dhgauss_sf(xp, *x), mle_pmin)
-                lp = yset[m]*numpy.log(b) + yclr[m]*numpy.log(omb)
-                return -sum(lp)
-            optres = scipy.optimize.minimize(logL, x1, tol=1e-3, bounds=(fitbounds,)*3)
+            if(do_mle):
+                x1 = optres.x
+                def logL(x):
+                    b = numpy.maximum(dhgauss_cdf(xp, *x), mle_pmin)
+                    omb = numpy.maximum(dhgauss_sf(xp, *x), mle_pmin)
+                    lp = yset[m]*numpy.log(b) + yclr[m]*numpy.log(omb)
+                    return -sum(lp)
+                optres = scipy.optimize.minimize(logL, x1, tol=1e-3, bounds=(xbnd,sbnd,sbnd))
 
-            if(optres.success==False):
-                optres = scipy.optimize.minimize(logL, x1, tol=1e-3, method='Nelder-Mead', bounds=(fitbounds,)*3)
+                if(optres.success==False):
+                    optres = scipy.optimize.minimize(logL, x1, tol=1e-3, method='Nelder-Mead', bounds=(xbnd,sbnd,sbnd))
 
-        if(optres.success==True):
-            xmed = dhgauss_median(*optres.x)
-            xiqr = dhgauss_percentile(0.75,*optres.x) - dhgauss_percentile(0.25,*optres.x)
-            res_sq = sum(residual(optres.x)**2)
-            xfit = optres.x
+            if(optres.success==True):
+                xmed = dhgauss_median(*optres.x)
+                xiqr = dhgauss_percentile(0.75,*optres.x) - dhgauss_percentile(0.25,*optres.x)
+                res_sq = sum(residual(optres.x)**2)
+                xfit = optres.x
+    except e:
+        # Just silently ignore problems in fitting
+        pass
 
     return xp, p, nset, nclr, xfit, xmed, xiqr, res_sq
