@@ -393,7 +393,7 @@ def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin
             x0 = (x0_50, 0.5*x0_iqr, 0.5*x0_iqr)
             def residual(x):
                 return p - dhgauss_cdf(xp, *x)
-            optres = scipy.optimize.least_squares(residual, x0, bounds=((xbnd[0],sbnd[0],sbnd[0]),(xbnd[1],sbnd[1],sbnd[1]))
+            optres = scipy.optimize.least_squares(residual, x0, bounds=((xbnd[0],sbnd[0],sbnd[0]),(xbnd[1],sbnd[1],sbnd[1])))
 
             if(do_mle):
                 x1 = optres.x
