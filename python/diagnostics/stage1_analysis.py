@@ -333,15 +333,15 @@ def analyze_charge_hists(all_hist, ped=None, pedvar0=None, evf=1.2, flasher_reso
 def dhgauss_cdf(x, loc, lscale, rscale):
     lnorm = 2/(1+rscale/lscale)
     rnorm = rscale/lscale*lnorm
-    y = norm.cdf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
-    y += norm.cdf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
+    y = scipy.stats.norm.cdf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
+    y += scipy.stats.norm.cdf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
     return y - 0.5*rnorm
 
 def dhgauss_sf(x, loc, lscale, rscale):
     lnorm = 2/(1+rscale/lscale)
     rnorm = rscale/lscale*lnorm
-    y = norm.sf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
-    y += norm.sf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
+    y = scipy.stats.norm.sf(numpy.minimum(x,loc),loc=loc,scale=lscale)*lnorm
+    y += scipy.stats.norm.sf(numpy.maximum(x,loc),loc=loc,scale=rscale)*rnorm
     return y - 0.5*lnorm
 
 def dhgauss_percentile(frac, loc, lscale, rscale):
@@ -412,7 +412,7 @@ def analyze_trigger_thresholds(hset, hclr, ped, nmin=100, do_mle=False, mle_pmin
                 xiqr = dhgauss_percentile(0.75,*optres.x) - dhgauss_percentile(0.25,*optres.x)
                 res_sq = sum(residual(optres.x)**2)
                 xfit = optres.x
-    except e:
+    except ValueError:
         # Just silently ignore problems in fitting
         pass
 
