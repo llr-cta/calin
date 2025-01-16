@@ -713,7 +713,7 @@ def draw_all_clock_regression(stage1, figure_factory = calin.plotting.PyPlotFigu
         fig_t0, axis_t0 = figure_factory.new_camera_figure()
         draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, '%.2f ns',
                 'Mean UCTS time at counter reset [ns]')
-        axis_freq.set_title('Clock offset from UCTS, run : %d'%stage1.run_number())
+        axis_t0.set_title('Clock offset from UCTS, run : %d'%stage1.run_number())
         fig_dict['clock_offset'] = [ fig_t0, axis_t0 ]
 
     if(numpy.count_nonzero(~numpy.isnan(d2_per_event))):
