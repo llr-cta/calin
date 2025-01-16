@@ -759,7 +759,7 @@ def draw_all_clock_regression(stage1, figure_factory = calin.plotting.PyPlotFigu
         axis_freq_trend.set_xlabel('Elapsed run time [s]')
         axis_freq_trend.set_ylabel('Clock frequency error [ppm]')
         axis_freq_trend.set_title('Clock frequency trend, run : %d'%stage1.run_number())
-        fig_dict['clock_offset_trend'] = [ fig_freq_trend, axis_freq_trend ]
+        fig_dict['clock_frequency_trend'] = [ fig_freq_trend, axis_freq_trend ]
 
     return fig_dict
 
