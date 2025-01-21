@@ -191,7 +191,8 @@ if __name__ == '__main__':
             or endpoints[0].startswith('pgm://') or endpoints[0].startswith('pgme://')):
         init(opt,1)
         dispatcher.process_cta_zmq_run(endpoints, cfg)
-        sql.insert(opt.db_stage1_table_name(), visitor.stage1_results())
+        s1res = s1pev.stage1_results()
+        sql.insert(opt.db_stage1_table_name(), s1res)
     elif(opt.process_pool() >= 2):
         filelist = [ (ifile, filename) for ifile, filename in enumerate(endpoints[opt.start_file_index():]) ]
         nfile = len(filelist)
