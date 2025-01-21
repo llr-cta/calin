@@ -34,7 +34,7 @@
 
 namespace calin { namespace util { namespace log {
 
-enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
+enum Level { FATAL, ERROR, WARNING, NOTICE, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
 
 class Logger
 {

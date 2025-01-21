@@ -36,6 +36,7 @@ message LogMessage {
                FAILURE  = 5;
                VERBOSE  = 6;
                DISCARD  = 7;
+               NOTICE   = 8; // Added late so out of order of severity
              };
   Level level                              = 1;
   calin.ix.util.timestamp.Timestamp timestamp = 2 [ (CFO).sql.inline_message = true ];
