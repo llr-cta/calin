@@ -210,6 +210,9 @@ if __name__ == '__main__':
                 nskip += 1
             elif(result[0] == 'failed'):
                 failed_files.append(ifile_filename[1])
+            if(result[1] != ''):
+                print("Deleting %s"%(result[1]))
+                os.unlink(result[1])
         print("="*80)
         if(nsuccess > 0):
             print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
