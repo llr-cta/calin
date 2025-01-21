@@ -46,7 +46,7 @@ const char* ansi_color_string(Level level)
     case Level::FATAL:    return "\x1b[37;41;97;101;1m";     // Bright White on Bright Red
     case Level::ERROR:    return "\x1b[30;45;105;1m";        // Black on Bright Magenta
     case Level::WARNING:  return "\x1b[30;43;103;1m";        // Black on Bright Yellow
-    case Level::NOTICE:   return "\x1b[37;44;97;105;1m";     // Bright White on Bright Blue
+    case Level::NOTICE:   return "\x1b[37;44;97;104;1m";     // Bright White on Bright Blue
       //case Level::SUCCESS:  return "\x1b[37;42;97;1m";
     case Level::SUCCESS:  return "\x1b[37;42;97;38;5;15;1m"; // Bright White on Bright Green
     case Level::FAILURE:  return "\x1b[31;91;47;1m";         // Bright Red on White
