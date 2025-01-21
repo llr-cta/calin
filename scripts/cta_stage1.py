@@ -75,9 +75,6 @@ def run_file_analysis(ifile, filename):
     if(dispatcher is None):
         dispatcher, s1pev, s1cfg = make_dispatcher()
 
-    if(sql is None):
-        print("THERE")
-
     copied_ancillary_db = ''
     if(opt.skip_existing() or opt.replace_existing()):
         selector = calin.ix.diagnostics.stage1.SelectByFilename()
