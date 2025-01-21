@@ -132,7 +132,7 @@ void ParallelEventDispatcher::process_src(calin::io::data_source::DataSource<
       << to_string_with_commas(double(std::chrono::duration_cast<
         std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
     start_time = std::chrono::system_clock::now();
-    do_dispatcher_loop(src, log_frequency, run_config->num_events(), start_time, ndispatched);
+    do_dispatcher_loop(src, run_config, log_frequency, start_time, ndispatched);
     write_final_log_message(run_config, start_time, ndispatched);
   }
   else
@@ -213,7 +213,7 @@ process_src_list(std::vector<calin::io::data_source::DataSource<
       << to_string_with_commas(double(std::chrono::duration_cast<
         std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
     start_time = std::chrono::system_clock::now();
-    do_dispatcher_loop(src_list[0], log_frequency, run_config->num_events(), start_time, ndispatched);
+    do_dispatcher_loop(src_list[0], run_config, log_frequency, start_time, ndispatched);
     write_final_log_message(run_config, start_time, ndispatched);
   }
   else
@@ -408,7 +408,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
       try {
         bsrc = src_factory->new_data_source();
         while(bsrc) {
-          d->do_dispatcher_loop(bsrc, log_frequency, run_config==nullptr?0:run_config->num_events(), start_time, ndispatched);
+          d->do_dispatcher_loop(bsrc, run_config, log_frequency, start_time, ndispatched);
           delete bsrc;
           bsrc = src_factory->new_data_source();
         }
@@ -491,8 +491,9 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 void ParallelEventDispatcher::do_dispatcher_loop(
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-  unsigned log_frequency, unsigned nevents_to_dispatch,
-  const std::chrono::system_clock::time_point& start_time,
+  calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config, 
+  unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
   using namespace std::chrono;
@@ -500,12 +501,16 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
+    unsigned nevents_to_dispatch = run_config ? run_config->num_events() : 0;
     unsigned ndispatched_val = ndispatched.fetch_add(1) + 1;
     if(nevents_to_dispatch and ndispatched_val > nevents_to_dispatch) {
       if(arena)delete arena;
       else delete event;
       return;
     }
+
+    std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+      std::to_string(run_config->run_number()) : "????";
 
     add_event_to_keep(event, seq_index, arena);
     keep_event(event);
@@ -515,7 +520,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
 
     if(nevents_to_dispatch and ndispatched_val == nevents_to_dispatch) {
       auto dt = std::chrono::system_clock::now() - start_time;
-      LOG(INFO) << "Dispatched "
+      LOG(INFO) << "Run " << run_number_str << " dispatched "
         << to_string_with_commas(ndispatched_val) << " events in "
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
         << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched_val)
@@ -523,7 +528,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
     } else if(log_frequency and ndispatched_val % log_frequency == 0) {
       auto dt = std::chrono::system_clock::now() - start_time;
       auto logger = LOG(INFO);
-      logger << "Dispatched "
+      logger << "Run " << run_number_str << " dispatched "
         << to_string_with_commas(ndispatched_val) << " events in "
         << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
       if(nevents_to_dispatch) {
