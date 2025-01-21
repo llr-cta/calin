@@ -48,6 +48,8 @@ public:
   SQLite3Serializer(const std::string& filename, OpenMode open_mode = READ_ONLY);
   virtual ~SQLite3Serializer();
 
+  void set_busy_timeout(int ms) { sqlite3_busy_timeout(db_, ms); }
+
 protected:
   sqlite3* db_ = nullptr;
   bool adopt_db_ = false;
