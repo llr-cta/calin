@@ -40,7 +40,7 @@ message CommandLineOptions {
 
   string o                                                 = 10 [
     (CFO).desc = "SQLite3 output file name." ];
-  string db_stage1_table_name                             = 11 [
+  string db_stage1_table_name                              = 11 [
     (CFO).desc = "Table name of results structure in database." ];
   bool truncate_db                                         = 12 [
     (CFO).desc = "Truncate the SQLite3 file when opening it. Warning, this "
@@ -62,7 +62,12 @@ message CommandLineOptions {
   int32 nthread                                            = 21 [
     (CFO).desc = "Number of computation threads. A value of -1 disables "
       "threading completely." ];
-  string copy_ancillary_db                                 = 22 [
+  int32 process_pool                                       = 22 [
+    (CFO).desc = "Use process pool to treat multiple files at once. The value gives "
+      "the number of processes to use in the pool, a value less than 2 disables "
+      "process pooling. Note each process in the pool will use a number of threads "
+      "given by the \"ntread\" option." ];
+  string copy_ancillary_db                                 = 23 [
     (CFO).desc = "Specify directory to which the ancillary database should be copied "
       "before processing the data file. If left blank no copy is made, the ancillary "
       "database will be read from its original place. This option is useful " 
