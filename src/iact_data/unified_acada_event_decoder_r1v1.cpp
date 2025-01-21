@@ -91,33 +91,6 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   calin_event->set_telescope_id(cta_event->tel_id());
   calin_event->set_local_event_number(cta_event->event_id());
 
-  if(calin_event->has_tib_data() and calin_event->has_cdts_data()) {
-    calin_event->set_trigger_type(
-      calin::iact_data::acada_event_decoder::determine_trigger_type(
-        &calin_event->tib_data(), &calin_event->cdts_data()));
-  } else if(calin_event->has_tib_data()) {
-    calin_event->set_trigger_type(
-      calin::iact_data::acada_event_decoder::determine_trigger_type(
-        &calin_event->tib_data(), nullptr));
-  } else if(calin_event->has_cdts_data()) {
-    calin_event->set_trigger_type(
-      calin::iact_data::acada_event_decoder::determine_trigger_type(
-        nullptr, &calin_event->cdts_data()));
-  } else {
-    switch(cta_event->event_type()) {
-    case 0: calin_event->set_trigger_type(TRIGGER_EXTERNAL_FLASHER); break;
-    case 1: calin_event->set_trigger_type(TRIGGER_INTERNAL_FLASHER); break;
-    case 2: calin_event->set_trigger_type(TRIGGER_PEDESTAL); break;
-    case 16: calin_event->set_trigger_type(TRIGGER_PHYSICS); 
-      calin_event->set_is_muon_candidate(true); break;
-    case 17: calin_event->set_trigger_type(TRIGGER_FORCED_BY_ARRAY); break;
-    case 24: calin_event->set_trigger_type(TRIGGER_SOFTWARE); break;
-    case 32:
-    case 33: calin_event->set_trigger_type(TRIGGER_PHYSICS); break;
-    default: calin_event->set_trigger_type(TRIGGER_UNKNOWN); break;
-    }
-  }
-
   if(cta_event->event_type() == 16) {
     calin_event->set_is_muon_candidate(true);;
   }
@@ -332,6 +305,37 @@ decode(calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     calin_clock->set_time_sequence_id(0);
   } else {
     calin_event->set_camera_clock_index(8,-1);
+  }
+
+  // **************************************************************************
+  // Event type
+  // **************************************************************************
+
+  if(calin_event->has_tib_data() and calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::acada_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), &calin_event->cdts_data()));
+  } else if(calin_event->has_tib_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::acada_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), nullptr));
+  } else if(calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::acada_event_decoder::determine_trigger_type(
+        nullptr, &calin_event->cdts_data()));
+  } else {
+    switch(cta_event->event_type()) {
+    case 0: calin_event->set_trigger_type(TRIGGER_EXTERNAL_FLASHER); break;
+    case 1: calin_event->set_trigger_type(TRIGGER_INTERNAL_FLASHER); break;
+    case 2: calin_event->set_trigger_type(TRIGGER_PEDESTAL); break;
+    case 16: calin_event->set_trigger_type(TRIGGER_PHYSICS); 
+      calin_event->set_is_muon_candidate(true); break;
+    case 17: calin_event->set_trigger_type(TRIGGER_FORCED_BY_ARRAY); break;
+    case 24: calin_event->set_trigger_type(TRIGGER_SOFTWARE); break;
+    case 32:
+    case 33: calin_event->set_trigger_type(TRIGGER_PHYSICS); break;
+    default: calin_event->set_trigger_type(TRIGGER_UNKNOWN); break;
+    }
   }
 
   // **************************************************************************
