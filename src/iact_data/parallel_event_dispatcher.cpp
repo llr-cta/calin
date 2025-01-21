@@ -123,12 +123,15 @@ void ParallelEventDispatcher::process_src(calin::io::data_source::DataSource<
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+    std::to_string(run_config->run_number()) : "????";
+
   write_initial_log_message(run_config, nthread);
   dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(nthread <= 0)
   {
     auto dt = std::chrono::system_clock::now() - start_time;
-    LOG(INFO) << "Configured analysis in "
+    LOG(INFO) << "Run " << run_number_str << " configured analysis in "
       << to_string_with_commas(double(std::chrono::duration_cast<
         std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
     start_time = std::chrono::system_clock::now();
@@ -141,11 +144,11 @@ void ParallelEventDispatcher::process_src(calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
   }
-  LOG(INFO) << "Finishing up ...";
+  LOG(INFO) << "Run " << run_number_str << " finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Finishing up ... completed in "
+  LOG(INFO) << "Run " << run_number_str << " finishing up ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
@@ -201,6 +204,9 @@ process_src_list(std::vector<calin::io::data_source::DataSource<
   if(src_list.empty())
     throw std::runtime_error("process_run: empty data source list");
 
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+    std::to_string(run_config->run_number()) : "????";
+
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
@@ -209,7 +215,7 @@ process_src_list(std::vector<calin::io::data_source::DataSource<
   if(src_list.size() == 1)
   {
     auto dt = std::chrono::system_clock::now() - start_time;
-    LOG(INFO) << "Configured analysis in "
+    LOG(INFO) << "Run " << run_number_str << " configured analysis in "
       << to_string_with_commas(double(std::chrono::duration_cast<
         std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
     start_time = std::chrono::system_clock::now();
@@ -222,11 +228,11 @@ process_src_list(std::vector<calin::io::data_source::DataSource<
     do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
       log_frequency, start_time, ndispatched);
   }
-  LOG(INFO) << "Finishing up ...";
+  LOG(INFO) << "Run " << run_number_str << " finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Finishing up ... completed in "
+  LOG(INFO) << "Run " << run_number_str << " finishing up ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
@@ -238,6 +244,9 @@ process_src_factory(calin::io::data_source::DataSourceFactory<
     telescope_run_configuration::TelescopeRunConfiguration* run_config,
   unsigned log_frequency, int nthread) 
 {
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+    std::to_string(run_config->run_number()) : "????";
+
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
@@ -248,11 +257,11 @@ process_src_factory(calin::io::data_source::DataSourceFactory<
   do_parallel_dispatcher_loops(run_config, src_factory, nthread,
     log_frequency, start_time, ndispatched);
 
-  LOG(INFO) << "Finishing up ...";
+  LOG(INFO) << "Run " << run_number_str << " finishing up ...";
   start_time = std::chrono::system_clock::now();
   dispatch_leave_run();
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Finishing up ... completed in "
+  LOG(INFO) << "Run " << run_number_str << " finishing up ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
@@ -264,8 +273,11 @@ process_cta_zfits_run(const std::string& filename,
   auto start_time = std::chrono::system_clock::now();
   auto* cta_file = new CTAZFITSDataSource (filename, config.decoder(), config.zfits());
   TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+    std::to_string(run_config->run_number()) : "????";
+
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Built run configuration in "
+  LOG(INFO) << "Run " << run_number_str << " built run configuration in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 
@@ -371,6 +383,9 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   std::chrono::system_clock::time_point& start_time,  
   std::atomic<uint_fast64_t>& ndispatched)
 {
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+  std::to_string(run_config->run_number()) : "????";
+
   std::vector<ParallelEventDispatcher*> sub_dispatchers;
   for(unsigned ithread=0;ithread<nthread;ithread++)
   {
@@ -394,7 +409,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   std::atomic<unsigned> exceptions_raised { 0 };
 
   auto dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Configured analysis in "
+  LOG(INFO) << "Run " << run_number_str << " configured analysis in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
   start_time = std::chrono::system_clock::now();
@@ -441,7 +456,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   }
 
   write_final_log_message(run_config, start_time, ndispatched);
-  LOG(INFO) << "Merging results ...";
+  LOG(INFO) << "Run " << run_number_str << " merging results ...";
   start_time = std::chrono::system_clock::now();
 
   for(auto* d : sub_dispatchers)
@@ -483,7 +498,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   }
 
   dt = std::chrono::system_clock::now() - start_time;
-  LOG(INFO) << "Merging results ... completed in "
+  LOG(INFO) << "Run " << run_number_str << " merging results ... completed in "
     << to_string_with_commas(double(std::chrono::duration_cast<
       std::chrono::milliseconds>(dt).count())*0.001,3) << " sec";
 }
