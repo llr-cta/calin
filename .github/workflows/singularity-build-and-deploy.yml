@@ -75,7 +75,7 @@ jobs:
       shell: bash
       run: |
         cd mybuild
-        make -j3
+        make -j5
 
     - name: Install calin
       shell: bash
