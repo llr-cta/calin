@@ -309,43 +309,43 @@ process_cta_zfits_run(const std::string& filename,
 }
 
 #if 0
-void ParallelEventDispatcher::
-process_cta_zmq_run(const std::vector<std::string>& endpoints,
-  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
-{
-  if(endpoints.empty())
-    throw std::runtime_error("process_run: empty endpoints list");
-  std::vector<calin::iact_data::telescope_data_source::
-    TelescopeDataSourceWithRunConfig*> src_list;
-  try {
-    for(const auto& endpoint: endpoints) {
-      for(unsigned ithread=0; ithread<std::max(config.nthread(),1U); ++ithread) {
-        auto* rsrc = new calin::iact_data::zfits_actl_data_source::
-          ZMQACTL_R1_CameraEventDataSource(endpoint, config.zmq());
-        auto* decoder = new calin::iact_data::cta_actl_event_decoder::
-          CTA_ACTL_R1_CameraEventDecoder(endpoint, config.run_number(), config.decoder());
-        auto* src = new calin::iact_data::actl_event_decoder::
-          DecodedACTL_R1_CameraEventDataSourceWithRunConfig(rsrc, decoder,
-            /* adopt_actl_src = */ false, /* adopt_decoder = */ true);
-        src_list.emplace_back(src);
-      }
-    }
-    process_run(src_list, config.log_frequency());
-  } catch(...) {
-    for(auto* src: src_list)delete src;
-    throw;
-  }
-  for(auto* src: src_list)delete src;
-}
+// void ParallelEventDispatcher::
+// process_cta_zmq_run(const std::vector<std::string>& endpoints,
+//   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
+// {
+//   if(endpoints.empty())
+//     throw std::runtime_error("process_run: empty endpoints list");
+//   std::vector<calin::iact_data::telescope_data_source::
+//     TelescopeDataSourceWithRunConfig*> src_list;
+//   try {
+//     for(const auto& endpoint: endpoints) {
+//       for(unsigned ithread=0; ithread<std::max(config.nthread(),1U); ++ithread) {
+//         auto* rsrc = new calin::iact_data::zfits_actl_data_source::
+//           ZMQACTL_R1_CameraEventDataSource(endpoint, config.zmq());
+//         auto* decoder = new calin::iact_data::cta_actl_event_decoder::
+//           CTA_ACTL_R1_CameraEventDecoder(endpoint, config.run_number(), config.decoder());
+//         auto* src = new calin::iact_data::actl_event_decoder::
+//           DecodedACTL_R1_CameraEventDataSourceWithRunConfig(rsrc, decoder,
+//             /* adopt_actl_src = */ false, /* adopt_decoder = */ true);
+//         src_list.emplace_back(src);
+//       }
+//     }
+//     process_run(src_list, config.log_frequency());
+//   } catch(...) {
+//     for(auto* src: src_list)delete src;
+//     throw;
+//   }
+//   for(auto* src: src_list)delete src;
+// }
 
-void ParallelEventDispatcher::
-process_cta_zmq_run(const std::string& endpoint,
-  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
-{
-  std::vector<std::string> endpoints;
-  endpoints.emplace_back(endpoint);
-  process_cta_zmq_run(endpoints, config);
-}
+// void ParallelEventDispatcher::
+// process_cta_zmq_run(const std::string& endpoint,
+//   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
+// {
+//   std::vector<std::string> endpoints;
+//   endpoints.emplace_back(endpoint);
+//   process_cta_zmq_run(endpoints, config);
+// }
 #endif 
 
 calin::ix::iact_data::event_dispatcher::EventDispatcherConfig
@@ -604,16 +604,19 @@ void ParallelEventDispatcher::write_final_log_message(
   const std::chrono::system_clock::time_point& start_time,
   std::atomic<uint_fast64_t>& ndispatched)
 {
+  std::string run_number_str = (run_config && run_config->run_number() > 0) ? 
+    std::to_string(run_config->run_number()) : "????";
+
   using namespace std::chrono;
   auto dt = system_clock::now() - start_time;
   if(run_config == nullptr or run_config->num_events() == 0 or uint64_t(ndispatched) == 0) {
-    LOG(INFO) << "Dispatched "
+    LOG(INFO) << "Run " << run_number_str << " dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
       << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
       << " us/event (finished)";
   } else if(ndispatched != run_config->num_events()) {
-    LOG(ERROR) << "Dispatched "
+    LOG(ERROR) << "Run " << run_number_str << " dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
       << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
