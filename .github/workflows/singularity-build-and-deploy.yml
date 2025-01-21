@@ -82,7 +82,7 @@ jobs:
       run: |
         sudo find /usr -print > /tmp/files_before.txt
         cd mybuild
-        sudo make install
+        sudo make -j5 install
 
     - name: Package calin in TGZ file
       shell: bash
