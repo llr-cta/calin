@@ -34,9 +34,8 @@ import calin.diagnostics.stage1
 import calin.ix.scripts.cta_stage1
 import calin.provenance.chronicle
 
-
-def init(local_opt, local_nfile):
-    global py_log, opt, cfg, sql, dispatcher, s1cfg, s1pev, nfile
+def init_dispatcher(local_opt, local_nfile):
+    global py_log, opt, cfg, dispatcher, s1cfg, s1pev, nfile
 
     py_log = calin.util.log.PythonLogger()
     py_log.this.disown()
@@ -63,30 +62,23 @@ def init(local_opt, local_nfile):
     s1pev = calin.diagnostics.stage1.Stage1ParallelEventVisitor(s1cfg)
     dispatcher.add_visitor(s1pev)
 
-    # Open SQL file
-    sql_file = opt.o();
-    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, 
-        calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
-    
     nfile = local_nfile
 
+def init_writer(local_opt):
+    global sql, opt
+
+    opt = local_opt
+
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), 
+        calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
+
 def run_file_analysis(ifile, filename):
-    global sql, nfile, dispatcher, dispatcher, s1pev, s1cfg
+    global nfile, dispatcher, dispatcher, s1pev, s1cfg, opt
     if(dispatcher is None):
         dispatcher, s1pev, s1cfg = make_dispatcher()
 
     copied_ancillary_db = ''
-    if(opt.skip_existing() or opt.replace_existing()):
-        selector = calin.ix.diagnostics.stage1.SelectByFilename()
-        selector.set_filename(filename)
-        oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
-        if oids and opt.skip_existing():
-            print("#%d / %d: skipping %s"%(ifile+1,nfile,filename))
-            return [ 'skipped', copied_ancillary_db ]
-        if oids and opt.replace_existing():
-            for oid in oids:
-                print(f"Deleting old stage1 results from database, OID : {oid}")
-                sql.delete_by_oid(opt.db_stage1_table_name(), oid)
 
     print("#%d / %d: processing %s"%(ifile+1,nfile,filename))
 
@@ -115,22 +107,36 @@ def run_file_analysis(ifile, filename):
         calin.provenance.chronicle.prune_the_chronicle()
         dispatcher.process_cta_zfits_run(filename, cfg)
         s1res = s1pev.stage1_results()
-        print(f"Inserting stage1 results into database, size: {s1res.SpaceUsedLong()/1024**2:,.1f} MB")
-        start_time = time.time()
-        good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
-        if(good):
-            print(f"Inserted results into database in {time.time()-start_time:,.3f} sec, OID : {oid}")
-            return [ 'success', copied_ancillary_db ]
-        else:
-            print("Failed to insert stage1 results into database")
-            return [ 'failed', copied_ancillary_db ]
+        return filename, 'success', s1res, copied_ancillary_db
     except Exception as x:
         traceback.print_exception(*sys.exc_info())
-        return [ 'failed', copied_ancillary_db ]    
+        return filename, 'failed', None, copied_ancillary_db
 
-def proc_file(ifile_filename):
-    ifile, filename = ifile_filename
-    return run_file_analysis(ifile, filename)
+def insert_stage1_results(s1res, filename):
+    global sql, opt
+
+    info_tag = "\x1b[37;46;97;1m DATABASE \x1b[0m"
+    good_tag = "\x1b[37;42;97;38;5;15;1m DATABASE \x1b[0m"
+    bad_tag = "\x1b[37;41;97;101;1m DATABASE \x1b[0m"
+    run_number_str = str(s1res.run_number()) if s1res.run_number() != 0 else '????'
+    if(opt.replace_existing()):
+        selector = calin.ix.diagnostics.stage1.SelectByFilename()
+        selector.set_filename(filename)
+        oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
+        if oids:
+            for oid in oids:
+                print(f"{info_tag} Run {run_number_str} deleting old stage1 results from database, OID : {oid}")
+                sql.delete_by_oid(opt.db_stage1_table_name(), oid)
+
+    data_size = s1res.SpaceUsedLong()/1024**2
+    print(f"{info_tag} Run {run_number_str} inserting stage1 results into database, size: {data_size:,.1f} MB")
+    start_time = time.time()
+    good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
+    if(good):
+        print(f"{good_tag} Run {run_number_str} inserted {data_size:,.1f} MB into database in {time.time()-start_time:,.3f} sec, OID : {oid}")
+    else:
+        print("{bad_tag} Run {run_number_str} failed to insert stage1 results into database")
+    return filename, good
 
 # Entry point for the program
 if __name__ == '__main__':
@@ -176,6 +182,7 @@ if __name__ == '__main__':
         exit(1)
 
     endpoints = opt_proc.arguments()
+    endpoints = endpoints[opt.start_file_index():]
 
     # Create or extend SQL file
     sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
@@ -184,89 +191,103 @@ if __name__ == '__main__':
     sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), sql_mode)
     sql.create_or_extend_tables(opt.db_stage1_table_name(),
         calin.ix.diagnostics.stage1.Stage1.descriptor())
-    del sql
+
+    # Check if the files are already in the database
+    if(opt.skip_existing()):
+        filtered_endpoints = []
+        for endpoint in endpoints:
+            selector = calin.ix.diagnostics.stage1.SelectByFilename()
+            selector.set_filename(endpoint)
+            oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
+            if oids:
+                print("Skipping %s"%(endpoint))
+            elif endpoint in filtered_endpoints:
+                print("Duplicate %s"%(endpoint))
+            else:
+                filtered_endpoints.append(endpoint)
+        endpoints = filtered_endpoints
+
+    failed_files = []
+    nsuccess = 0;
+    nskip = 0;
 
     # Run all the visitors
     if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
             or endpoints[0].startswith('pgm://') or endpoints[0].startswith('pgme://')):
-        init(opt,1)
+        init_dispatcher(opt,1)
         dispatcher.process_cta_zmq_run(endpoints, cfg)
         s1res = s1pev.stage1_results()
         sql.insert(opt.db_stage1_table_name(), s1res)
     elif(opt.process_pool() >= 2):
-        filelist = [ (ifile, filename) for ifile, filename in enumerate(endpoints[opt.start_file_index():]) ]
+        filelist = [ (ifile, filename) for ifile, filename in enumerate(endpoints) ]
         nfile = len(filelist)
-        with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init, initargs=(opt,nfile)) as executor:
-            results = executor.map(proc_file, filelist)
-        failed_files = []
-        nsuccess = 0;
-        nskip = 0;    
-        for ifile_filename,result in zip(filelist,results):
-            if(result[0] == 'success'):
-                nsuccess += 1
-            elif(result[0] == 'skipped'):
-                nskip += 1
-            elif(result[0] == 'failed'):
-                failed_files.append(ifile_filename[1])
-            if(result[1] != ''):
-                print("Deleting %s"%(result[1]))
-                os.unlink(result[1])
-        print("="*80)
-        if(nsuccess > 0):
-            print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
-        if(nskip > 0):
-            print("Skipped",nskip,"runs that were" if nskip!=1 else "run that was","already in in database.")
-        if(len(failed_files) > 0):
-            print("Processing failed for",len(failed_files),"runs." if len(failed_files)!=1 else "run.")
-            if(len(failed_files) > 1):
-                print("Failed files :")
-                for filename in failed_files:
-                    print("--", filename)
-            else:
-                print("Failed file :",failed_files[0])
-        print("="*80)    
+        all_copied_ancillary_db = []
+        with concurrent.futures.ProcessPoolExecutor(1, initializer=init_writer, initargs=(opt,)) as writer_executor:
+            writer_futures = []
+            with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init_dispatcher, initargs=(opt,nfile)) as dispatcher_executor:
+                dispatcher_futures = [ dispatcher_executor.submit(run_file_analysis, *ifile_filename) for ifile_filename in filelist ]
+                for future in concurrent.futures.as_completed(dispatcher_futures):
+                    filename, status, s1res, copied_ancillary_db = future.result()
+                    if(status == 'success'):
+                        writer_futures.append(writer_executor.submit(insert_stage1_results, s1res, filename))
+                    else:
+                        failed_files.append(filename)
+                    
+                    if(copied_ancillary_db != ''):
+                        all_copied_ancillary_db.append(copied_ancillary_db)
+
+            for future in concurrent.futures.as_completed(writer_futures):
+                filename, good = future.result()
+                if(good):
+                    nsuccess += 1
+                else:
+                    failed_files.append(filename)
+
+        for copied_ancillary_db in all_copied_ancillary_db:
+            print("Deleting %s"%copied_ancillary_db)
+            os.unlink(copied_ancillary_db)
     else:
-        nfile = len(endpoints[opt.start_file_index():])
-        init(opt, nfile)
+        init_dispatcher(opt, len(endpoints))
         copied_ancillary_db = ''
         first_file = True
-        failed_files = []
-        nsuccess = 0;
-        nskip = 0;
-        for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
+        for ifile, filename in enumerate(endpoints):
             if not first_file:
                 print("-"*80)
             first_file = False
-            status, newly_copied_ancillary_db = run_file_analysis(ifile, filename)
-            if(newly_copied_ancillary_db != ''):
-                print("Deleting %s"%(copied_ancillary_db))
-                os.unlink(copied_ancillary_db)
-                copied_ancillary_db = newly_copied_ancillary_db
+            _, status, s1res, newly_copied_ancillary_db = run_file_analysis(ifile, filename)
             if(status == 'success'):
-                nsuccess += 1
-            elif(status == 'skipped'):
-                nskip += 1
-            elif(status == 'failed'):
+                _, good = insert_stage1_results(s1res, filename)
+                if(good):
+                    nsuccess += 1
+                else:
+                    failed_files.append(filename)
+            else:
                 failed_files.append(filename)
+
+            if(newly_copied_ancillary_db != ''):
+                if(copied_ancillary_db != ''):
+                    print("Deleting %s"%(copied_ancillary_db))
+                    os.unlink(copied_ancillary_db)
+                copied_ancillary_db = newly_copied_ancillary
 
         if(copied_ancillary_db != ''):
             print("Deleting %s"%(copied_ancillary_db))
             os.unlink(copied_ancillary_db)
 
-        print("")
-        print("="*80)
-        if(nsuccess > 0):
-            print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
-        if(nskip > 0):
-            print("Skipped",nskip,"runs that were" if nsuccess!=1 else "run that was","already in in database.")
-        if(len(failed_files) > 0):
-            print("Processing failed for",len(failed_files),"runs." if len(failed_files)!=1 else "run.")
-            if(len(failed_files) > 1):
-                print("Failed files :")
-                for filename in failed_files:
-                    print("--", filename)
-            else:
-                print("Failed file :",failed_files[0])
-        print("="*80)
+    print("")
+    print("="*80)
+    if(nsuccess > 0):
+        print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
+    if(nskip > 0):
+        print("Skipped",nskip,"runs that were" if nsuccess!=1 else "run that was","already in in database.")
+    if(len(failed_files) > 0):
+        print("Processing failed for",len(failed_files),"runs." if len(failed_files)!=1 else "run.")
+        if(len(failed_files) > 1):
+            print("Failed files :")
+            for filename in failed_files:
+                print("--", filename)
+        else:
+            print("Failed file :",failed_files[0])
+    print("="*80)
 
     # The end
