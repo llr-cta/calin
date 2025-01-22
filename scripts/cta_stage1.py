@@ -34,6 +34,15 @@ import calin.diagnostics.stage1
 import calin.ix.scripts.cta_stage1
 import calin.provenance.chronicle
 
+def good_tag(tag):
+    return "\x1b[37;42;97;38;5;15;1m" + tag + "\x1b[0m"
+
+def bad_tag(tag):
+    return "\x1b[37;41;97;101;1m" + tag + "\x1b[0m"
+
+def info_tag(tag):
+    return "\x1b[37;46;97;1m" + tag + "\x1b[0m"
+
 def init_dispatcher(local_opt, local_nfile):
     global py_log, opt, cfg, dispatcher, s1cfg, s1pev, nfile
 
@@ -73,34 +82,50 @@ def init_writer(local_opt):
     sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), 
         calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
 
+def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
+    if(not os.path.isfile(src_ancillary_db)):
+        # Nothing we can do except print a warning if the destination doesn't exist
+        if(not os.path.isfile(dst_ancillary_db)):
+            print("*** Could not copy ancillary DB %s ***"%(src_ancillary_db))
+        return False
+       
+    src_ancillary_db_size = os.path.getsize(src_ancillary_db)
+    if(os.path.isfile(dst_ancillary_db) and
+            os.path.getsize(dst_ancillary_db) == src_ancillary_db_size):
+        # Destination file already exists and is the same size as the source. We outie.
+        return False
+    
+    with open(dst_ancillary_db, 'ab') as dst_file:
+        fcntl.lockf(dst_file, fcntl.LOCK_EX)
+
+        if(os.path.getsize(dst_ancillary_db) == src_ancillary_db_size):
+            # Destination file is the same size as the source. No need to copy.
+            fcntl.lockf(dst_file, fcntl.LOCK_UN)
+            return False
+        
+        print(f'Copying {src_ancillary_db} -> {dst_ancillary_db} ({src_ancillary_db_size/1024**2:,.1f} MB)')
+
+        dst_file.truncate() # If file sizes don't match then re-copy the file
+        with open(src_ancillary_db, 'rb') as src_file:
+            shutil.copyfileobj(src_file, dst_file)
+        fcntl.lockf(dst_file, fcntl.LOCK_UN)
+        return True
+
 def run_file_analysis(ifile, filename):
     global nfile, dispatcher, dispatcher, s1pev, s1cfg, opt
     if(dispatcher is None):
         dispatcher, s1pev, s1cfg = make_dispatcher()
 
-    copied_ancillary_db = ''
-
     print("#%d / %d: processing %s"%(ifile+1,nfile,filename))
 
+    copied_ancillary_db = ''
     if(opt.copy_ancillary_db() != ''):
-        lockfile = open(s1cfg.ancillary_database_directory()+"/.lockfile",'ab')
-        fcntl.lockf(lockfile, fcntl.LOCK_EX)
         src_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
             opt.const_stage1().ancillary_database(), opt.const_stage1().ancillary_database_directory())
         dst_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
             s1cfg.ancillary_database(), s1cfg.ancillary_database_directory())
-        if(os.path.isfile(src_ancillary_db)):
-            try:
-                if(not os.path.isfile(dst_ancillary_db)):
-                    print("Copying %s -> %s"%(src_ancillary_db,dst_ancillary_db))
-                    shutil.copyfile(src_ancillary_db, dst_ancillary_db)
-                    copied_ancillary_db = dst_ancillary_db
-            except Exception as x:
-                traceback.print_exception(*sys.exc_info())
-        else:
-            print("*** Could not copy ancillary DB %s ***"%(src_ancillary_db))
-        fcntl.lockf(lockfile, fcntl.LOCK_UN)
-        lockfile.close()
+        if(copy_ancillary_db(src_ancillary_db, dst_ancillary_db)):
+            copied_ancillary_db = dst_ancillary_db
 
     try:
         calin.util.log.prune_default_protobuf_log()
@@ -115,28 +140,29 @@ def run_file_analysis(ifile, filename):
 def insert_stage1_results(s1res, filename):
     global sql, opt
 
-    info_tag = "\x1b[37;46;97;1m DATABASE \x1b[0m"
-    good_tag = "\x1b[37;42;97;38;5;15;1m DATABASE \x1b[0m"
-    bad_tag = "\x1b[37;41;97;101;1m DATABASE \x1b[0m"
-    run_number_str = str(s1res.run_number()) if s1res.run_number() != 0 else '????'
-    if(opt.replace_existing()):
-        selector = calin.ix.diagnostics.stage1.SelectByFilename()
-        selector.set_filename(filename)
-        oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
-        if oids:
-            for oid in oids:
-                print(f"{info_tag} Run {run_number_str} deleting old stage1 results from database, OID : {oid}")
-                sql.delete_by_oid(opt.db_stage1_table_name(), oid)
+    try:
+        run_number_str = str(s1res.run_number()) if s1res.run_number() != 0 else '????'
+        if(opt.replace_existing()):
+            selector = calin.ix.diagnostics.stage1.SelectByFilename()
+            selector.set_filename(filename)
+            oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
+            if oids:
+                for oid in oids:
+                    print(f'{info_tag(" DATABASE ")} Run {run_number_str} deleting old stage1 results from database, OID : {oid}')
+                    sql.delete_by_oid(opt.db_stage1_table_name(), oid)
 
-    data_size = s1res.SpaceUsedLong()/1024**2
-    print(f"{info_tag} Run {run_number_str} inserting stage1 results into database, size: {data_size:,.1f} MB")
-    start_time = time.time()
-    good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
-    if(good):
-        print(f"{good_tag} Run {run_number_str} inserted {data_size:,.1f} MB into database in {time.time()-start_time:,.3f} sec, OID : {oid}")
-    else:
-        print("{bad_tag} Run {run_number_str} failed to insert stage1 results into database")
-    return filename, good
+        data_size = s1res.SpaceUsedLong()/1024**2
+        print(f'{info_tag(" DATABASE ")} Run {run_number_str} inserting stage1 results into database, size: {data_size:,.1f} MB')
+        start_time = time.time()
+        good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
+        if(good):
+            print(f'{good_tag(" DATABASE ")} Run {run_number_str} inserted {data_size:,.1f} MB into database in {time.time()-start_time:,.3f} sec, OID : {oid}')
+        else:
+            print(f'{bad_tag(" DATABASE ")} Run {run_number_str} failed to insert stage1 results into database')
+        return filename, good
+    except Exception as x:
+        traceback.print_exception(*sys.exc_info())
+        return filename, False
 
 # Entry point for the program
 if __name__ == '__main__':
@@ -211,6 +237,7 @@ if __name__ == '__main__':
                 filtered_endpoints.append(endpoint)
         endpoints = filtered_endpoints
 
+    all_copied_ancillary_db = []
     failed_files = []
     nsuccess = 0;
     nskip = 0;
@@ -222,18 +249,20 @@ if __name__ == '__main__':
         dispatcher.process_cta_zmq_run(endpoints, cfg)
         s1res = s1pev.stage1_results()
         sql.insert(opt.db_stage1_table_name(), s1res)
-    elif(opt.process_pool() >= 2):
+    elif(opt.process_pool() >= 1):
         filelist = [ (ifile, filename) for ifile, filename in enumerate(endpoints) ]
         nfile = len(filelist)
-        all_copied_ancillary_db = []
         with concurrent.futures.ProcessPoolExecutor(1, initializer=init_writer, initargs=(opt,)) as writer_executor:
             writer_futures = []
             with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init_dispatcher, initargs=(opt,nfile)) as dispatcher_executor:
                 dispatcher_futures = [ dispatcher_executor.submit(run_file_analysis, *ifile_filename) for ifile_filename in filelist ]
                 for future in concurrent.futures.as_completed(dispatcher_futures):
                     filename, status, s1res, copied_ancillary_db = future.result()
-                    if(status == 'success'):
+                    if(status == 'success' and s1res.ByteSize() > 0):
                         writer_futures.append(writer_executor.submit(insert_stage1_results, s1res, filename))
+                    elif(status == 'success'):
+                        print(f'bad_tag(" PROCESS POOL ERROR ") No stage1 results received for {filename}')
+                        failed_files.append(filename)
                     else:
                         failed_files.append(filename)
                     
@@ -246,10 +275,6 @@ if __name__ == '__main__':
                     nsuccess += 1
                 else:
                     failed_files.append(filename)
-
-        for copied_ancillary_db in all_copied_ancillary_db:
-            print("Deleting %s"%copied_ancillary_db)
-            os.unlink(copied_ancillary_db)
     else:
         init_dispatcher(opt, len(endpoints))
         copied_ancillary_db = ''
@@ -258,7 +283,7 @@ if __name__ == '__main__':
             if not first_file:
                 print("-"*80)
             first_file = False
-            _, status, s1res, newly_copied_ancillary_db = run_file_analysis(ifile, filename)
+            _, status, s1res, copied_ancillary_db = run_file_analysis(ifile, filename)
             if(status == 'success'):
                 _, good = insert_stage1_results(s1res, filename)
                 if(good):
@@ -268,15 +293,12 @@ if __name__ == '__main__':
             else:
                 failed_files.append(filename)
 
-            if(newly_copied_ancillary_db != ''):
-                if(copied_ancillary_db != ''):
-                    print("Deleting %s"%(copied_ancillary_db))
-                    os.unlink(copied_ancillary_db)
-                copied_ancillary_db = newly_copied_ancillary
+            if(copied_ancillary_db != ''):
+                all_copied_ancillary_db.append(copied_ancillary_db)
 
-        if(copied_ancillary_db != ''):
-            print("Deleting %s"%(copied_ancillary_db))
-            os.unlink(copied_ancillary_db)
+    # for copied_ancillary_db in all_copied_ancillary_db:
+    #     print("Deleting %s"%copied_ancillary_db)
+    #     os.unlink(copied_ancillary_db)
 
     print("")
     print("="*80)
