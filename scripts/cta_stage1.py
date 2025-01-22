@@ -192,6 +192,10 @@ if __name__ == '__main__':
     sql.create_or_extend_tables(opt.db_stage1_table_name(),
         calin.ix.diagnostics.stage1.Stage1.descriptor())
 
+    if(len(endpoints) == 0):
+        print("No files to process.")
+        exit(0)
+
     # Check if the files are already in the database
     if(opt.skip_existing()):
         filtered_endpoints = []
