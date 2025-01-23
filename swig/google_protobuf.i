@@ -128,64 +128,43 @@ public:
 
   %extend {
     bool is_double() const { 
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_DOUBLE;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE;
     }
     bool is_float() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FLOAT;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_FLOAT;
     }
     bool is_int64() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_INT64;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_INT64;
     }
     bool is_uint64() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_UINT64;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_UINT64;
     }
     bool is_int32() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_INT32;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_INT32;
     }
-    bool is_fixed64() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FIXED64;
-    }
-    bool is_fixed32() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FIXED32;
+    bool is_uint32() const {
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_UINT32;
     }
     bool is_bool() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_BOOL;
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_BOOL;
+    }
+    bool is_enum() const {
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_ENUM;
     }
     bool is_string() const {
       return $self->type() == google::protobuf::FieldDescriptor::TYPE_STRING;
     }
-    bool is_group() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_GROUP;
-    }
-    bool is_message() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE;
-    }
     bool is_bytes() const {
       return $self->type() == google::protobuf::FieldDescriptor::TYPE_BYTES;
     }
-    bool is_uint32() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_UINT32;
-    }
-    bool is_enum() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_ENUM;
-    }
-    bool is_sfixed32() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SFIXED32;
-    }
-    bool is_sfixed64() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SFIXED64;
-    }
-    bool is_sint32() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SINT32;
-    }
-    bool is_sint64() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SINT64;
+    bool is_message() const {
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE;
     }
     bool is_simple_message() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and not $self->is_repeated();
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE and not $self->is_repeated();
     }
     bool is_repeated_message() const {
-      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and $self->is_repeated();
+      return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE and $self->is_repeated();
     }
   }
 
