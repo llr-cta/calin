@@ -44,6 +44,12 @@ def info_tag(tag):
     return "\x1b[37;46;97;1m" + tag + "\x1b[0m"
 
 def marshall(m, bsmax=2**31):
+    # To overcome the limit of 2GB for the size of a serialized message, we split the message 
+    # into sub-components and store them in a dictionary. The main message is stored
+    # under the key '/'. The sub-components are stored under the key corresponding to the
+    # field name. Each sub-component is itself a dictionary with the same structure.
+    # All messages should be less than 2GB in size. This should be generalized and moved
+    # to the __get_state__ functions of the protobuf messages but this is OK for now.
     mdict = dict()
     while m.ByteSize()>=bsmax:
         fmax, fmaxbs = '', 0
@@ -131,7 +137,7 @@ def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
         
         print(f'Copying {src_ancillary_db} -> {dst_ancillary_db} ({src_ancillary_db_size/1024**2:,.1f} MB)')
 
-        dst_file.truncate() # If file sizes don't match then re-copy the file
+        dst_file.truncate() # If file sizes don't match then (re-)copy the file
         with open(src_ancillary_db, 'rb') as src_file:
             shutil.copyfileobj(src_file, dst_file)
         fcntl.lockf(dst_file, fcntl.LOCK_UN)
