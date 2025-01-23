@@ -156,7 +156,7 @@ def insert_stage1_results(s1res, filename):
                     print(f'{info_tag(" DATABASE ")} Run {run_number_str} deleting old stage1 results from database, OID : {oid}')
                     sql.delete_by_oid(opt.db_stage1_table_name(), oid)
 
-        data_size = s1res.SpaceUsedLong()/1024**2
+        data_size = s1res.ByteSize()/1024**2
         print(f'{info_tag(" DATABASE ")} Run {run_number_str} inserting stage1 results into database, size: {data_size:,.1f} MB')
         start_time = time.time()
         good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
