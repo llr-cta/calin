@@ -272,6 +272,8 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "    $class_name$* Clone(google::protobuf::Arena* arena) const {\n"
     "      $class_type$* the_clone = $$self->New(arena);\n"
     "      the_clone->MergeFrom(*$$self); return the_clone; }\n"
+    "    bool Equals(const $class_name$& other) const {\n"
+    "      return google::protobuf::util::MessageDifferencer::Equals(*$$self,other); }\n"
     "    %pythoncode %{"
     "\n"
     "      def __getstate__(self):\n"
@@ -699,7 +701,8 @@ Generate(const google::protobuf::FileDescriptor * file,
     "#include<map>\n"
     "#include<stdexcept>\n"
     "#include<google/protobuf/message.h>\n"
-    "#include<google/protobuf/descriptor.h>\n");
+    "#include<google/protobuf/descriptor.h>\n"
+    "#include<google/protobuf/util/message_differencer.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
   I->Print("\n#define SWIG_FILE_WITH_INIT\n\n");
   I->Print(
