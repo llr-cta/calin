@@ -284,6 +284,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "    %}\n"
     "  }\n"
     "  void Swap($class_name$* other);\n"
+    "  const google::protobuf::Descriptor* GetDescriptor() const;\n"
     "\n"
     "  static const google::protobuf::Descriptor* descriptor();\n"
     "  static const $class_name$& default_instance();\n",

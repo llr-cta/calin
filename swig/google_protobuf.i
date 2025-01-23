@@ -26,6 +26,8 @@
 %module (package="calin") google_protobuf
 
 %{
+  #include<string>
+  #include<vector>
   #include<google/protobuf/message.h>
   #include<google/protobuf/descriptor.h>
   #include<google/protobuf/util/json_util.h>
@@ -52,7 +54,197 @@ namespace google { namespace protobuf {
 //%newobject Message::New() const;
 %nodefaultctor Message;
 %nodefaultctor Descriptor;
+%nodefaultctor FieldDescriptor;
 //%nodefaultctor Arena;
+
+class Descriptor;
+
+class FieldDescriptor
+{
+public:
+  enum Type {
+    TYPE_DOUBLE = 1,
+    TYPE_FLOAT = 2,
+    TYPE_INT64 = 3,
+    TYPE_UINT64 = 4,
+    TYPE_INT32 = 5,
+    TYPE_FIXED64 = 6,
+    TYPE_FIXED32 = 7,
+    TYPE_BOOL = 8,
+    TYPE_STRING = 9,
+    TYPE_GROUP = 10,
+    TYPE_MESSAGE = 11,
+    TYPE_BYTES = 12,
+    TYPE_UINT32 = 13,
+    TYPE_ENUM = 14,
+    TYPE_SFIXED32 = 15,
+    TYPE_SFIXED64 = 16,
+    TYPE_SINT32 = 17,
+    TYPE_SINT64 = 18,
+    MAX_TYPE = 18
+  };
+
+  enum CppType {
+    CPPTYPE_INT32 = 1,
+    CPPTYPE_INT64 = 2,
+    CPPTYPE_UINT32 = 3,
+    CPPTYPE_UINT64 = 4,
+    CPPTYPE_DOUBLE = 5,
+    CPPTYPE_FLOAT = 6,
+    CPPTYPE_BOOL = 7,
+    CPPTYPE_ENUM = 8,
+    CPPTYPE_STRING = 9,
+    CPPTYPE_MESSAGE = 10,
+    MAX_CPPTYPE = 10
+  };
+
+  enum Label {
+    LABEL_OPTIONAL = 1,
+    LABEL_REQUIRED = 2,
+    LABEL_REPEATED = 3,
+    MAX_LABEL = 3
+  };
+
+  std::string name() const;
+  std::string full_name() const;
+  std::string json_name() const;
+  bool is_extension() const;
+  int	number() const;
+  std::string lowercase_name() const;
+  std::string camelcase_name() const;
+
+  Type type() const;
+  std::string type_name() const;
+  CppType cpp_type() const;
+  std::string cpp_type_name() const;
+
+  Label	label() const;
+  bool is_required() const;
+  bool is_optional() const;
+  bool is_repeated() const;
+  bool is_packable() const;
+  bool is_packed() const;
+  bool is_map() const;
+
+  %extend {
+    bool is_double() const { 
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_DOUBLE;
+    }
+    bool is_float() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FLOAT;
+    }
+    bool is_int64() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_INT64;
+    }
+    bool is_uint64() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_UINT64;
+    }
+    bool is_int32() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_INT32;
+    }
+    bool is_fixed64() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FIXED64;
+    }
+    bool is_fixed32() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_FIXED32;
+    }
+    bool is_bool() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_BOOL;
+    }
+    bool is_string() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_STRING;
+    }
+    bool is_group() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_GROUP;
+    }
+    bool is_message() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE;
+    }
+    bool is_bytes() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_BYTES;
+    }
+    bool is_uint32() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_UINT32;
+    }
+    bool is_enum() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_ENUM;
+    }
+    bool is_sfixed32() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SFIXED32;
+    }
+    bool is_sfixed64() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SFIXED64;
+    }
+    bool is_sint32() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SINT32;
+    }
+    bool is_sint64() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_SINT64;
+    }
+    bool is_simple_message() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and not $self->is_repeated();
+    }
+    bool is_repeated_message() const {
+      return $self->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and $self->is_repeated();
+    }
+  }
+
+  bool has_optional_keyword() const;
+  bool has_presence() const;
+  int	index() const;
+  bool has_default_value() const;
+  bool has_json_name() const;
+
+  const Descriptor * containing_type() const;
+
+  const Descriptor * message_type() const;
+
+  std::string	DebugString() const;
+
+  static CppType TypeToCppType(Type type);
+  static std::string TypeName(Type type);
+  static std::string CppTypeName(CppType cpp_type);
+  static bool IsTypePackable(Type field_type);
+};
+
+class Descriptor
+{
+public:
+  std::string name() const;
+  std::string full_name() const;
+  int index() const;
+
+  std::string	DebugString() const;
+
+  const Descriptor* containing_type() const;
+  
+  int field_count() const;
+  const FieldDescriptor* field(int index) const;
+  const FieldDescriptor* FindFieldByName(const std::string& name) const;
+  const FieldDescriptor* FindFieldByNumber(int number) const;
+  const FieldDescriptor* FindFieldByLowercaseName(const std::string& name) const;
+  const FieldDescriptor* FindFieldByCamelcaseName(const std::string& name) const;
+
+  %extend {
+    std::vector<std::string> GetSimpleMessages() {
+      std::vector<std::string> OUTPUT;
+      for(int i=0; i<$self->field_count(); i++) {
+        const google::protobuf::FieldDescriptor* f = $self->field(i);
+        if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and not f->is_repeated()) OUTPUT.push_back(f->name());
+      }
+      return OUTPUT;
+    }
+    std::vector<std::string> GetRepeatedMessages() {
+      std::vector<std::string> OUTPUT;
+      for(int i=0; i<$self->field_count(); i++) {
+        const google::protobuf::FieldDescriptor* f = $self->field(i);
+        if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and f->is_repeated()) OUTPUT.push_back(f->name());
+      }
+      return OUTPUT;
+    }
+  }
+};
+
 
 class Message
 {
@@ -108,13 +300,6 @@ class Message
       return JsonStringToMessage(s, $self, opt).ok();
     }
   }
-};
-
-class Descriptor
-{
-public:
-  ~Descriptor();
-  std::string name() const;
 };
 
 class Arena
