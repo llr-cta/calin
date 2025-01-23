@@ -166,6 +166,12 @@ public:
     bool is_repeated_message() const {
       return $self->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE and $self->is_repeated();
     }
+    bool is_simple_pod() const {
+      return $self->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE and not $self->is_repeated();
+    }
+    bool is_repeated_pod() const {
+      return $self->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE and $self->is_repeated();
+    }
   }
 
   bool has_optional_keyword() const;
@@ -218,6 +224,22 @@ public:
       for(int i=0; i<$self->field_count(); i++) {
         const google::protobuf::FieldDescriptor* f = $self->field(i);
         if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and f->is_repeated()) OUTPUT.push_back(f->name());
+      }
+      return OUTPUT;
+    }
+    std::vector<std::string> GetSimplePODs() {
+      std::vector<std::string> OUTPUT;
+      for(int i=0; i<$self->field_count(); i++) {
+        const google::protobuf::FieldDescriptor* f = $self->field(i);
+        if(f->type() != google::protobuf::FieldDescriptor::TYPE_MESSAGE and not f->is_repeated()) OUTPUT.push_back(f->name());
+      }
+      return OUTPUT;
+    }
+    std::vector<std::string> GetRepeatedPODs() {
+      std::vector<std::string> OUTPUT;
+      for(int i=0; i<$self->field_count(); i++) {
+        const google::protobuf::FieldDescriptor* f = $self->field(i);
+        if(f->type() != google::protobuf::FieldDescriptor::TYPE_MESSAGE and f->is_repeated()) OUTPUT.push_back(f->name());
       }
       return OUTPUT;
     }
