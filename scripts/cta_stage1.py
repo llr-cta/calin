@@ -81,6 +81,11 @@ def init_writer(local_opt):
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), 
         calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
+    sql.set_busy_timeout(3600000) # 1hr
+
+def init_all(local_opt, local_nfile):
+    init_dispatcher(local_opt, local_nfile)
+    init_writer(local_opt)
 
 def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
     if(not os.path.isfile(src_ancillary_db)):
@@ -111,7 +116,7 @@ def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
         fcntl.lockf(dst_file, fcntl.LOCK_UN)
         return True
 
-def run_file_analysis(ifile, filename):
+def dispatch_file(ifile, filename):
     global nfile, dispatcher, dispatcher, s1pev, s1cfg, opt
     if(dispatcher is None):
         dispatcher, s1pev, s1cfg = make_dispatcher()
@@ -164,6 +169,14 @@ def insert_stage1_results(s1res, filename):
         traceback.print_exception(*sys.exc_info())
         return filename, False
 
+def dispatch_file_and_insert_results(ifile, filename):
+    _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
+    if(status == 'success'):
+        _, good insert_stage1_results(s1res, filename)
+        if(not good):
+            status = 'failed'
+    return filename, status, copied_ancillary_db
+
 # Entry point for the program
 if __name__ == '__main__':
     # Process command line options
@@ -209,7 +222,7 @@ if __name__ == '__main__':
 
     endpoints = opt_proc.arguments()
     endpoints = endpoints[opt.start_file_index():]
-
+ 
     # Create or extend SQL file
     sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
     if opt.truncate_db():
@@ -255,7 +268,7 @@ if __name__ == '__main__':
         with concurrent.futures.ProcessPoolExecutor(1, initializer=init_writer, initargs=(opt,)) as writer_executor:
             writer_futures = []
             with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init_dispatcher, initargs=(opt,nfile)) as dispatcher_executor:
-                dispatcher_futures = [ dispatcher_executor.submit(run_file_analysis, *ifile_filename) for ifile_filename in filelist ]
+                dispatcher_futures = [ dispatcher_executor.submit(dispatch_file, *ifile_filename) for ifile_filename in filelist ]
                 for future in concurrent.futures.as_completed(dispatcher_futures):
                     filename, status, s1res, copied_ancillary_db = future.result()
                     if(status == 'success' and s1res.ByteSize() > 0):
@@ -283,7 +296,7 @@ if __name__ == '__main__':
             if not first_file:
                 print("-"*80)
             first_file = False
-            _, status, s1res, copied_ancillary_db = run_file_analysis(ifile, filename)
+            _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
             if(status == 'success'):
                 _, good = insert_stage1_results(s1res, filename)
                 if(good):
