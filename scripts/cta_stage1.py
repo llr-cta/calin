@@ -43,6 +43,31 @@ def bad_tag(tag):
 def info_tag(tag):
     return "\x1b[37;46;97;1m" + tag + "\x1b[0m"
 
+def marshall(m, bsmax=2**31):
+    mdict = dict()
+    while m.ByteSize()>=bsmax:
+        fmax, fmaxbs = '', 0
+        for f in m.GetDescriptor().GetSimpleMessages():
+            if getattr(m,"has_"+f)():
+                bs = getattr(m,f)().ByteSize()
+                if bs>fmaxbs:
+                    fmax, fmaxbs = f, bs
+        if fmaxbs==0:
+            break
+        fm = getattr(m,fmax)().New()
+        getattr(m,'mutable_'+fmax)().Swap(fm)
+        mdict[fmax] = marshall(fm, bsmax)
+    mdict['/'] = m
+    return mdict
+
+def unmarshall(mdict):
+    m = mdict['/']
+    del mdict['/']
+    for f in mdict:
+        fm = unmarshall(mdict[f])
+        getattr(m,'mutable_'+f)().Swap(fm)
+    return m
+
 def init_dispatcher(local_opt, local_nfile):
     global py_log, opt, cfg, dispatcher, s1cfg, s1pev, nfile
 
@@ -82,10 +107,6 @@ def init_writer(local_opt):
     sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), 
         calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
     sql.set_busy_timeout(3600000) # 1hr
-
-def init_all(local_opt, local_nfile):
-    init_dispatcher(local_opt, local_nfile)
-    init_writer(local_opt)
 
 def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
     if(not os.path.isfile(src_ancillary_db)):
@@ -142,6 +163,13 @@ def dispatch_file(ifile, filename):
         traceback.print_exception(*sys.exc_info())
         return filename, 'failed', None, copied_ancillary_db
 
+def dispatch_file_and_marshall(ifile, filename):
+    _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
+    if(status == 'success'):
+        return filename, status, marshall(s1res), copied_ancillary_db
+    else:
+        return filename, status, None, copied_ancillary_db
+
 def insert_stage1_results(s1res, filename):
     global sql, opt
 
@@ -168,14 +196,6 @@ def insert_stage1_results(s1res, filename):
     except Exception as x:
         traceback.print_exception(*sys.exc_info())
         return filename, False
-
-def dispatch_file_and_insert_results(ifile, filename):
-    _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
-    if(status == 'success'):
-        _, good insert_stage1_results(s1res, filename)
-        if(not good):
-            status = 'failed'
-    return filename, status, copied_ancillary_db
 
 # Entry point for the program
 if __name__ == '__main__':
@@ -268,14 +288,12 @@ if __name__ == '__main__':
         with concurrent.futures.ProcessPoolExecutor(1, initializer=init_writer, initargs=(opt,)) as writer_executor:
             writer_futures = []
             with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init_dispatcher, initargs=(opt,nfile)) as dispatcher_executor:
-                dispatcher_futures = [ dispatcher_executor.submit(dispatch_file, *ifile_filename) for ifile_filename in filelist ]
+                dispatcher_futures = [ dispatcher_executor.submit(dispatch_file_and_marshall, *ifile_filename) for ifile_filename in filelist ]
                 for future in concurrent.futures.as_completed(dispatcher_futures):
-                    filename, status, s1res, copied_ancillary_db = future.result()
-                    if(status == 'success' and s1res.ByteSize() > 0):
+                    filename, status, s1res_dict, copied_ancillary_db = future.result()
+                    if(status == 'success'):
+                        s1res = unmarshall(s1res_dict)
                         writer_futures.append(writer_executor.submit(insert_stage1_results, s1res, filename))
-                    elif(status == 'success'):
-                        print(f'bad_tag(" PROCESS POOL ERROR ") No stage1 results received for {filename}')
-                        failed_files.append(filename)
                     else:
                         failed_files.append(filename)
                     
