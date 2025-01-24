@@ -35,6 +35,7 @@
 #include "calin_global_definitions.hpp"
 #include "math/histogram.pb.h"
 #include "math/accumulator.hpp"
+// #include "util/log.hpp"
 
 // This class has some changes/improvements over the VERITAS ChiLA
 // implementation.  They are motivated by our preference for
@@ -635,6 +636,9 @@ template<typename Acc> class BasicHistogram1D:
   // Equality test
   bool operator==(const BasicHistogram1D& o) const;
 
+  // Trim some fraction of the weight from the left and right
+  void trim_fraction(double trim_fraction_left, double trim_fraction_right, bool winsorize = false, bool integer_weights = true);
+
  private:
   Acc sum_w_;
   Acc sum_wx_;
@@ -775,6 +779,91 @@ bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
       name_ == o.name_ and
       this->xval_units_ == o.xval_units_ and
       weight_units_ == o.weight_units_;
+}
+
+template<typename Acc> void BasicHistogram1D<Acc>::
+trim_fraction(double trim_fraction_left, double trim_fraction_right, bool winsorize, bool integer_weights) 
+{
+  if(Base::bins_.empty())return;
+
+  Acc sum_w;
+  for(auto& ibin : Base::bins_)sum_w.accumulate(ibin.total());
+
+  double trim_weight_left = sum_w.total() * std::max(trim_fraction_left,0.0);
+  if(integer_weights) {
+    trim_weight_left = std::floor(trim_weight_left);
+  }
+
+  double trim_weight_right = sum_w.total() * (1.0 - std::max(trim_fraction_right,0.0));
+  if(integer_weights) {
+    trim_weight_right = std::ceil(trim_weight_right);
+  }
+  trim_weight_right = std::max(trim_weight_right, trim_weight_left);
+
+  double new_xval0 = 0;
+  Acc weight_seen_left;
+
+  typename Base::data_container_type c;
+  for(unsigned isrc=0; isrc<Base::bins_.size(); isrc++) {
+    double weight_seen_right = weight_seen_left.total() + Base::bins_[isrc].total();
+    if(weight_seen_right <= trim_weight_left) {
+      // Bin is fully outside the left-side trimmed region, discard it
+    } else if(weight_seen_left <= trim_weight_left and weight_seen_right <= trim_weight_right) {
+      // Bin partially outside the left-side trimmed region, discard part of it
+      double weight_keep = trim_weight_left - weight_seen_left;
+      if(c.empty()) {
+        new_xval0 = Base::xval_left(isrc);
+      }
+      c.emplace_back(weight_keep);
+    } else if(weight_seen_left >= trim_weight_left and weight_seen_right <= trim_weight_right) {
+      // Bin is fully within the trimmed region, keep it all
+      if(c.empty()) {
+        new_xval0 = Base::xval_left(isrc);
+      }
+      c.emplace_back(Base::bins_[isrc]);
+    } else if(weight_seen_left <= trim_weight_right and weight_seen_right >= trim_weight_right) {
+      // Bin partially outside the right-side trimmed region, discard part of it
+      double weight_keep = weight_seen_right - trim_weight_right;
+      if(c.empty()) {
+        new_xval0 = Base::xval_left(isrc);
+      }
+      c.emplace_back(weight_keep);
+    } else if(weight_seen_left <= trim_weight_left and weight_seen_right >= trim_weight_right) {
+      // Bin is partially outside both trimmed regions, discard part of it
+      double weight_keep = trim_weight_right - trim_weight_left;
+      if(c.empty()) {
+        new_xval0 = Base::xval_left(isrc);
+      }
+      c.emplace_back(weight_keep);
+    }
+    weight_seen_left.accumulate(Base::bins_[isrc]);
+  }
+
+  Base::bins_ = std::move(c);
+  Base::xval0_ = Base::bins_.empty() ? 0 : new_xval0;
+  Base::limited_ = true;
+  Base::xval_limit_lo_ = Base::xval_left(0);
+  Base::xval_limit_hi_ = Base::xval_left(Base::bins_.size());
+  min_x_ = std::max(min_x_, Base::xval_limit_lo_);
+  max_x_ = std::min(max_x_, Base::xval_limit_hi_);
+  if(winsorize and not Base::bins_.empty()) {
+    Base::bins_.front().accumulate(trim_weight_left);
+    Base::bins_.back().accumulate(sum_w - trim_weight_right);
+  } else {
+    Base::overflow_lo_.accumulate(trim_weight_left);
+    Base::overflow_hi_.accumulate(sum_w - trim_weight_right);
+  }
+
+  sum_w_.reset();
+  sum_wx_.reset();
+  sum_wxx_.reset();
+  for(unsigned isrc=0; isrc<Base::bins_.size(); isrc++) {
+    auto w = Base::bins_[isrc].total();
+    auto xc = Base::xval_center(isrc);
+    sum_w_.accumulate(w);
+    sum_wx_.accumulate(w*xc);
+    sum_wxx_.accumulate(w*xc*xc);
+  }
 }
 
 // ============================================================================
@@ -1065,6 +1154,20 @@ calin::ix::math::histogram::Histogram1DData*
 densify(const calin::ix::math::histogram::Histogram1DData& original_hist);
 void densify(const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* densified_hist);
+#endif
+
+#ifndef SWIG
+calin::ix::math::histogram::Histogram1DData*
+trim_fraction(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  double trim_fraction_left, double trim_fraction_right, bool winsonize = false, bool integer_weights = true,
+  calin::ix::math::histogram::Histogram1DData* trimmed_hist_data = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+trim_fraction(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  double trim_fraction_left, double trim_fraction_right, bool winsonize = false, bool integer_weights = true);
+void trim_fraction(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  double trim_fraction_left, double trim_fraction_right, bool winsonize, bool integer_weights,
+  calin::ix::math::histogram::Histogram1DData* trimmed_hist);
 #endif
 
 template<typename Acc>

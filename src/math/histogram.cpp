@@ -224,3 +224,14 @@ calin::math::histogram::densify(
 
   return densified_hist;
 }
+
+calin::ix::math::histogram::Histogram1DData*
+calin::math::histogram::trim_fraction(
+  const calin::ix::math::histogram::Histogram1DData& original_hist_data,
+  double trim_fraction_left, double trim_fraction_right, bool winsonize, bool integer_weights,
+  calin::ix::math::histogram::Histogram1DData* trimmed_hist_data)
+{
+  calin::math::histogram::Histogram1D hist(original_hist_data);
+  hist.trim_fraction(trim_fraction_left, trim_fraction_right, winsonize, integer_weights);
+  return hist.dump_as_proto(trimmed_hist_data);
+}
