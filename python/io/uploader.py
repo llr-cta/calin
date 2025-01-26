@@ -117,7 +117,7 @@ class FilesystemUploader(Uploader):
             return ''
 
 class GoogleDriveUploader(Uploader):
-    def __init__(self, token_file, root_folder_id, credentials_file=None,
+    def __init__(self, token_file, root_folder_id, credentials_file='',
             overwrite=True, loud=False):
         self.ordinal = ["zeroth", "first", "second", "third", "fourth", "fifth",
             "sixth", "seventh", "eigth","ninth","tenth"]
@@ -303,18 +303,19 @@ class GoogleDriveUploader(Uploader):
         else:
             raise RuntimeError("Could not understand sheet and tab specification: "+sheet_id_and_tab_name)
 
-    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2):
+    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2, formatted_values=False):
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
         if range:
             range = "'" + range + "'!"
         range += 'A%d:ZZZ'%(row_start+1)
+        format = 'FORMATTED_VALUE' if formatted_values else 'UNFORMATTED_VALUE'
         ntry = 0
         retrieved = False
         while(not retrieved):
             ntry += 1
             try:
                 response = self.sheets_service.spreadsheets().values().get(
-                    spreadsheetId=sheet_id,range=range).execute()
+                    spreadsheetId=sheet_id,range=range,valueRenderOption=format).execute()
                 retrieved = True
             except googleapiclient.errors.HttpError:
                 if(ntry<max_try):
