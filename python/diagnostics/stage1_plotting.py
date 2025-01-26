@@ -56,6 +56,9 @@ def trigger_type_and_gain_title(trigger_type, low_gain = False):
         return 'All' + gain_title
     return ''
 
+def dc_units(nsamp=0, low_gain = False):
+    return 'DC$_{%d}$'%(nsamp) if nsamp>1 else 'DC'
+
 def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=True,
         lin_scale_suppress_zero=False, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -179,9 +182,9 @@ def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
         else stage1.const_charge_stats().const_high_gain()
 
     if(all_events_ped_win):
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+        nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
                 (low_gain and stage1.config().has_low_gain_opt_sum()) \
-            else stage1.config().high_gain_opt_sum().integration_n()
+            else stage1.const_config().const_high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_mean()/nsamp
     else:
@@ -189,13 +192,15 @@ def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_mean()/nsamp
 
+    DC = dc_units(1, low_gain)
+
     pc = calin.plotting.plot_camera_image(
         values, cl, channel_mask=nevent>0, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
-        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
+        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f '+DC)
 
-    cb = axis.get_figure().colorbar(pc, ax=axis, label='Pedestal mean [DC]')
+    cb = axis.get_figure().colorbar(pc, ax=axis, label='Pedestal mean [%s]'%DC)
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
@@ -216,9 +221,9 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         else stage1.const_charge_stats().const_high_gain()
 
     if(all_events_ped_win):
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+        nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
                 (low_gain and stage1.config().has_low_gain_opt_sum()) \
-            else stage1.config().high_gain_opt_sum().integration_n()
+            else stage1.const_config().const_high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_var()
     else:
@@ -229,16 +234,18 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
     data = numpy.sqrt(values)
     mask = nevent>0
 
+    DC = dc_units(nsamp, low_gain)
+
     pc = calin.plotting.plot_camera_image(
         data, cl, channel_mask=mask, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
-        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC',
+        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format=f'%.2f '+DC,
         draw_top12_val=True)
 
     cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
             camera_layout=cl, configured_channels=rc.configured_channel_id(),
-            cb_label='Pedestal %d-sample RMS [DC]'%nsamp)
+            cb_label='Pedestal %d-sample RMS [%s]'%(nsamp,DC))
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
@@ -305,9 +312,11 @@ def draw_pedestal_trend(stage1, pedvar=False, all_events_ped_win=False, low_gain
     axis.plot(t[m], v[m], 'r')
     axis.set_xlabel('Elapsed time [s]')
     if(pedvar):
-        axis.set_ylabel('Pedestal %d-sample RMS [DC]'%nsamp)
+        DC = dc_units(nsamp, low_gain)
+        axis.set_ylabel('Pedestal %d-sample RMS [%s]'%(nsamp,DC))
     else:
-        axis.set_ylabel('Pedestal mean [DC]')
+        DC = dc_units(1, low_gain)
+        axis.set_ylabel('Pedestal mean [%s]'%DC)
 
 def draw_pedestal_plots(stage1, figure_factory = calin.plotting.PyPlotFigureFactory(),
         cmap = 'inferno', axis = None,
@@ -958,6 +967,8 @@ def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
     if(numpy.max(chan_nentries) == 0):
         return None
 
+    DC = dc_units(1, low_gain)
+
     fig_mwf, axis_mwf = figure_factory.new_histogram_figure()
     has_label = False
     for ichan in range(nchan):
@@ -984,7 +995,7 @@ def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
     axis_mwf.legend()
     axis_mwf.grid()
     axis_mwf.set_xlabel('Waveform sample number')
-    axis_mwf.set_ylabel('Mean waveform amplitude [DC]')
+    axis_mwf.set_ylabel('Mean waveform amplitude [%s]'%DC)
     axis_mwf.set_title('Mean waveform %s(%s), run : %d'%('offset ' if subtract_pedestal else '',trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
     fig_dict = dict()
@@ -994,7 +1005,7 @@ def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
 def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
         pedestals = None, low_gain=False, axis = None, cmap = 'inferno',
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        stat_label_fontsize=4.75, stat_format='%.2f DC'):
+        stat_label_fontsize=4.75, stat_format=None):
 
     axis = axis if axis is not None else matplotlib.pyplot.gca()
 
@@ -1017,6 +1028,10 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
         cwf -= numpy.mean(cwf)
     else:
         cwf -= numpy.mean(pedestals)
+
+    DC = dc_units(1, low_gain)
+    if(stat_format is None):
+        stats_format = '%.2f ' + DC
 
     mask = numpy.zeros(mwf.channel_high_gain_size(),dtype=bool)
     chi2 = numpy.zeros(mwf.channel_high_gain_size())
@@ -1049,7 +1064,7 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
 
     cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
             camera_layout=cl, configured_channels=rc.configured_channel_id(),
-            cb_label='Waveform RMS from camera mean [DC]')
+            cb_label='Waveform RMS from camera mean [%s]'%DC)
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
@@ -1144,11 +1159,11 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
     if(len(all_hist)==0 or numpy.max([h.const_opt_win_qsum().sum_w() for h in all_hist])==0):
         return None
 
+    nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
+            (low_gain and stage1.config().has_low_gain_opt_sum()) \
+        else stage1.const_config().const_high_gain_opt_sum().integration_n()
     if ped is None:
         ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain)
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
-                (low_gain and stage1.config().has_low_gain_opt_sum()) \
-            else stage1.config().high_gain_opt_sum().integration_n()
         ped *= nsamp
 
     fig_dict = dict()
@@ -1230,22 +1245,24 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
         yl,yr = numpy.interp([xlim_l, xlim_r],x,y,left=0,right=y[-1])
         nchanevent_shown += yr-yl
 
+    DC = dc_units(nsamp, low_gain)
+
     t = 'Number of events : %s'%calin.util.string.int64_to_string_with_commas(int(nevent))
     if(nchanevent_shown < 0.9999*nchanevent):
         t += ' (%.2f%% shown)'%(100*nchanevent_shown/nchanevent)
     elif(nchanevent_shown < nchanevent):
         t += ' (>99.99%% shown)'%(100*nchanevent_shown/nchanevent)
-    t += '\nChannel charge range : %s to %s DC'%(
+    t += '\nChannel charge range : %s to %s %s'%(
         calin.util.string.double_to_string_with_commas(x_min,1),
-        calin.util.string.double_to_string_with_commas(x_max,1))
+        calin.util.string.double_to_string_with_commas(x_max,1), DC)
     if(h is not None):
-        t += '\nCamera mean charge range : %s to %s DC'%(
+        t += '\nCamera mean charge range : %s to %s %s'%(
             calin.util.string.double_to_string_with_commas(numpy.min(cam_hist_x),1),
-            calin.util.string.double_to_string_with_commas(numpy.max(cam_hist_x),1))
+            calin.util.string.double_to_string_with_commas(numpy.max(cam_hist_x),1), DC)
 
     axis_hist.set_yscale('log')
-    axis_hist.set_xlabel('Summed waveform [DC]')
-    axis_hist.set_ylabel('Density [1/DC]')
+    axis_hist.set_xlabel(f'Summed waveform [{DC}]')
+    axis_hist.set_ylabel(f'Density [1/{DC}]')
     axis_hist.legend(loc=1)
     axis_hist.set_title('Charge spectrum (' + trigger_type_and_gain_title(dataset, low_gain) + '), run: %d'%stage1.run_number())
 
@@ -1277,7 +1294,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                 cb_label='Median charge relative to reference')
 
         max_xy = cl.camera_boundary_maxabs_xy()
-        axis_median.text(max_xy,max_xy,'Reference : %.1f DC'%ref_value,
+        axis_median.text(max_xy,max_xy,'Reference : %.1f %s'%(ref_value, DC),
                 fontsize=stat_label_fontsize, fontfamily='monospace',
                 ha='right', va='top')
 
@@ -1306,7 +1323,7 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_scale, pc, data, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                cb_label='Charge spectrum scale [DC]')
+                cb_label='Charge spectrum scale [%s]'%DC)
 
         # cb = axis_scale.get_figure().colorbar(pc, ax=axis_scale, label='Median relative signal')
 
@@ -1331,14 +1348,14 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
                         configured_channels=rc.configured_channel_id(),
                         axis=axis_gain, cmap=cmap, draw_outline=True, draw_stats=True,
                         pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_channels=True, stats_format='%.2f DC',
+                        hatch_missing_channels=True, stats_format='%.2f '+DC,
                         stats_fontsize=stat_label_fontsize, draw_top12_val=True)
 
         cb = calin.plotting.add_colorbar_and_clipping(axis_gain, pc, all_gain, mask=mask, percentile=99.5,
                 camera_layout=cl, configured_channels=rc.configured_channel_id(),
-                cb_label='Gain estimate [DC/PE]')
+                cb_label='Gain estimate [%s/PE]'%DC)
 
-        # cb = axis_gain.get_figure().colorbar(pc, ax=axis_gain, label='Gain estimate [DC]')
+        # cb = axis_gain.get_figure().colorbar(pc, ax=axis_gain, label='Gain estimate [%s]'%DC)
 
         max_xy = cl.camera_boundary_maxabs_xy()
         axis_gain.text(max_xy,max_xy,'EVF=$1+\\beta^2$ : %.3f'%numpy.median(evf),
@@ -1397,6 +1414,8 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
             all_h_c.append(dg.all_max_sample_count(ichan))
             all_h_m.append(dg.all_max_sample_mean(ichan))
             all_h_v.append(dg.all_max_sample_var(ichan))
+        DChg = dc_units(1)
+        DClg = dc_units(1, True)
     elif(dataset == 'opt_sum'):
         conf_hg = stage1.const_config().const_high_gain_opt_sum()
         conf_lg = stage1.const_config().const_low_gain_opt_sum() if stage1.const_config().has_low_gain_opt_sum() else stage1.const_config().const_high_gain_opt_sum()
@@ -1411,6 +1430,8 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
             all_h_c.append(dg.all_opt_sum_count(ichan))
             all_h_m.append(dg.all_opt_sum_mean(ichan))
             all_h_v.append(dg.all_opt_sum_var(ichan))
+        DChg = dc_units(conf_hg.integration_n())
+        DClg = dc_units(conf_lg.integration_n(), True)
     else:
         raise RuntimeError('Unknown dataset : '+dataset)
 
@@ -1501,9 +1522,10 @@ def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=Fals
         if(len(x) > 0 and numpy.count_nonzero(m) > 0):
             axis_hist.plot(x[m], y[m], 'k.', markersize=2, alpha=0.2)
 
+
     axis_hist.set_xlim(minx-10, min(maxx+10,700))
-    axis_hist.set_xlabel('Low-gain %s [DC]'%dataset_label)
-    axis_hist.set_ylabel('Mean high-gain %s [DC]'%dataset_label)
+    axis_hist.set_xlabel('Low-gain %s [%s]'%(dataset_label,DClg))
+    axis_hist.set_ylabel('Mean high-gain %s [%s]'%(dataset_label,DChg))
     axis_hist.grid()
     axis_hist.set_title(figure_title+', run : %d'%stage1.run_number())
 
@@ -1634,10 +1656,11 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
     if(fig_psd is None):
         return None
 
+    DC = dc_units(1, low_gain)
     axis_psd.plot(freq[1:], sum_psd_sum[1:]/sum_psd_count,'C1', label='Camera average')
     axis_psd.grid()
     axis_psd.set_xlabel('Frequency [MHz]')
-    axis_psd.set_ylabel('Power [DC$^2$]')
+    axis_psd.set_ylabel('Power [%s$^2$]'%DC)
     axis_psd.legend()
     axis_psd.set_title('Mean power spectrum (%s), run : %d'%(trigger_type_and_gain_title(dataset, low_gain), stage1.run_number()))
 
@@ -1658,7 +1681,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
             draw_outline=True, hatch_missing_channels=True)
         calin.plotting.add_colorbar_and_clipping(axis_lf, pc, data, camera_layout=cl,
                     configured_channels=ccid,
-                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [DC]')
+                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [%s]'%DC)
         calin.plotting.add_stats(axis_lf, cl.camera_boundary_maxabs_xy(), data,
              ccid, mask=mask, draw_top12_val=True)
         axis_lf.get_xaxis().set_visible(False)
@@ -1674,7 +1697,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
             draw_outline=True, hatch_missing_channels=True)
         calin.plotting.add_colorbar_and_clipping(axis_hf, pc, data, camera_layout=cl,
                     configured_channels=ccid,
-                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [DC]')
+                    percentile=99.5, percentile_factor=2.0, cb_label='RMS [%s]'%DC)
         calin.plotting.add_stats(axis_hf, cl.camera_boundary_maxabs_xy(), data,
              ccid, mask=mask, draw_top12_val=True)
         axis_hf.get_xaxis().set_visible(False)
@@ -1690,7 +1713,7 @@ def draw_psd(stage1, dataset='all', low_gain=False, draw_camera_plots = True,
             draw_outline=True, hatch_missing_channels=True)
         calin.plotting.add_colorbar_and_clipping(axis_pk, pc, data, camera_layout=cl,
                     configured_channels=ccid,
-                    percentile=99.5, percentile_factor=2.0, cb_label='Power [DC$^2$]')
+                    percentile=99.5, percentile_factor=2.0, cb_label='Power [%s$^2$]'%DC)
         calin.plotting.add_stats(axis_pk, cl.camera_boundary_maxabs_xy(), data,
              ccid, mask=mask, draw_top12_val=True)
         axis_pk.get_xaxis().set_visible(False)
@@ -1718,15 +1741,17 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
         ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1)
 
     if(waveform_sum):
-        nsamp = stage1.config().high_gain_opt_sum().integration_n()
+        nsamp = stage1.const_config().const_high_gain_opt_sum().integration_n()
         dataset = '%d-sample sum'%nsamp
         filename = 'sum'
         ped *= nsamp
         aligned_range = 500
+        DC = dc_units(nsamp)
     else:
         dataset = 'waveform amplitude'
         filename = 'amplitude'
         aligned_range = 25
+        DC = dc_units(1)
 
     allfit = []
     nchan = ch_set.high_gain_channel_size()
@@ -1751,7 +1776,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
     fig_frac, axis_frac = figure_factory.new_camera_figure()
     for fitres in allfit:
         axis_frac.plot(fitres[0],fitres[1],'k',alpha=0.1)
-    axis_frac.set_xlabel('%s [DC]'%dataset.capitalize())
+    axis_frac.set_xlabel('%s [%s]'%(dataset.capitalize(),DC))
     axis_frac.set_ylabel('Trigger efficiency')
     axis_frac.grid()
     axis_frac.set_title('Trigger efficiency vs %s, run : %d'%(dataset, stage1.run_number()))
@@ -1762,7 +1787,7 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
     for fitres in allfit:
         if not numpy.isnan(fitres[5]):
             axis_frac_aligned.plot(fitres[0]-fitres[5],fitres[1],'k',alpha=0.1)
-    axis_frac_aligned.set_xlabel('%s offset [DC]'%dataset.capitalize())
+    axis_frac_aligned.set_xlabel('%s offset [%s]'%(dataset.capitalize(),DC))
     axis_frac_aligned.set_ylabel('Trigger fraction')
     axis_frac_aligned.set_xlim(-aligned_range,aligned_range)
     axis_frac_aligned.grid()
@@ -1777,9 +1802,9 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
                             cmap=cmap, draw_outline=True, draw_stats=True, hatch_missing_channels=True,
                             outline_lw=outline_lw, outline_color=outline_color,
                             stats_fontsize=stat_label_fontsize, draw_top12_val=False,
-                            stats_format='%.1f DC',
+                            stats_format='%.1f ' + DC,
                             draw_top12=True)
-        fig_threshold.colorbar(pc, label='Trigger threshold as %s [DC]'%dataset)
+        fig_threshold.colorbar(pc, label='Trigger threshold as %s [%s]'%(dataset,DC))
         axis_threshold.get_xaxis().set_visible(False)
         axis_threshold.get_yaxis().set_visible(False)
         axis_threshold.set_title('Trigger threshold as %s, run : %d'%(dataset, stage1.run_number()))
@@ -1793,9 +1818,9 @@ def draw_trigger_threshold(stage1, draw_camera_plots = True,
                             cmap=cmap, draw_outline=True, draw_stats=True, hatch_missing_channels=True,
                             outline_lw=outline_lw, outline_color=outline_color,
                             stats_fontsize=stat_label_fontsize, draw_top12_val=False,
-                            stats_format='%.1f DC',
+                            stats_format='%.1f ' + DC,
                             draw_top12=True)
-        fig_switchon.colorbar(pc, label='Trigger switch-on IQR as %s [DC]'%dataset)
+        fig_switchon.colorbar(pc, label='Trigger switch-on IQR as %s [%s]'%(dataset,DC))
         axis_switchon.get_xaxis().set_visible(False)
         axis_switchon.get_yaxis().set_visible(False)
         axis_switchon.set_title('Trigger switch-on IQR as %s, run : %d'%(dataset, stage1.run_number()))
