@@ -880,7 +880,7 @@ class BinnedCDF: public BinnedData1D<double>
   using Base = BinnedData1D<double>;
 #endif
 
- public:
+public:
 
 #ifndef SWIG
   class const_bin_accessor : public basic_bin_accessor<const BinnedCDF>
@@ -943,7 +943,7 @@ class BinnedCDF: public BinnedData1D<double>
     m1 = ax.total();
     m2 = axx.total();
   }
-  void mean_and_variance(double& mean, double var) const {
+  void mean_and_variance(double& mean, double& var) const {
     moments2(mean,var);
     var -= mean*mean;
   }
@@ -964,6 +964,20 @@ class BinnedCDF: public BinnedData1D<double>
   double quantile(double q) const {
     auto lhb = this->bins_.cbegin();
     return quantile_with_lhb(q, lhb);
+  }
+
+  double rms_from_sigma_quantile(double sigma = 2) {
+    double qr = 0.5+0.5*std::erf(sigma/std::sqrt(2));
+    double ql = 1 - qr;
+    return (quantile(qr)-quantile(ql))/(2*sigma);
+  }
+
+  double integrate_x_to_the_n(double n) const {
+    return integrate_delta([n](double xc, double w){ return std::pow(xc,n)*w; });
+  }
+
+  double integrate_x_to_the_n_in_bounds(double n, double xl, double xr) const {
+    return integrate_delta([n,xl,xr](double xc, double w){ return (xc>=xl and xc<=xr) ? std::pow(xc,n)*w : 0.0; });
   }
 
   // Retrieve cumulative at edges of bin and density in bin
@@ -1083,7 +1097,7 @@ class BinnedCDF: public BinnedData1D<double>
     return const_reverse_iterator{begin()}; }
 #endif
 
- protected:
+protected:
   double quantile_with_lhb(double q, data_container_type::const_iterator& lhb)
       const
   {
@@ -1096,7 +1110,7 @@ class BinnedCDF: public BinnedData1D<double>
     return (q-y0)*(x1-x0)/(y1-y0)+x0;
   }
 
- protected:
+protected:
   std::string name_;
 };
 
