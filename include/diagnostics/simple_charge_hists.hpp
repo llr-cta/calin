@@ -164,6 +164,7 @@ private:
     SingleGainCameraHists(const
         calin::ix::diagnostics::simple_charge_hists::SingleGainSimpleChargeHistsConfig& config):
       nchan_present(calin::math::histogram::new_histogram_if_enabled(config.nchan_present())),
+      full_wf_qsum(calin::math::histogram::new_histogram_if_enabled(config.full_wf_qsum())),
       ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
       opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
       opt_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.opt_ped_qsum_diff())),
@@ -175,6 +176,7 @@ private:
 
     ~SingleGainCameraHists() {
       delete nchan_present;
+      delete full_wf_qsum;
       delete ped_win_qsum;
       delete opt_win_qsum;
       delete opt_ped_qsum_diff;
