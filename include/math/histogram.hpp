@@ -923,8 +923,11 @@ class BinnedCDF: public BinnedData1D<double>
 
 #ifdef SWIG
   BinnedCDF(const BasicHistogram1D<DefaultAccumulator>& hist):
-      BinnedCDF<DefaultAccumulator>(hist) { }
+      BinnedCDF(hist) { }
 #endif
+
+  BinnedCDF(const calin::ix::math::histogram::Histogram1DData& data):
+      BinnedCDF(BasicHistogram1D<DefaultAccumulator>(data)) { }
 
   // Getters and setters
   std::string name() const { return name_; }
