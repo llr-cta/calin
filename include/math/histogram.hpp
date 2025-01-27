@@ -193,7 +193,10 @@ protected:
 
   T& bin_with_extend(const double x, bool& x_outside_limits)
   {
-    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend: x is infinite");
+    if(!std::isfinite(x)) {
+      if(x == -std::numeric_limits<double>::infinity()) { x_outside_limits = true; return overflow_lo_; }
+      else { /* +INF or NAN */ x_outside_limits = true; return overflow_hi_;}
+    }
     if(limited_)
     {
       if(x < xval_limit_lo_) { x_outside_limits = true; return overflow_lo_; }
