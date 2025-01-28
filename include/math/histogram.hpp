@@ -984,10 +984,12 @@ public:
   }
 
   // Retrieve cumulative at edges of bin and density in bin
-  double cumulative_right(int ibin) const { return this->bin(ibin); }
-  double checked_cumulative_right(int ibin) const { return this->checked_bin(ibin); }
-  double cumulative_left(int ibin) const { return (ibin==0)?0.0:this->bin(ibin-1); }
-  double checked_cumulative_left(int ibin) const { return (ibin==0)?0.0:this->checked_bin(ibin-1); }
+  double cumulative_right(int ibin) const { 
+    int jbin = std::min(ibin, this->size()-1); return (jbin<0) ? 0.0 : this->bin(jbin); }
+  double checked_cumulative_right(int ibin) const { return cumulative_right(ibin); }
+  double cumulative_left(int ibin) const {
+    int jbin = std::min(ibin, this->size()-1)-1; return (jbin<0) ? 0.0 : this->bin(jbin); }
+  double checked_cumulative_left(int ibin) const { return cumulative_left(ibin); }
   double cumulative_overflow_lo() const { return this->overflow_lo(); }
   double cumulative_overflow_hi() const { return this->overflow_hi(); }
 
