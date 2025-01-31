@@ -1031,7 +1031,7 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
 
     DC = dc_units(1, low_gain)
     if(stat_format is None):
-        stats_format = '%.2f ' + DC
+        stat_format = '%.2f ' + DC
 
     mask = numpy.zeros(mwf.channel_high_gain_size(),dtype=bool)
     chi2 = numpy.zeros(mwf.channel_high_gain_size())
