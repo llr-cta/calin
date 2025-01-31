@@ -586,7 +586,7 @@ namespace {
 
     hist = config->mutable_rel_qsum();
     hist->set_enable(false);
-    hist->set_dxval(0.001);
+    hist->set_dxval(0.01);
     hist->set_xval_align(0.0);
     hist->set_name(trig + " events " + gain + "-gain charge sum relative to camera mean");
     hist->set_xval_units("1");
@@ -594,9 +594,9 @@ namespace {
     hist->set_limited(true);
     hist->set_xval_limit_lo(0.0);
     hist->set_xval_limit_hi(10.0);
-    hist->set_compactify_output(false);
-    hist->set_max_dense_bins_in_output(0);
-    hist->set_max_output_rebinning(0);
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(200);
+    hist->set_max_output_rebinning(5);
 
     hist = config->mutable_nchan_present();
     hist->set_enable(false);
