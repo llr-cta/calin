@@ -224,7 +224,7 @@ namespace google { namespace protobuf {
         std::vector<std::string> OUTPUT;
         for(int i=0; i<$self->field_count(); i++) {
           const google::protobuf::FieldDescriptor* f = $self->field(i);
-          if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and f->is_repeated()) OUTPUT.push_back(f->name());
+          if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE and f->is_repeated() and not f->is_map()) OUTPUT.push_back(f->name());
         }
         return OUTPUT;
       }
