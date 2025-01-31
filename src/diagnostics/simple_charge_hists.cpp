@@ -586,7 +586,7 @@ namespace {
 
     hist = config->mutable_rel_qsum();
     hist->set_enable(false);
-    hist->set_dxval(0.01);
+    hist->set_dxval(0.005);
     hist->set_xval_align(0.0);
     hist->set_name(trig + " events " + gain + "-gain charge sum relative to camera mean");
     hist->set_xval_units("1");
