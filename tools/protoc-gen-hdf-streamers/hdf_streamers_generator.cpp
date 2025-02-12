@@ -30,6 +30,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <util/string.hpp>
+#include <calin.pb.h>
 
 #include "hdf_streamers_generator.hpp"
 
@@ -86,27 +87,6 @@ bool is_pod(google::protobuf::FieldDescriptor::Type type)
   }
   assert(0);
   return false;
-}
-
-std::string cpp_type(const google::protobuf::FieldDescriptor* d)
-{
-  switch(d->cpp_type())
-  {
-  case google::protobuf::FieldDescriptor::CPPTYPE_INT32:  return "int32_t";
-  case google::protobuf::FieldDescriptor::CPPTYPE_INT64:  return "int64_t";
-  case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: return "uint32_t";
-  case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: return "uint64_t";
-  case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: return "double";
-  case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:  return "float";
-  case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:   return "bool";
-  case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:   return "int";
-  case google::protobuf::FieldDescriptor::CPPTYPE_STRING: return "std::string";
-  case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE:
-  default: 
-    return "";
-  }
-  assert(0);
-  return "";
 }
 
 std::string the_namespace(const google::protobuf::FileDescriptor* d) 
@@ -188,6 +168,22 @@ std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array =
     return "MapWriter<" + dsw_type(kf,/* is_array= */ true) + "," + dsw_type(vf,/* is_array= */ true) + " >";
   }
 
+  const google::protobuf::FieldOptions* fopt = &f->options();
+  const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+  std::string i32t;
+  switch(cfo->int32_type()) {
+  case calin::FieldOptions::INT_32:
+  default:
+    i32t = "int32_t";
+    break;
+  case calin::FieldOptions::INT_16:
+    i32t = "int16_t";
+    break;
+  case calin::FieldOptions::INT_8:
+    i32t = "int8_t";
+    break;
+  }
+
   is_array |= f->is_repeated();
   switch(f->type())
   {
@@ -206,9 +202,9 @@ std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array =
   case google::protobuf::FieldDescriptor::TYPE_FIXED32:   // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
   case google::protobuf::FieldDescriptor::TYPE_SINT32:
-    return is_array ?  "ArrayDatasetWriter<int32_t>" : "DatasetWriter<int32_t>";
+    return is_array ?  "ArrayDatasetWriter<"+i32t+">" : "DatasetWriter<"+i32t+">";
   case google::protobuf::FieldDescriptor::TYPE_UINT32:    // fall through
-    return is_array ?  "ArrayDatasetWriter<uint32_t>" : "DatasetWriter<uint32_t>";
+    return is_array ?  "ArrayDatasetWriter<u"+i32t+">" : "DatasetWriter<u"+i32t+">";
   case google::protobuf::FieldDescriptor::TYPE_ENUM:      // fall through
   case google::protobuf::FieldDescriptor::TYPE_BOOL:
     return is_array ?  "ArrayDatasetWriter<int>" : "DatasetWriter<int>";
@@ -503,7 +499,10 @@ void generate_message_stream_writers_impl(
       "oneof_name", oneof_name(f));
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const auto* f = d->field(ifield);
+    const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "$dsw_type$* $dsw_name$ = nullptr;\n",
       "dsw_type", dsw_type(f),
@@ -532,9 +531,9 @@ void generate_message_stream_writers_impl(
 
   printer.Print(
     "$hdf_stream_writer_name$::~$hdf_stream_writer_name$() {\n"
-    "  if(h5f_>0) {"
-    "    flush();"
-    "  }",
+    "  if(h5f_>0) {\n"
+    "    flush();\n"
+    "  }\n",
     "hdf_stream_writer_name", hdf_stream_writer_name(d));
   printer.Indent();
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
@@ -545,6 +544,9 @@ void generate_message_stream_writers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "delete $dsw_name$;\n",
       "dsw_name", dsw_name(f));
@@ -571,7 +573,10 @@ void generate_message_stream_writers_impl(
       "name", f->name());
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const auto* f = d->field(ifield);
+    const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
       "$dsw_name$ = new $dsw_type$(h5g_, \"$name$\", nrow_);\n",
@@ -602,6 +607,9 @@ void generate_message_stream_writers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     auto dsw_name_f = dsw_name(f);
     if(is_pod(f->type()) or f->is_repeated()) {
       printer.Print(
@@ -641,6 +649,9 @@ void generate_message_stream_writers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "$dsw_name$->flush();\n",
       "dsw_name", dsw_name(f));
@@ -687,7 +698,9 @@ void generate_file_stream_writers_impl(
     context->OpenForInsert(pb_to_cpp_filename(file->name()), "global_scope"));
   google::protobuf::io::Printer printer(output.get(), '$');
 
-  printer.Print("#include \"hdf_stream_writer.hpp\"\n");
+  printer.Print(
+    "#include <protobuf_extensions/hdf_stream_writer.hpp>\n"
+    "using namespace calin::protobuf_extensions::hdf_streamer;\n");
   printer.Print("namespace {\n");
   printer.Indent();
 
@@ -767,7 +780,10 @@ void generate_message_stream_readers_impl(
       "oneof_name", oneof_name(f));
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const auto* f = d->field(ifield);
+    const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "$dsr_type$* $dsr_name$ = nullptr;\n",
       "dsr_type", dsr_type(f),
@@ -806,6 +822,9 @@ void generate_message_stream_readers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "delete $dsr_name$;\n",
       "dsr_name", dsw_name(f));
@@ -833,7 +852,10 @@ void generate_message_stream_readers_impl(
       "name", f->name());
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const auto* f = d->field(ifield);
+    const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
       "$dsr_name$ = new $dsr_type$(h5g_, \"$name$\");\n",
@@ -871,6 +893,9 @@ void generate_message_stream_readers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     if(f->containing_oneof() != nullptr) {
       const google::protobuf::OneofDescriptor* oof = f->containing_oneof();
       printer.Print(
@@ -939,6 +964,9 @@ void generate_message_stream_readers_impl(
   }
   for(int ifield=0; ifield<d->field_count(); ++ifield) {
     const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    const google::protobuf::FieldOptions* fopt = &f->options();
+    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+    if(cfo->dont_store())continue;
     printer.Print(
       "good |= $dsw_name$->preload(start,count);\n",
       "dsw_name", dsw_name(f));
@@ -987,8 +1015,10 @@ void generate_file_stream_readers_impl(
     context->OpenForInsert(pb_to_cpp_filename(file->name()), "global_scope"));
   google::protobuf::io::Printer printer(output.get(), '$');
 
-  printer.Print("#include \"hdf_stream_reader.hpp\"\n");
-  printer.Print("namespace {\n");
+  printer.Print(
+    "#include <protobuf_extensions/hdf_stream_reader.hpp>\n"
+    "using namespace calin::protobuf_extensions::hdf_streamer;\n"
+    "namespace {\n");
   printer.Indent();
 
   for(int i=0;i<file->message_type_count();i++)

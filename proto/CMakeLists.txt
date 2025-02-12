@@ -48,8 +48,8 @@ macro(make_proto_modules arg_proto_library arg_package)
 		if("${file_ext}" STREQUAL ".proto")
 			string(REPLACE ".proto" "" base_name ${proto_interface_file})
 			add_custom_command(OUTPUT ${base_name}.pb.cc ${base_name}.pb.h
-				COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto --plugin=protoc-gen-calin-cpp-extensions=${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions --calin-cpp-extensions_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
-				DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions
+				COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto --plugin=protoc-gen-calin-cpp-extensions=${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions --calin-cpp-extensions_out=${CMAKE_BINARY_DIR}/proto --plugin=protoc-gen-hdf-streamers=${CMAKE_BINARY_DIR}/tools/protoc-gen-hdf-streamers/protoc-gen-hdf-streamers --hdf-streamers_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+				DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions ${CMAKE_BINARY_DIR}/tools/protoc-gen-hdf-streamers/protoc-gen-hdf-streamers
 				COMMENT "protoc-gen-calin-cpp: ${proto_interface_file}")
 			set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
 			set(proto_proto ${proto_proto} ${proto_interface_file})
@@ -61,9 +61,9 @@ macro(make_proto_modules arg_proto_library arg_package)
 	add_library(${arg_proto_library} SHARED ${proto_cxx})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
 	if(${arg_proto_library} STREQUAL "calin_proto")
-		target_link_libraries(${arg_proto_library} calin_proto_base ${PROTOBUF_LIBRARY})
+		target_link_libraries(${arg_proto_library} calin_proto_base calin_protobuf_extensions ${PROTOBUF_LIBRARY})
 	else()
-		target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
+		target_link_libraries(${arg_proto_library} calin_proto calin_protobuf_extensions ${PROTOBUF_LIBRARY})
 	endif()
 	install(TARGETS ${arg_proto_library} DESTINATION ${CALIN_LIB_INSTALL_DIR})
 	install(FILES ${proto_proto} DESTINATION ${proto_install_dir})

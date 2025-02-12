@@ -13,11 +13,10 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_TARGET_LIBRARY protobuf_extensions)
+set(CALIN_TARGET_LIBRARY calin_protobuf_extensions)
 set(CALIN_SOURCES hdf_stream_reader.cpp hdf_stream_writer.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto
-  ${HDF5_LIBRARIES})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} ${HDF5_LIBRARIES})
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})
