@@ -23,8 +23,10 @@
 #pragma once 
 
 #include <vector>
-#include <hdf5.h>
 #include <iostream>
+#include <cstring>
+
+#include <hdf5.h>
 
 namespace calin { namespace protobuf_extensions { namespace hdf_streamer {
 
