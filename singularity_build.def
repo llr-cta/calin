@@ -77,7 +77,10 @@ From: ubuntu:22.04
         libprotobuf23                                              \
         libprotoc23                                                \
         valgrind                                                   \
-        gdb
+        gdb                                                        \
+        libhdf5                                                    \
+        hdf5-tools
+
     apt-get -y autoremove
     apt-get -y clean
 

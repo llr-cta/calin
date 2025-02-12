@@ -53,6 +53,7 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
+          libhdf5-dev hdf5-tools                                               \
           libseccomp-dev pkg-config libfuse3-dev
         sudo pip3 install --upgrade pip
         sudo pip3 install numpy
