@@ -96,6 +96,10 @@ find_package(SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 
+## Find HDF5
+find_package(HDF5 REQUIRED)
+include_directories(${HDF5_INCLUDE_DIRS})
+
 ## Find Python interpreter and libraries
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 include_directories(${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})

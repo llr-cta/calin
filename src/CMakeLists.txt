@@ -14,6 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 add_subdirectory(util)
+add_subdirectory(protobuf_extensions)
 add_subdirectory(io)
 add_subdirectory(chealpix)
 add_subdirectory(math)

@@ -72,9 +72,9 @@ endmacro()
 macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
-  	set(interface_file ${base_name}.pb.i)
-	  add_custom_command(OUTPUT ${interface_file}
-	  	COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+  		set(interface_file ${base_name}.pb.i)
+	  	add_custom_command(OUTPUT ${interface_file}
+	  		COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
 			MAIN_DEPENDENCY ${proto_interface_file}
 			DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig
 			COMMENT "protoc-gen-swig: ${proto_interface_file}")
@@ -93,7 +93,7 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 #		string(REGEX REPLACE "([^;]+)" "${CMAKE_BINARY_DIR}/proto/\\1" SWIG_DEPS "${SWIG_DEPS}")
 #		MESSAGE(STATUS "${SWIG_DEPS}")
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
-		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -I${CMAKE_BINARY_DIR}/proto -interface _${base_name}_pb  -c++ -python ${interface_file}
+			COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -I${CMAKE_BINARY_DIR}/proto -interface _${base_name}_pb  -c++ -python ${interface_file}
 			DEPENDS "${interface_file};${SWIG_DEPS}"
 			COMMENT "swig: ${interface_file}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
