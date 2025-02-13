@@ -557,9 +557,11 @@ open_group(hid_t file_id, const std::string& groupname, const std::string& messa
   } else {
     std::string group_messagetype;
     if(read_attribute("message_type", &group_messagetype)) {
-      if(group_messagetype != group_messagetype) {
+      if(group_messagetype != messagetype) {
         throw std::runtime_error("Incompatible message type in \"" + groupname + "\": " + group_messagetype + " != " + messagetype);
       }
+    } else {
+      throw std::runtime_error("Cannot read message type from \"" + groupname);
     }
   }
   if (h5g_ < 0) {
