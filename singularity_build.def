@@ -78,7 +78,6 @@ From: ubuntu:22.04
         libprotoc23                                                \
         valgrind                                                   \
         gdb                                                        \
-        libhdf5                                                    \
         hdf5-tools
 
     apt-get -y autoremove
