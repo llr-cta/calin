@@ -67,6 +67,10 @@ StringDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
                             
     H5Pclose(plist_id);
     H5Sclose(dataspace_id);
+
+    if(dataset_id_ < 0) {
+      throw std::runtime_error("Cannot create dataset: " + dataset_name);
+    }
   }
 
   hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -104,7 +108,7 @@ void StringDatasetWriter::flush()
   hsize_t count = cache_.size();
   hsize_t after = start + count;
   if(after != nrow_) {
-    throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+    throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
   }
   H5Dset_extent(dataset_id_, &after);
 
@@ -164,6 +168,10 @@ StringArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfil
                             
     H5Pclose(plist_id);
     H5Sclose(dataspace_id);
+
+    if(dataset_id_ < 0) {
+      throw std::runtime_error("Cannot create dataset: " + dataset_name);
+    }
   }
 
   hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -207,7 +215,7 @@ void StringArrayDatasetWriter::flush()
   hsize_t count = hvl.size();
   hsize_t after = start + count;
   if(after != nrow_) {
-    throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+    throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
   }
   H5Dset_extent(dataset_id_, &after);
 
@@ -271,6 +279,10 @@ BytesDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
                             
     H5Pclose(plist_id);
     H5Sclose(dataspace_id);
+
+    if(dataset_id_ < 0) {
+      throw std::runtime_error("Cannot create dataset: " + dataset_name);
+    }
   }
 
   hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -314,7 +326,7 @@ void BytesDatasetWriter::flush()
   hsize_t count = hvl.size();
   hsize_t after = start + count;
   if(after != nrow_) {
-    throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+    throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
   }
   H5Dset_extent(dataset_id_, &after);
 
@@ -380,6 +392,10 @@ BytesArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill
                             
     H5Pclose(plist_id);
     H5Sclose(dataspace_id);
+
+    if(dataset_id_ < 0) {
+      throw std::runtime_error("Cannot create dataset: " + dataset_name);
+    }
   }
 
   hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -432,7 +448,7 @@ void BytesArrayDatasetWriter::flush()
   hsize_t count = hvl.size();
   hsize_t after = start + count;
   if(after != nrow_) {
-    throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+    throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
   }
   H5Dset_extent(dataset_id_, &after);
 
@@ -457,7 +473,7 @@ void BytesArrayDatasetWriter::flush()
 // 8888888P"  "Y888888  88888P'  "Y8888  
 
 HDFStreamWriterBase::
-HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, uint64_t cache_size):
+HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size):
   cache_size_(cache_size)
 {
   H5Eset_auto(H5E_DEFAULT, NULL, NULL);
@@ -470,17 +486,17 @@ HDFStreamWriterBase(const std::string& filename, const std::string& groupname, b
     hid_t err_stack = H5Eget_current_stack();
     H5Eprint2(err_stack, stderr);
     H5Eclose_stack(err_stack);
-    throw std::runtime_error("Failed to create file " + filename);
+    throw std::runtime_error("Failed to create file: " + filename);
   }
 
-  open_group(h5f_, groupname);
+  open_group(h5f_, groupname, messagetype);
 }
 
 HDFStreamWriterBase::
-HDFStreamWriterBase(hid_t gid, const std::string& groupname, uint64_t cache_size):
+HDFStreamWriterBase(hid_t gid, const std::string& groupname, const std::string& messagetype, uint64_t cache_size):
   cache_size_(cache_size)
 {
-  open_group(gid, groupname);
+  open_group(gid, groupname, messagetype);
 }
 
 HDFStreamWriterBase::
@@ -523,17 +539,28 @@ void HDFStreamWriterBase::flush()
 }
 
 void HDFStreamWriterBase::
-open_group(hid_t file_id, const std::string& groupname)
+open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype)
 {
   h5g_ = H5Gopen(file_id, groupname.c_str(), H5P_DEFAULT);
   if (h5g_ < 0) {
     hid_t lcpl_id = H5Pcreate(H5P_LINK_CREATE);
     if (lcpl_id < 0) {
-      throw std::runtime_error("Failed to creare link-creation property");
+      throw std::runtime_error("Failed to create link-creation property");
     }
     H5Pset_create_intermediate_group(lcpl_id, 1);
     h5g_ = H5Gcreate(file_id, groupname.c_str(), lcpl_id, H5P_DEFAULT, H5P_DEFAULT);
     H5Pclose(lcpl_id);
+
+    if(h5g_ >= 0) {
+      write_attribute("message_type", messagetype);
+    }
+  } else {
+    std::string group_messagetype;
+    if(read_attribute("message_type", &group_messagetype)) {
+      if(group_messagetype != group_messagetype) {
+        throw std::runtime_error("Incompatible message type in \"" + groupname + "\": " + group_messagetype + " != " + messagetype);
+      }
+    }
   }
   if (h5g_ < 0) {
     throw std::runtime_error("Failed to create group: " + groupname);

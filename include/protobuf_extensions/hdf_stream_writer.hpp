@@ -89,10 +89,13 @@ public:
 
       // Create the dataset with chunking enabled
       dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), datatype_, 
-          dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
-                              
+          dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);          
       H5Pclose(plist_id);
       H5Sclose(dataspace_id);
+
+      if(dataset_id_ < 0) {
+        throw std::runtime_error("Cannot create dataset: " + dataset_name);
+      }
     }
 
     hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -136,7 +139,7 @@ public:
     hsize_t count = cache_.size();
     hsize_t after = start + count;
     if(after != nrow_) {
-      throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+      throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
     }
     H5Dset_extent(dataset_id_, &after);
 
@@ -203,6 +206,10 @@ public:
                               
       H5Pclose(plist_id);
       H5Sclose(dataspace_id);
+
+      if(dataset_id_ < 0) {
+        throw std::runtime_error("Cannot create dataset: " + dataset_name);
+      }
     }
 
     hid_t dataspace_id = H5Dget_space(dataset_id_);
@@ -264,7 +271,7 @@ public:
     hsize_t count = hvl.size();
     hsize_t after = start + count;
     if(after != nrow_) {
-      throw std::runtime_error("Unexpected dataset size : " + std::to_string(after) + " != " + std::to_string(nrow_));
+      throw std::runtime_error("Unexpected size in dataset \"" + dataset_name_ + "\" : " + std::to_string(after) + " != " + std::to_string(nrow_));
     }
     H5Dset_extent(dataset_id_, &after);
 
@@ -562,8 +569,8 @@ private:
 class HDFStreamWriterBase
 {
 public:
-  HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, uint64_t cache_size = 1024);
-  HDFStreamWriterBase(hid_t gid, const std::string& groupname, uint64_t cache_size = 1024);
+  HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size = 1024);
+  HDFStreamWriterBase(hid_t gid, const std::string& groupname, const std::string& messagetype, uint64_t cache_size = 1024);
   ~HDFStreamWriterBase();
   void flush();
   uint64_t nrow() const { return nrow_; }
@@ -577,10 +584,13 @@ public:
       attribute_id = H5Acreate(h5g_, name.c_str(), type_id, space_id, H5P_DEFAULT, H5P_DEFAULT);
       H5Sclose(space_id);
       if (attribute_id < 0) {
+        H5Tclose(type_id);
         throw std::runtime_error("Failed to create attribute: " + name);
       }
     }
     if(H5Awrite(attribute_id, type_id, &value) < 0) {
+      H5Tclose(type_id);
+      H5Aclose(attribute_id);
       throw std::runtime_error("Failed to write attribute: " + name);
     }
     H5Tclose(type_id);
@@ -589,9 +599,35 @@ public:
   void write_attribute(const std::string& name, const std::string& value) {
     write_attribute(name, value.c_str());
   }
+  template<typename T> bool read_attribute(const std::string& name, T* value) {
+    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
+    if(attribute_id < 0) {
+      *value = T();
+      return false;
+    }
+    hid_t type_id = h5_datatype_selector<T>();
+    if(H5Aread(attribute_id, type_id, value) < 0) {
+      H5Tclose(type_id);
+      H5Aclose(attribute_id);
+      *value = T();
+      return false;
+    }
+    H5Tclose(type_id);
+    H5Aclose(attribute_id);
+    return true;
+  }
+  bool read_attribute(const std::string& name, std::string* value) {
+    char* cstr = nullptr;
+    if(read_attribute(name, &cstr)) {
+      value->assign(cstr);
+      ::free(cstr);
+      return true;
+    }
+    return false;
+  }
 
 protected:
-  void open_group(hid_t file_id, const std::string& groupname);
+  void open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype);
   void insert_row() { nrow_+=1; ncached_+=1; }
 
   uint64_t cache_size_ = 0;
