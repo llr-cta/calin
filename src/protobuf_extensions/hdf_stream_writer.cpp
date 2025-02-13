@@ -466,8 +466,12 @@ HDFStreamWriterBase(const std::string& filename, const std::string& groupname, b
     h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
   if (h5f_ < 0)
     h5f_ = H5Fcreate(filename.c_str(), truncate?H5F_ACC_TRUNC:H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
-  if (h5f_ < 0)
-    throw std::runtime_error("Failed to create file: " + filename);
+  if (h5f_ < 0) {
+    hid_t err_stack = H5Eget_current_stack();
+    H5Eprint2(err_stack, stderr);
+    H5Eclose_stack(err_stack);
+    throw std::runtime_error("Failed to create file " + filename);
+  }
 
   open_group(h5f_, groupname);
 }
@@ -483,9 +487,28 @@ HDFStreamWriterBase::
 ~HDFStreamWriterBase()
 {
   flush();
-  H5Dclose(h5d_nrow_);
+  H5Aclose(h5d_nrow_);
   H5Gclose(h5g_);
-  if(h5f_ > 0) {
+  if(h5f_ >= 0) {
+    auto obj_count = H5Fget_obj_count(h5f_,H5F_OBJ_ALL);
+    if(obj_count > 1) {
+      hid_t obj_ids[1024];
+      std::cerr << "Closing file with objects remaining open: " << H5Fget_obj_count(h5f_,H5F_OBJ_ALL) << std::endl;
+      H5Fget_obj_ids(h5f_, H5F_OBJ_ALL, 1024, obj_ids);
+      for (int i = 0; i < obj_count; i++) {
+        H5I_type_t obj_type = H5Iget_type(obj_ids[i]);
+        if (obj_type == H5I_GROUP)
+          std::cerr << "Object " << i << ": Group\n";
+        else if (obj_type == H5I_DATASET)
+          std::cerr << "Object " << i <<": Dataset\n";
+        else if (obj_type == H5I_DATATYPE)
+          std::cerr << "Object " << i << ": Datatype\n";
+        else if (obj_type == H5I_ATTR)
+          std::cerr << "Object " << i << ": Attribute\n";
+        else
+          std::cerr << "Object " << i << ": Other type: " << obj_type << "\n";
+      }
+    }
     H5Fclose(h5f_);
   }
 }
@@ -493,7 +516,7 @@ HDFStreamWriterBase::
 void HDFStreamWriterBase::flush()
 {
   H5Awrite(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_);
-  if(h5f_>0) {
+  if(h5f_>=0) {
     H5Fflush(h5f_, H5F_SCOPE_LOCAL);
   }
   ncached_ = 0;
@@ -510,6 +533,7 @@ open_group(hid_t file_id, const std::string& groupname)
     }
     H5Pset_create_intermediate_group(lcpl_id, 1);
     h5g_ = H5Gcreate(file_id, groupname.c_str(), lcpl_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Pclose(lcpl_id);
   }
   if (h5g_ < 0) {
     throw std::runtime_error("Failed to create group: " + groupname);

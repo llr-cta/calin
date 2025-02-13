@@ -402,7 +402,7 @@ HDFStreamReaderBase::
   if (h5g_ >= 0) {
     H5Gclose(h5g_);
   }
-  if(h5f_ > 0) {
+  if(h5f_ >= 0) {
     H5Fclose(h5f_);
   }
 }

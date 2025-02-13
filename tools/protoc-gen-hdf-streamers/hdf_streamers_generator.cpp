@@ -531,7 +531,7 @@ void generate_message_stream_writers_impl(
 
   printer.Print(
     "$hdf_stream_writer_name$::~$hdf_stream_writer_name$() {\n"
-    "  if(h5f_>0) {\n"
+    "  if(h5f_>=0) {\n"
     "    flush();\n"
     "  }\n",
     "hdf_stream_writer_name", hdf_stream_writer_name(d));
