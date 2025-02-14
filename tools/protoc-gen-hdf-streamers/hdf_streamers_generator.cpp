@@ -492,7 +492,7 @@ void generate_message_stream_writers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_type$* $oneof_name$ = nullptr;\n",
+      "std::unique_ptr<$oneof_type$ > $oneof_name$;\n",
       "oneof_type", oneof_dsw_type(f),
       "oneof_name", oneof_name(f));
   }
@@ -502,7 +502,7 @@ void generate_message_stream_writers_impl(
     const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
     if(cfo->dont_store())continue;
     printer.Print(
-      "$dsw_type$* $dsw_name$ = nullptr;\n",
+      "std::unique_ptr<$dsw_type$ > $dsw_name$;\n",
       "dsw_type", dsw_type(f),
       "dsw_name", dsw_name(f));
   }
@@ -533,23 +533,6 @@ void generate_message_stream_writers_impl(
     "    flush();\n"
     "  }\n",
     "hdf_stream_writer_name", hdf_stream_writer_name(d));
-  printer.Indent();
-  for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
-    const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
-    printer.Print(
-      "delete $oneof_name$;\n",
-      "oneof_name", oneof_name(f));
-  }
-  for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const google::protobuf::FieldDescriptor* f = d->field(ifield);
-    const google::protobuf::FieldOptions* fopt = &f->options();
-    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
-    if(cfo->dont_store())continue;
-    printer.Print(
-      "delete $dsw_name$;\n",
-      "dsw_name", dsw_name(f));
-  }
-  printer.Outdent();
   printer.Print("}\n\n");
 
   // ===================================================================================================
@@ -565,7 +548,7 @@ void generate_message_stream_writers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_name$ = new $oneof_type$(h5g_, \"$name$::case\", nrow_);\n",
+      "$oneof_name$ = std::make_unique<$oneof_type$>(h5g_, \"$name$::case\", nrow_);\n",
       "oneof_type", oneof_dsw_type(f),
       "oneof_name", oneof_name(f),
       "name", f->name());
@@ -577,7 +560,7 @@ void generate_message_stream_writers_impl(
     if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
-      "$dsw_name$ = new $dsw_type$(h5g_, \"$name$\", nrow_);\n",
+      "$dsw_name$ = std::make_unique<$dsw_type$>(h5g_, \"$name$\", nrow_);\n",
       "dsw_type", dsw_type(f),
       "dsw_name", dsw_name(f),
       "name", f->name());
@@ -773,7 +756,7 @@ void generate_message_stream_readers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_type$* $oneof_name$ = nullptr;\n",
+      "std::unique_ptr<$oneof_type$ > $oneof_name$;\n",
       "oneof_type", oneof_dsr_type(f),
       "oneof_name", oneof_name(f));
   }
@@ -783,7 +766,7 @@ void generate_message_stream_readers_impl(
     const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
     if(cfo->dont_store())continue;
     printer.Print(
-      "$dsr_type$* $dsr_name$ = nullptr;\n",
+      "std::unique_ptr<$dsr_type$ > $dsr_name$;\n",
       "dsr_type", dsr_type(f),
       "dsr_name", dsw_name(f));
   }
@@ -811,23 +794,6 @@ void generate_message_stream_readers_impl(
   printer.Print(
     "$hdf_stream_reader_name$::~$hdf_stream_reader_name$() {\n",
     "hdf_stream_reader_name", hdf_stream_reader_name(d));
-  printer.Indent();
-  for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
-    const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
-    printer.Print(
-      "delete $oneof_name$;\n",
-      "oneof_name", oneof_name(f));
-  }
-  for(int ifield=0; ifield<d->field_count(); ++ifield) {
-    const google::protobuf::FieldDescriptor* f = d->field(ifield);
-    const google::protobuf::FieldOptions* fopt = &f->options();
-    const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
-    if(cfo->dont_store())continue;
-    printer.Print(
-      "delete $dsr_name$;\n",
-      "dsr_name", dsw_name(f));
-  }
-  printer.Outdent();
   printer.Print("}\n\n");
 
   // ===================================================================================================
@@ -844,7 +810,7 @@ void generate_message_stream_readers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_name$ = new $oneof_type$(h5g_, \"$name$::case\");\n",
+      "$oneof_name$ = std::make_unique<$oneof_type$>(h5g_, \"$name$::case\");\n",
       "oneof_type", oneof_dsr_type(f),
       "oneof_name", oneof_name(f),
       "name", f->name());
@@ -856,7 +822,7 @@ void generate_message_stream_readers_impl(
     if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
-      "$dsr_name$ = new $dsr_type$(h5g_, \"$name$\");\n",
+      "$dsr_name$ = std::make_unique<$dsr_type$>(h5g_, \"$name$\");\n",
       "dsr_type", dsr_type(f),
       "dsr_name", dsw_name(f),
       "name", f->name());

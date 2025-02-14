@@ -444,13 +444,11 @@ private:
 template<typename KeyReader, typename ValueReader> class MapReader {
 public:
   MapReader(hid_t gid, const std::string field_name) {
-    key_reader_ = new KeyReader(gid, field_name+"::key");
-    value_reader_ = new ValueReader(gid, field_name);
+    key_reader_ = std::make_unique<KeyReader>(gid, field_name+"::key");
+    value_reader_ = std::make_unique<ValueReader>(gid, field_name);
   }
 
   ~MapReader() {
-    delete key_reader_;
-    delete value_reader_;
   }
 
   bool count(uint64_t irow, uint64_t& count) {
@@ -483,8 +481,8 @@ public:
   }
 
 private:
-  KeyReader* key_reader_ = nullptr;
-  ValueReader* value_reader_ = nullptr;
+  std::unique_ptr<KeyReader> key_reader_;
+  std::unique_ptr<ValueReader> value_reader_;
 };
 
 
@@ -503,15 +501,12 @@ private:
 template<typename Message> class MessageReader {
 public:
   MessageReader(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    message_reader_ = Message::__NewHDFStreamReader(&gid, field_name);
-    start_reader_ = new DatasetReader<uint64_t>(gid, field_name+"::start");
-    count_reader_ = new DatasetReader<uint64_t>(gid, field_name+"::count");
+    message_reader_.reset(Message::__NewHDFStreamReader(&gid, field_name));
+    start_reader_ = std::make_unique<DatasetReader<uint64_t> >(gid, field_name+"::start");
+    count_reader_ = std::make_unique<DatasetReader<uint64_t> >(gid, field_name+"::count");
   }
 
   ~MessageReader() {
-    delete count_reader_;
-    delete start_reader_;
-    delete message_reader_;
   }
 
   bool count(uint64_t irow, uint64_t& count) {
@@ -572,9 +567,9 @@ public:
   }
 
 private:
-  typename Message::stream_reader* message_reader_ = nullptr;
-  DatasetReader<uint64_t>* start_reader_ = nullptr;
-  DatasetReader<uint64_t>* count_reader_ = nullptr;
+std::unique_ptr<typename Message::stream_reader> message_reader_;
+  std::unique_ptr<DatasetReader<uint64_t> > start_reader_;
+  std::unique_ptr<DatasetReader<uint64_t> > count_reader_;
 };
 
 

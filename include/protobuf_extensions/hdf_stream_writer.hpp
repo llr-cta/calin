@@ -461,14 +461,12 @@ private:
 template<typename KeyWriter, typename ValueWriter> class MapWriter {
 public:
   MapWriter(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    key_writer_ = new KeyWriter(gid, field_name+"::key", nfill);
-    value_writer_ = new ValueWriter(gid, field_name, nfill);
+    key_writer_ = std::make_unique<KeyWriter>(gid, field_name+"::key", nfill);
+    value_writer_ = std::make_unique<ValueWriter>(gid, field_name, nfill);
   }
 
   ~MapWriter() {
     flush();
-    delete key_writer_;
-    delete value_writer_;
   }
 
   template<typename Container> void write(const Container& c) {
@@ -482,14 +480,14 @@ public:
   }
 
 private:
-  KeyWriter* key_writer_ = nullptr;
-  ValueWriter* value_writer_ = nullptr;
+  std::unique_ptr<KeyWriter> key_writer_;
+  std::unique_ptr<ValueWriter> value_writer_;
 };
 
 
 // 888b     d888                                                       
 // 8888b   d8888                                                       
-// 88888b.d88888                                                       
+// 88888b.d88888                                                        
 // 888Y88888P888  .d88b.  .d8888b  .d8888b   8888b.   .d88b.   .d88b.  
 // 888 Y888P 888 d8P  Y8b 88K      88K          "88b d88P"88b d8P  Y8b 
 // 888  Y8P  888 88888888 "Y8888b. "Y8888b. .d888888 888  888 88888888 
@@ -502,16 +500,13 @@ private:
 template<typename Message> class MessageWriter {
 public:
   MessageWriter(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    message_writer_ = Message::__NewHDFStreamWriter(&gid, field_name);
-    start_writer_ = new DatasetWriter<uint64_t>(gid, field_name+"::start", nfill);
-    count_writer_ = new DatasetWriter<uint64_t>(gid, field_name+"::count", nfill);
+    message_writer_.reset(Message::__NewHDFStreamWriter(&gid, field_name));
+    start_writer_ = std::make_unique<DatasetWriter<uint64_t> >(gid, field_name+"::start", nfill);
+    count_writer_ = std::make_unique<DatasetWriter<uint64_t> >(gid, field_name+"::count", nfill);
   }
 
   ~MessageWriter() {
     flush();
-    delete count_writer_;
-    delete start_writer_;
-    delete message_writer_;
   }
 
   void write(const Message* m) {
@@ -551,9 +546,9 @@ public:
   }
 
 private:
-  typename Message::stream_writer* message_writer_ = nullptr;
-  DatasetWriter<uint64_t>* start_writer_ = nullptr;
-  DatasetWriter<uint64_t>* count_writer_ = nullptr;
+  std::unique_ptr<typename Message::stream_writer> message_writer_;
+  std::unique_ptr<DatasetWriter<uint64_t> > start_writer_;
+  std::unique_ptr<DatasetWriter<uint64_t> > count_writer_ ;
 };
 
 
