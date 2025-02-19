@@ -680,6 +680,7 @@ void generate_file_stream_writers_impl(
   google::protobuf::io::Printer printer(output.get(), '$');
 
   printer.Print(
+    "#include <memory>\n"
     "#include <protobuf_extensions/hdf_stream_writer.hpp>\n"
     "using namespace calin::protobuf_extensions::hdf_streamer;\n");
   printer.Print("namespace {\n");
