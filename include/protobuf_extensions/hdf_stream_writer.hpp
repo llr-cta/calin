@@ -157,7 +157,7 @@ protected:
 
 template<typename T> class DatasetWriter{
 public:
-  DatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0, T fill_value = T()):
+  DatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, T fill_value = T()):
     dataset_name_(dataset_name), datatype_(h5_datatype_selector<T>())
   {
     dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
@@ -190,6 +190,7 @@ public:
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
     H5Sclose(dataspace_id);
 
+    auto nfill = base_ptr->nrow();
     while(nrow_ < nfill) {
       write(fill_value);
       if(cache_.size() == 1024) flush(); 
@@ -265,7 +266,7 @@ private:
 
 template<typename T> class ArrayDatasetWriter{
 public:
-  ArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0):
+  ArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name):
     dataset_name_(dataset_name)
   {
     // Create variable-length datatype
@@ -304,6 +305,7 @@ public:
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
     H5Sclose(dataspace_id);
 
+    auto nfill = base_ptr->nrow();
     std::vector<T> fill_value;
     while(nrow_ < nfill) {
       write(fill_value);
@@ -397,7 +399,7 @@ private:
 
 class StringDatasetWriter{
 public:
-  StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
+  StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name);
   ~StringDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -424,7 +426,7 @@ private:
 
 class StringArrayDatasetWriter{
 public:
-  StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
+  StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name);
   ~StringArrayDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -474,7 +476,7 @@ private:
 
 class BytesDatasetWriter{
 public:
-  BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
+  BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name);
   ~BytesDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -497,7 +499,7 @@ private:
 
 class BytesArrayDatasetWriter{
 public:
-  BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
+  BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name);
   ~BytesArrayDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -548,9 +550,9 @@ private:
 
 template<typename KeyWriter, typename ValueWriter> class MapWriter {
 public:
-  MapWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
-    key_writer_ = std::make_unique<KeyWriter>(base_ptr, field_name+"::key", nfill);
-    value_writer_ = std::make_unique<ValueWriter>(base_ptr, field_name, nfill);
+  MapWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name) {
+    key_writer_ = std::make_unique<KeyWriter>(base_ptr, field_name+"::key");
+    value_writer_ = std::make_unique<ValueWriter>(base_ptr, field_name);
   }
 
   ~MapWriter() {
@@ -587,10 +589,11 @@ private:
 
 template<typename Message> class MessageWriter {
 public:
-  MessageWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
-    message_writer_.reset(Message::__NewHDFStreamWriter(base_ptr, field_name));
-    start_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr, field_name+"::start", nfill);
-    count_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr, field_name+"::count", nfill);
+  MessageWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name):
+    base_ptr_(base_ptr), field_name_(field_name)
+  {
+    // We defer opening sub-messages until they are used to allow nested messages to
+    // be handled without getting stuck in an infinite loop.
   }
 
   ~MessageWriter() {
@@ -598,6 +601,11 @@ public:
   }
 
   void write(const Message* m) {
+    if(not message_writer_) {
+      if(m) deferred_open_datasets();
+      else return;
+    }
+
     start_writer_->write(message_writer_->nrow());
     if(m) {
       count_writer_->write(1);
@@ -612,6 +620,10 @@ public:
   }
 
   template<typename Container> void write(const Container& c) {
+    if(not message_writer_) {
+      if(not c.empty()) deferred_open_datasets();
+      else return;
+    }
     start_writer_->write(message_writer_->nrow());
     count_writer_->write(c.size());
     for(const auto& m : c) {
@@ -620,6 +632,10 @@ public:
   }
 
   template<typename Container, typename Extractor> void write(const Container& c, const Extractor& f) {
+    if(not message_writer_) {
+      if(not c.empty()) deferred_open_datasets();
+      else return;
+    }
     start_writer_->write(message_writer_->nrow());
     count_writer_->write(c.size());
     for(const auto& m : c) {
@@ -628,12 +644,23 @@ public:
   }
 
   void flush() {
-    start_writer_->flush();
-    count_writer_->flush();
-    message_writer_->flush();
+    if(message_writer_) {
+      start_writer_->flush();
+      count_writer_->flush();
+      message_writer_->flush();
+    }
   }
 
 private:
+  void deferred_open_datasets() {
+    message_writer_.reset(Message::__NewHDFStreamWriter(base_ptr_, field_name_));
+    start_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr_, field_name_+"::start", message_writer_->nrow());
+    count_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr_, field_name_+"::count", 0);
+  }
+
+  const HDFStreamWriterBase* base_ptr_ = nullptr;
+  const std::string field_name_;
+
   std::unique_ptr<typename Message::stream_writer> message_writer_;
   std::unique_ptr<DatasetWriter<uint64_t> > start_writer_;
   std::unique_ptr<DatasetWriter<uint64_t> > count_writer_ ;

@@ -170,7 +170,7 @@ open_group(hid_t file_id, const std::string& groupname, const std::string& messa
 //                                         "Y88P"  
 
 StringDatasetWriter::
-StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
+StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create variable-length datatype
@@ -208,6 +208,7 @@ StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string datas
   H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
   H5Sclose(dataspace_id);
 
+  auto nfill = base_ptr->nrow();
   while(nrow_ < nfill) {
     write("");
     if(cache_.size() == 1024) flush(); 
@@ -267,7 +268,7 @@ void StringDatasetWriter::flush()
 //                                        Y8b d88P                                      Y8b d88P 
 //                                         "Y88P"                                        "Y88P"  
 StringArrayDatasetWriter::
-StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
+StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create string datatype
@@ -309,6 +310,7 @@ StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string 
   H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
   H5Sclose(dataspace_id);
 
+  auto nfill = base_ptr->nrow();
   std::vector<std::string> fill_value;
   while(nrow_ < nfill) {
     write(fill_value);
@@ -379,7 +381,7 @@ void StringArrayDatasetWriter::flush()
 //             "Y88P"                          
 
 BytesDatasetWriter::
-BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
+BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -420,6 +422,7 @@ BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string datase
   H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
   H5Sclose(dataspace_id);
 
+  auto nfill = base_ptr->nrow();
   std::string fill_value;
   while(nrow_ < nfill) {
     write(fill_value);
@@ -485,7 +488,7 @@ void BytesDatasetWriter::flush()
 //             "Y88P"                                                                "Y88P"  
 
 BytesArrayDatasetWriter::
-BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
+BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -533,6 +536,7 @@ BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string d
   H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
   H5Sclose(dataspace_id);
 
+  auto nfill = base_ptr->nrow();
   std::vector<std::string> fill_value;
   while(nrow_ < nfill) {
     write(fill_value);

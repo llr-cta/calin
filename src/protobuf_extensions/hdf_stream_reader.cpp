@@ -41,9 +41,9 @@ HDFStreamReaderBase(const std::string& filename, const std::string& groupname, u
 {
   H5Eset_auto(H5E_DEFAULT, NULL, NULL);
   
-  h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   if (h5f_ < 0)
-    throw std::runtime_error("Failed to create file: " + filename);
+    throw std::runtime_error("Failed to open file: " + filename);
 
   open_group(h5f_, groupname);
   if(h5g_ < 0) {

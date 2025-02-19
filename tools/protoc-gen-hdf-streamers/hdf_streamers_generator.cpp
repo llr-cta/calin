@@ -548,7 +548,7 @@ void generate_message_stream_writers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_name$ = std::make_unique<$oneof_type$ >(this, \"$name$::case\", nrow_);\n",
+      "$oneof_name$ = std::make_unique<$oneof_type$ >(this, \"$name$::case\");\n",
       "oneof_type", oneof_dsw_type(f),
       "oneof_name", oneof_name(f),
       "name", f->name());
@@ -560,7 +560,7 @@ void generate_message_stream_writers_impl(
     if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
-      "$dsw_name$ = std::make_unique<$dsw_type$ >(this, \"$name$\", nrow_);\n",
+      "$dsw_name$ = std::make_unique<$dsw_type$ >(this, \"$name$\");\n",
       "dsw_type", dsw_type(f),
       "dsw_name", dsw_name(f),
       "name", f->name());

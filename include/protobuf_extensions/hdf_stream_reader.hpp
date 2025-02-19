@@ -565,7 +565,7 @@ private:
 
 template<typename Message> class MessageReader {
 public:
-  MessageReader(const HDFStreamReaderBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
+  MessageReader(const HDFStreamReaderBase* base_ptr, const std::string field_name) {
     message_reader_.reset(Message::__NewHDFStreamReader(base_ptr, field_name));
     start_reader_ = std::make_unique<DatasetReader<uint64_t> >(base_ptr, field_name+"::start");
     count_reader_ = std::make_unique<DatasetReader<uint64_t> >(base_ptr, field_name+"::count");
