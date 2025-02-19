@@ -26,6 +26,137 @@
 
 using namespace calin::protobuf_extensions::hdf_streamer;
 
+// 888888b.                              
+// 888  "88b                             
+// 888  .88P                             
+// 8888888K.   8888b.  .d8888b   .d88b.  
+// 888  "Y88b     "88b 88K      d8P  Y8b 
+// 888    888 .d888888 "Y8888b. 88888888 
+// 888   d88P 888  888      X88 Y8b.     
+// 8888888P"  "Y888888  88888P'  "Y8888  
+
+HDFStreamWriterBase::
+HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size):
+  cache_size_(cache_size)
+{
+  H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+  
+  if(!truncate)
+    h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  if (h5f_ < 0)
+    h5f_ = H5Fcreate(filename.c_str(), truncate?H5F_ACC_TRUNC:H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
+  if (h5f_ < 0) {
+    hid_t err_stack = H5Eget_current_stack();
+    H5Eprint2(err_stack, stderr);
+    H5Eclose_stack(err_stack);
+    throw std::runtime_error("Failed to create file: " + filename);
+  }
+
+  open_group(h5f_, groupname, messagetype);
+}
+
+HDFStreamWriterBase::
+HDFStreamWriterBase(const HDFStreamWriterBase* parent, const std::string& groupname, const std::string& messagetype, uint64_t cache_size):
+  parent_(parent), cache_size_(cache_size)
+{
+  open_group(parent_->h5g_, groupname, messagetype);
+}
+
+HDFStreamWriterBase::
+~HDFStreamWriterBase()
+{
+  flush();
+  H5Aclose(h5d_nrow_);
+  H5Gclose(h5g_);
+  if(h5f_ >= 0) {
+    auto obj_count = H5Fget_obj_count(h5f_,H5F_OBJ_ALL);
+    hid_t obj_ids[1024];
+    H5Fget_obj_ids(h5f_, H5F_OBJ_ALL, 1024, obj_ids);
+    unsigned file_count = 0;
+    for (int i = 0; i < obj_count; i++) {
+      H5I_type_t obj_type = H5Iget_type(obj_ids[i]);
+      if (obj_type == H5I_FILE)
+        file_count++;
+    }
+    if(obj_count > 1 and file_count < 2) {
+      std::cerr << "Closing file with objects remaining open: " << H5Fget_obj_count(h5f_,H5F_OBJ_ALL) << std::endl;
+      for (int i = 0; i < obj_count; i++) {
+        H5I_type_t obj_type = H5Iget_type(obj_ids[i]);
+        if (obj_type == H5I_FILE)
+          std::cerr << "Object " << i << ": File\n";
+        else if (obj_type == H5I_GROUP)
+          std::cerr << "Object " << i << ": Group\n";
+        else if (obj_type == H5I_DATASET)
+          std::cerr << "Object " << i <<": Dataset\n";
+        else if (obj_type == H5I_DATATYPE)
+          std::cerr << "Object " << i << ": Datatype\n";
+        else if (obj_type == H5I_ATTR)
+          std::cerr << "Object " << i << ": Attribute\n";
+        else
+          std::cerr << "Object " << i << ": Other type: " << obj_type << "\n";
+      }
+    }
+    H5Fclose(h5f_);
+  }
+}
+
+void HDFStreamWriterBase::flush()
+{
+  H5Awrite(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_);
+  if(h5f_>=0) {
+    H5Fflush(h5f_, H5F_SCOPE_LOCAL);
+  }
+  ncached_ = 0;
+}
+
+void HDFStreamWriterBase::
+open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype)
+{
+  h5g_ = H5Gopen(file_id, groupname.c_str(), H5P_DEFAULT);
+  if (h5g_ < 0) {
+    hid_t lcpl_id = H5Pcreate(H5P_LINK_CREATE);
+    if (lcpl_id < 0) {
+      throw std::runtime_error("Failed to create link-creation property");
+    }
+    H5Pset_create_intermediate_group(lcpl_id, 1);
+    h5g_ = H5Gcreate(file_id, groupname.c_str(), lcpl_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Pclose(lcpl_id);
+
+    if(h5g_ >= 0) {
+      write_attribute("message_type", messagetype);
+    }
+  } else {
+    std::string group_messagetype;
+    if(read_attribute("message_type", &group_messagetype)) {
+      if(group_messagetype != messagetype) {
+        throw std::runtime_error("Incompatible message type in \"" + groupname + "\": " + group_messagetype + " != " + messagetype);
+      }
+    } else {
+      throw std::runtime_error("Cannot read message type from \"" + groupname);
+    }
+  }
+  if (h5g_ < 0) {
+    throw std::runtime_error("Failed to create group: " + groupname);
+  }
+
+  h5d_nrow_ = H5Aopen(h5g_, "nrow", H5P_DEFAULT);
+  if (h5d_nrow_ < 0) {
+    hid_t space_id = H5Screate(H5S_SCALAR);
+    h5d_nrow_ = H5Acreate(h5g_, "nrow", H5T_INTEL_U64, space_id, H5P_DEFAULT, H5P_DEFAULT);
+    H5Sclose(space_id);
+    if (h5d_nrow_ < 0) {
+      throw std::runtime_error("Failed to create attribute: nrow");
+    }
+    if(H5Awrite(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_) < 0) {
+      throw std::runtime_error("Failed to write attribute: nrow");
+    }
+  } else {
+    if(H5Aread(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_) < 0) {
+      throw std::runtime_error("Failed to read attribute: nrow");
+    }
+  }
+}
+
 //  .d8888b.  888            d8b                   
 // d88P  Y88b 888            Y8P                   
 // Y88b.      888                                  
@@ -39,14 +170,14 @@ using namespace calin::protobuf_extensions::hdf_streamer;
 //                                         "Y88P"  
 
 StringDatasetWriter::
-StringDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
+StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
   dataset_name_(dataset_name)
 {
   // Create variable-length datatype
   string_datatype_ = H5Tcopy(H5T_C_S1);
   H5Tset_size(string_datatype_, H5T_VARIABLE); // Variable-length strings
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ < 0) {
     hsize_t initial_size = 0;               // Start with an empty dataset
     hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -62,7 +193,7 @@ StringDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
     H5Pset_deflate(plist_id, 2);
 
     // Create the dataset with chunking enabled
-    dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), string_datatype_, 
+    dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), string_datatype_, 
         dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
                             
     H5Pclose(plist_id);
@@ -136,7 +267,7 @@ void StringDatasetWriter::flush()
 //                                        Y8b d88P                                      Y8b d88P 
 //                                         "Y88P"                                        "Y88P"  
 StringArrayDatasetWriter::
-StringArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
+StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
   dataset_name_(dataset_name)
 {
   // Create string datatype
@@ -147,7 +278,7 @@ StringArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfil
   array_datatype_ = H5Tvlen_create(string_datatype);
   H5Tclose(string_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ < 0) {
     hsize_t initial_size = 0;               // Start with an empty dataset
     hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -163,7 +294,7 @@ StringArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfil
     H5Pset_deflate(plist_id, 2);
 
     // Create the dataset with chunking enabled
-    dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), array_datatype_, 
+    dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), array_datatype_, 
         dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
                             
     H5Pclose(plist_id);
@@ -248,7 +379,7 @@ void StringArrayDatasetWriter::flush()
 //             "Y88P"                          
 
 BytesDatasetWriter::
-BytesDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
+BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -258,7 +389,7 @@ BytesDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
   array_datatype_ = H5Tvlen_create(byte_datatype);
   H5Tclose(byte_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ < 0) {
     hsize_t initial_size = 0;               // Start with an empty dataset
     hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -274,7 +405,7 @@ BytesDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
     H5Pset_deflate(plist_id, 2);
 
     // Create the dataset with chunking enabled
-    dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), array_datatype_, 
+    dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), array_datatype_, 
         dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
                             
     H5Pclose(plist_id);
@@ -354,7 +485,7 @@ void BytesDatasetWriter::flush()
 //             "Y88P"                                                                "Y88P"  
 
 BytesArrayDatasetWriter::
-BytesArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill):
+BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -368,7 +499,7 @@ BytesArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill
   array_datatype_ = H5Tvlen_create(bytes_string_datatype);
   H5Tclose(bytes_string_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ < 0) {
     hsize_t initial_size = 0;               // Start with an empty dataset
     hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -387,7 +518,7 @@ BytesArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill
     H5Tclose(byte_datatype);
 
     // Create the dataset with chunking enabled
-    dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), array_datatype_, 
+    dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), array_datatype_, 
         dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
                             
     H5Pclose(plist_id);
@@ -461,127 +592,4 @@ void BytesArrayDatasetWriter::flush()
   H5Sclose(file_space_id);
 
   cache_.clear();
-}
-
-// 888888b.                              
-// 888  "88b                             
-// 888  .88P                             
-// 8888888K.   8888b.  .d8888b   .d88b.  
-// 888  "Y88b     "88b 88K      d8P  Y8b 
-// 888    888 .d888888 "Y8888b. 88888888 
-// 888   d88P 888  888      X88 Y8b.     
-// 8888888P"  "Y888888  88888P'  "Y8888  
-
-HDFStreamWriterBase::
-HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size):
-  cache_size_(cache_size)
-{
-  H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-  
-  if(!truncate)
-    h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-  if (h5f_ < 0)
-    h5f_ = H5Fcreate(filename.c_str(), truncate?H5F_ACC_TRUNC:H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
-  if (h5f_ < 0) {
-    hid_t err_stack = H5Eget_current_stack();
-    H5Eprint2(err_stack, stderr);
-    H5Eclose_stack(err_stack);
-    throw std::runtime_error("Failed to create file: " + filename);
-  }
-
-  open_group(h5f_, groupname, messagetype);
-}
-
-HDFStreamWriterBase::
-HDFStreamWriterBase(hid_t gid, const std::string& groupname, const std::string& messagetype, uint64_t cache_size):
-  cache_size_(cache_size)
-{
-  open_group(gid, groupname, messagetype);
-}
-
-HDFStreamWriterBase::
-~HDFStreamWriterBase()
-{
-  flush();
-  H5Aclose(h5d_nrow_);
-  H5Gclose(h5g_);
-  if(h5f_ >= 0) {
-    auto obj_count = H5Fget_obj_count(h5f_,H5F_OBJ_ALL);
-    if(obj_count > 1) {
-      hid_t obj_ids[1024];
-      std::cerr << "Closing file with objects remaining open: " << H5Fget_obj_count(h5f_,H5F_OBJ_ALL) << std::endl;
-      H5Fget_obj_ids(h5f_, H5F_OBJ_ALL, 1024, obj_ids);
-      for (int i = 0; i < obj_count; i++) {
-        H5I_type_t obj_type = H5Iget_type(obj_ids[i]);
-        if (obj_type == H5I_GROUP)
-          std::cerr << "Object " << i << ": Group\n";
-        else if (obj_type == H5I_DATASET)
-          std::cerr << "Object " << i <<": Dataset\n";
-        else if (obj_type == H5I_DATATYPE)
-          std::cerr << "Object " << i << ": Datatype\n";
-        else if (obj_type == H5I_ATTR)
-          std::cerr << "Object " << i << ": Attribute\n";
-        else
-          std::cerr << "Object " << i << ": Other type: " << obj_type << "\n";
-      }
-    }
-    H5Fclose(h5f_);
-  }
-}
-
-void HDFStreamWriterBase::flush()
-{
-  H5Awrite(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_);
-  if(h5f_>=0) {
-    H5Fflush(h5f_, H5F_SCOPE_LOCAL);
-  }
-  ncached_ = 0;
-}
-
-void HDFStreamWriterBase::
-open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype)
-{
-  h5g_ = H5Gopen(file_id, groupname.c_str(), H5P_DEFAULT);
-  if (h5g_ < 0) {
-    hid_t lcpl_id = H5Pcreate(H5P_LINK_CREATE);
-    if (lcpl_id < 0) {
-      throw std::runtime_error("Failed to create link-creation property");
-    }
-    H5Pset_create_intermediate_group(lcpl_id, 1);
-    h5g_ = H5Gcreate(file_id, groupname.c_str(), lcpl_id, H5P_DEFAULT, H5P_DEFAULT);
-    H5Pclose(lcpl_id);
-
-    if(h5g_ >= 0) {
-      write_attribute("message_type", messagetype);
-    }
-  } else {
-    std::string group_messagetype;
-    if(read_attribute("message_type", &group_messagetype)) {
-      if(group_messagetype != messagetype) {
-        throw std::runtime_error("Incompatible message type in \"" + groupname + "\": " + group_messagetype + " != " + messagetype);
-      }
-    } else {
-      throw std::runtime_error("Cannot read message type from \"" + groupname);
-    }
-  }
-  if (h5g_ < 0) {
-    throw std::runtime_error("Failed to create group: " + groupname);
-  }
-
-  h5d_nrow_ = H5Aopen(h5g_, "nrow", H5P_DEFAULT);
-  if (h5d_nrow_ < 0) {
-    hid_t space_id = H5Screate(H5S_SCALAR);
-    h5d_nrow_ = H5Acreate(h5g_, "nrow", H5T_INTEL_U64, space_id, H5P_DEFAULT, H5P_DEFAULT);
-    H5Sclose(space_id);
-    if (h5d_nrow_ < 0) {
-      throw std::runtime_error("Failed to create attribute: nrow");
-    }
-    if(H5Awrite(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_) < 0) {
-      throw std::runtime_error("Failed to write attribute: nrow");
-    }
-  } else {
-    if(H5Aread(h5d_nrow_, H5T_NATIVE_UINT64, &nrow_) < 0) {
-      throw std::runtime_error("Failed to read attribute: nrow");
-    }
-  }
 }

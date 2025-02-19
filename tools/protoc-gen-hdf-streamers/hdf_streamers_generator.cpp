@@ -365,9 +365,9 @@ void generate_message_stream_accessors(
       "  using stream_writer = $stream_writer_name$;\n"
       "  using stream_reader = $stream_reader_name$;\n"
       "  static $stream_writer_name$* NewHDFStreamWriter(const std::string& filename, const std::string& groupname, bool truncate = false);\n" 
-      "  static $stream_writer_name$* __NewHDFStreamWriter(const void* gid_ptr, const std::string& groupname);\n"
+      "  static $stream_writer_name$* __NewHDFStreamWriter(const void* parent_ptr, const std::string& groupname);\n"
       "  static $stream_reader_name$* NewHDFStreamReader(const std::string& filename, const std::string& groupname);\n" 
-      "  static $stream_reader_name$* __NewHDFStreamReader(const void* gid_ptr, const std::string& groupname);\n", 
+      "  static $stream_reader_name$* __NewHDFStreamReader(const void* parent_ptr, const std::string& groupname);\n", 
       "stream_writer_name", stream_writer_name(d),
       "stream_reader_name", stream_reader_name(d));
   }
@@ -464,7 +464,7 @@ void generate_message_stream_writers_impl(
   printer.Print(
     "class $hdf_stream_writer_name$:\n"
     "  public $stream_writer_name$,\n"
-    "  protected HDFStreamWriterBase\n"
+    "  public HDFStreamWriterBase\n"
     "{\n"
     "public:\n"
     "  $hdf_stream_writer_name$(const std::string& filename, const std::string& groupname, bool truncate):\n"
@@ -473,9 +473,9 @@ void generate_message_stream_writers_impl(
     "  {\n"
     "    open_datasets();\n"
     "  }\n"
-    "  $hdf_stream_writer_name$(hid_t gid, const std::string& groupname):\n"
+    "  $hdf_stream_writer_name$(const calin::protobuf_extensions::hdf_streamer::HDFStreamWriterBase* parent_ptr, const std::string& groupname):\n"
     "    $stream_writer_name$(),\n"
-    "    HDFStreamWriterBase(gid, groupname, \"$message_name$\")\n"
+    "    HDFStreamWriterBase(parent_ptr, groupname, \"$message_name$\")\n"
     "  {\n"
     "    open_datasets();\n"
     "  }\n"
@@ -548,7 +548,7 @@ void generate_message_stream_writers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_name$ = std::make_unique<$oneof_type$>(h5g_, \"$name$::case\", nrow_);\n",
+      "$oneof_name$ = std::make_unique<$oneof_type$ >(this, \"$name$::case\", nrow_);\n",
       "oneof_type", oneof_dsw_type(f),
       "oneof_name", oneof_name(f),
       "name", f->name());
@@ -560,7 +560,7 @@ void generate_message_stream_writers_impl(
     if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
-      "$dsw_name$ = std::make_unique<$dsw_type$>(h5g_, \"$name$\", nrow_);\n",
+      "$dsw_name$ = std::make_unique<$dsw_type$ >(this, \"$name$\", nrow_);\n",
       "dsw_type", dsw_type(f),
       "dsw_name", dsw_name(f),
       "name", f->name());
@@ -657,8 +657,8 @@ void generate_message_stream_writer_accessors_impl(
     "$stream_writer_name$* $name$::NewHDFStreamWriter(const std::string& filename, const std::string& groupname, bool truncate) {\n"
     "  return new $hdf_stream_writer_name$(filename,groupname,truncate);\n"
     "}\n"
-    "$stream_writer_name$* $name$::__NewHDFStreamWriter(const void* gid_ptr, const std::string& groupname) {\n"
-    "  return new $hdf_stream_writer_name$(*reinterpret_cast<const hid_t*>(gid_ptr),groupname);\n"
+    "$stream_writer_name$* $name$::__NewHDFStreamWriter(const void* parent_ptr, const std::string& groupname) {\n"
+    "  return new $hdf_stream_writer_name$(reinterpret_cast<const calin::protobuf_extensions::hdf_streamer::HDFStreamWriterBase*>(parent_ptr),groupname);\n"
     "}\n\n", 
     "name", message_name(d),
     "stream_writer_name", stream_writer_name(d),
@@ -728,7 +728,7 @@ void generate_message_stream_readers_impl(
   printer.Print(
     "class $hdf_stream_reader_name$:\n"
     "  public $stream_reader_name$,\n"
-    "  protected HDFStreamReaderBase\n"
+    "  public HDFStreamReaderBase\n"
     "{\n"
     "public:\n"
     "  $hdf_stream_reader_name$(const std::string& filename, const std::string& groupname):\n"
@@ -737,9 +737,9 @@ void generate_message_stream_readers_impl(
     "  {\n"
     "    open_datasets();\n"
     "  }\n"
-    "  $hdf_stream_reader_name$(hid_t gid, const std::string& groupname):\n"
+    "  $hdf_stream_reader_name$(const calin::protobuf_extensions::hdf_streamer::HDFStreamReaderBase* parent_ptr, const std::string& groupname):\n"
     "    $stream_reader_name$(),\n"
-    "    HDFStreamReaderBase(gid, groupname)\n"
+    "    HDFStreamReaderBase(parent_ptr, groupname)\n"
     "  {\n"
     "    open_datasets();\n"
     "  }\n"
@@ -810,7 +810,7 @@ void generate_message_stream_readers_impl(
   for(int ifield=0; ifield<d->real_oneof_decl_count(); ++ifield) {
     const google::protobuf::OneofDescriptor* f = d->oneof_decl(ifield);
     printer.Print(
-      "$oneof_name$ = std::make_unique<$oneof_type$>(h5g_, \"$name$::case\");\n",
+      "$oneof_name$ = std::make_unique<$oneof_type$ >(this, \"$name$::case\");\n",
       "oneof_type", oneof_dsr_type(f),
       "oneof_name", oneof_name(f),
       "name", f->name());
@@ -822,7 +822,7 @@ void generate_message_stream_readers_impl(
     if(cfo->dont_store())continue;
     auto name_f = f->name();
     printer.Print(
-      "$dsr_name$ = std::make_unique<$dsr_type$>(h5g_, \"$name$\");\n",
+      "$dsr_name$ = std::make_unique<$dsr_type$ >(this, \"$name$\");\n",
       "dsr_type", dsr_type(f),
       "dsr_name", dsw_name(f),
       "name", f->name());
@@ -957,8 +957,8 @@ void generate_message_stream_reader_accessors_impl(
     "$stream_reader_name$* $name$::NewHDFStreamReader(const std::string& filename, const std::string& groupname) {\n"
     "  return new $hdf_stream_reader_name$(filename,groupname);\n"
     "}\n"
-    "$stream_reader_name$* $name$::__NewHDFStreamReader(const void* gid_ptr, const std::string& groupname) {\n"
-    "  return new $hdf_stream_reader_name$(*reinterpret_cast<const hid_t*>(gid_ptr),groupname);\n"
+    "$stream_reader_name$* $name$::__NewHDFStreamReader(const void* parent_ptr, const std::string& groupname) {\n"
+    "  return new $hdf_stream_reader_name$(reinterpret_cast<const calin::protobuf_extensions::hdf_streamer::HDFStreamReaderBase*>(parent_ptr),groupname);\n"
     "}\n\n", 
     "name", message_name(d),
     "stream_reader_name", stream_reader_name(d),

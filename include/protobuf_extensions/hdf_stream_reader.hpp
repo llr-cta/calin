@@ -30,6 +30,70 @@
 
 namespace calin { namespace protobuf_extensions { namespace hdf_streamer {
 
+// 888888b.                              
+// 888  "88b                             
+// 888  .88P                             
+// 8888888K.   8888b.  .d8888b   .d88b.  
+// 888  "Y88b     "88b 88K      d8P  Y8b 
+// 888    888 .d888888 "Y8888b. 88888888 
+// 888   d88P 888  888      X88 Y8b.     
+// 8888888P"  "Y888888  88888P'  "Y8888  
+
+class HDFStreamReaderBase
+{
+public:
+  HDFStreamReaderBase(const std::string& filename, const std::string& groupname, uint64_t cache_size = 1024);
+  HDFStreamReaderBase(const HDFStreamReaderBase* parent, const std::string& groupname, uint64_t cache_size = 1024);
+  ~HDFStreamReaderBase();
+
+  hid_t gid() const { return h5g_; }
+  uint64_t nrow() const { return nrow_; }
+
+  template<typename T> bool read_attribute(const std::string& name, T* value) {
+    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
+    if(attribute_id < 0) {
+      *value = T();
+      return false;
+    }
+    hid_t type_id = h5_datatype_selector<T>();
+    if(H5Aread(attribute_id, type_id, value) < 0) {
+      H5Tclose(type_id);
+      H5Aclose(attribute_id);
+      *value = T();
+      return false;
+    }
+    H5Tclose(type_id);
+    H5Aclose(attribute_id);
+    return true;
+  }
+
+  bool read_attribute(const std::string& name, std::string* value) {
+    char* cstr = nullptr;
+    if(read_attribute(name, &cstr)) {
+      value->assign(cstr);
+      ::free(cstr);
+      return true;
+    }
+    return false;
+  }
+
+protected:
+  void open_group(hid_t file_id, const std::string& groupname);
+  bool cache_preload_required(uint64_t irow) const { 
+    return h5f_>=0 and (irow<cache_start_ or irow>=cache_end_); }
+  void set_cache(uint64_t start, uint64_t count) { 
+    cache_start_=std::min(start,nrow_); cache_end_=std::min(cache_start_+count,nrow_); }
+
+  const HDFStreamReaderBase* parent_ = nullptr;
+  uint64_t cache_size_ = 0;
+  hid_t h5f_ = -1;
+  hid_t h5g_ = -1;
+  uint64_t nrow_ = 0;
+  uint64_t cache_start_ = 0;
+  uint64_t cache_end_ = 0;
+};
+
+
 // 8888888b.   .d88888b.  8888888b.  
 // 888   Y88b d88P" "Y88b 888  "Y88b 
 // 888    888 888     888 888    888 
@@ -41,10 +105,10 @@ namespace calin { namespace protobuf_extensions { namespace hdf_streamer {
 
 template<typename T> class DatasetReader{
 public:
-  DatasetReader(hid_t gid, const std::string dataset_name):
+  DatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
     dataset_name_(dataset_name), datatype_(h5_datatype_selector<T>())
   {
-    dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+    dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
     if(dataset_id_ > 0) {
       hid_t dataspace_id = H5Dget_space(dataset_id_);
       H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -134,7 +198,7 @@ private:
 
 template<typename T> class ArrayDatasetReader{
 public:
-  ArrayDatasetReader(hid_t gid, const std::string dataset_name):
+  ArrayDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
     dataset_name_(dataset_name)
   {
     // Create variable-length datatype
@@ -142,7 +206,7 @@ public:
     array_datatype_ = H5Tvlen_create(datatype);
     H5Tclose(datatype);
 
-    dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+    dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
     if(dataset_id_ > 0) {
       hid_t dataspace_id = H5Dget_space(dataset_id_);
       H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -249,7 +313,7 @@ private:
 
 class StringDatasetReader{
 public:
-  StringDatasetReader(hid_t gid, const std::string dataset_name);
+  StringDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name);
   ~StringDatasetReader();
 
   uint64_t nrow() { return  nrow_; }
@@ -272,7 +336,7 @@ private:
 
 class StringArrayDatasetReader{
 public:
-  StringArrayDatasetReader(hid_t gid, const std::string dataset_name);
+  StringArrayDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name);
   ~StringArrayDatasetReader();
 
   uint64_t nrow() { return  nrow_; }
@@ -344,7 +408,7 @@ private:
 
 class BytesDatasetReader{
 public:
-  BytesDatasetReader(hid_t gid, const std::string dataset_name);
+  BytesDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name);
   ~BytesDatasetReader();
 
   uint64_t nrow() { return  nrow_; }
@@ -367,7 +431,7 @@ private:
 
 class BytesArrayDatasetReader{
 public:
-  BytesArrayDatasetReader(hid_t gid, const std::string dataset_name);
+  BytesArrayDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name);
   ~BytesArrayDatasetReader();
 
   uint64_t nrow() { return  nrow_; }
@@ -443,12 +507,13 @@ private:
 
 template<typename KeyReader, typename ValueReader> class MapReader {
 public:
-  MapReader(hid_t gid, const std::string field_name) {
-    key_reader_ = std::make_unique<KeyReader>(gid, field_name+"::key");
-    value_reader_ = std::make_unique<ValueReader>(gid, field_name);
+  MapReader(const HDFStreamReaderBase* base_ptr, const std::string field_name) {
+    key_reader_ = std::make_unique<KeyReader>(base_ptr, field_name+"::key");
+    value_reader_ = std::make_unique<ValueReader>(base_ptr, field_name);
   }
 
   ~MapReader() {
+    // nothing to see here
   }
 
   bool count(uint64_t irow, uint64_t& count) {
@@ -500,13 +565,14 @@ private:
 
 template<typename Message> class MessageReader {
 public:
-  MessageReader(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    message_reader_.reset(Message::__NewHDFStreamReader(&gid, field_name));
-    start_reader_ = std::make_unique<DatasetReader<uint64_t> >(gid, field_name+"::start");
-    count_reader_ = std::make_unique<DatasetReader<uint64_t> >(gid, field_name+"::count");
+  MessageReader(const HDFStreamReaderBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
+    message_reader_.reset(Message::__NewHDFStreamReader(base_ptr, field_name));
+    start_reader_ = std::make_unique<DatasetReader<uint64_t> >(base_ptr, field_name+"::start");
+    count_reader_ = std::make_unique<DatasetReader<uint64_t> >(base_ptr, field_name+"::count");
   }
 
   ~MessageReader() {
+    // nothing to see here
   }
 
   bool count(uint64_t irow, uint64_t& count) {
@@ -570,39 +636,6 @@ private:
 std::unique_ptr<typename Message::stream_reader> message_reader_;
   std::unique_ptr<DatasetReader<uint64_t> > start_reader_;
   std::unique_ptr<DatasetReader<uint64_t> > count_reader_;
-};
-
-
-// 888888b.                              
-// 888  "88b                             
-// 888  .88P                             
-// 8888888K.   8888b.  .d8888b   .d88b.  
-// 888  "Y88b     "88b 88K      d8P  Y8b 
-// 888    888 .d888888 "Y8888b. 88888888 
-// 888   d88P 888  888      X88 Y8b.     
-// 8888888P"  "Y888888  88888P'  "Y8888  
-
-class HDFStreamReaderBase
-{
-public:
-  HDFStreamReaderBase(const std::string& filename, const std::string& groupname, uint64_t cache_size = 1024);
-  HDFStreamReaderBase(hid_t gid, const std::string& groupname, uint64_t cache_size = 1024);
-  ~HDFStreamReaderBase();
-  uint64_t nrow() const { return nrow_; }
-
-protected:
-  void open_group(hid_t file_id, const std::string& groupname);
-  bool cache_preload_required(uint64_t irow) const { 
-    return h5f_>=0 and (irow<cache_start_ or irow>=cache_end_); }
-  void set_cache(uint64_t start, uint64_t count) { 
-    cache_start_=std::min(start,nrow_); cache_end_=std::min(cache_start_+count,nrow_); }
-
-  uint64_t cache_size_ = 0;
-  hid_t h5f_ = -1;
-  hid_t h5g_ = -1;
-  uint64_t nrow_ = 0;
-  uint64_t cache_start_ = 0;
-  uint64_t cache_end_ = 0;
 };
 
 } } } // namespace calin::protobuf_extensions::hdf_streamer

@@ -57,6 +57,94 @@ template<> inline hid_t h5_datatype_selector<const char*>(hid_t h5t_in) {
   return string_datatype;
 }
 
+// 888888b.                              
+// 888  "88b                             
+// 888  .88P                             
+// 8888888K.   8888b.  .d8888b   .d88b.  
+// 888  "Y88b     "88b 88K      d8P  Y8b 
+// 888    888 .d888888 "Y8888b. 88888888 
+// 888   d88P 888  888      X88 Y8b.     
+// 8888888P"  "Y888888  88888P'  "Y8888  
+
+class HDFStreamWriterBase
+{
+public:
+  HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size = 1024);
+  HDFStreamWriterBase(const HDFStreamWriterBase* parent, const std::string& groupname, const std::string& messagetype, uint64_t cache_size = 1024);
+  ~HDFStreamWriterBase();
+  
+  hid_t gid() const { return h5g_; }
+  void flush();
+  uint64_t nrow() const { return nrow_; }
+  uint64_t ncached() const { return ncached_; }
+  bool cache_full() const { return h5f_!=-1 and ncached_>=cache_size_; }
+
+  template<typename T> void write_attribute(const std::string& name, T value) {
+    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
+    hid_t type_id = h5_datatype_selector<T>();
+    if(attribute_id < 0) {
+      hid_t space_id = H5Screate(H5S_SCALAR);
+      attribute_id = H5Acreate(h5g_, name.c_str(), type_id, space_id, H5P_DEFAULT, H5P_DEFAULT);
+      H5Sclose(space_id);
+      if (attribute_id < 0) {
+        H5Tclose(type_id);
+        throw std::runtime_error("Failed to create attribute: " + name);
+      }
+    }
+    if(H5Awrite(attribute_id, type_id, &value) < 0) {
+      H5Tclose(type_id);
+      H5Aclose(attribute_id);
+      throw std::runtime_error("Failed to write attribute: " + name);
+    }
+    H5Tclose(type_id);
+    H5Aclose(attribute_id);
+  }
+
+  void write_attribute(const std::string& name, const std::string& value) {
+    write_attribute(name, value.c_str());
+  }
+
+  template<typename T> bool read_attribute(const std::string& name, T* value) {
+    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
+    if(attribute_id < 0) {
+      *value = T();
+      return false;
+    }
+    hid_t type_id = h5_datatype_selector<T>();
+    if(H5Aread(attribute_id, type_id, value) < 0) {
+      H5Tclose(type_id);
+      H5Aclose(attribute_id);
+      *value = T();
+      return false;
+    }
+    H5Tclose(type_id);
+    H5Aclose(attribute_id);
+    return true;
+  }
+
+  bool read_attribute(const std::string& name, std::string* value) {
+    char* cstr = nullptr;
+    if(read_attribute(name, &cstr)) {
+      value->assign(cstr);
+      ::free(cstr);
+      return true;
+    }
+    return false;
+  }
+
+protected:
+  void open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype);
+  void insert_row() { nrow_+=1; ncached_+=1; }
+
+  const HDFStreamWriterBase* parent_ = nullptr;
+  uint64_t cache_size_ = 0;
+  hid_t h5f_ = -1;
+  hid_t h5g_ = -1;
+  uint64_t nrow_ = 0;
+  uint64_t ncached_ = 0;
+  hid_t h5d_nrow_ = -1;
+};
+
 
 // 8888888b.   .d88888b.  8888888b.  
 // 888   Y88b d88P" "Y88b 888  "Y88b 
@@ -69,10 +157,10 @@ template<> inline hid_t h5_datatype_selector<const char*>(hid_t h5t_in) {
 
 template<typename T> class DatasetWriter{
 public:
-  DatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0, T fill_value = T()):
+  DatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0, T fill_value = T()):
     dataset_name_(dataset_name), datatype_(h5_datatype_selector<T>())
   {
-    dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+    dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
     if (dataset_id_ < 0) {
       hsize_t initial_size = 0;               // Start with an empty dataset
       hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -88,7 +176,7 @@ public:
       H5Pset_deflate(plist_id, 2);
 
       // Create the dataset with chunking enabled
-      dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), datatype_, 
+      dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), datatype_, 
           dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);          
       H5Pclose(plist_id);
       H5Sclose(dataspace_id);
@@ -177,7 +265,7 @@ private:
 
 template<typename T> class ArrayDatasetWriter{
 public:
-  ArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0):
+  ArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0):
     dataset_name_(dataset_name)
   {
     // Create variable-length datatype
@@ -185,7 +273,7 @@ public:
     array_datatype_ = H5Tvlen_create(datatype);
     H5Tclose(datatype);
 
-    dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+    dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
     if (dataset_id_ < 0) {
       hsize_t initial_size = 0;               // Start with an empty dataset
       hsize_t max_size = H5S_UNLIMITED;       // Unlimited extension
@@ -201,7 +289,7 @@ public:
       H5Pset_deflate(plist_id, 2);
 
       // Create the dataset with chunking enabled
-      dataset_id_ = H5Dcreate2(gid, dataset_name.c_str(), array_datatype_, 
+      dataset_id_ = H5Dcreate2(base_ptr->gid(), dataset_name.c_str(), array_datatype_, 
           dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
                               
       H5Pclose(plist_id);
@@ -309,7 +397,7 @@ private:
 
 class StringDatasetWriter{
 public:
-  StringDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0);
+  StringDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
   ~StringDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -336,7 +424,7 @@ private:
 
 class StringArrayDatasetWriter{
 public:
-  StringArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0);
+  StringArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
   ~StringArrayDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -386,7 +474,7 @@ private:
 
 class BytesDatasetWriter{
 public:
-  BytesDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0);
+  BytesDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
   ~BytesDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -409,7 +497,7 @@ private:
 
 class BytesArrayDatasetWriter{
 public:
-  BytesArrayDatasetWriter(hid_t gid, const std::string dataset_name, hsize_t nfill = 0);
+  BytesArrayDatasetWriter(const HDFStreamWriterBase* base_ptr, const std::string dataset_name, hsize_t nfill = 0);
   ~BytesArrayDatasetWriter();
 
   uint64_t nrow() { return  nrow_; }
@@ -460,9 +548,9 @@ private:
 
 template<typename KeyWriter, typename ValueWriter> class MapWriter {
 public:
-  MapWriter(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    key_writer_ = std::make_unique<KeyWriter>(gid, field_name+"::key", nfill);
-    value_writer_ = std::make_unique<ValueWriter>(gid, field_name, nfill);
+  MapWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
+    key_writer_ = std::make_unique<KeyWriter>(base_ptr, field_name+"::key", nfill);
+    value_writer_ = std::make_unique<ValueWriter>(base_ptr, field_name, nfill);
   }
 
   ~MapWriter() {
@@ -499,10 +587,10 @@ private:
 
 template<typename Message> class MessageWriter {
 public:
-  MessageWriter(hid_t gid, const std::string field_name, hsize_t nfill = 0) {
-    message_writer_.reset(Message::__NewHDFStreamWriter(&gid, field_name));
-    start_writer_ = std::make_unique<DatasetWriter<uint64_t> >(gid, field_name+"::start", nfill);
-    count_writer_ = std::make_unique<DatasetWriter<uint64_t> >(gid, field_name+"::count", nfill);
+  MessageWriter(const HDFStreamWriterBase* base_ptr, const std::string field_name, hsize_t nfill = 0) {
+    message_writer_.reset(Message::__NewHDFStreamWriter(base_ptr, field_name));
+    start_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr, field_name+"::start", nfill);
+    count_writer_ = std::make_unique<DatasetWriter<uint64_t> >(base_ptr, field_name+"::count", nfill);
   }
 
   ~MessageWriter() {
@@ -549,88 +637,6 @@ private:
   std::unique_ptr<typename Message::stream_writer> message_writer_;
   std::unique_ptr<DatasetWriter<uint64_t> > start_writer_;
   std::unique_ptr<DatasetWriter<uint64_t> > count_writer_ ;
-};
-
-
-// 888888b.                              
-// 888  "88b                             
-// 888  .88P                             
-// 8888888K.   8888b.  .d8888b   .d88b.  
-// 888  "Y88b     "88b 88K      d8P  Y8b 
-// 888    888 .d888888 "Y8888b. 88888888 
-// 888   d88P 888  888      X88 Y8b.     
-// 8888888P"  "Y888888  88888P'  "Y8888  
-
-class HDFStreamWriterBase
-{
-public:
-  HDFStreamWriterBase(const std::string& filename, const std::string& groupname, bool truncate, const std::string& messagetype, uint64_t cache_size = 1024);
-  HDFStreamWriterBase(hid_t gid, const std::string& groupname, const std::string& messagetype, uint64_t cache_size = 1024);
-  ~HDFStreamWriterBase();
-  void flush();
-  uint64_t nrow() const { return nrow_; }
-  uint64_t ncached() const { return ncached_; }
-  bool cache_full() const { return h5f_!=-1 and ncached_>=cache_size_; }
-  template<typename T> void write_attribute(const std::string& name, T value) {
-    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
-    hid_t type_id = h5_datatype_selector<T>();
-    if(attribute_id < 0) {
-      hid_t space_id = H5Screate(H5S_SCALAR);
-      attribute_id = H5Acreate(h5g_, name.c_str(), type_id, space_id, H5P_DEFAULT, H5P_DEFAULT);
-      H5Sclose(space_id);
-      if (attribute_id < 0) {
-        H5Tclose(type_id);
-        throw std::runtime_error("Failed to create attribute: " + name);
-      }
-    }
-    if(H5Awrite(attribute_id, type_id, &value) < 0) {
-      H5Tclose(type_id);
-      H5Aclose(attribute_id);
-      throw std::runtime_error("Failed to write attribute: " + name);
-    }
-    H5Tclose(type_id);
-    H5Aclose(attribute_id);
-  }
-  void write_attribute(const std::string& name, const std::string& value) {
-    write_attribute(name, value.c_str());
-  }
-  template<typename T> bool read_attribute(const std::string& name, T* value) {
-    hid_t attribute_id = H5Aopen(h5g_, name.c_str(), H5P_DEFAULT);
-    if(attribute_id < 0) {
-      *value = T();
-      return false;
-    }
-    hid_t type_id = h5_datatype_selector<T>();
-    if(H5Aread(attribute_id, type_id, value) < 0) {
-      H5Tclose(type_id);
-      H5Aclose(attribute_id);
-      *value = T();
-      return false;
-    }
-    H5Tclose(type_id);
-    H5Aclose(attribute_id);
-    return true;
-  }
-  bool read_attribute(const std::string& name, std::string* value) {
-    char* cstr = nullptr;
-    if(read_attribute(name, &cstr)) {
-      value->assign(cstr);
-      ::free(cstr);
-      return true;
-    }
-    return false;
-  }
-
-protected:
-  void open_group(hid_t file_id, const std::string& groupname, const std::string& messagetype);
-  void insert_row() { nrow_+=1; ncached_+=1; }
-
-  uint64_t cache_size_ = 0;
-  hid_t h5f_ = -1;
-  hid_t h5g_ = -1;
-  uint64_t nrow_ = 0;
-  uint64_t ncached_ = 0;
-  hid_t h5d_nrow_ = -1;
 };
 
 } } } // namespace calin::protobuf_extensions::hdf_streamer

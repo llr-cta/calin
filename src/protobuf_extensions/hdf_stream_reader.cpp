@@ -26,6 +26,68 @@
 
 using namespace calin::protobuf_extensions::hdf_streamer;
 
+// 888888b.                              
+// 888  "88b                             
+// 888  .88P                             
+// 8888888K.   8888b.  .d8888b   .d88b.  
+// 888  "Y88b     "88b 88K      d8P  Y8b 
+// 888    888 .d888888 "Y8888b. 88888888 
+// 888   d88P 888  888      X88 Y8b.     
+// 8888888P"  "Y888888  88888P'  "Y8888  
+
+HDFStreamReaderBase::
+HDFStreamReaderBase(const std::string& filename, const std::string& groupname, uint64_t cache_size):
+  cache_size_(cache_size)
+{
+  H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+  
+  h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+  if (h5f_ < 0)
+    throw std::runtime_error("Failed to create file: " + filename);
+
+  open_group(h5f_, groupname);
+  if(h5g_ < 0) {
+    throw std::runtime_error("Failed to open group: " + groupname);
+  }
+}
+
+HDFStreamReaderBase::
+HDFStreamReaderBase(const HDFStreamReaderBase* parent, const std::string& groupname, uint64_t cache_size):
+  parent_(parent), cache_size_(cache_size)
+{
+  open_group(parent_->h5g_, groupname);
+  // We don't check the error, this just means the sub-message isn't present
+  // which allows us to read older versions of the file.
+}
+
+HDFStreamReaderBase::
+~HDFStreamReaderBase()
+{
+  if (h5g_ >= 0) {
+    H5Gclose(h5g_);
+  }
+  if(h5f_ >= 0) {
+    H5Fclose(h5f_);
+  }
+}
+
+void HDFStreamReaderBase::
+open_group(hid_t file_id, const std::string& groupname)
+{
+  h5g_ = H5Gopen(file_id, groupname.c_str(), H5P_DEFAULT);
+  if (h5g_ >= 0) {
+    hid_t h5d_nrow = H5Aopen(h5g_, "nrow", H5P_DEFAULT);
+    if (h5d_nrow < 0) {
+      throw std::runtime_error("Failed to open attribute: nrow");
+    }
+    if(H5Aread(h5d_nrow, H5T_NATIVE_UINT64, &nrow_) < 0) {
+      H5Aclose(h5d_nrow);
+      throw std::runtime_error("Failed to read attribute: nrow");
+    }
+    H5Aclose(h5d_nrow);
+  }
+}
+
 //  .d8888b.  888            d8b                   
 // d88P  Y88b 888            Y8P                   
 // Y88b.      888                                  
@@ -39,14 +101,14 @@ using namespace calin::protobuf_extensions::hdf_streamer;
 //                                         "Y88P"  
 
 StringDatasetReader::
-StringDatasetReader(hid_t gid, const std::string dataset_name):
+StringDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create variable-length datatype
   string_datatype_ = H5Tcopy(H5T_C_S1);
   H5Tset_size(string_datatype_, H5T_VARIABLE); // Variable-length strings
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if(dataset_id_ >= 0) {
     hid_t dataspace_id = H5Dget_space(dataset_id_);
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -118,8 +180,9 @@ void StringDatasetReader::free_cache()
 //                                             888                                           888 
 //                                        Y8b d88P                                      Y8b d88P 
 //                                         "Y88P"                                        "Y88P"  
+
 StringArrayDatasetReader::
-StringArrayDatasetReader(hid_t gid, const std::string dataset_name):
+StringArrayDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create string datatype
@@ -130,7 +193,7 @@ StringArrayDatasetReader(hid_t gid, const std::string dataset_name):
   array_datatype_ = H5Tvlen_create(string_datatype);
   H5Tclose(string_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ >= 0) {
     hid_t dataspace_id = H5Dget_space(dataset_id_);
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -203,7 +266,7 @@ void StringArrayDatasetReader::free_cache()
 //             "Y88P"                          
 
 BytesDatasetReader::
-BytesDatasetReader(hid_t gid, const std::string dataset_name):
+BytesDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -213,7 +276,7 @@ BytesDatasetReader(hid_t gid, const std::string dataset_name):
   byte_string_datatype_ = H5Tvlen_create(byte_datatype);
   H5Tclose(byte_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ >= 0) {
     hid_t dataspace_id = H5Dget_space(dataset_id_);
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -288,7 +351,7 @@ void BytesDatasetReader::free_cache()
 //             "Y88P"                                                                "Y88P"  
 
 BytesArrayDatasetReader::
-BytesArrayDatasetReader(hid_t gid, const std::string dataset_name):
+BytesArrayDatasetReader(const HDFStreamReaderBase* base_ptr, const std::string dataset_name):
   dataset_name_(dataset_name)
 {
   // Create opaque 1-byte datatype
@@ -302,7 +365,7 @@ BytesArrayDatasetReader(hid_t gid, const std::string dataset_name):
   array_datatype_ = H5Tvlen_create(byte_string_datatype);
   H5Tclose(byte_string_datatype);
 
-  dataset_id_ = H5Dopen(gid, dataset_name.c_str(), H5P_DEFAULT);
+  dataset_id_ = H5Dopen(base_ptr->gid(), dataset_name.c_str(), H5P_DEFAULT);
   if (dataset_id_ >= 0) {
     hid_t dataspace_id = H5Dget_space(dataset_id_);
     H5Sget_simple_extent_dims(dataspace_id, &nrow_, NULL);
@@ -359,67 +422,5 @@ void BytesArrayDatasetReader::free_cache()
       ::free(y->p); 
     }
     ::free(x.p);
-  }
-}
-
-// 888888b.                              
-// 888  "88b                             
-// 888  .88P                             
-// 8888888K.   8888b.  .d8888b   .d88b.  
-// 888  "Y88b     "88b 88K      d8P  Y8b 
-// 888    888 .d888888 "Y8888b. 88888888 
-// 888   d88P 888  888      X88 Y8b.     
-// 8888888P"  "Y888888  88888P'  "Y8888  
-
-HDFStreamReaderBase::
-HDFStreamReaderBase(const std::string& filename, const std::string& groupname, uint64_t cache_size):
-  cache_size_(cache_size)
-{
-  H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-  
-  h5f_ = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-  if (h5f_ < 0)
-    throw std::runtime_error("Failed to create file: " + filename);
-
-  open_group(h5f_, groupname);
-  if(h5g_ < 0) {
-    throw std::runtime_error("Failed to open group: " + groupname);
-  }
-}
-
-HDFStreamReaderBase::
-HDFStreamReaderBase(hid_t gid, const std::string& groupname, uint64_t cache_size):
-  cache_size_(cache_size)
-{
-  open_group(gid, groupname);
-  // We don't check the error, this just means the sub-message isn't present
-  // which allows us to read older versions of the file.
-}
-
-HDFStreamReaderBase::
-~HDFStreamReaderBase()
-{
-  if (h5g_ >= 0) {
-    H5Gclose(h5g_);
-  }
-  if(h5f_ >= 0) {
-    H5Fclose(h5f_);
-  }
-}
-
-void HDFStreamReaderBase::
-open_group(hid_t file_id, const std::string& groupname)
-{
-  h5g_ = H5Gopen(file_id, groupname.c_str(), H5P_DEFAULT);
-  if (h5g_ >= 0) {
-    hid_t h5d_nrow = H5Aopen(h5g_, "nrow", H5P_DEFAULT);
-    if (h5d_nrow < 0) {
-      throw std::runtime_error("Failed to open attribute: nrow");
-    }
-    if(H5Aread(h5d_nrow, H5T_NATIVE_UINT64, &nrow_) < 0) {
-      H5Aclose(h5d_nrow);
-      throw std::runtime_error("Failed to read attribute: nrow");
-    }
-    H5Aclose(h5d_nrow);
   }
 }
