@@ -159,13 +159,13 @@ std::string dsw_name(const google::protobuf::FieldDescriptor* f, const std::stri
   return f->name() + "_" + std::to_string(f->number()) + suffix + "_";
 }
 
-std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array = false)
+std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array = false, const std::string& doer="Writer")
 {
   if(f->is_map()) {
     const auto* dmap = f->message_type();
     const auto* kf = dmap->FindFieldByName("key");
     const auto* vf = dmap->FindFieldByName("value");
-    return "MapWriter<" + dsw_type(kf,/* is_array= */ true) + "," + dsw_type(vf,/* is_array= */ true) + " >";
+    return "Map"+doer+"<" + dsw_type(kf,/* is_array= */ true, doer) + "," + dsw_type(vf,/* is_array= */ true, doer) + " >";
   }
 
   const google::protobuf::FieldOptions* fopt = &f->options();
@@ -188,32 +188,31 @@ std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array =
   switch(f->type())
   {
   case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-    return is_array ?  "ArrayDatasetWriter<double>" : "DatasetWriter<double>";
+    return is_array ?  "ArrayDataset"+doer+"<double>" : "Dataset"+doer+"<double>";
   case google::protobuf::FieldDescriptor::TYPE_FLOAT:
-    return is_array ?  "ArrayDatasetWriter<float>" : "DatasetWriter<float>";
+    return is_array ?  "ArrayDataset"+doer+"<float>" : "Dataset"+doer+"<float>";
   case google::protobuf::FieldDescriptor::TYPE_INT64:     // fall through
   case google::protobuf::FieldDescriptor::TYPE_FIXED64:   // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED64:  // fall through
   case google::protobuf::FieldDescriptor::TYPE_SINT64:
-    return is_array ?  "ArrayDatasetWriter<int64_t>" : "DatasetWriter<int64_t>";
+    return is_array ?  "ArrayDataset"+doer+"<int64_t>" : "Dataset"+doer+"<int64_t>";
   case google::protobuf::FieldDescriptor::TYPE_UINT64:    // fall through
-    return is_array ?  "ArrayDatasetWriter<uint64_t>" : "DatasetWriter<uint64_t>";
+    return is_array ?  "ArrayDataset"+doer+"<uint64_t>" : "Dataset"+doer+"<uint64_t>";
   case google::protobuf::FieldDescriptor::TYPE_INT32:     // fall through
   case google::protobuf::FieldDescriptor::TYPE_FIXED32:   // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SINT32:
-    return is_array ?  "ArrayDatasetWriter<"+i32t+">" : "DatasetWriter<"+i32t+">";
+  case google::protobuf::FieldDescriptor::TYPE_SINT32:    // fall through
+  case google::protobuf::FieldDescriptor::TYPE_ENUM:      
+    return is_array ?  "ArrayDataset"+doer+"<"+i32t+">" : "Dataset"+doer+"<"+i32t+">";
   case google::protobuf::FieldDescriptor::TYPE_UINT32:    // fall through
-    return is_array ?  "ArrayDatasetWriter<u"+i32t+">" : "DatasetWriter<u"+i32t+">";
-  case google::protobuf::FieldDescriptor::TYPE_ENUM:      // fall through
   case google::protobuf::FieldDescriptor::TYPE_BOOL:
-    return is_array ?  "ArrayDatasetWriter<int>" : "DatasetWriter<int>";
+    return is_array ?  "ArrayDataset"+doer+"<u"+i32t+">" : "Dataset"+doer+"<u"+i32t+">";
   case google::protobuf::FieldDescriptor::TYPE_STRING:
-    return is_array ?  "StringArrayDatasetWriter" : "StringDatasetWriter";
+    return is_array ?  "StringArrayDataset"+doer+"" : "StringDataset"+doer+"";
   case google::protobuf::FieldDescriptor::TYPE_BYTES:
-    return is_array ?  "BytesArrayDatasetWriter" : "BytesDatasetWriter";
+    return is_array ?  "BytesArrayDataset"+doer+"" : "BytesDataset"+doer+"";
   case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
-    return "MessageWriter<"+message_fullname(f->message_type())+">";
+    return "Message"+doer+"<"+message_fullname(f->message_type())+">";
   default:
     return "void";
   }
@@ -223,48 +222,7 @@ std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array =
 
 std::string dsr_type(const google::protobuf::FieldDescriptor* f, bool is_array = false)
 {
-  if(f->is_map()) {
-    const auto* dmap = f->message_type();
-    const auto* kf = dmap->FindFieldByName("key");
-    const auto* vf = dmap->FindFieldByName("value");
-    return "MapReader<" + dsr_type(kf,/* is_array= */ true) + "," + dsr_type(vf,/* is_array= */ true) + " >";
-  }
-
-  is_array |= f->is_repeated();
-  switch(f->type())
-  {
-  case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-    return is_array ?  "ArrayDatasetReader<double>" : "DatasetReader<double>";
-  case google::protobuf::FieldDescriptor::TYPE_FLOAT:
-    return is_array ?  "ArrayDatasetReader<float>" : "DatasetReader<float>";
-  case google::protobuf::FieldDescriptor::TYPE_INT64:     // fall through
-  case google::protobuf::FieldDescriptor::TYPE_FIXED64:   // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SFIXED64:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SINT64:
-    return is_array ?  "ArrayDatasetReader<int64_t>" : "DatasetReader<int64_t>";
-  case google::protobuf::FieldDescriptor::TYPE_UINT64:    // fall through
-    return is_array ?  "ArrayDatasetReader<uint64_t>" : "DatasetReader<uint64_t>";
-  case google::protobuf::FieldDescriptor::TYPE_INT32:     // fall through
-  case google::protobuf::FieldDescriptor::TYPE_FIXED32:   // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SINT32:
-    return is_array ?  "ArrayDatasetReader<int32_t>" : "DatasetReader<int32_t>";
-  case google::protobuf::FieldDescriptor::TYPE_UINT32:    // fall through
-    return is_array ?  "ArrayDatasetReader<uint32_t>" : "DatasetReader<uint32_t>";
-  case google::protobuf::FieldDescriptor::TYPE_ENUM:      // fall through
-  case google::protobuf::FieldDescriptor::TYPE_BOOL:
-    return is_array ?  "ArrayDatasetReader<int>" : "DatasetReader<int>";
-  case google::protobuf::FieldDescriptor::TYPE_STRING:
-    return is_array ?  "StringArrayDatasetReader" : "StringDatasetReader";
-  case google::protobuf::FieldDescriptor::TYPE_BYTES:
-    return is_array ?  "BytesArrayDatasetReader" : "BytesDatasetReader";
-  case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
-    return "MessageReader<"+message_fullname(f->message_type())+">";
-  default:
-    return "void";
-  }
-  assert(0);
-  return "void";
+  return dsw_type(f, is_array, "Reader");
 }
 
 std::string oneof_name(const google::protobuf::OneofDescriptor* f, const std::string& suffix="")
