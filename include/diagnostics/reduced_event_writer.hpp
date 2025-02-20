@@ -22,27 +22,27 @@
 
 #pragma once
 
-#include <map>
-#include <Eigen/Dense>
-
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 
+#include <diagnostics/reduced_event.pb.h>
+#include <diagnostics/reduced_event_writer.pb.h>
+
 namespace calin { namespace diagnostics { namespace reduced_file_writer {
 
-class SimpleChargeCaptureParallelEventVisitor:
+class ReducedFileWriterParallelEventVisitor {:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  SimpleChargeCaptureParallelEventVisitor(
-    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* waveform_sum_visitor,
-    ChargeCaptureDatum capture_datum = CCD_OPT_WINDOW_SUM,
-    unsigned max_event_number = 0, unsigned min_event_number = 0,
-    bool adopt_waveform_sum_visitor = false);
+  ReducedFileWriterParallelEventVisitor(
+    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor,
+    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor = nullptr,
+    calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config = default_config(),
+    bool adopt_gain_visitors = false);
 
-  virtual ~SimpleChargeCaptureParallelEventVisitor();
+  virtual ~ReducedFileWriterParallelEventVisitor();
 
-  SimpleChargeCaptureParallelEventVisitor* new_sub_visitor(
+  ReducedFileWriterParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -63,34 +63,24 @@ public:
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration& run_config() const {
     return run_config_;
   }
-  uint64_t size() const { return captured_data_.size(); }
-  std::vector<uint64_t> keys() const;
-  bool has(uint64_t event_number) const;
-  int64_t time(uint64_t event_number) const;
-  int32_t trigger_code(uint64_t event_number) const;
-  Eigen::VectorXi signal_types(uint64_t event_number) const;
-  Eigen::VectorXi values(uint64_t event_number) const;
+
+  ReducedEventWriterConfig config() const { return config_; }
+  static calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig default_config();
 
 private:
 #ifndef SWIG
-  struct CapturedEventData {
-    uint64_t event_number;
-    int64_t time;
-    int32_t trigger_code;
-    std::vector<int32_t> values;
-  };
+  ReducedEventWriterConfig config_;
+  ReducedFileWriterParallelEventVisitor* parent_ = nullptr;
 
-  SimpleChargeCaptureParallelEventVisitor* parent_ = nullptr;
+  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor_ = nullptr;
+  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor_ = nullptr;
+  bool adopt_gain_visitors = false;
+
+  std::mutex event_writer_mutex_;
+  std::unique_ptr<calin::ix::diagnostics::reduced_event::ReducedEvent_StreamWriter> event_writer_;
 
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config_;
-
-  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* waveform_sum_visitor_ = nullptr;
-  bool adopt_waveform_sum_visitor_ = false;
-  std::map<uint64_t, CapturedEventData*> captured_data_;
-  ChargeCaptureDatum capture_datum_;
-  unsigned max_event_number_;
-  unsigned min_event_number_;
 #endif
 };
 
-} } } // namespace calin::diagnostics::simple_charge_capture
+} } } // namespace calin::diagnostics::reduced_file_writer

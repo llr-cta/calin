@@ -16,7 +16,7 @@
 set(CALIN_SWIG_PROTO waveform.proto module.proto counter.proto
 	event_number.proto functional.proto value_capture.proto range.proto
 	run_info.proto simple_charge_stats.proto simple_charge_hists.proto
-	clock_regression.proto stage1.proto reduced_event.proto)
+	clock_regression.proto stage1.proto reduced_event_writer.proto reduced_event.proto)
 set(CALIN_PACKAGE diagnostics)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
