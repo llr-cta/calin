@@ -159,6 +159,19 @@ std::string dsw_name(const google::protobuf::FieldDescriptor* f, const std::stri
   return f->name() + "_" + std::to_string(f->number()) + suffix + "_";
 }
 
+std::string ds_template_type(const std::string doer, const std::string type, bool isarray) {
+  std::string ds = isarray ? "ArrayDataset" : "Dataset";
+  return ds + doer + "<" + type + ">";
+}
+
+std::string ds_string_type(const std::string doer, const std::string type, bool isarray) {
+  return type + (isarray ? "ArrayDataset" : "Dataset") + doer;
+}
+
+std::string ds_message_type(const std::string doer, const google::protobuf::FieldDescriptor* f) {
+  return "Message"+doer+"<"+message_fullname(f->message_type())+">";
+}
+
 std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array = false, const std::string& doer="Writer")
 {
   if(f->is_map()) {
@@ -187,32 +200,32 @@ std::string dsw_type(const google::protobuf::FieldDescriptor* f, bool is_array =
   is_array |= f->is_repeated();
   switch(f->type())
   {
-  case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-    return is_array ?  "ArrayDataset"+doer+"<double>" : "Dataset"+doer+"<double>";
-  case google::protobuf::FieldDescriptor::TYPE_FLOAT:
-    return is_array ?  "ArrayDataset"+doer+"<float>" : "Dataset"+doer+"<float>";
+  case google::protobuf::FieldDescriptor::TYPE_DOUBLE: 
+    return ds_template_type(doer, "double", is_array);
+  case google::protobuf::FieldDescriptor::TYPE_FLOAT: 
+    return ds_template_type(doer, "float", is_array);
   case google::protobuf::FieldDescriptor::TYPE_INT64:     // fall through
   case google::protobuf::FieldDescriptor::TYPE_FIXED64:   // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED64:  // fall through
   case google::protobuf::FieldDescriptor::TYPE_SINT64:
-    return is_array ?  "ArrayDataset"+doer+"<int64_t>" : "Dataset"+doer+"<int64_t>";
+    return ds_template_type(doer, "int64_t", is_array);
   case google::protobuf::FieldDescriptor::TYPE_UINT64:    // fall through
-    return is_array ?  "ArrayDataset"+doer+"<uint64_t>" : "Dataset"+doer+"<uint64_t>";
+    return ds_template_type(doer, "uint64_t", is_array);
   case google::protobuf::FieldDescriptor::TYPE_INT32:     // fall through
   case google::protobuf::FieldDescriptor::TYPE_FIXED32:   // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
   case google::protobuf::FieldDescriptor::TYPE_SINT32:    // fall through
   case google::protobuf::FieldDescriptor::TYPE_ENUM:      
-    return is_array ?  "ArrayDataset"+doer+"<"+i32t+">" : "Dataset"+doer+"<"+i32t+">";
+    return ds_template_type(doer, i32t, is_array);
   case google::protobuf::FieldDescriptor::TYPE_UINT32:    // fall through
   case google::protobuf::FieldDescriptor::TYPE_BOOL:
-    return is_array ?  "ArrayDataset"+doer+"<u"+i32t+">" : "Dataset"+doer+"<u"+i32t+">";
+    return ds_template_type(doer, "u"+i32t, is_array);
   case google::protobuf::FieldDescriptor::TYPE_STRING:
-    return is_array ?  "StringArrayDataset"+doer+"" : "StringDataset"+doer+"";
+    return ds_string_type(doer, "String", is_array);
   case google::protobuf::FieldDescriptor::TYPE_BYTES:
-    return is_array ?  "BytesArrayDataset"+doer+"" : "BytesDataset"+doer+"";
+    return ds_string_type(doer, "Bytes", is_array);
   case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
-    return "Message"+doer+"<"+message_fullname(f->message_type())+">";
+    return ds_message_type(doer, f);
   default:
     return "void";
   }
