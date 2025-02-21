@@ -220,12 +220,12 @@ calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig ReducedEv
   
   config.set_write_max_sample(true);
   config.set_write_max_index(true);
-  config.set_write_bkg_win_qsum(true);
-  config.set_write_sig_win_qsum(false);
-  config.set_write_opt_win_qsum(false);
-  config.set_write_opt_win_qtsum(false);
-  config.set_write_opt_win_index(true);
-  config.set_write_all_win_qsum(false);
+  config.set_write_bkg_qsum(true);
+  config.set_write_sig_qsum(false);
+  config.set_write_opt_qsum(false);
+  config.set_write_opt_qtsum(false);
+  config.set_write_opt_index(true);
+  config.set_write_all_qsum(false);
   config.set_write_opt_bkg_qsum_diff(true);
   
   config.set_run_configuration_group("run_configuration");

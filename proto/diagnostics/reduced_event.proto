@@ -43,22 +43,22 @@ message OneGainChargeSums {
   repeated uint32 max_sample                               = 3 [
     (CFO).desc = "Maximum sample within readout window.",
     (CFO).units = "DC", (CFO).int32_type = INT_16 ];
-  repeated uint32 bkg_win_qsum                             = 4 [
+  repeated uint32 bkg_qsum                                 = 4 [
     (CFO).desc = "Integrated charges in background window.",
     (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
-  repeated uint32 sig_win_qsum                             = 5 [
+  repeated uint32 sig_qsum                                 = 5 [
     (CFO).desc = "Integrated charges in signal window.",
     (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
-  repeated uint32 opt_win_qsum                             = 6 [
+  repeated uint32 opt_qsum                                 = 6 [
     (CFO).desc = "Integrated charges in optimal window.",
     (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
-  repeated uint32 opt_win_qtsum                            = 7 [
+  repeated uint32 opt_qtsum                                = 7 [
     (CFO).desc = "Integrated charges * index in optimal window.",
     (CFO).units = "Sum DC * samples", (CFO).int32_type = INT_32 ];
-  repeated uint32 opt_win_index                            = 8 [
+  repeated uint32 opt_index                                = 8 [
     (CFO).desc = "Index of start of optimal window within readout window in samples.",
     (CFO).units = "samples", (CFO).int32_type = INT_16 ];
-  repeated uint32 all_win_qsum                             = 9 [
+  repeated uint32 all_qsum                                 = 9 [
     (CFO).desc = "Integrated charges in readout window.",
     (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
   repeated int32 opt_bkg_qsum_diff                        = 10 [
