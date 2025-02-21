@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <thread>
+#include <memory>
+
+#include <io/zmq_inproc_push_pull.hpp>
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 
@@ -76,7 +80,9 @@ private:
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor_ = nullptr;
   bool adopt_gain_visitors_ = false;
 
-  std::mutex event_writer_mutex_;
+  std::unique_ptr<std::thread> writer_thread_;
+  std::unique_ptr<calin::io::zmq_inproc::ZMQPusher> zmq_pusher_;
+  std::unique_ptr<calin::io::zmq_inproc::ZMQInprocPushPull> zmq_push_pull_;
   std::unique_ptr<calin::ix::diagnostics::reduced_event::ReducedEvent_StreamWriter> event_writer_;
 
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config_;
