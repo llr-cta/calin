@@ -31,6 +31,7 @@
 #include <diagnostics/simple_charge_hists.hpp>
 #include <diagnostics/clock_regression.hpp>
 #include <diagnostics/waveform.hpp>
+#include <diagnostics/reduced_event_writer.hpp>
 #include <iact_data/nectarcam_ancillary_data.hpp>
 #include <provenance/chronicle.hpp>
 
@@ -98,6 +99,8 @@ private:
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ped_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ext_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_int_pev_ = nullptr;
+
+  calin::diagnostics::reduced_event_writer::ReducedEventWriterParallelEventVisitor* reduced_event_writer_pev_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::stage1

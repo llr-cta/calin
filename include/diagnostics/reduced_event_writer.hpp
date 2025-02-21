@@ -1,6 +1,6 @@
 /*
 
-   calin/diagnostics/reduced_file_writer.hpp -- Stephen Fegan -- 2025-02-20
+   calin/diagnostics/reduced_event_writer.hpp -- Stephen Fegan -- 2025-02-20
 
    Write charge data to a HDF5 file.
 
@@ -28,21 +28,21 @@
 #include <diagnostics/reduced_event.pb.h>
 #include <diagnostics/reduced_event_writer.pb.h>
 
-namespace calin { namespace diagnostics { namespace reduced_file_writer {
+namespace calin { namespace diagnostics { namespace reduced_event_writer {
 
-class ReducedFileWriterParallelEventVisitor:
+class ReducedEventWriterParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  ReducedFileWriterParallelEventVisitor(
+  ReducedEventWriterParallelEventVisitor(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor,
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor = nullptr,
     calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config = default_config(),
     bool adopt_gain_visitors = false);
 
-  virtual ~ReducedFileWriterParallelEventVisitor();
+  virtual ~ReducedEventWriterParallelEventVisitor();
 
-  ReducedFileWriterParallelEventVisitor* new_sub_visitor(
+  ReducedEventWriterParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -70,7 +70,7 @@ public:
 private:
 #ifndef SWIG
   calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config_;
-  ReducedFileWriterParallelEventVisitor* parent_ = nullptr;
+  ReducedEventWriterParallelEventVisitor* parent_ = nullptr;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor_ = nullptr;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor_ = nullptr;
@@ -83,4 +83,4 @@ private:
 #endif
 };
 
-} } } // namespace calin::diagnostics::reduced_file_writer
+} } } // namespace calin::diagnostics::reduced_event_writer

@@ -137,6 +137,12 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
       ClockRegressionParallelEventVisitor(config_.clock_regression());
     this->add_visitor(clock_regression_pev_);
   }
+
+  if(config_.enable_write_reduced_event_file()) {
+    reduced_event_writer_pev_ = new calin::diagnostics::reduced_event_writer::
+      ReducedEventWriterParallelEventVisitor(hg_sum_pev_, lg_sum_pev_, config_.reduced_event_writer());
+    this->add_visitor(reduced_event_writer_pev_);
+  }
 }
 
 Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
@@ -161,6 +167,7 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete wf_psd_ext_pev_;
   delete wf_psd_int_pev_;
   delete nectarcam_ancillary_data_;
+  delete reduced_event_writer_pev_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
@@ -350,6 +357,7 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
   cfg.set_enable_clock_regression(true);
   cfg.set_enable_pedestal_waveform_psd(true);
   cfg.set_enable_all_waveform_psd(false);
+  cfg.set_enable_write_reduced_event_file(false);
 
   cfg.mutable_high_gain_opt_sum()->CopyFrom(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor::default_config());
@@ -378,6 +386,9 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
 
   cfg.mutable_clock_regression()->CopyFrom(
     calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::default_config());
+
+  cfg.mutable_reduced_event_writer()->CopyFrom(
+    calin::diagnostics::reduced_event_writer::ReducedEventWriterParallelEventVisitor::default_config());
 
   return cfg;
 }

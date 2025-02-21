@@ -1,6 +1,6 @@
 /*
 
-   calin/diagnostics/reduced_file_writer.cpp -- Stephen Fegan -- 2025-02-17
+   calin/diagnostics/reduced_event_writer.cpp -- Stephen Fegan -- 2025-02-17
 
    Write charge data to a HDF5 file.
 
@@ -30,10 +30,10 @@
 using namespace calin::util::log;
 using namespace calin::ix::diagnostics::reduced_event_writer;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
-using namespace calin::diagnostics::reduced_file_writer;
+using namespace calin::diagnostics::reduced_event_writer;
 
-ReducedFileWriterParallelEventVisitor::
-ReducedFileWriterParallelEventVisitor(
+ReducedEventWriterParallelEventVisitor::
+ReducedEventWriterParallelEventVisitor(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor,
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor,
     calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config,
@@ -44,7 +44,7 @@ ReducedFileWriterParallelEventVisitor(
   //nothing to see here
 }
 
-ReducedFileWriterParallelEventVisitor::~ReducedFileWriterParallelEventVisitor()
+ReducedEventWriterParallelEventVisitor::~ReducedEventWriterParallelEventVisitor()
 {
   if(adopt_gain_visitors_) {
     delete gain1_visitor_;
@@ -52,7 +52,7 @@ ReducedFileWriterParallelEventVisitor::~ReducedFileWriterParallelEventVisitor()
   }
 }
 
-ReducedFileWriterParallelEventVisitor* ReducedFileWriterParallelEventVisitor::new_sub_visitor(
+ReducedEventWriterParallelEventVisitor* ReducedEventWriterParallelEventVisitor::new_sub_visitor(
   std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
     calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
@@ -60,18 +60,18 @@ ReducedFileWriterParallelEventVisitor* ReducedFileWriterParallelEventVisitor::ne
     antecedent_visitors[gain1_visitor_]);
   auto* g2v = dynamic_cast<OptimalWindowSumWaveformTreatmentParallelEventVisitor*>(
     antecedent_visitors[gain2_visitor_]);
-  auto* child = new ReducedFileWriterParallelEventVisitor(g1v, g2v, config_, false);
+  auto* child = new ReducedEventWriterParallelEventVisitor(g1v, g2v, config_, false);
   child->parent_ = this;
   return child;
 }
 
-bool ReducedFileWriterParallelEventVisitor::visit_telescope_run(
+bool ReducedEventWriterParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   if(processing_record) {
-    processing_record->set_type("ReducedFileWriterParallelEventVisitor");
+    processing_record->set_type("ReducedEventWriterParallelEventVisitor");
     processing_record->set_description("Reduced event file writer");
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
@@ -102,7 +102,7 @@ bool ReducedFileWriterParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool ReducedFileWriterParallelEventVisitor::leave_telescope_run(
+bool ReducedEventWriterParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   event_writer_.reset();
@@ -151,7 +151,7 @@ namespace {
   }
 }
 
-bool ReducedFileWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
+bool ReducedEventWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   calin::ix::diagnostics::reduced_event::ReducedEvent reduced_event;
@@ -165,6 +165,11 @@ bool ReducedFileWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_i
   if(config_.write_gain2() and gain2_visitor_ and gain2_visitor_->is_same_event(seq_index)) {
     copy_gain(reduced_event.mutable_gain2(), gain2_visitor_, config_);
   }
+  if(config_.write_l0_trigger_map() and event->has_trigger_map() and event->trigger_map().trigger_image_size() > 0) {
+    auto* l0map = reduced_event.mutable_l0_trigger_map();
+    l0map->mutable_trigger_hit()->Assign(
+      event->trigger_map().trigger_image().begin(), event->trigger_map().trigger_image().end());
+  }
 
   if(parent_) {
     std::lock_guard<std::mutex> lock(event_writer_mutex_);
@@ -176,7 +181,29 @@ bool ReducedFileWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_i
   return true;
 }
 
-bool ReducedFileWriterParallelEventVisitor::merge_results()
+bool ReducedEventWriterParallelEventVisitor::merge_results()
 {
   return true;
+}
+
+
+calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig ReducedEventWriterParallelEventVisitor::default_config()
+{
+  calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config;
+  config.set_write_gain1(true);
+  config.set_write_gain2(true);
+  config.set_write_l0_trigger_map(true);
+  config.set_write_max_sample(true);
+  config.set_write_max_index(true);
+  config.set_write_bkg_win_qsum(true);
+  config.set_write_sig_win_qsum(true);
+  config.set_write_opt_win_qsum(true);
+  config.set_write_opt_win_qtsum(true);
+  config.set_write_opt_win_index(true);
+  config.set_write_all_win_qsum(true);
+  config.set_run_configuration_group("run_configuration");
+  config.set_event_group("events");
+  config.set_truncate(true);
+  config.set_file_prefix("reduced_event"); 
+  return config;
 }
