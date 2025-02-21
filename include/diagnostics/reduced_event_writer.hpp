@@ -30,7 +30,7 @@
 
 namespace calin { namespace diagnostics { namespace reduced_file_writer {
 
-class ReducedFileWriterParallelEventVisitor {:
+class ReducedFileWriterParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
@@ -64,17 +64,17 @@ public:
     return run_config_;
   }
 
-  ReducedEventWriterConfig config() const { return config_; }
+  calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config() const { return config_; }
   static calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig default_config();
 
 private:
 #ifndef SWIG
-  ReducedEventWriterConfig config_;
+  calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config_;
   ReducedFileWriterParallelEventVisitor* parent_ = nullptr;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain1_visitor_ = nullptr;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain2_visitor_ = nullptr;
-  bool adopt_gain_visitors = false;
+  bool adopt_gain_visitors_ = false;
 
   std::mutex event_writer_mutex_;
   std::unique_ptr<calin::ix::diagnostics::reduced_event::ReducedEvent_StreamWriter> event_writer_;

@@ -22,12 +22,15 @@
 
 #include <algorithm>
 
+#include <io/json.hpp>
+#include <util/string.hpp>
 #include <util/log.hpp>
-#include <diagnostics/reduced_file_writer.hpp>
+#include <diagnostics/reduced_event_writer.hpp>
 
 using namespace calin::util::log;
-using namespace calin::diagnostics::reduced_file_writer;
+using namespace calin::ix::diagnostics::reduced_event_writer;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
+using namespace calin::diagnostics::reduced_file_writer;
 
 ReducedFileWriterParallelEventVisitor::
 ReducedFileWriterParallelEventVisitor(
@@ -43,7 +46,7 @@ ReducedFileWriterParallelEventVisitor(
 
 ReducedFileWriterParallelEventVisitor::~ReducedFileWriterParallelEventVisitor()
 {
-  if(adadopt_gain_visitors_) {
+  if(adopt_gain_visitors_) {
     delete gain1_visitor_;
     delete gain2_visitor_;
   }
@@ -88,12 +91,12 @@ bool ReducedFileWriterParallelEventVisitor::visit_telescope_run(
   if(parent_ == nullptr) {
     std::string filename;
 
-    auto* run_config_writer = run_config->NewHDF5StreamWriter(filename, 
+    auto* run_config_writer = run_config->NewHDFStreamWriter(filename, 
       config_.run_configuration_group(), config_.truncate());
     run_config_writer->write(*run_config);
     delete run_config_writer;
 
-    event_writer_ = new ReducedEventHDF5StreamWriter(filename, config_.event_group());
+    event_writer_.reset(calin::ix::diagnostics::reduced_event::ReducedEvent::NewHDFStreamWriter(filename, config_.event_group()));
   }
 
   return true;
@@ -102,9 +105,7 @@ bool ReducedFileWriterParallelEventVisitor::visit_telescope_run(
 bool ReducedFileWriterParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
-  if(parent_ == nullptr) {
-    delete event_writer_;
-  }
+  event_writer_.reset();
   return true;
 }
 
@@ -113,38 +114,37 @@ namespace {
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain_visitor,
     ReducedEventWriterConfig& config) 
   {
-    unsigned nchan = gain_visitor->nchan();
-    dest->mutable_chan_signal_type()->Assign(
+    dest->mutable_signal_type()->Assign(
       gain_visitor->chan_signal_type().begin(), gain_visitor->chan_signal_type().end());
-    if(config->write_max_sample()) {
+    if(config.write_max_sample()) {
       dest->mutable_max_sample()->Assign(
         gain_visitor->chan_max().begin(), gain_visitor->chan_max().end());
     }
-    if(config->write_max_index()) {
+    if(config.write_max_index()) {
       dest->mutable_max_index()->Assign(
         gain_visitor->chan_max_index().begin(), gain_visitor->chan_max_index().end());
     }
-    if(config->bkg_win_qsum()) {
+    if(config.write_bkg_win_qsum()) {
       dest->mutable_bkg_win_qsum()->Assign(
         gain_visitor->chan_bkg_win_sum().begin(), gain_visitor->chan_bkg_win_sum().end());
     }
-    if(config->sig_win_qsum()) {
+    if(config.write_sig_win_qsum()) {
       dest->mutable_sig_win_qsum()->Assign(
         gain_visitor->chan_sig_win_sum().begin(), gain_visitor->chan_sig_win_sum().end());
     }
-    if(config->opt_win_qsum()) {
+    if(config.write_opt_win_qsum()) {
       dest->mutable_opt_win_qsum()->Assign(
         gain_visitor->chan_opt_win_sum().begin(), gain_visitor->chan_opt_win_sum().end());
     }
-    if(config->opt_win_qtsum()) {
+    if(config.write_opt_win_qtsum()) {
       dest->mutable_opt_win_qtsum()->Assign(
         gain_visitor->chan_opt_win_sum_qt().begin(), gain_visitor->chan_opt_win_sum_qt().end());
     }
-    if(config->opt_win_index()) {
+    if(config.write_opt_win_index()) {
       dest->mutable_opt_win_index()->Assign(
         gain_visitor->chan_opt_win_index().begin(), gain_visitor->chan_opt_win_index().end());
     }
-    if(config->all_win_qsum()) {
+    if(config.write_all_win_qsum()) {
       dest->mutable_all_win_qsum()->Assign(
         gain_visitor->chan_all_sum().begin(), gain_visitor->chan_all_sum().end());
     }
@@ -154,20 +154,21 @@ namespace {
 bool ReducedFileWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-  ReducedEvent reduced_event;
-  reduced_event.set_event_number(event->local_event_number());
-  reduced_event.set_trigger_type(event->trigger_type());
+  calin::ix::diagnostics::reduced_event::ReducedEvent reduced_event;
+  reduced_event.set_local_event_number(event->local_event_number());
+  reduced_event.set_trigger_type(
+    static_cast<calin::ix::diagnostics::reduced_event::TriggerType>(event->trigger_type()));
   reduced_event.set_absolute_event_time_ns(event->absolute_event_time().time_ns());
-  if(config_.write_gain1() and gain1_visitor_ and gain1_visitor->is_same_event(seq_index)) {
+  if(config_.write_gain1() and gain1_visitor_ and gain1_visitor_->is_same_event(seq_index)) {
     copy_gain(reduced_event.mutable_gain1(), gain1_visitor_, config_);
   }
-  if(config_.write_gain2() and gain2_visitor_ and gain2_visitor->is_same_event(seq_index)) {
+  if(config_.write_gain2() and gain2_visitor_ and gain2_visitor_->is_same_event(seq_index)) {
     copy_gain(reduced_event.mutable_gain2(), gain2_visitor_, config_);
   }
 
   if(parent_) {
     std::lock_guard<std::mutex> lock(event_writer_mutex_);
-    parent->event_writer_->write(reduced_event);
+    parent_->event_writer_->write(reduced_event);
   } else {
     event_writer_->write(reduced_event);
   }

@@ -34,7 +34,7 @@ enum SignalType {
 };
 
 message OneGainChargeSums {
-  repeated SignalType channel_signal_type                  = 1 [
+  repeated SignalType signal_type                          = 1 [
     (CFO).desc = "Signal type present in the channel. One entry for each "
       "configured channel in the run.", (CFO).int32_type = INT_8 ];
   repeated uint32 max_index                                = 2 [

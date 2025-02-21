@@ -18,7 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 set(CALIN_TARGET_LIBRARY calin_diagnostics)
 set(CALIN_SOURCES waveform.cpp waveform_psd.cpp simple_charge_capture.cpp
   run_info.cpp simple_charge_stats.cpp simple_charge_hists.cpp
-  stage1.cpp clock_regression.cpp)
+  stage1.cpp clock_regression.cpp reduced_event_writer.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_diagnostics
