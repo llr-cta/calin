@@ -90,6 +90,15 @@ bool ReducedEventWriterParallelEventVisitor::visit_telescope_run(
 
   if(parent_ == nullptr) {
     std::string filename;
+    if(not config_.directory().empty()) {
+      filename = config_.directory();
+      if(filename.back() != '/') filename += '/';
+    }
+    if(not config_.file_prefix().empty()) {
+      filename += config_.file_prefix();
+      if(filename.back() != '_') filename += '_';
+    }
+    filename += calin::util::string::to_string(run_config->run_number()) + ".h5";
 
     auto* run_config_writer = run_config->NewHDFStreamWriter(filename, 
       config_.run_configuration_group(), config_.truncate());
@@ -114,39 +123,55 @@ namespace {
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* gain_visitor,
     ReducedEventWriterConfig& config) 
   {
-    dest->mutable_signal_type()->Assign(
-      gain_visitor->chan_signal_type().begin(), gain_visitor->chan_signal_type().end());
+    unsigned nchan = gain_visitor->nchan();
+    dest->mutable_signal_type()->Reserve(nchan);
+    dest->mutable_signal_type()->Add(
+      gain_visitor->array_chan_signal_type(), gain_visitor->array_chan_signal_type()+nchan);
     if(config.write_max_sample()) {
-      dest->mutable_max_sample()->Assign(
-        gain_visitor->chan_max().begin(), gain_visitor->chan_max().end());
+      dest->mutable_max_sample()->Reserve(nchan);
+      dest->mutable_max_sample()->Add(
+        gain_visitor->array_chan_max(), gain_visitor->array_chan_max()+nchan);
     }
     if(config.write_max_index()) {
-      dest->mutable_max_index()->Assign(
-        gain_visitor->chan_max_index().begin(), gain_visitor->chan_max_index().end());
+      dest->mutable_max_index()->Reserve(nchan);
+      dest->mutable_max_index()->Add(
+        gain_visitor->array_chan_max_index(), gain_visitor->array_chan_max_index()+nchan);
     }
-    if(config.write_bkg_win_qsum()) {
-      dest->mutable_bkg_win_qsum()->Assign(
-        gain_visitor->chan_bkg_win_sum().begin(), gain_visitor->chan_bkg_win_sum().end());
+    if(config.write_bkg_qsum()) {
+      dest->mutable_bkg_qsum()->Reserve(nchan);
+      dest->mutable_bkg_qsum()->Add(
+        gain_visitor->array_chan_bkg_win_sum(), gain_visitor->array_chan_bkg_win_sum()+nchan);
     }
-    if(config.write_sig_win_qsum()) {
-      dest->mutable_sig_win_qsum()->Assign(
-        gain_visitor->chan_sig_win_sum().begin(), gain_visitor->chan_sig_win_sum().end());
+    if(config.write_sig_qsum()) {
+      dest->mutable_sig_qsum()->Reserve(nchan);
+      dest->mutable_sig_qsum()->Add(
+        gain_visitor->array_chan_sig_win_sum(), gain_visitor->array_chan_sig_win_sum()+nchan);
     }
-    if(config.write_opt_win_qsum()) {
-      dest->mutable_opt_win_qsum()->Assign(
-        gain_visitor->chan_opt_win_sum().begin(), gain_visitor->chan_opt_win_sum().end());
+    if(config.write_opt_qsum()) {
+      dest->mutable_opt_qsum()->Reserve(nchan);
+      dest->mutable_opt_qsum()->Add(
+        gain_visitor->array_chan_opt_win_sum(), gain_visitor->array_chan_opt_win_sum()+nchan);
     }
-    if(config.write_opt_win_qtsum()) {
-      dest->mutable_opt_win_qtsum()->Assign(
-        gain_visitor->chan_opt_win_sum_qt().begin(), gain_visitor->chan_opt_win_sum_qt().end());
+    if(config.write_opt_qtsum()) {
+      dest->mutable_opt_qtsum()->Reserve(nchan);
+      dest->mutable_opt_qtsum()->Add(
+        gain_visitor->array_chan_opt_win_sum_qt(), gain_visitor->array_chan_opt_win_sum_qt()+nchan);
     }
-    if(config.write_opt_win_index()) {
-      dest->mutable_opt_win_index()->Assign(
-        gain_visitor->chan_opt_win_index().begin(), gain_visitor->chan_opt_win_index().end());
+    if(config.write_opt_index()) {
+      dest->mutable_opt_index()->Reserve(nchan);
+      dest->mutable_opt_index()->Add(
+        gain_visitor->array_chan_opt_win_index(), gain_visitor->array_chan_opt_win_index()+nchan);
     }
-    if(config.write_all_win_qsum()) {
-      dest->mutable_all_win_qsum()->Assign(
-        gain_visitor->chan_all_sum().begin(), gain_visitor->chan_all_sum().end());
+    if(config.write_all_qsum()) {
+      dest->mutable_all_qsum()->Reserve(nchan);
+      dest->mutable_all_qsum()->Add(
+        gain_visitor->array_chan_all_sum(), gain_visitor->array_chan_all_sum()+nchan);
+    }
+    if(config.write_opt_bkg_qsum_diff()) {
+      dest->mutable_opt_bkg_qsum_diff()->Reserve(nchan);
+      for(unsigned ichan=0;ichan<nchan;ichan++) {
+        dest->add_opt_bkg_qsum_diff(gain_visitor->array_chan_opt_win_sum()[ichan] - gain_visitor->array_chan_bkg_win_sum()[ichan]);
+      }
     }
   }
 }
@@ -167,12 +192,12 @@ bool ReducedEventWriterParallelEventVisitor::visit_telescope_event(uint64_t seq_
   }
   if(config_.write_l0_trigger_map() and event->has_trigger_map() and event->trigger_map().trigger_image_size() > 0) {
     auto* l0map = reduced_event.mutable_l0_trigger_map();
-    l0map->mutable_trigger_hit()->Assign(
+    l0map->mutable_trigger_hit()->Add(
       event->trigger_map().trigger_image().begin(), event->trigger_map().trigger_image().end());
   }
 
   if(parent_) {
-    std::lock_guard<std::mutex> lock(event_writer_mutex_);
+    std::lock_guard<std::mutex> lock(parent_->event_writer_mutex_);
     parent_->event_writer_->write(reduced_event);
   } else {
     event_writer_->write(reduced_event);
@@ -186,21 +211,23 @@ bool ReducedEventWriterParallelEventVisitor::merge_results()
   return true;
 }
 
-
 calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig ReducedEventWriterParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::reduced_event_writer::ReducedEventWriterConfig config;
   config.set_write_gain1(true);
   config.set_write_gain2(true);
   config.set_write_l0_trigger_map(true);
+  
   config.set_write_max_sample(true);
   config.set_write_max_index(true);
   config.set_write_bkg_win_qsum(true);
-  config.set_write_sig_win_qsum(true);
-  config.set_write_opt_win_qsum(true);
-  config.set_write_opt_win_qtsum(true);
+  config.set_write_sig_win_qsum(false);
+  config.set_write_opt_win_qsum(false);
+  config.set_write_opt_win_qtsum(false);
   config.set_write_opt_win_index(true);
-  config.set_write_all_win_qsum(true);
+  config.set_write_all_win_qsum(false);
+  config.set_write_opt_bkg_qsum_diff(true);
+  
   config.set_run_configuration_group("run_configuration");
   config.set_event_group("events");
   config.set_truncate(true);

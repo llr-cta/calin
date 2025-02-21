@@ -60,7 +60,10 @@ message OneGainChargeSums {
     (CFO).units = "samples", (CFO).int32_type = INT_16 ];
   repeated uint32 all_win_qsum                             = 9 [
     (CFO).desc = "Integrated charges in readout window.",
-    (CFO).units = "DC", (CFO).int32_type = INT_32 ];
+    (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
+  repeated int32 opt_bkg_qsum_diff                        = 10 [
+    (CFO).desc = "Difference between optimal and background window charges.",
+    (CFO).units = "Sum DC", (CFO).int32_type = INT_32 ];
 };
 
 enum TriggerType {

@@ -43,19 +43,21 @@ message ReducedEventWriterConfig {
     (CFO).desc = "Write index of maximum signal within readout window in samples." ];
   bool write_max_sample                                    = 13 [
     (CFO).desc = "Write maximum sample within readout window." ];
-  bool write_bkg_win_qsum                                  = 14 [
+  bool write_bkg_qsum                                      = 14 [
     (CFO).desc = "Write integrated charges in background window." ];
-  bool write_sig_win_qsum                                  = 15 [
+  bool write_sig_qsum                                      = 15 [
     (CFO).desc = "Write integrated charges in signal window." ];
-  bool write_opt_win_qsum                                  = 16 [
+  bool write_opt_qsum                                      = 16 [
     (CFO).desc = "Write integrated charges in optimal window." ];
-  bool write_opt_win_qtsum                                 = 17 [
+  bool write_opt_qtsum                                     = 17 [
     (CFO).desc = "Write integrated charges * index in optimal window." ];
-  bool write_opt_win_index                                 = 18 [
+  bool write_opt_index                                     = 18 [
     (CFO).desc = "Write index of start of optimal window within readout window in samples." ];
-  bool write_all_win_qsum                                  = 19 [
+  bool write_all_qsum                                      = 19 [
     (CFO).desc = "Write integrated charges in readout window." ];
-
+  bool write_opt_bkg_qsum_diff                             = 20 [
+    (CFO).desc = "Write difference between optimal and background window charges." ];
+  
   bool write_gain1                                         = 100 [
     (CFO).desc = "Write first gain charge sums (high/single/mixed gain)." ];
   bool write_gain2                                         = 101 [
