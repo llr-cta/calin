@@ -143,7 +143,7 @@ else()
 endif()
 
 ## Find CORSIKA8 if requested
-find_package(corsika)
+find_package(CORSIKA8)
 
 # SET(CALIN_HAVE_CORSIKA8 FALSE)
 # if(NO_CORSIKA8)
