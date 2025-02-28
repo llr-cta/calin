@@ -38,6 +38,10 @@
 // Flags conditional compilation of GEANT4-specific code
 #cmakedefine CALIN_HAVE_GEANT4 1
 
+// CALIN_HAVE_CORSIKA8
+// Flags conditional compilation of CORSIKA8-specific code
+#cmakedefine CALIN_HAVE_CORSIKA8 1
+
 // Capture various CMake variables to pass to build system provenance class
 #define CALIN_BUILD_INSTALL_PREFIX     "${CMAKE_INSTALL_PREFIX}"
 #define CALIN_PROTO_INSTALL_DIR        "${CMAKE_INSTALL_PREFIX}/${CALIN_PROTO_INSTALL_DIR}"

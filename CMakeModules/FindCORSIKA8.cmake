@@ -16,4 +16,4 @@ set ( CORSIKA8_INCLUDE_DIRS ${CORSIKA8_INCLUDE_DIR} )
 include ( FindPackageHandleStandardArgs )
 # handle the QUIETLY and REQUIRED arguments and set CORSIKA8_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args( CORSIKA8 DEFAULT_MSG CORSIKA8_LIBRARY CORSIKA8_INCLUDE_DIR )
+find_package_handle_standard_args( CORSIKA8 DEFAULT_MSG CORSIKA8_DATA_LIBRARY CORSIKA8_INCLUDE_DIR )
