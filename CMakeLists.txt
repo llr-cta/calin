@@ -142,6 +142,24 @@ else()
 	endif()
 endif()
 
+## Find CORSIKA8 if requested
+find_package(corsika)
+
+# SET(CALIN_HAVE_CORSIKA8 FALSE)
+# if(NO_CORSIKA8)
+# 	message(STATUS "Skipping CORSIKA8 as requested")
+# 	set(CORSIKA8_FOUND FALSE)
+# else()
+# 	find_package(CORSIKA8)
+# 	if(CORSIKA8_FOUND)
+# 		message(STATUS "CORSIKA8_INCLUDE_DIR: " ${CORSIKA8_INCLUDE_DIR})
+# 		message(STATUS "CORSIKA8_LIBRARY_DIR: " ${CORSIKA8_LIBRARY_DIR})
+# 		include_directories(${CORSIKA8_INCLUDE_DIR})
+# 		link_directories(${CORSIKA8_LIBRARY_DIR})
+# 		set(CALIN_HAVE_CORSIKA8 TRUE)
+# 	endif()
+# endif()
+
 # ========================================== #
 # Add the subdirectories to the build system #
 # ========================================== #

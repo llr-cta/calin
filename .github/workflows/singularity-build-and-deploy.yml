@@ -59,6 +59,7 @@ jobs:
         sudo pip3 install numpy
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
         curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{env.geant_version}}-OFF/Geant4-${{matrix.os}}-${{env.geant_version}}-OFF.tbz2 | sudo tar -jxf - -C /
+        curl -L https://github.com/llr-cta/Corsika8Build/releases/download/ubuntu-22.04/corsika8_installed.tgz | tar -zxf - -C /
 
     - name: Configure calin
       shell: bash
