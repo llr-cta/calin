@@ -79,7 +79,8 @@ From: ubuntu:22.04
         valgrind                                                   \
         gdb                                                        \
         hdf5-tools                                                 \
-        libutf8proc3
+        libre2-dev                                                 \
+        libboost-all-dev
 
     apt-get -y autoremove
     apt-get -y clean

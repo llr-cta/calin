@@ -7,7 +7,7 @@
 # also defined, but not for general use are
 #  CORSIKA8_LIBRARY, where to find the CORSIKA8 library.
 
-find_path ( CORSIKA8_INCLUDE_DIR PATH_SUFFIXES corsika corsika.hpp )
+find_path ( CORSIKA8_INCLUDE_DIR corsika.hpp PATH_SUFFIXES corsika )
 find_library ( CORSIKA8_DATA_LIBRARY PATH_SUFFIXES corsika NAMES CorsikaData  )
 
 set ( CORSIKA8_LIBRARIES ${CORSIKA8_DATA_LIBRARY}  )
