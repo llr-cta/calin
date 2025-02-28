@@ -80,7 +80,8 @@ From: ubuntu:22.04
         gdb                                                        \
         hdf5-tools                                                 \
         libre2-dev                                                 \
-        libboost-all-dev
+        libboost-all-dev                                           \
+        libutf8proc2
 
     apt-get -y autoremove
     apt-get -y clean

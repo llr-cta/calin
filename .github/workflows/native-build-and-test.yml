@@ -70,7 +70,8 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           libhdf5-dev hdf5-tools                                               \
-          libre2-dev libboost-all-dev                                          \
+          libboost-all-dev libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
+          zlib1g-dev nlohmann-json3-dev                                        \
           ${{ matrix.compiler[2] }}
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
         curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
