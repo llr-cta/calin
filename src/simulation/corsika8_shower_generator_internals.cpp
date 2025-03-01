@@ -22,10 +22,11 @@
 
 // #include <Eigen/Dense>
 
+#include <corsika/framework/random/RNGManager.hpp>
 #include <corsika/framework/process/ContinuousProcess.hpp>
-#include <corsika/modules/writers/TrackWriterParquet.hpp>
-#include <corsika/modules/writers/WriterOff.hpp>
 #include <corsika/framework/core/Step.hpp>
+
+#include <corsika/modules/writers/WriterOff.hpp>
 
 #include <util/log.hpp>
 #include <simulation/corsika8_shower_generator.hpp>
@@ -66,7 +67,7 @@ namespace {
     CALIN_TYPEALIAS(config_type,
                     calin::ix::simulation::corsika8_shower_generator::CORSIKA8ShowerGeneratorConfiguration);
 
-    CORSIKA8ShowerGeneratorImpl(config_type const& config);
+    CORSIKA8ShowerGeneratorImpl(const config_type& config = default_config());
     virtual ~CORSIKA8ShowerGeneratorImpl();
 
     void generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
@@ -77,12 +78,10 @@ namespace {
                           const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
                           double weight=1.0) override;
 
-    static config_type default_config() { return CORSIKA8ShowerGenerator::default_config(); }
-
   private:
     config_type config_; 
     
-    TrackHandoff track_handoff_;
+    std::unique_ptr<TrackHandoff> track_handoff_;
   };
 
 } // anonymous namespace
@@ -163,4 +162,56 @@ void TrackHandoff::startOfShower(unsigned int const showerId)
 void TrackHandoff::endOfShower(unsigned int const showerId)
 {
   shower_id_ = 0;
+}
+
+CORSIKA8ShowerGeneratorImpl::
+CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& config):
+  CORSIKA8ShowerGenerator(), config_(config)
+{
+
+  // ==========================================================================  
+  // Initialize random number sequence(s)
+  // ==========================================================================  
+
+  uint32_t seed = config_.seed();
+  while(seed == 0)seed = calin::math::rng::RNG::uint32_from_random_device();
+  RNGManager<>::getInstance().registerRandomStream("cascade");
+  RNGManager<>::getInstance().registerRandomStream("qgsjet");
+  RNGManager<>::getInstance().registerRandomStream("sibyll");
+  RNGManager<>::getInstance().registerRandomStream("sophia");
+  RNGManager<>::getInstance().registerRandomStream("epos");
+  RNGManager<>::getInstance().registerRandomStream("pythia");
+  RNGManager<>::getInstance().registerRandomStream("urqmd");
+  // RNGManager<>::getInstance().registerRandomStream("fluka");
+  RNGManager<>::getInstance().registerRandomStream("proposal");
+  RNGManager<>::getInstance().registerRandomStream("thinning");
+  // RNGManager<>::getInstance().registerRandomStream("primary_particle");
+  RNGManager<>::getInstance().setSeed(seed);
+  calin::provenance::chronicle::register_external_rng_open(seed, "CORSIKA8::RNGManager",
+    __PRETTY_FUNCTION__);
+
+  // ==========================================================================
+  // 
+  // ==========================================================================
+
+  track_handoff_ = std::make_unique<TrackHandoff>(config_.earth_radius());
+}
+
+CORSIKA8ShowerGeneratorImpl::~CORSIKA8ShowerGeneratorImpl()
+{
+  // nothing to see here
+}
+
+void CORSIKA8ShowerGeneratorImpl::
+generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+                 unsigned num_events,
+                 calin::simulation::tracker::ParticleType type,
+                 double total_energy,
+                 const Eigen::Vector3d& x0,
+                 const Eigen::Vector3d& u0,
+                 double weight)
+{
+  track_handoff_->set_visitor(visitor);
+  
+  track_handoff_->clear_visitor();
 }
