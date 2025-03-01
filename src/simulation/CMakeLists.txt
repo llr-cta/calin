@@ -25,14 +25,25 @@ set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
  	bfield_track_generator.cpp vso_quadrature_iact_array_integration.cpp
 	detector_efficiency.cpp world_magnetic_model.cpp vcl_iact.cpp vcl_raytracer.cpp
 	vcl_ray_processor.cpp nspace_ray_processor.cpp nspace_pe_processor.cpp
-	waveform_processor.cpp corsika8_shower_generator.cpp
+	waveform_processor.cpp
 	GeomagnetismLibrary.c)
 
 if(GEANT4_FOUND)
+	include_directories(${GEANT4_INCLUDE_DIR})
+	link_directories(${GEANT4_LIBRARY_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		geant4_shower_generator.cpp
 		geant4_shower_generator_internals.cpp)
 endif()
+
+if(CORSIKA8_FOUND)
+	include_directories(${CORSIKA8_INCLUDE_DIR})
+	link_directories(${CORSIKA8_LIBRARY_DIR})
+	set(CALIN_SOURCES ${CALIN_SOURCES}
+		corsika8_shower_generator.cpp
+		corsika8_shower_generator_internals.cpp)
+endif()
+
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_io calin_math
@@ -41,6 +52,10 @@ target_link_libraries(${CALIN_TARGET_LIBRARY} calin_io calin_math
 
 if(GEANT4_FOUND)
 	target_link_libraries(${CALIN_TARGET_LIBRARY} ${GEANT4_LIBRARIES})
+endif()
+
+if(CORSIKA8_FOUND)
+	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CORSIKA8_LIBRARIES})
 endif()
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})
