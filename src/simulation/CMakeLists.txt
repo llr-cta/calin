@@ -38,6 +38,7 @@ endif()
 
 if(CORSIKA8_FOUND)
 	include_directories(${CORSIKA8_INCLUDE_DIR}
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/common
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/epos
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sibyll
@@ -60,7 +61,7 @@ if(GEANT4_FOUND)
 endif()
 
 if(CORSIKA8_FOUND)
-	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CORSIKA8_LIBRARIES})
+	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CORSIKA8_LIBRARIES}  Boost::serialization  Boost::filesystem)
 endif()
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

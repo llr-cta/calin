@@ -150,6 +150,7 @@ else()
 	if(CORSIKA8_FOUND)
 		message(STATUS "CORSIKA8_INCLUDE_DIR: " ${CORSIKA8_INCLUDE_DIR})
 		set(CALIN_HAVE_CORSIKA8 TRUE)
+		find_package(Boost REQUIRED COMPONENTS serialization filesystem)
 	endif()
 endif()
 

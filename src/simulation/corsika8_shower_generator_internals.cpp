@@ -28,6 +28,7 @@
 #include <corsika/framework/core/Step.hpp>
 #include <corsika/framework/geometry/CoordinateSystem.hpp>
 #include <corsika/framework/process/DynamicInteractionProcess.hpp>
+#include <corsika/framework/process/SwitchProcessSequence.hpp>
 
 #include <corsika/media/Environment.hpp>
 #include <corsika/media/IMagneticFieldModel.hpp>
@@ -40,6 +41,11 @@
 #include <corsika/modules/QGSJetII.hpp>
 #include <corsika/modules/BetheBlochPDG.hpp>
 #include <corsika/modules/Epos.hpp>
+#include <corsika/modules/Pythia8.hpp>
+// #include <corsika/modules/TAUOLA.hpp>
+#include <corsika/modules/Sophia.hpp>
+#include <corsika/modules/ParticleCut.hpp>
+#include <corsika/modules/PROPOSAL.hpp>
 
 #include <corsika/setup/SetupStack.hpp>
 #include <corsika/setup/SetupC7trackedParticles.hpp>
@@ -80,10 +86,10 @@ namespace {
 
   class CORSIKA8ShowerGeneratorImpl: public CORSIKA8ShowerGenerator {
   public:
-    using EnvironmentInterface = IMagneticFieldModel<IMediumModel>;
-    template <typename T> using MyExtraEnv = UniformMagneticField<T>;
+    using EnvironmentInterface = IMediumPropertyModel<IMagneticFieldModel<IMediumModel>>;
+    template <typename T> using MyExtraEnv = MediumPropertyModel<UniformMagneticField<T>>;
     // using EnvironmentInterface =
-    //   IRefractiveIndexModel<IMediumPropertyModel<IMagneticFieldModel<IMediumModel>>>;
+    //   IRefractiveIndexModel<IMagneticFieldModel<IMediumModel>>>;
     using EnvType = Environment<EnvironmentInterface>;
     using StackType = setup::Stack<EnvType>;
 
@@ -104,12 +110,30 @@ namespace {
   private:
     config_type config_; 
 
+    // struct IsTauSwitch {
+    //   bool operator()(const Particle& p) const {
+    //     return (p.getPID() == Code::TauMinus || p.getPID() == Code::TauPlus);
+    //   }
+    // };
+
     EnvType env_;
     CoordinateSystemPtr root_cs_ = env_.getCoordinateSystem();
     Point center_ { root_cs_, 0_m, 0_m, 0_m };
     Point ground_; // set in constructor from value passed in config
-    DynamicInteractionProcess<StackType> he_model_;
+
+    // Hadronic interaction
+    std::shared_ptr<DynamicInteractionProcess<StackType> > he_model_;
     std::shared_ptr<corsika::sibyll::Interaction> sibyll_;
+    
+    // Decay
+    std::shared_ptr<corsika::pythia8::Decay> decay_pythia_;
+    // std::shared_ptr<corsika::tauola::Decay> decay_tauola_;
+    // std::shared_ptr<SwitchProcessSequence<IsTauSwitch, corsika::tauola::Decay, corsika::pythia8::Decay>> decay_equence_; { 
+
+    // Photo hadronic interactions
+    std::shared_ptr<corsika::sophia::InteractionModel> sophia_;
+    std::shared_ptr<ParticleCut<> > particle_cut_;
+    std::shared_ptr<corsika::proposal::Interaction<corsika::sophia::InteractionModel,corsika::sibyll::HadronInteractionModel> > em_cascade_;
 
     std::unique_ptr<TrackHandoff> track_handoff_;
   };
@@ -229,6 +253,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
     // Build a standard CORSIKA atmosphere into env_
     create_5layer_atmosphere<EnvironmentInterface, MyExtraEnv>(
       env_, static_cast<AtmosphereId>(config_.atmospheric_model()), center_, 
+      Medium::AirDry1Atm,
       MagneticFieldVector{root_cs_, 
         config_.uniform_magnetic_field().x()*1_nT, 
         config_.uniform_magnetic_field().y()*1_nT, 
@@ -248,17 +273,62 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   switch(config_.he_hadronic_model()) {
   case calin::ix::simulation::corsika8_shower_generator::SIBYLL:
   default:
-    he_model_ = DynamicInteractionProcess<StackType>{sibyll_};
+    he_model_ = std::make_shared<DynamicInteractionProcess<StackType>>(sibyll_);
     break;
   case calin::ix::simulation::corsika8_shower_generator::QGSJet:
-    he_model_ = DynamicInteractionProcess<StackType>{
-      std::make_shared<corsika::qgsjetII::Interaction>()};
+    he_model_ = std::make_shared<DynamicInteractionProcess<StackType>>(
+      std::make_shared<corsika::qgsjetII::Interaction>());
     break;
   case calin::ix::simulation::corsika8_shower_generator::EPOS_LHC:
-    he_model_ = DynamicInteractionProcess<StackType>{
-      std::make_shared<corsika::epos::Interaction>(corsika::setup::C7trackedParticles)};
+    he_model_ = std::make_shared<DynamicInteractionProcess<StackType>>(
+      std::make_shared<corsika::epos::Interaction>(corsika::setup::C7trackedParticles));
     break;    
   };
+
+  // ==========================================================================
+  // SETUP DECAY MODELS
+  // ==========================================================================
+
+  decay_pythia_ = std::make_shared<corsika::pythia8::Decay>();
+  // decay_tauola_ = std::make_shared<corsika::tauola::Decay>(corsika::tauola::Helicity::LeftHanded);
+  // decay_sequence_ = std::make_shared<SwitchProcessSequence<IsTauSwitch, corsika::tauola::Decay, corsika::pythia8::Decay>>(IsTauSwitch(), decay_tauola_, decay_pythia_);
+
+  // ==========================================================================
+  // Hadronic photon interactions in resonance region
+  // ==========================================================================
+
+  sophia_ = std::make_shared<corsika::sophia::InteractionModel>();
+  
+  // ==========================================================================
+  // PARTICLE CUTS
+  // ==========================================================================
+  HEPEnergyType emcut  = config_.electrion_photon_cut() * 1_MeV;
+  HEPEnergyType hadcut = config_.hadronic_cut() * 1_MeV;
+  HEPEnergyType mucut  = config_.muon_cut() * 1_MeV;
+  HEPEnergyType taucut = config_.tau_cut() * 1_MeV;
+  particle_cut_ = std::make_shared<ParticleCut<> >(emcut, emcut, hadcut, mucut, taucut, true);
+
+  // ==========================================================================
+  // EM CASCADE
+  // ==========================================================================
+
+  // tell proposal that we are interested in all energy losses above the particle cut
+  auto prod_threshold = std::min({emcut, hadcut, mucut, taucut});
+  set_energy_production_threshold(Code::Electron, prod_threshold);
+  set_energy_production_threshold(Code::Positron, prod_threshold);
+  set_energy_production_threshold(Code::Photon, prod_threshold);
+  set_energy_production_threshold(Code::MuMinus, prod_threshold);
+  set_energy_production_threshold(Code::MuPlus, prod_threshold);
+  set_energy_production_threshold(Code::TauMinus, prod_threshold);
+  set_energy_production_threshold(Code::TauPlus, prod_threshold);
+
+  // energy threshold for high energy hadronic model. Affects LE/HE switch for
+  // hadron interactions and the hadronic photon model in proposal
+  HEPEnergyType const he_hadron_model_threshold = config_.he_hadronic_transition_energy() * 1_MeV;
+
+  em_cascade_ = std::make_shared<corsika::proposal::Interaction<corsika::sophia::InteractionModel,corsika::sibyll::HadronInteractionModel> >(
+    env_, *sophia_, sibyll_->getHadronInteractionModel(), he_hadron_model_threshold);
+
 
   track_handoff_ = std::make_unique<TrackHandoff>(config_.earth_radius());
 }
