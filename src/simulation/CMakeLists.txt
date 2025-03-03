@@ -37,7 +37,12 @@ if(GEANT4_FOUND)
 endif()
 
 if(CORSIKA8_FOUND)
-	include_directories(${CORSIKA8_INCLUDE_DIR})
+	include_directories(${CORSIKA8_INCLUDE_DIR}
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/common
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/epos
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sibyll
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/qgsjetII
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sophia)
 	link_directories(${CORSIKA8_LIBRARY_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		corsika8_shower_generator.cpp

@@ -22,11 +22,27 @@
 
 // #include <Eigen/Dense>
 
+#include <corsika/framework/core/Logging.hpp>
 #include <corsika/framework/random/RNGManager.hpp>
 #include <corsika/framework/process/ContinuousProcess.hpp>
 #include <corsika/framework/core/Step.hpp>
+#include <corsika/framework/geometry/CoordinateSystem.hpp>
+#include <corsika/framework/process/DynamicInteractionProcess.hpp>
+
+#include <corsika/media/Environment.hpp>
+#include <corsika/media/IMagneticFieldModel.hpp>
+#include <corsika/media/MediumPropertyModel.hpp>
+#include <corsika/media/UniformMagneticField.hpp>
+#include <corsika/media/CORSIKA7Atmospheres.hpp>
 
 #include <corsika/modules/writers/WriterOff.hpp>
+#include <corsika/modules/Sibyll.hpp>
+#include <corsika/modules/QGSJetII.hpp>
+#include <corsika/modules/BetheBlochPDG.hpp>
+#include <corsika/modules/Epos.hpp>
+
+#include <corsika/setup/SetupStack.hpp>
+#include <corsika/setup/SetupC7trackedParticles.hpp>
 
 #include <util/log.hpp>
 #include <simulation/corsika8_shower_generator.hpp>
@@ -64,6 +80,13 @@ namespace {
 
   class CORSIKA8ShowerGeneratorImpl: public CORSIKA8ShowerGenerator {
   public:
+    using EnvironmentInterface = IMagneticFieldModel<IMediumModel>;
+    template <typename T> using MyExtraEnv = UniformMagneticField<T>;
+    // using EnvironmentInterface =
+    //   IRefractiveIndexModel<IMediumPropertyModel<IMagneticFieldModel<IMediumModel>>>;
+    using EnvType = Environment<EnvironmentInterface>;
+    using StackType = setup::Stack<EnvType>;
+
     CALIN_TYPEALIAS(config_type,
                     calin::ix::simulation::corsika8_shower_generator::CORSIKA8ShowerGeneratorConfiguration);
 
@@ -80,7 +103,14 @@ namespace {
 
   private:
     config_type config_; 
-    
+
+    EnvType env_;
+    CoordinateSystemPtr root_cs_ = env_.getCoordinateSystem();
+    Point center_ { root_cs_, 0_m, 0_m, 0_m };
+    Point ground_; // set in constructor from value passed in config
+    DynamicInteractionProcess<StackType> he_model_;
+    std::shared_ptr<corsika::sibyll::Interaction> sibyll_;
+
     std::unique_ptr<TrackHandoff> track_handoff_;
   };
 
@@ -166,7 +196,8 @@ void TrackHandoff::endOfShower(unsigned int const showerId)
 
 CORSIKA8ShowerGeneratorImpl::
 CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& config):
-  CORSIKA8ShowerGenerator(), config_(config)
+  CORSIKA8ShowerGenerator(), config_(config),  
+  ground_ {root_cs_, 0_m, 0_m, (config_.earth_radius() + config_.zground())*1_cm}
 {
 
   // ==========================================================================  
@@ -191,8 +222,43 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
     __PRETTY_FUNCTION__);
 
   // ==========================================================================
-  // 
+  // SETUP ENVIRONMENT AND ROOT COORDINATE SYSTEM
   // ==========================================================================
+  
+  if(config_.atmospheric_model() < calin::ix::simulation::corsika8_shower_generator::ATM_CORSIKA_MAX) {
+    // Build a standard CORSIKA atmosphere into env_
+    create_5layer_atmosphere<EnvironmentInterface, MyExtraEnv>(
+      env_, static_cast<AtmosphereId>(config_.atmospheric_model()), center_, 
+      MagneticFieldVector{root_cs_, 
+        config_.uniform_magnetic_field().x()*1_nT, 
+        config_.uniform_magnetic_field().y()*1_nT, 
+        config_.uniform_magnetic_field().z()*1_nT });
+  } else {
+    throw std::runtime_error("Custom atmospheric model not supported yet");
+  }
+
+  // ==========================================================================
+  // SETUP HADRONIC INTERACTIONS
+  // ==========================================================================
+
+  const auto all_elements = corsika::get_all_elements_in_universe(env_);
+  // have SIBYLL always for PROPOSAL photo-hadronic interactions
+  sibyll_ = std::make_shared<corsika::sibyll::Interaction>(all_elements, corsika::setup::C7trackedParticles);
+
+  switch(config_.he_hadronic_model()) {
+  case calin::ix::simulation::corsika8_shower_generator::SIBYLL:
+  default:
+    he_model_ = DynamicInteractionProcess<StackType>{sibyll_};
+    break;
+  case calin::ix::simulation::corsika8_shower_generator::QGSJet:
+    he_model_ = DynamicInteractionProcess<StackType>{
+      std::make_shared<corsika::qgsjetII::Interaction>()};
+    break;
+  case calin::ix::simulation::corsika8_shower_generator::EPOS_LHC:
+    he_model_ = DynamicInteractionProcess<StackType>{
+      std::make_shared<corsika::epos::Interaction>(corsika::setup::C7trackedParticles)};
+    break;    
+  };
 
   track_handoff_ = std::make_unique<TrackHandoff>(config_.earth_radius());
 }

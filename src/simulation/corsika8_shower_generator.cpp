@@ -71,7 +71,7 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_electrion_photon_cut(0.5);
   config.set_hadronic_cut(300.0);
   config.set_muon_cut(300.0);
-  config.set_he_hadronic_model(SIBYLL_2_3d);
+  config.set_he_hadronic_model(SIBYLL);
   config.set_he_hadronic_transition_energy(79400.0 /* 10^1.9 GeV = 79.4 GeV */);
 
   return config;
