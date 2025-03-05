@@ -43,7 +43,8 @@ if(CORSIKA8_FOUND)
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/epos
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sibyll
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/qgsjetII
-		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sophia)
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sophia
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/urqmd)
 	link_directories(${CORSIKA8_LIBRARY_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		corsika8_shower_generator.cpp
