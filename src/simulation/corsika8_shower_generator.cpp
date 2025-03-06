@@ -63,7 +63,8 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_earth_radius(6371.0 * 1E5);
   config.set_zground(0.0);
   config.set_ztop(112.8 * 1E5);
-  // calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d{10.0,12.0,13.0});
+  calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d{-3.2, 30.4, -23.8});
+  config.set_detector_box_side(1000.0 * 1E5);
 
   config.set_seed(0);
   config.set_verbosity(C8_WARNING);

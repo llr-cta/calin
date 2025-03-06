@@ -40,7 +40,6 @@
 
 #include <corsika/modules/BetheBlochPDG.hpp>
 #include <corsika/modules/Epos.hpp>
-#include <corsika/modules/ObservationPlane.hpp>
 #include <corsika/modules/ParticleCut.hpp>
 #include <corsika/modules/PROPOSAL.hpp>
 #include <corsika/modules/Pythia8.hpp>
@@ -55,7 +54,11 @@
 #include <corsika/setup/SetupStack.hpp>
 #include <corsika/setup/SetupTrajectory.hpp>
 
+#include <Eigen/Core>
+
 #include <util/log.hpp>
+#include <math/special.hpp>
+#include <math/geometry.hpp>
 #include <simulation/corsika8_shower_generator.hpp>
 #include <provenance/chronicle.hpp>
 
@@ -63,11 +66,21 @@ using namespace calin::simulation::corsika8_shower_generator;
 using namespace calin::util::log;
 using namespace corsika;
 
+using calin::math::geometry::box_has_future_intersection;
+using calin::math::special::SQR;
+
 namespace {
 
-  class TrackHandoff: public ContinuousProcess<TrackHandoff>, public WriterOff {
+  // Class to handle the handoff of a track to a visitor and also a detector boundary box.
+  // We don't use the C8 ObservationPlane as it requires inclusion of Apache Parquet which
+  // is not part of the calin singularity container.
+  class TrackHandoff: public ContinuousProcess<TrackHandoff> {
   public:
-    TrackHandoff(double r_earth): WriterOff("track.parquet"), r_earth_(r_earth) { };
+    TrackHandoff(double r_earth, double z_bottom, double z_top, double xy_side): 
+      r_earth_(r_earth), z_bottom_(z_bottom), z_top_(z_top), xy_side_(xy_side),
+      max_step_length_(1_cm * std::sqrt(2.0*SQR(xy_side_) + SQR(z_top_-z_bottom_))),
+      min_corner_(-0.5*xy_side_, -0.5*xy_side_, r_earth_+z_bottom_),
+      max_corner_( 0.5*xy_side_,  0.5*xy_side_, r_earth_+z_top_) { };
     virtual ~TrackHandoff();
 
     template <typename TParticle>
@@ -76,18 +89,94 @@ namespace {
     template <typename TParticle, typename TTrack>
     LengthType getMaxStepLength(TParticle const&, TTrack const&);
 
-    YAML::Node getConfig() const override;
-
-    void startOfShower(unsigned int const /*showerId*/) override;
-    void endOfShower(unsigned int const showerId) override;
-
     void set_visitor(calin::simulation::tracker::TrackVisitor* visitor) { visitor_ = visitor; }
     void clear_visitor() { visitor_ = nullptr; }
   private:
-    double r_earth_ = 0;
-    unsigned int shower_id_ = 0;
+    double r_earth_  = 6371.0 * 1e5;  // Earth radius in cm
+    double z_bottom_ = 0.0;
+    double z_top_    = 125.0  * 1e5;  // 125km "top of atmosphere" in cm
+    double xy_side_  = 1000.0 * 1e5;  // 1000km side of detector in cm
+    LengthType max_step_length_ = 1_km;
+    Eigen::Vector3d min_corner_;
+    Eigen::Vector3d max_corner_;  
     calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
-  }; // class TrackWriterHandoff
+  }; // class TrackHandoff
+
+} // anonymous namespace
+
+TrackHandoff::~TrackHandoff() { 
+  // nothing to see here
+} 
+
+template <typename TParticle>
+ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const limitFlag)
+{
+  calin::simulation::tracker::Track track;
+
+  const auto& particle_post { step.getParticlePost() };
+
+  const auto& x1 { particle_post.getPosition() };
+  const auto& u1 { particle_post.getDirection() };
+
+  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, (x1.getZ()-r_earth_)/1_cm;
+  track.u1              << u1.getX(), u1.getY(), u1.getZ();
+
+  // If the particle is not heading for an interaction with the detector box (i.e.
+  // if is outside the box and heading away from it) then we absorb the particle.
+  if(not box_has_future_intersection(min_corner_, max_corner_, track.x0, track.u0)) {
+    return ProcessReturn::ParticleAbsorbed;
+  }
+  
+  if(!visitor_) return ProcessReturn::Ok;
+
+  const auto& particle_pre { step.getParticlePre() };
+
+  track.track_id        = 0; // what to do here
+  track.parent_track_id = 0; // what to do here
+
+  track.pdg_type        = particle_pre.getPID();
+  track.q               = particle_pre.getChargeNumber();
+  track.mass            = particle_pre.getMass()/1_MeV;
+  track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
+
+  const auto& x0 { particle_pre.getPosition() };
+  const auto& u0 { particle_pre.getDirection() };
+
+  track.e0              = particle_pre.getEnergy()/1_MeV;
+  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, (x0.getZ()-r_earth_)/1_cm;
+  track.u0              << u0.getX(), u0.getY(), u0.getZ();
+  track.t0              = particle_pre->getTime()/1_ns;
+
+  track.e1              = particle_post.getEnergy()/1_MeV;
+  track.t1              = particle_post->getTime()/1_ns;
+
+  track.dx_hat          = track.x1 - track.x0;
+  track.dx              = track.dx_hat.norm();
+  track.dx_hat          /= track.dx;
+  track.de              = track.e1 - track.e0;
+  track.dt              = track.t1 - track.t0;
+  track.weight          = particle_pre.getWeight();
+  
+#if 0
+  static int nprint=0;
+  if(nprint<100 and pdg_info->GetPDGEncoding()==2112) {
+    LOG(INFO) << particle_pre.getKineticEnergy()/1_MeV; << ' ' << track.dx;
+    ++nprint;
+  }
+#endif
+  
+  bool kill_track = false;
+  visitor_->visit_track(track, kill_track);
+  return kill_track ? ProcessReturn::ParticleAbsorbed : ProcessReturn::Ok;
+}
+
+template <typename TParticle, typename TTrack>
+LengthType TrackHandoff::getMaxStepLength(TParticle const&, TTrack const&)
+{
+  return max_step_length_;
+}
+ 
+namespace {
 
   // Workaround for UrQMD not having InteractionProcess as a base class
   class MyUrQMD: public corsika::urqmd::UrQMD, public InteractionProcess<MyUrQMD> {};
@@ -184,12 +273,6 @@ namespace {
     using HadronSequenceType = SwitchProcessSequence<EnergySwitch, MyUrQMD&, DynamicInteractionProcess<StackType>&>;
     std::shared_ptr<HadronSequenceType> hadron_sequence_;
 
-    // Observation level
-    using ObservationLevelType = ObservationPlane<TrackingType, WriterOff>;
-    ObservationLevelType observation_level_ { 
-      Plane{ground_, DirectionVector(root_cs_, {0., 0., 1.})},
-      DirectionVector(root_cs_, {1., 0., 0.}), /* deleteOnHit= */ true };
-
     // Track handoff
     using TrackHandoffType = TrackHandoff;
     std::shared_ptr<TrackHandoffType> track_handoff_;
@@ -197,89 +280,11 @@ namespace {
     // Final process sequence
     using FinalProcessSequenceType = 
       decltype(make_sequence(*hadron_sequence_, *decay_sequence_, *em_cascade_, *em_continuous_, 
-                             *track_handoff_, observation_level_, *particle_cut_));
+                             *track_handoff_, *particle_cut_));
     std::shared_ptr<FinalProcessSequenceType> process_sequence_;
   };
 
 } // anonymous namespace
-
-TrackHandoff::~TrackHandoff() { 
-   // nothing to see here
-} 
-
-template <typename TParticle>
-ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const limitFlag)
-{
-  if(!visitor_) return ProcessReturn::Ok;
-
-  const auto& particle_pre { step.getParticlePre() };
-  const auto& particle_post { step.getParticlePost() };
-
-  calin::simulation::tracker::Track track;
-  track.track_id        = 0; // what to do here
-  track.parent_track_id = 0; // what to do here
-
-  track.pdg_type        = particle_pre.getPID();
-  track.q               = particle_pre.getChargeNumber();
-  track.mass            = particle_pre.getMass()/1_MeV;
-  track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
-
-  const auto& x0 { particle_pre.getPosition() };
-  const auto& u0 { particle_pre.getDirection() };
-
-  track.e0              = particle_pre.getEnergy()/1_MeV;
-  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, (x0.getZ()-r_earth_)/1_cm;
-  track.u0              << u0.getX(), u0.getY(), u0.getZ();
-  track.t0              = particle_pre->getTime()/1_ns;
-
-  const auto& x1 { particle_post.getPosition() };
-  const auto& u1 { particle_post.getDirection() };
-
-  track.e1              = particle_post.getEnergy()/1_MeV;
-  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, (x1.getZ()-r_earth_)/1_cm;
-  track.u1              << u1.getX(), u1.getY(), u1.getZ();
-  track.t1              = particle_post->getTime()/1_ns;
-
-  track.dx_hat          = track.x1 - track.x0;
-  track.dx              = track.dx_hat.norm();
-  track.dx_hat          /= track.dx;
-  track.de              = track.e1 - track.e0;
-  track.dt              = track.t1 - track.t0;
-  track.weight          = particle_pre.getWeight();
-  
-#if 0
-  static int nprint=0;
-  if(nprint<100 and pdg_info->GetPDGEncoding()==2112) {
-    LOG(INFO) << particle_pre.getKineticEnergy()/1_MeV; << ' ' << track.dx;
-    ++nprint;
-  }
-#endif
-  
-  bool kill_track = false;
-  visitor_->visit_track(track, kill_track);
-  return kill_track ? ProcessReturn::ParticleAbsorbed : ProcessReturn::Ok;
-}
-
-template <typename TParticle, typename TTrack>
-LengthType TrackHandoff::getMaxStepLength(TParticle const&, TTrack const&)
-{
-  return 1_m * std::numeric_limits<double>::infinity();
-}
-
-YAML::Node TrackHandoff::getConfig() const
-{
-  return YAML::Node{};
-}
-
-void TrackHandoff::startOfShower(unsigned int const showerId)
-{
-  shower_id_ = showerId;
-}
-
-void TrackHandoff::endOfShower(unsigned int const showerId)
-{
-  shower_id_ = 0;
-}
 
 CORSIKA8ShowerGeneratorImpl::
 CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& config):
@@ -415,16 +420,11 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
       EnergySwitch(he_hadron_model_threshold), *le_int_model_, *he_model_);
 
   // ==========================================================================
-  // OBSERVATION PLANE
-  // ==========================================================================
-
-  // nothing to see here
-    
-  // ==========================================================================
   // TRACK HANDOFF
   // ==========================================================================
 
-  track_handoff_ = std::make_shared<TrackHandoff>(config_.earth_radius());
+  track_handoff_ = std::make_shared<TrackHandoff>(config_.earth_radius(),
+    config_.zground(), config_.ztop(), config_.detector_box_side());
 
   // ==========================================================================
   // FINAL PROCESS SEQUENCE
@@ -432,7 +432,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
 
   process_sequence_ = std::make_shared<FinalProcessSequenceType>(
     make_sequence(*hadron_sequence_, *decay_sequence_, *em_cascade_, *em_continuous_, 
-      *track_handoff_, observation_level_, *particle_cut_));
+      *track_handoff_, *particle_cut_));
 }
 
 CORSIKA8ShowerGeneratorImpl::~CORSIKA8ShowerGeneratorImpl()
