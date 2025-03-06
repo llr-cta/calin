@@ -453,3 +453,8 @@ generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
   
   track_handoff_->clear_visitor();
 }
+
+CORSIKA8ShowerGenerator* CORSIKA8ShowerGenerator::new_instance(const config_type& config)
+{
+  return new CORSIKA8ShowerGeneratorImpl(config);
+}
