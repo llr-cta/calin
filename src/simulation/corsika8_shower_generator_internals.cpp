@@ -68,6 +68,7 @@ using namespace corsika;
 
 using calin::math::geometry::box_has_future_intersection;
 using calin::math::special::SQR;
+using calin::util::log::LOG;
 
 namespace {
 
@@ -258,11 +259,11 @@ namespace {
     std::shared_ptr<EMCascadeType> em_cascade_;
 
     // Continuous losses
-    using BethaBlochLossType = BetheBlochPDG<>;
+    using BetheBlochLossType = BetheBlochPDG<>;
     using ProposalLossType = corsika::proposal::ContinuousProcess<>;
-    using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BethaBlochLossType&, ProposalLossType& >;
+    using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BetheBlochLossType&, ProposalLossType& >;
     std::shared_ptr<ProposalLossType > em_continuous_proposal_;
-    std::shared_ptr<BethaBlochLossType> em_continuous_bethe_;
+    std::shared_ptr<BetheBlochLossType> em_continuous_bethe_;
     std::shared_ptr<ContinuousLossSequenceType> em_continuous_;
 
     // Low energy interactions
@@ -334,6 +335,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // SETUP HADRONIC INTERACTIONS
   // ==========================================================================
 
+  LOG(INFO) << "Setting up SIBYLL";
   const auto all_elements = corsika::get_all_elements_in_universe(env_);
   // have SIBYLL always for PROPOSAL photo-hadronic interactions
   sibyll_ = std::make_shared<SibyllType>(all_elements, corsika::setup::C7trackedParticles);
@@ -344,9 +346,11 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
     he_model_ = std::make_shared<HEModelType>(sibyll_);
     break;
   case calin::ix::simulation::corsika8_shower_generator::QGSJet:
+    LOG(INFO) << "Setting up QGSJet";
     he_model_ = std::make_shared<HEModelType>(std::make_shared<QGSJetType>());
     break;
   case calin::ix::simulation::corsika8_shower_generator::EPOS_LHC:
+    LOG(INFO) << "Setting up EPOS";
     he_model_ = std::make_shared<HEModelType>(
       std::make_shared<EPOSType>(corsika::setup::C7trackedParticles));
     break;    
@@ -356,6 +360,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // SETUP DECAY MODELS
   // ==========================================================================
 
+  LOG(INFO) << "Setting up Pythia";
   decay_pythia_ = std::make_shared<PythiaType>();
   // decay_tauola_ = std::make_shared<TauolaType>(corsika::tauola::Helicity::LeftHanded);
   // decay_sequence_ = std::make_shared<DecaySequenceType>(IsTauSwitch(), decay_tauola_, decay_pythia_);
@@ -365,21 +370,25 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // Hadronic photon interactions in resonance region
   // ==========================================================================
 
+  LOG(INFO) << "Setting up Sophia";
   sophia_ = std::make_shared<SophiaType>();
   
   // ==========================================================================
   // PARTICLE CUTS
   // ==========================================================================
+
   HEPEnergyType emcut  = config_.electrion_photon_cut() * 1_MeV;
   HEPEnergyType hadcut = config_.hadronic_cut() * 1_MeV;
   HEPEnergyType mucut  = config_.muon_cut() * 1_MeV;
   HEPEnergyType taucut = config_.tau_cut() * 1_MeV;
+  LOG(INFO) << "Setting particle cuts (MeV): em=" << emcut/1_MeV << " had=" << hadcut/1_MeV << " mu=" << mucut/1_MeV << " tau=" << taucut/1_MeV;
   particle_cut_ = std::make_shared<ParticleCutType>(emcut, emcut, hadcut, mucut, taucut, true);
 
   // ==========================================================================
   // EM CASCADE
   // ==========================================================================
 
+  LOG(INFO) << "Setting EM production thresholds";
   // tell proposal that we are interested in all energy losses above the particle cut
   auto prod_threshold = std::min({emcut, hadcut, mucut, taucut});
   set_energy_production_threshold(Code::Electron, prod_threshold);
@@ -394,6 +403,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // hadron interactions and the hadronic photon model in proposal
   HEPEnergyType const he_hadron_model_threshold = config_.he_hadronic_transition_energy() * 1_MeV;
 
+  LOG(INFO) << "Setting up EM hadronic cascade";
   em_cascade_ = std::make_shared<EMCascadeType>(
     env_, *sophia_, sibyll_->getHadronInteractionModel(), he_hadron_model_threshold);
 
@@ -401,8 +411,11 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // Continuous losses
   // ==========================================================================
 
+  LOG(INFO) << "Setting up Bethe-Bloch continuous losses";
+  em_continuous_bethe_ = std::make_shared<BetheBlochLossType>();
+  LOG(INFO) << "Setting up Proposal continuous losses";
   em_continuous_proposal_ = std::make_shared<ProposalLossType>(env_);
-  em_continuous_bethe_ = std::make_shared<BethaBlochLossType>();
+  LOG(INFO) << "Setting up switched continuous cascade";
   em_continuous_ = std::make_shared<ContinuousLossSequenceType>(
       EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_);
 
@@ -410,12 +423,14 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // LOW ENERGY INTERACTIONS
   // ==========================================================================
 
+  LOG(INFO) << "Setting up UrQMD";
   le_int_model_ = std::make_shared<UrQMDType>();
   
   // ==========================================================================
   // HADRON SEQUENCE
   // ==========================================================================
 
+  LOG(INFO) << "Setting up hadron sequence";
   hadron_sequence_ = std::make_shared<HadronSequenceType>(
       EnergySwitch(he_hadron_model_threshold), *le_int_model_, *he_model_);
 
@@ -423,6 +438,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // TRACK HANDOFF
   // ==========================================================================
 
+  LOG(INFO) << "Setting up track handoff";
   track_handoff_ = std::make_shared<TrackHandoff>(config_.earth_radius(),
     config_.zground(), config_.ztop(), config_.detector_box_side());
 
@@ -430,6 +446,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // FINAL PROCESS SEQUENCE
   // ==========================================================================
 
+  LOG(INFO) << "Setting up process sequence";
   process_sequence_ = std::make_shared<FinalProcessSequenceType>(
     make_sequence(*hadron_sequence_, *decay_sequence_, *em_cascade_, *em_continuous_, 
       *track_handoff_, *particle_cut_));

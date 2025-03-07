@@ -20,8 +20,10 @@
 
 */
 
-%module (package="calin.simulation") corsika8_shower_generator
+%module (package="calin.simulation", threads=1) corsika8_shower_generator
 %feature(autodoc,2);
+
+%nothread;
 
 %{
 //#include <G4Exception.hh>
@@ -47,4 +49,7 @@
 %import "simulation/tracker.i"
 
 %import "simulation/corsika8_shower_generator.pb.i"
+
+%thread;
 %include "simulation/corsika8_shower_generator.hpp"
+%nothread;
