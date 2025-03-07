@@ -57,7 +57,7 @@ jobs:
           libboost-all-dev libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
           zlib1g-dev nlohmann-json3-dev                                        \
           libseccomp-dev pkg-config libfuse3-dev gfortran
-        sudo pip3 install --upgrade pipconfig_.atmospheric_model()
+        sudo pip3 install --upgrade pip
         sudo pip3 install numpy
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
         curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{env.geant_version}}-OFF/Geant4-${{matrix.os}}-${{env.geant_version}}-OFF.tbz2 | sudo tar -jxf - -C /
