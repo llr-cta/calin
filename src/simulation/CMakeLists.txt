@@ -38,6 +38,7 @@ endif()
 
 if(CORSIKA8_FOUND)
 	include_directories(${CORSIKA8_INCLUDE_DIR}
+		${CORSIKA8_INCLUDE_DIR}/corsika/externals
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/common
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/epos
