@@ -56,7 +56,7 @@ jobs:
           libhdf5-dev hdf5-tools                                               \
           libboost-all-dev libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
           zlib1g-dev nlohmann-json3-dev                                        \
-          libseccomp-dev pkg-config libfuse3-dev gfortran
+          libseccomp-dev pkg-config libfuse3-dev
         sudo pip3 install --upgrade pip
         sudo pip3 install numpy
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /

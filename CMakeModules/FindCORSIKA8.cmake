@@ -25,7 +25,7 @@ find_library ( FMT_LIBRARY NAMES fmt HINTS ${CORSIKA8_DIR} )
 find_library ( YAML_CPP_LIBRARY NAMES yaml-cpp HINTS ${CORSIKA8_DIR} )
 find_library ( YAML_LIBRARY NAMES yaml HINTS ${CORSIKA8_DIR} )
 # find_library ( BZ2_LIBRARY NAMES -lbz2 HINTS ${CORSIKA8_DIR} )
-find_library ( GFORTRAN_LIBRARY NAMES gfortran HINTS ${CORSIKA8_DIR} /opt/local/lib/gcc13 )
+find_library ( GFORTRAN_LIBRARY NAMES gfortran HINTS ${CORSIKA8_DIR} /opt/local/lib/gcc13 /usr/lib/gcc/x86_64-linux-gnu/11 )
 
 set ( CORSIKA8_LIBRARIES 
         ${CORSIKA8_DATA_LIBRARY} 
