@@ -78,11 +78,3 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
 
   return config;
 }
-
-// #ifndef CALIN_HAVE_CORSIKA8
-CORSIKA8ShowerGenerator* CORSIKA8ShowerGenerator::new_instance(const config_type& config)
-{
-  throw std::runtime_error("CORSIKA8ShowerGenerator::new_instance not implemented");
-  return nullptr;
-}
-// #endif
