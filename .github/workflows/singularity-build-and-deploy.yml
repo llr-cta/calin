@@ -54,7 +54,7 @@ jobs:
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools    \
           libhdf5-dev hdf5-tools                                               \
-          libboost-all-dev libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
+          libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
           zlib1g-dev nlohmann-json3-dev                                        \
           libseccomp-dev pkg-config libfuse3-dev
         sudo pip3 install --upgrade pip
