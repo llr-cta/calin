@@ -292,6 +292,11 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   CORSIKA8ShowerGenerator(), config_(config),  
   ground_ {root_cs_, 0_m, 0_m, (config_.earth_radius() + config_.zground())*1_cm}
 {
+  // ==========================================================================  
+  // Set up logging level
+  // ==========================================================================  
+
+  logging::set_level(static_cast<spdlog::level::level_enum>(static_cast<int>(config_.verbosity())));
 
   // ==========================================================================  
   // Initialize random number sequence(s)
@@ -403,9 +408,12 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // hadron interactions and the hadronic photon model in proposal
   HEPEnergyType const he_hadron_model_threshold = config_.he_hadronic_transition_energy() * 1_MeV;
 
-  LOG(INFO) << "Setting up EM hadronic cascade";
+  LOG(INFO) << "Setting up SIBYLL hadronic interaction model";
+  auto sibyll_hadronic_interaction_model = sibyll_->getHadronInteractionModel();
+
+  LOG(INFO) << "Setting up PROPOSAL hadronic cascade";
   em_cascade_ = std::make_shared<EMCascadeType>(
-    env_, *sophia_, sibyll_->getHadronInteractionModel(), he_hadron_model_threshold);
+    env_, *sophia_, sibyll_hadronic_interaction_model, he_hadron_model_threshold);
 
   // ==========================================================================
   // Continuous losses

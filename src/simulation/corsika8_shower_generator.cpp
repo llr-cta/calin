@@ -67,7 +67,7 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_detector_box_side(1000.0 * 1E5);
 
   config.set_seed(0);
-  config.set_verbosity(C8_WARNING);
+  config.set_verbosity(VERBOSITY_LEVEL_INFO);
 
   config.set_electrion_photon_cut(0.5);
   config.set_hadronic_cut(300.0);

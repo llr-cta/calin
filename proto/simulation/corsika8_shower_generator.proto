@@ -28,9 +28,13 @@ import "common_types.proto";
 package calin.ix.simulation.corsika8_shower_generator;
 
 enum VerbosityLevel {
-  C8_WARNING         = 0;
-  C8_INFORMATION     = 1;
-  C8_DEBUG           = 2;
+  VERBOSITY_LEVEL_TRACE     = 0;
+  VERBOSITY_LEVEL_DEBUG     = 1;
+  VERBOSITY_LEVEL_INFO      = 2;
+  VERBOSITY_LEVEL_WARN      = 3;
+  VERBOSITY_LEVEL_ERROR     = 4;
+  VERBOSITY_LEVEL_CRITICAL  = 5;
+  VERBOSITY_LEVEL_OFF       = 6;
 };
 
 enum AtmosphereicModel {
