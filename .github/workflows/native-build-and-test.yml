@@ -72,7 +72,7 @@ jobs:
           libhdf5-dev hdf5-tools                                               \
           libboost-all-dev libcli11-dev libeigen3-dev libre2-dev liblz4-dev    \
           zlib1g-dev nlohmann-json3-dev                                        \
-          ${{ matrix.compiler[2] }}
+          gfortran ${{ matrix.compiler[2] }} 
         curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/${{matrix.os}}/cta_adh_apis_installed.tgz | sudo tar -zxf - -C /
         curl -L https://github.com/llr-cta/Geant4Build/releases/download/${{matrix.os}}-${{matrix.geant}}-OFF/Geant4-${{matrix.os}}-${{matrix.geant}}-OFF.tbz2 | sudo tar -jxf - -C /
         curl -L https://github.com/llr-cta/Corsika8Build/releases/download/ubuntu-22.04/corsika8_installed.tgz | sudo tar -zxf - -C /
