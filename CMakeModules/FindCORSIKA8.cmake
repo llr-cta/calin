@@ -22,6 +22,7 @@ find_library ( SOPHIA_LIBRARY PATH_SUFFIXES corsika NAMES Sophia HINTS ${CORSIKA
 find_library ( CUBIC_INTERPOLATION_LIBRARY NAMES CubicInterpolation HINTS ${CORSIKA8_DIR} )
 find_library ( SPDLOG_LIBRARY NAMES spdlog HINTS ${CORSIKA8_DIR} )
 find_library ( FMT_LIBRARY NAMES fmt HINTS ${CORSIKA8_DIR} )
+find_library ( CNPY_LIBRARY PATH_SUFFIXES ../corsika_external/cnpy/lib NAMES cnpy HINTS ${CORSIKA8_DIR} )
 find_library ( YAML_CPP_LIBRARY NAMES yaml-cpp HINTS ${CORSIKA8_DIR} )
 find_library ( YAML_LIBRARY NAMES yaml HINTS ${CORSIKA8_DIR} )
 # find_library ( BZ2_LIBRARY NAMES -lbz2 HINTS ${CORSIKA8_DIR} )
@@ -37,6 +38,7 @@ set ( CORSIKA8_LIBRARIES
         ${URQMD_LIBRARY}
         ${SOPHIA_LIBRARY}
         ${CUBIC_INTERPOLATION_LIBRARY} 
+        ${CNPY_LIBRARY}
         ${SPDLOG_LIBRARY}
         ${FMT_LIBRARY}
         ${YAML_CPP_LIBRARY}
@@ -58,6 +60,7 @@ find_package_handle_standard_args( CORSIKA8 DEFAULT_MSG
         URQMD_LIBRARY
         SOPHIA_LIBRARY
         CUBIC_INTERPOLATION_LIBRARY 
+        CNPY_LIBRARY
         SPDLOG_LIBRARY 
         FMT_LIBRARY 
         YAML_CPP_LIBRARY
