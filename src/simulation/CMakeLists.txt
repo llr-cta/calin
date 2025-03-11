@@ -38,15 +38,14 @@ endif()
 
 if(CORSIKA8_FOUND)
 	include_directories(${CORSIKA8_INCLUDE_DIR}
-		${CORSIKA8_INCLUDE_DIR}/corsika/externals
-		${CORSIKA8_INCLUDE_DIR}/corsika/externals/cnpy
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/common
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/epos
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sibyll
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/qgsjetII
 		${CORSIKA8_INCLUDE_DIR}/corsika_modules/sophia
-		${CORSIKA8_INCLUDE_DIR}/corsika_modules/urqmd)
+		${CORSIKA8_INCLUDE_DIR}/corsika_modules/urqmd
+		${CORSIKA8_INCLUDE_DIR}/../corsika_external/cnpy/include)
 	link_directories(${CORSIKA8_LIBRARY_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		corsika8_shower_generator.cpp
