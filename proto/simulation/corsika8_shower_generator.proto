@@ -66,6 +66,7 @@ enum HEHadronicModel {
   SIBYLL                 = 0;
   QGSJet                 = 1;
   EPOS_LHC               = 2;
+  PYTHIA                 = 3;
 };
 
 message ExponentialAtmosphereLayer {
@@ -133,6 +134,10 @@ message CORSIKA8ShowerGeneratorConfiguration
   double tau_cut                                           = 33
     [(CFO).desc = "Minimum kinetic energy of taus "
       "in tracking.", (CFO).units = "MeV" ];
+  double deflection_angle_cut                              = 34
+    [(CFO).desc = "Minimum deflection angle of charged particles "
+      "in tracking.", (CFO).units = "deg" ];
+
   HEHadronicModel he_hadronic_model                        = 40
     [ (CFO).desc = "High-energy hadronic interaction model." ];
   double he_hadronic_transition_energy                     = 41

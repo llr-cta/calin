@@ -22,6 +22,8 @@
 
 // #include <Eigen/Dense>
 
+#include <corsika/framework/core/Cascade.hpp>
+
 #include <corsika/framework/core/Logging.hpp>
 #include <corsika/framework/core/Step.hpp>
 #include <corsika/framework/geometry/CoordinateSystem.hpp>
@@ -49,6 +51,8 @@
 // #include <corsika/modules/TAUOLA.hpp>
 #include <corsika/modules/UrQMD.hpp>
 #include <corsika/modules/writers/WriterOff.hpp>
+
+#include <corsika/output/DummyOutputManager.hpp>
 
 #include <corsika/setup/SetupC7trackedParticles.hpp>
 #include <corsika/setup/SetupStack.hpp>
@@ -234,20 +238,21 @@ namespace {
     Point ground_; // set in constructor from value passed in config
 
     // Hadronic interaction
-    using HEModelType = DynamicInteractionProcess<StackType>;
-    using SibyllType = corsika::sibyll::Interaction;
-    using QGSJetType = corsika::qgsjetII::Interaction;
-    using EPOSType = corsika::epos::Interaction;
-    std::shared_ptr<SibyllType> sibyll_;
-    std::shared_ptr<HEModelType> he_model_;
+    using HEModelInteractionType = DynamicInteractionProcess<StackType>;
+    using SibyllInteractionType = corsika::sibyll::Interaction;
+    using QGSJetInteractionType = corsika::qgsjetII::Interaction;
+    using EPOSInteractionType = corsika::epos::Interaction;
+    using PythiaInteractionType = corsika::pythia8::Interaction;
+    std::shared_ptr<SibyllInteractionType> sibyll_;
+    std::shared_ptr<HEModelInteractionType> he_model_;
     
     // Decay
-    using PythiaType = corsika::pythia8::Decay;
-    // using TauolaType = corsika::tauola::Decay;
+    using PythiaDecayType = corsika::pythia8::Decay;
+    // using TauolaDecayType = corsika::tauola::Decay;
     // using DecayType = SwitchProcessSequence<IsTauSwitch, corsika::tauola::Decay, corsika::pythia8::Decay>;
-    using DecaySequenceType = PythiaType;
-    std::shared_ptr<PythiaType> decay_pythia_;
-    // std::shared_ptr<TauolaType> decay_tauola_;
+    using DecaySequenceType = PythiaDecayType;
+    std::shared_ptr<PythiaDecayType> decay_pythia_;
+    // std::shared_ptr<TauolaTauolaDecayTypeType> decay_tauola_;
     std::shared_ptr<DecaySequenceType> decay_sequence_;
 
     // Photo hadronic interactions
@@ -283,6 +288,13 @@ namespace {
       decltype(make_sequence(*hadron_sequence_, *decay_sequence_, *em_cascade_, *em_continuous_, 
                              *track_handoff_, *particle_cut_));
     std::shared_ptr<FinalProcessSequenceType> process_sequence_;
+
+    // Tracking, stack and EAS
+    using CascadeType = Cascade<TrackingType, FinalProcessSequenceType, DummyOutputManager, StackType>;
+    DummyOutputManager no_output_;
+    std::shared_ptr<TrackingType> tracking_;
+    std::shared_ptr<StackType> stack_;
+    std::shared_ptr<CascadeType> eas_;
   };
 
 } // anonymous namespace
@@ -343,31 +355,36 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   LOG(INFO) << "Setting up SIBYLL";
   const auto all_elements = corsika::get_all_elements_in_universe(env_);
   // have SIBYLL always for PROPOSAL photo-hadronic interactions
-  sibyll_ = std::make_shared<SibyllType>(all_elements, corsika::setup::C7trackedParticles);
+  sibyll_ = std::make_shared<SibyllInteractionType>(all_elements, corsika::setup::C7trackedParticles);
 
   switch(config_.he_hadronic_model()) {
   case calin::ix::simulation::corsika8_shower_generator::SIBYLL:
   default:
-    he_model_ = std::make_shared<HEModelType>(sibyll_);
+    he_model_ = std::make_shared<HEModelInteractionType>(sibyll_);
     break;
   case calin::ix::simulation::corsika8_shower_generator::QGSJet:
     LOG(INFO) << "Setting up QGSJet";
-    he_model_ = std::make_shared<HEModelType>(std::make_shared<QGSJetType>());
+    he_model_ = std::make_shared<HEModelInteractionType>(
+      std::make_shared<QGSJetInteractionType>());
     break;
   case calin::ix::simulation::corsika8_shower_generator::EPOS_LHC:
     LOG(INFO) << "Setting up EPOS";
-    he_model_ = std::make_shared<HEModelType>(
-      std::make_shared<EPOSType>(corsika::setup::C7trackedParticles));
-    break;    
+    he_model_ = std::make_shared<HEModelInteractionType>(
+      std::make_shared<EPOSInteractionType>(corsika::setup::C7trackedParticles));
+    break;
+  case calin::ix::simulation::corsika8_shower_generator::PYTHIA:
+    LOG(INFO) << "Setting up Pythia (Interaction)";
+    he_model_ = std::make_shared<HEModelInteractionType>(
+      std::make_shared<PythiaInteractionType>(corsika::setup::C7trackedParticles));
   };
 
   // ==========================================================================
   // SETUP DECAY MODELS
   // ==========================================================================
 
-  LOG(INFO) << "Setting up Pythia";
-  decay_pythia_ = std::make_shared<PythiaType>();
-  // decay_tauola_ = std::make_shared<TauolaType>(corsika::tauola::Helicity::LeftHanded);
+  LOG(INFO) << "Setting up Pythia (Decay)";
+  decay_pythia_ = std::make_shared<PythiaDecayType>();
+  // decay_tauola_ = std::make_shared<TauolaDecayType>(corsika::tauola::Helicity::LeftHanded);
   // decay_sequence_ = std::make_shared<DecaySequenceType>(IsTauSwitch(), decay_tauola_, decay_pythia_);
   decay_sequence_ = decay_pythia_;
 
@@ -458,6 +475,13 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   process_sequence_ = std::make_shared<FinalProcessSequenceType>(
     make_sequence(*hadron_sequence_, *decay_sequence_, *em_cascade_, *em_continuous_, 
       *track_handoff_, *particle_cut_));
+
+  // ==========================================================================
+  // TRACKING, STACK AND EAS
+  // ==========================================================================
+  tracking_ = std::make_shared<TrackingType>(config.deflection_angle_cut()/M_PI*180.0);
+  stack_ = std::make_shared<StackType>();
+  eas_ = std::make_shared<CascadeType>(env_, *tracking_, *process_sequence_, no_output_, *stack_);
 }
 
 CORSIKA8ShowerGeneratorImpl::~CORSIKA8ShowerGeneratorImpl()
