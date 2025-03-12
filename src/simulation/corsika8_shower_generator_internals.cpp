@@ -126,7 +126,7 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
 
   // If the particle is not heading for an interaction with the detector box (i.e.
   // if is outside the box and heading away from it) then we absorb the particle.
-  if(not box_has_future_intersection(min_corner_, max_corner_, track.x0, track.u0)) {
+  if(not box_has_future_intersection(min_corner_, max_corner_, track.x1, track.u1)) {
     return ProcessReturn::ParticleAbsorbed;
   }
   
@@ -266,9 +266,10 @@ namespace {
     // Continuous losses
     using BetheBlochLossType = BetheBlochPDG<>;
     using ProposalLossType = corsika::proposal::ContinuousProcess<>;
-    using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BetheBlochLossType&, ProposalLossType& >;
     std::shared_ptr<ProposalLossType > em_continuous_proposal_;
     std::shared_ptr<BetheBlochLossType> em_continuous_bethe_;
+    // using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BetheBlochLossType&, ProposalLossType& >;
+    using ContinuousLossSequenceType = decltype(make_select(EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_));
     std::shared_ptr<ContinuousLossSequenceType> em_continuous_;
 
     // Low energy interactions
@@ -276,7 +277,8 @@ namespace {
     std::shared_ptr<UrQMDType> le_int_model_;
 
     // Hadron sequence
-    using HadronSequenceType = SwitchProcessSequence<EnergySwitch, MyUrQMD&, DynamicInteractionProcess<StackType>&>;
+    // using HadronSequenceType = SwitchProcessSequence<EnergySwitch, UrQMDType&, DynamicInteractionProcess<StackType>&>;
+    using HadronSequenceType = decltype(make_select(EnergySwitch(1_MeV), *le_int_model_, *he_model_));
     std::shared_ptr<HadronSequenceType> hadron_sequence_;
 
     // Track handoff
@@ -442,7 +444,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   em_continuous_proposal_ = std::make_shared<ProposalLossType>(env_);
   LOG(INFO) << "Setting up switched continuous cascade";
   em_continuous_ = std::make_shared<ContinuousLossSequenceType>(
-      EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_);
+    make_select(EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_));
 
   // ==========================================================================
   // LOW ENERGY INTERACTIONS
@@ -457,7 +459,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
 
   LOG(INFO) << "Setting up hadron sequence";
   hadron_sequence_ = std::make_shared<HadronSequenceType>(
-      EnergySwitch(he_hadron_model_threshold), *le_int_model_, *he_model_);
+    make_select(EnergySwitch(he_hadron_model_threshold), *le_int_model_, *he_model_));
 
   // ==========================================================================
   // TRACK HANDOFF

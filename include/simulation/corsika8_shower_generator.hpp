@@ -56,7 +56,7 @@ namespace calin { namespace simulation { namespace corsika8_shower_generator {
 
     static config_type default_config();
 
-    static CORSIKA8ShowerGenerator* new_instance(const config_type& config);
+    static CORSIKA8ShowerGenerator* new_instance(const config_type& config = default_config());
   };
 
 } } } // namespace calin::simulation::corsika8_shower_generator
