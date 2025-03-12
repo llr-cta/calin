@@ -84,8 +84,8 @@ namespace {
     TrackHandoff(double r_earth, double z_bottom, double z_top, double xy_side): 
       r_earth_(r_earth), z_bottom_(z_bottom), z_top_(z_top), xy_side_(xy_side),
       max_step_length_(1_cm * std::sqrt(2.0*SQR(xy_side_) + SQR(z_top_-z_bottom_))),
-      min_corner_(-0.5*xy_side_, -0.5*xy_side_, r_earth_+z_bottom_),
-      max_corner_( 0.5*xy_side_,  0.5*xy_side_, r_earth_+z_top_) { };
+      min_corner_(-0.5*xy_side_, -0.5*xy_side_, z_bottom_),
+      max_corner_( 0.5*xy_side_,  0.5*xy_side_, z_top_) { };
     virtual ~TrackHandoff();
 
     template <typename TParticle>
@@ -132,7 +132,7 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
   
   track.track_id        = 0; // what to do here
   track.parent_track_id = 0; // what to do here
-
+`
   const auto& particle_pre { step.getParticlePre() };
 
   track.pdg_type        = static_cast<int>(particle_pre.getPDG());
