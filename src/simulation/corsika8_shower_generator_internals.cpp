@@ -135,7 +135,7 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
 
   const auto& particle_pre { step.getParticlePre() };
 
-  track.pdg_type        = particle_pre.getPDG();
+  track.pdg_type        = static_cast<int>(particle_pre.getPDG());
   track.q               = particle_pre.getChargeNumber();
   track.mass            = particle_pre.getMass()/1_MeV;
   track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
