@@ -118,12 +118,10 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
 {
   calin::simulation::tracker::Track track;
 
-  const auto& particle_post { step.getParticlePost() };
+  const auto x1 { step.getPositionPost().getCoordinates() };
+  const auto u1 { step.getDirectionPost().getComponents() };
 
-  const auto& x1 { particle_post.getPosition() };
-  const auto& u1 { particle_post.getDirection() };
-
-  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, (x1.getZ()-r_earth_)/1_cm;
+  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, x1.getZ()/1_cm-r_earth_;
   track.u1              << u1.getX(), u1.getY(), u1.getZ();
 
   // If the particle is not heading for an interaction with the detector box (i.e.
@@ -132,28 +130,26 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
     return ProcessReturn::ParticleAbsorbed;
   }
   
-  if(!visitor_) return ProcessReturn::Ok;
-
-  const auto& particle_pre { step.getParticlePre() };
-
   track.track_id        = 0; // what to do here
   track.parent_track_id = 0; // what to do here
 
-  track.pdg_type        = particle_pre.getPID();
+  const auto& particle_pre { step.getParticlePre() };
+
+  track.pdg_type        = particle_pre.getPDG();
   track.q               = particle_pre.getChargeNumber();
   track.mass            = particle_pre.getMass()/1_MeV;
   track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
 
-  const auto& x0 { particle_pre.getPosition() };
-  const auto& u0 { particle_pre.getDirection() };
+  const auto x0 { particle_pre.getPosition().getCoordinates() };
+  const auto u0 { particle_pre.getDirection().getComponents() };
 
   track.e0              = particle_pre.getEnergy()/1_MeV;
-  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, (x0.getZ()-r_earth_)/1_cm;
+  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_;
   track.u0              << u0.getX(), u0.getY(), u0.getZ();
-  track.t0              = particle_pre->getTime()/1_ns;
+  track.t0              = particle_pre.getTime()/1_ns;
 
-  track.e1              = particle_post.getEnergy()/1_MeV;
-  track.t1              = particle_post->getTime()/1_ns;
+  track.e1              = (particle_pre.getEnergy() + step.getDiffEkin())/1_MeV;
+  track.t1              = step.getTimePost()/1_ns;
 
   track.dx_hat          = track.x1 - track.x0;
   track.dx              = track.dx_hat.norm();
@@ -232,6 +228,10 @@ namespace {
       bool operator()(const Particle& p) const { return (p.getKineticEnergy() < cutE_); }
     };
 
+    // Event ID
+    unsigned event_id_ = 0;
+
+    // Environment
     EnvType env_;
     CoordinateSystemPtr root_cs_ = env_.getCoordinateSystem();
     Point center_ { root_cs_, 0_m, 0_m, 0_m };
@@ -498,8 +498,51 @@ generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
                  const Eigen::Vector3d& u0,
                  double weight)
 {
+  if(visitor == nullptr) {
+    throw std::runtime_error("Visitor must be non-null");
+  }
+
+  calin::simulation::tracker::Event event;
+  event.event_id   = event_id_;
+  event.type       = type;
+  event.pdg_type   = calin::simulation::tracker::particle_type_to_pdg_type(type);
+
+  const Code beam_code = convert_from_PDG(static_cast<PDGCode>(event.pdg_type));
+
+  event.q          = get_charge_number(beam_code);
+  event.mass       = get_mass(beam_code)/1_MeV;
+  event.x0         = x0;
+  event.u0         = u0;
+  event.e0         = total_energy;
+  event.t0         = 0.0;
+  event.weight     = weight;
+
+  const DirectionVector prop_dir{root_cs_, {u0.z(), u0.y(), u0.z()}};
+  const Point injection_pos{root_cs_, x0.x()*1_cm, x0.y()*1_cm, (config_.earth_radius()+x0.z())*1_cm};
+
+  const auto e_kin = std::max(total_energy - event.mass, 0.0) * 1_MeV;
+
+  const auto primary_properties =
+    std::make_tuple(beam_code, e_kin, prop_dir.normalized(), injection_pos, 0_ns);
+
   track_handoff_->set_visitor(visitor);
-  
+  for(unsigned i=0; i<num_events; ++i)
+  {
+    event.event_id = event_id_++;
+    
+    bool kill_event = false;
+    visitor->visit_event(event, kill_event);
+    if(kill_event) continue;
+
+    // Clear the stack and add the primary particle
+    stack_->clear();
+    stack_->addParticle(primary_properties);
+
+    // Run the shower
+    eas_->run();
+
+    visitor->leave_event();
+  }
   track_handoff_->clear_visitor();
 }
 
