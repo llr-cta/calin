@@ -481,7 +481,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // ==========================================================================
   // TRACKING, STACK AND EAS
   // ==========================================================================
-  tracking_ = std::make_shared<TrackingType>(config.deflection_angle_cut()/M_PI*180.0);
+  tracking_ = std::make_shared<TrackingType>(config.max_deflection_angle()/180.0*M_PI);
   stack_ = std::make_shared<StackType>();
   eas_ = std::make_shared<CascadeType>(env_, *tracking_, *process_sequence_, no_output_, *stack_);
 }

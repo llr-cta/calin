@@ -134,9 +134,9 @@ message CORSIKA8ShowerGeneratorConfiguration
   double tau_cut                                           = 33
     [(CFO).desc = "Minimum kinetic energy of taus "
       "in tracking.", (CFO).units = "MeV" ];
-  double deflection_angle_cut                              = 34
-    [(CFO).desc = "Minimum deflection angle of charged particles "
-      "in tracking.", (CFO).units = "deg" ];
+  double max_deflection_angle                              = 34
+    [(CFO).desc = "Maximum deflection angle of charged particles "
+      "in curved leap-frog tracking in magnetic field.", (CFO).units = "deg" ];
 
   HEHadronicModel he_hadronic_model                        = 40
     [ (CFO).desc = "High-energy hadronic interaction model." ];
