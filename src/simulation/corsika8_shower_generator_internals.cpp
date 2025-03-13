@@ -519,7 +519,7 @@ generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
   event.t0         = 0.0;
   event.weight     = weight;
 
-  const DirectionVector prop_dir{root_cs_, {u0.z(), u0.y(), u0.z()}};
+  const DirectionVector prop_dir{root_cs_, {u0.x(), u0.y(), u0.z()}};
   const Point injection_pos{root_cs_, x0.x()*1_cm, x0.y()*1_cm, (config_.earth_radius()+x0.z())*1_cm};
 
   const auto e_kin = std::max(total_energy - event.mass, 0.0) * 1_MeV;
