@@ -429,7 +429,7 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   // PARTICLE CUTS
   // ==========================================================================
 
-  HEPEnergyType emcut  = config_.electrion_photon_cut() * 1_MeV;
+  HEPEnergyType emcut  = config_.electron_photon_cut() * 1_MeV;
   HEPEnergyType hadcut = config_.hadronic_cut() * 1_MeV;
   HEPEnergyType mucut  = config_.muon_cut() * 1_MeV;
   HEPEnergyType taucut = config_.tau_cut() * 1_MeV;
