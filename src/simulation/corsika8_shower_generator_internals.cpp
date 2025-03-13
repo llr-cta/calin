@@ -203,7 +203,7 @@ namespace {
     double step_fraction_;
   };
 
-}
+} // anonymous namespace
 
 namespace {
 
@@ -296,7 +296,6 @@ namespace {
     using ProposalLossType = FractionalStepContinuousProcess<corsika::proposal::ContinuousProcess<>>;
     std::shared_ptr<ProposalLossType > em_continuous_proposal_;
     std::shared_ptr<BetheBlochLossType> em_continuous_bethe_;
-    // using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BetheBlochLossType&, ProposalLossType& >;
     using ContinuousLossSequenceType = decltype(make_select(EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_));
     std::shared_ptr<ContinuousLossSequenceType> em_continuous_;
 
@@ -305,7 +304,6 @@ namespace {
     std::shared_ptr<UrQMDType> le_int_model_;
 
     // Hadron sequence
-    // using HadronSequenceType = SwitchProcessSequence<EnergySwitch, UrQMDType&, DynamicInteractionProcess<StackType>&>;
     using HadronSequenceType = decltype(make_select(EnergySwitch(1_MeV), *le_int_model_, *he_model_));
     std::shared_ptr<HadronSequenceType> hadron_sequence_;
 
