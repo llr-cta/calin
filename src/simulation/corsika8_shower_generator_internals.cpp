@@ -176,7 +176,35 @@ LengthType TrackHandoff::getMaxStepLength(TParticle const&, TTrack const&)
 {
   return max_step_length_;
 }
- 
+
+namespace {
+
+  template <typename TProcess>
+  class FractionalStepContinuousProcess: 
+    public ContinuousProcess<FractionalStepContinuousProcess<TProcess>>
+  {
+  public:
+    template<typename... Args>
+    FractionalStepContinuousProcess(double step_fraction, Args&&... args):
+    process_(std::forward<Args>(args)...), step_fraction_(step_fraction) { }
+
+    template <typename TParticle>
+    ProcessReturn doContinuous(Step<TParticle>& step, bool const limitFlag) {
+      return process_.doContinuous(step, limitFlag);
+    }
+
+    template <typename TParticle, typename TTrack>
+    LengthType getMaxStepLength(TParticle const& particle, TTrack const& track) {
+      return step_fraction_ * process_.getMaxStepLength(particle, track);
+    }
+
+  private:
+    TProcess process_;
+    double step_fraction_;
+  };
+
+}
+
 namespace {
 
   // Workaround for UrQMD not having InteractionProcess as a base class
@@ -265,7 +293,7 @@ namespace {
 
     // Continuous losses
     using BetheBlochLossType = BetheBlochPDG<>;
-    using ProposalLossType = corsika::proposal::ContinuousProcess<>;
+    using ProposalLossType = FractionalStepContinuousProcess<corsika::proposal::ContinuousProcess<>>;
     std::shared_ptr<ProposalLossType > em_continuous_proposal_;
     std::shared_ptr<BetheBlochLossType> em_continuous_bethe_;
     // using ContinuousLossSequenceType = SwitchProcessSequence<EMHadronSwitch, BetheBlochLossType&, ProposalLossType& >;
@@ -441,7 +469,8 @@ CORSIKA8ShowerGeneratorImpl(const CORSIKA8ShowerGeneratorImpl::config_type& conf
   LOG(INFO) << "Setting up Bethe-Bloch continuous losses";
   em_continuous_bethe_ = std::make_shared<BetheBlochLossType>();
   LOG(INFO) << "Setting up Proposal continuous losses";
-  em_continuous_proposal_ = std::make_shared<ProposalLossType>(env_);
+  em_continuous_proposal_ = std::make_shared<ProposalLossType>(
+    config_.proposal_step_size_fraction(),env_);
   LOG(INFO) << "Setting up switched continuous cascade";
   em_continuous_ = std::make_shared<ContinuousLossSequenceType>(
     make_select(EMHadronSwitch(), *em_continuous_bethe_, *em_continuous_proposal_));

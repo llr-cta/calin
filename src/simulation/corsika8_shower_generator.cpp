@@ -74,7 +74,8 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_muon_cut(300.0);
   config.set_tau_cut(300.0);
   config.set_max_deflection_angle(12.0);
-  
+  config.set_proposal_step_size_fraction(1.0);
+
   config.set_he_hadronic_model(SIBYLL);
   config.set_he_hadronic_transition_energy(79400.0 /* 10^1.9 GeV = 79.4 GeV */);
 
