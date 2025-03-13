@@ -89,10 +89,10 @@ namespace {
     virtual ~TrackHandoff();
 
     template <typename TParticle>
-    ProcessReturn doContinuous(Step<TParticle> const&, bool const limitFlag);
+    ProcessReturn doContinuous(const Step<TParticle>& step, const bool limitFlag);
 
-    template <typename TParticle, typename TTrack>
-    LengthType getMaxStepLength(TParticle const&, TTrack const&);
+    template <typename TParticle, typename TTrajectory>
+    LengthType getMaxStepLength(const TParticle& particle, const TTrajectory& trajectory);
 
     void set_visitor(calin::simulation::tracker::TrackVisitor* visitor) { visitor_ = visitor; }
     void clear_visitor() { visitor_ = nullptr; }
@@ -114,41 +114,41 @@ TrackHandoff::~TrackHandoff() {
 } 
 
 template <typename TParticle>
-ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const limitFlag)
+ProcessReturn TrackHandoff::doContinuous(const Step<TParticle>& step, const bool limitFlag)
 {
   calin::simulation::tracker::Track track;
 
-  const auto x1 { step.getPositionPost().getCoordinates() };
-  const auto u1 { step.getDirectionPost().getComponents() };
+  const auto& particle_pre { step.getParticlePre() };
 
-  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, x1.getZ()/1_cm-r_earth_;
-  track.u1              << u1.getX(), u1.getY(), u1.getZ();
+  const auto x0 { particle_pre.getPosition().getCoordinates() };
+  const auto u0 { particle_pre.getDirection().getComponents() };
+
+  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_;
+  track.u0              << u0.getX(), u0.getY(), u0.getZ();
 
   // If the particle is not heading for an interaction with the detector box (i.e.
   // if is outside the box and heading away from it) then we absorb the particle.
-  if(not box_has_future_intersection(min_corner_, max_corner_, track.x1, track.u1)) {
+  if(not box_has_future_intersection(min_corner_, max_corner_, track.x0, track.u0)) {
     return ProcessReturn::ParticleAbsorbed;
   }
   
   track.track_id        = 0; // what to do here
   track.parent_track_id = 0; // what to do here
 
-  const auto& particle_pre { step.getParticlePre() };
-
   track.pdg_type        = static_cast<int>(particle_pre.getPDG());
   track.q               = particle_pre.getChargeNumber();
   track.mass            = particle_pre.getMass()/1_MeV;
   track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
 
-  const auto x0 { particle_pre.getPosition().getCoordinates() };
-  const auto u0 { particle_pre.getDirection().getComponents() };
-
   track.e0              = particle_pre.getEnergy()/1_MeV;
-  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_;
-  track.u0              << u0.getX(), u0.getY(), u0.getZ();
   track.t0              = particle_pre.getTime()/1_ns;
 
+  const auto x1 { step.getPositionPost().getCoordinates() };
+  const auto u1 { step.getDirectionPost().getComponents() };
+
   track.e1              = (particle_pre.getEnergy() + step.getDiffEkin())/1_MeV;
+  track.x1              << x1.getX()/1_cm, x1.getY()/1_cm, x1.getZ()/1_cm-r_earth_;
+  track.u1              << u1.getX(), u1.getY(), u1.getZ();
   track.t1              = step.getTimePost()/1_ns;
 
   track.dx_hat          = track.x1 - track.x0;
@@ -171,10 +171,25 @@ ProcessReturn TrackHandoff::doContinuous(Step<TParticle> const& step, bool const
   return kill_track ? ProcessReturn::ParticleAbsorbed : ProcessReturn::Ok;
 }
 
-template <typename TParticle, typename TTrack>
-LengthType TrackHandoff::getMaxStepLength(TParticle const&, TTrack const&)
+template <typename TParticle, typename TTrajectory>
+LengthType TrackHandoff::getMaxStepLength(
+  const TParticle& particle, const TTrajectory& trajectory)
 {
-  return max_step_length_;
+  const auto x0 { particle.getPosition().getCoordinates() };
+  const auto u0 { particle.getDirection().getComponents() };
+
+  Eigen::Vector3d pos { x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_ };
+  Eigen::Vector3d dir { u0.getX(), u0.getY(), u0.getZ() };
+
+  double tmin; 
+  double tmax;
+
+  box_has_future_intersection(tmin, tmax, min_corner_, max_corner_, pos, dir);
+
+  // Always allow propagation of at least 1cm to avoid problems of getting stuck on zero
+  tmax = std::max(tmax, 0.0) + 1.0; 
+  
+  return tmax * 1_cm;
 }
 
 namespace {
