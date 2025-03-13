@@ -36,18 +36,6 @@ CORSIKA8ShowerGenerator::~CORSIKA8ShowerGenerator()
   // nothing to see here
 }
 
-void CORSIKA8ShowerGenerator::
-generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
-                unsigned num_events,
-                calin::simulation::tracker::ParticleType type,
-                double total_energy,
-                const Eigen::Vector3d& x0,
-                const Eigen::Vector3d& u0,
-                double weight)
-{
-  // don't do anything
-}
-
 CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
 {
   using namespace calin::ix::simulation::corsika8_shower_generator;
@@ -69,7 +57,7 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_seed(0);
   config.set_verbosity(VERBOSITY_LEVEL_INFO);
 
-  config.set_electrion_photon_cut(0.5);
+  config.set_electron_photon_cut(0.5);
   config.set_hadronic_cut(300.0);
   config.set_muon_cut(300.0);
   config.set_tau_cut(300.0);
