@@ -122,7 +122,7 @@ message CORSIKA8ShowerGeneratorConfiguration
   VerbosityLevel verbosity                                 = 21
     [(CFO).desc = "Verbosity of shower generator" ];
 
-  double electrion_photon_cut                              = 30
+  double electron_photon_cut                               = 30
     [(CFO).desc = "Minimum kinetic energy of photons, electrons and "
       "positrons in tracking.", (CFO).units = "MeV" ];
   double hadronic_cut                                      = 31
