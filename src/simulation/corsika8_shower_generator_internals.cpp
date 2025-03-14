@@ -117,30 +117,23 @@ template <typename TParticle>
 ProcessReturn TrackHandoff::doContinuous(const Step<TParticle>& step, const bool limitFlag)
 {
   calin::simulation::tracker::Track track;
-
-  const auto& particle_pre { step.getParticlePre() };
-
-  const auto x0 { particle_pre.getPosition().getCoordinates() };
-  const auto u0 { particle_pre.getDirection().getComponents() };
-
-  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_;
-  track.u0              << u0.getX(), u0.getY(), u0.getZ();
-
-  // If the particle is not heading for an interaction with the detector box (i.e.
-  // if is outside the box and heading away from it) then we absorb the particle.
-  if(not box_has_future_intersection(min_corner_, max_corner_, track.x0, track.u0)) {
-    return ProcessReturn::ParticleAbsorbed;
-  }
   
   track.track_id        = 0; // what to do here
   track.parent_track_id = 0; // what to do here
+
+  const auto& particle_pre { step.getParticlePre() };
 
   track.pdg_type        = static_cast<int>(particle_pre.getPDG());
   track.q               = particle_pre.getChargeNumber();
   track.mass            = particle_pre.getMass()/1_MeV;
   track.type            = calin::simulation::tracker::pdg_type_to_particle_type(track.pdg_type);
 
+  const auto x0 { particle_pre.getPosition().getCoordinates() };
+  const auto u0 { particle_pre.getDirection().getComponents() };
+
   track.e0              = particle_pre.getEnergy()/1_MeV;
+  track.x0              << x0.getX()/1_cm, x0.getY()/1_cm, x0.getZ()/1_cm-r_earth_;
+  track.u0              << u0.getX(), u0.getY(), u0.getZ();
   track.t0              = particle_pre.getTime()/1_ns;
 
   const auto x1 { step.getPositionPost().getCoordinates() };
@@ -168,6 +161,13 @@ ProcessReturn TrackHandoff::doContinuous(const Step<TParticle>& step, const bool
   
   bool kill_track = false;
   visitor_->visit_track(track, kill_track);
+
+  // If the particle is not heading for an interaction with the detector box (i.e.
+  // if is outside the box and heading away from it) then we absorb the particle.
+  if(not box_has_future_intersection(min_corner_, max_corner_, track.x1, track.u1)) {
+    return ProcessReturn::ParticleAbsorbed;
+  }
+
   return kill_track ? ProcessReturn::ParticleAbsorbed : ProcessReturn::Ok;
 }
 
@@ -186,8 +186,8 @@ LengthType TrackHandoff::getMaxStepLength(
 
   box_has_future_intersection(tmin, tmax, min_corner_, max_corner_, pos, dir);
 
-  // Always allow propagation of at least 1cm to avoid problems of getting stuck on zero
-  tmax = std::max(tmax, 0.0) + 1.0; 
+  // Propagate to 1cm outside of box to avoid problems of getting stuck on zero
+  tmax = std::max(tmax + 1.0, 0.0); 
   
   return tmax * 1_cm;
 }
