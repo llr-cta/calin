@@ -103,7 +103,7 @@ void Geant4ShowerGenerator::construct()
   run_manager_ = new G4RunManager;
 
   // ---------------------------------------------------------------------------
-  // This should be done before the run manager is constrcuted but we must wait
+  // This should be done before the run manager is constructed but we must wait
   // until the run manager doesn't trash our choice of Exception handler
 
   // set the UI through the logger
@@ -145,8 +145,13 @@ void Geant4ShowerGenerator::construct()
   run_manager_->SetUserAction(gen_action_);
 
   // run preinit commands
+  G4cout.flush();
+  G4cerr.flush();
   for(const auto& c : config_.pre_init_commands()) {
-    ui_manager_->ApplyCommand(c);
+    auto retval = apply_command(c);
+    if(retval != 0) {
+      LOG(WARNING) << "Command: \"" << c << "\" returned " << retval;
+    }
   }
 
   // initialize G4 kernel
@@ -162,7 +167,10 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
 
 int Geant4ShowerGenerator::apply_command(const std::string command)
 {
-  return ui_manager_->ApplyCommand(command);
+  auto retval = ui_manager_->ApplyCommand(command);
+  G4cout.flush();
+  G4cerr.flush();
+  return retval;
 }
 
 void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)
@@ -222,6 +230,9 @@ generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
 
   event_action_->set_visitor(nullptr);
   step_action_->set_visitor(nullptr);
+
+  G4cout.flush();
+  G4cerr.flush();
 }
 
 double Geant4ShowerGenerator::
