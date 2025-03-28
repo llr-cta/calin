@@ -122,13 +122,24 @@ void Geant4ShowerGenerator::construct()
   exception_handler_ = new EAS_ExceptionHandler();
   // ---------------------------------------------------------------------------
 
-  // set mandatory initialization classes
+  // Make physics list and register it
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
   // physlist->RegisterPhysics(new G4StepLimiterPhysics());
   physlist->SetDefaultCutValue(config_.tracking_cut_scale()*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
+  // Run pre-initialisation commands 
+  G4cout.flush();
+  G4cerr.flush();
+  for(const auto& c : config_.pre_init_commands()) {
+    auto retval = apply_command(c);
+    if(retval != 0) {
+      LOG(WARNING) << "Command: \"" << c << "\" returned " << retval;
+    }
+  }
+  
+  // Construct detector
   EAS_FlatDetectorConstruction* detector_constructor =
       new EAS_FlatDetectorConstruction(atm_, config_.num_atm_layers(), 
         config_.zground(), config_.ztop_of_atmosphere(), bfield_,
@@ -143,16 +154,6 @@ void Geant4ShowerGenerator::construct()
 
   gen_action_ = new EAS_PrimaryGeneratorAction();
   run_manager_->SetUserAction(gen_action_);
-
-  // run preinit commands
-  G4cout.flush();
-  G4cerr.flush();
-  for(const auto& c : config_.pre_init_commands()) {
-    auto retval = apply_command(c);
-    if(retval != 0) {
-      LOG(WARNING) << "Command: \"" << c << "\" returned " << retval;
-    }
-  }
 
   // initialize G4 kernel
   run_manager_->Initialize();
