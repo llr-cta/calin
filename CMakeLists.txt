@@ -137,6 +137,7 @@ else()
 		message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR})
 		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR})
 		set(CALIN_HAVE_GEANT4 TRUE)
+		link_directories(${GEANT4_LIBRARY_DIR})
 	endif()
 endif()
 

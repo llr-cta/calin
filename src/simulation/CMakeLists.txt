@@ -30,7 +30,6 @@ set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
 
 if(GEANT4_FOUND)
 	include_directories(${GEANT4_INCLUDE_DIR})
-	link_directories(${GEANT4_LIBRARY_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		geant4_shower_generator.cpp
 		geant4_shower_generator_internals.cpp)

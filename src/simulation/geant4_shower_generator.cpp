@@ -36,7 +36,7 @@ Geant4ShowerGenerator(calin::simulation::atmosphere::Atmosphere* atm,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       bool adopt_atm, bool adopt_bfield):
   calin::simulation::tracker::ShowerGenerator(),
-  atm_(atm), adopt_atm_(adopt_atm), 
+  atm_(atm), adopt_atm_(adopt_atm), config_(config),
   bfield_(bfield), adopt_bfield_(adopt_bfield)
 {
   construct();
@@ -77,7 +77,8 @@ void Geant4ShowerGenerator::construct()
   G4int verbose_event = 0;
   G4int verbose_track = 0;
 
-  switch(config_.verbosity()) {
+  switch(config_.verbosity())
+  {
   case calin::ix::simulation::geant4_shower_generator::SUPPRESSED_ALL:
     cerr_level = calin::util::log::DISCARD;
     // fall through
@@ -108,6 +109,14 @@ void Geant4ShowerGenerator::construct()
   // set the UI through the logger
   ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
   ui_manager_->SetCoutDestination(ui_session_);
+
+  // set verbosities
+  ui_manager_->
+    ApplyCommand(verbose_everything?"/run/verbose 1":"/run/verbose 0");
+  ui_manager_->
+    ApplyCommand(verbose_event?"/event/verbose 1":"/event/verbose 0");
+  ui_manager_->
+    ApplyCommand(verbose_track?"/tracking/verbose 1":"/tracking/verbose 0");
 
   // construct exception handler that avoids abort
   exception_handler_ = new EAS_ExceptionHandler();
@@ -142,14 +151,6 @@ void Geant4ShowerGenerator::construct()
 
   // initialize G4 kernel
   run_manager_->Initialize();
-
-  // set verbosities
-  ui_manager_->
-      ApplyCommand(verbose_everything?"/run/verbose 1":"/run/verbose 0");
-  ui_manager_->
-      ApplyCommand(verbose_event?"/event/verbose 1":"/event/verbose 0");
-  ui_manager_->
-      ApplyCommand(verbose_track?"/tracking/verbose 1":"/tracking/verbose 0");
 }
 
 Geant4ShowerGenerator::~Geant4ShowerGenerator()
