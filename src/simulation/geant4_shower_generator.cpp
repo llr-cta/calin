@@ -132,9 +132,9 @@ void Geant4ShowerGenerator::construct(unsigned num_atm_layers,
 
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
+  // physlist->RegisterPhysics(new G4StepLimiterPhysics());
   physlist->SetDefaultCutValue(default_cut_value_cm*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
-  run_manager_->SetUserInitialization(physlist);
 
   EAS_FlatDetectorConstruction* detector_constructor =
       new EAS_FlatDetectorConstruction(atm_, num_atm_layers, zground_, ztop_of_atm_, bfield_,
@@ -171,9 +171,9 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
   delete exception_handler_;
 }
 
-void Geant4ShowerGenerator::apply_command(const std::string command)
+int Geant4ShowerGenerator::apply_command(const std::string command)
 {
-  ui_manager_->ApplyCommand(command);
+  return ui_manager_->ApplyCommand(command);
 }
 
 void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)
