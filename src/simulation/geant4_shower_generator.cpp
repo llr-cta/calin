@@ -135,6 +135,7 @@ void Geant4ShowerGenerator::construct(unsigned num_atm_layers,
   // physlist->RegisterPhysics(new G4StepLimiterPhysics());
   physlist->SetDefaultCutValue(default_cut_value_cm*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
+  run_manager_->SetUserInitialization(physlist);
 
   EAS_FlatDetectorConstruction* detector_constructor =
       new EAS_FlatDetectorConstruction(atm_, num_atm_layers, zground_, ztop_of_atm_, bfield_,
