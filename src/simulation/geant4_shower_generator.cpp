@@ -172,7 +172,7 @@ int Geant4ShowerGenerator::apply_command(const std::string command)
     LOG(INFO) 
       << "Usage: apply_command(\"/path/to/command [parameter...]\")\n"
       << "For example: apply_command(\"/control/manual /process\")\n"
-      << "Note that STDOUT must not be suppressed to see the output of the command\n";
+      << "Note that STDOUT must not be suppressed to see the output of the command.\n";
     return 0;
   }
   auto retval = ui_manager_->ApplyCommand(command);
