@@ -55,7 +55,16 @@ message CommandLineOptions {
   uint32 start_file_index                                  = 15 [
     (CFO).desc = "Set the start index if multiple files are given. Only really "
       "useful for processing a large list of runs where one of the runs caused "
-      "the processing to teminate with a segfault. Hopefully this never happens."];
+      "the processing to terminate with a segfault. Hopefully this never happens."];
+  bool skip_runs_with_missing_fragments                   = 16 [
+    (CFO).desc = "Skip runs that have missing fragments. This is useful when processing "
+      "a large list of runs where some of them are incomplete. The default is to "
+      "process all runs, even if they are incomplete. Note that missing fragments "
+      "at the end of the run may not be correctly detected."];
+  uint32 num_zfits_writers                                = 17 [
+    (CFO).desc = "Number of ZFITS writers. Only used to attempt to detect fragments "
+      "missing from end of file by testing that number of fragments is an even multiple "
+      "of the number of writers."];   
 
   uint32 log_frequency                                     = 20 [
     (CFO).desc = "Print a message to log every \"log_frequency\" events." ];

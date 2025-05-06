@@ -25,7 +25,7 @@ import os
 import fcntl
 import concurrent.futures 
 
-import calin.ix.io.zmq_data_source
+# import calin.ix.io.zmq_data_source
 import calin.iact_data.event_dispatcher
 import calin.io.sql_serializer
 import calin.util.log
@@ -33,6 +33,8 @@ import calin.io.options_processor
 import calin.diagnostics.stage1
 import calin.ix.scripts.cta_stage1
 import calin.provenance.chronicle
+import calin.ix.iact_data.zfits_data_source
+import calin.iact_data.raw_acada_event_data_source
 
 def good_tag(tag):
     return "\x1b[37;42;97;38;5;15;1m" + tag + "\x1b[0m"
@@ -214,6 +216,7 @@ if __name__ == '__main__':
     opt.set_db_stage1_table_name('stage1')
     opt.set_log_frequency(default_cfg.log_frequency())
     opt.set_nthread(1)
+    opt.set_num_zfits_writers(4)
     opt.mutable_decoder().CopyFrom(default_cfg.decoder())
     opt.mutable_zfits().CopyFrom(default_cfg.zfits())
     opt.mutable_zmq().CopyFrom(default_cfg.zmq())
@@ -251,7 +254,7 @@ if __name__ == '__main__':
  
     # Create or extend SQL file
     sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
-    if opt.truncate_db():
+    if(opt.truncate_db()):
         sql_mode = calin.io.sql_serializer.SQLite3Serializer.TRUNCATE_RW
     sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), sql_mode)
     sql.create_or_extend_tables(opt.db_stage1_table_name(),
@@ -268,6 +271,20 @@ if __name__ == '__main__':
                 print("Skipping %s"%(endpoint))
             elif endpoint in filtered_endpoints:
                 print("Duplicate %s"%(endpoint))
+            else:
+                filtered_endpoints.append(endpoint)
+        endpoints = filtered_endpoints
+
+    # Check if the run has missing fragments and ignore them if so (if requested)
+    if(opt.skip_runs_with_missing_fragments()):
+        cfg = calin.iact_data.raw_acada_event_data_source.ZFITSACADACameraEventDataSource_R1v1.default_config()
+        filtered_endpoints = []
+        for endpoint in endpoints:
+            ff, nmf = calin.iact_data.raw_acada_event_data_source.generate_fragment_list(endpoint,cfg)
+            if nmf > 0:
+                print(f"Skipping {endpoint} ({nmf} missing fragments)")
+            elif opt.num_zfits_writers()>1 and (len(ff)%opt.num_zfits_writers())!=0:
+                print(f"Skipping {endpoint} ({len(ff)} fragments not divisible by {opt.num_zfits_writers()})")
             else:
                 filtered_endpoints.append(endpoint)
         endpoints = filtered_endpoints
