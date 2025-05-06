@@ -168,6 +168,13 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
 
 int Geant4ShowerGenerator::apply_command(const std::string command)
 {
+  if(command == "" or command == "help" or command == "?" or command == "/help") {
+    LOG(INFO) 
+      << "Usage: apply_command(\"/path/to/command [parameter...]\")\n"
+      << "For example: apply_command(\"/control/manual /process\")\n"
+      << "Note that STDOUT must not be suppressed to see the output of the command\n";
+    return 0;
+  }
   auto retval = ui_manager_->ApplyCommand(command);
   G4cout.flush();
   G4cerr.flush();

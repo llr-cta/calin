@@ -233,7 +233,7 @@ if __name__ == '__main__':
         exit(0)
 
     if(len(opt_proc.arguments()) < 1):
-        print('No endpoint supplied! Use "-help" option to get usage information.')
+        print('No filename or endpoint supplied! Use "-help" option to get usage information.')
         exit(1)
 
     if(len(opt_proc.unknown_options()) != 0):
