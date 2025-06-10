@@ -79,10 +79,11 @@ def unmarshall(mdict):
 def init_dispatcher(local_opt, local_nfile):
     global py_log, opt, cfg, dispatcher, s1cfg, s1pev, nfile
 
-    py_log = calin.util.log.PythonLogger()
-    py_log.this.disown()
-    calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
-    calin.util.log.default_logger().add_logger(py_log,True)
+    if('py_log' not in globals() or py_log is None):
+        py_log = calin.util.log.PythonLogger()
+        py_log.this.disown()
+        calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
+        calin.util.log.default_logger().add_logger(py_log,True)
 
     opt = local_opt
 
@@ -207,6 +208,12 @@ def insert_stage1_results(s1res, filename):
 
 # Entry point for the program
 if __name__ == '__main__':
+    global py_log
+    py_log = calin.util.log.PythonLogger()
+    py_log.this.disown()
+    calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
+    calin.util.log.default_logger().add_logger(py_log,True)
+
     # Process command line options
     default_cfg = calin.iact_data.event_dispatcher.ParallelEventDispatcher.default_config()
 
