@@ -934,7 +934,7 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
       double bx = b*std::cos(theta);
       double by = b*std::sin(theta);
       Eigen::Vector3d bvec = bx*e1 + by*e2;
-      bvec -= (bvec.y()/event.u0.y())*event.u0;
+      bvec -= (bvec.z()/event.u0.z())*event.u0;
       propagator_set->scattered_offset = bvec;
       for(auto* propagator_info : propagator_set->propagators) {
         for(auto* detector_info : propagator_info->detector_infos) {
