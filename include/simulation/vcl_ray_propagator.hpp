@@ -322,7 +322,7 @@ public:
     std::ostringstream stream;
     stream << indent0 << "Array of " << this->scopes_.size()
       << " pseudo-telescopes covering "
-      << double_to_string_with_commas(A,3) << " km^2.\n";
+      << double_to_string_with_commas(A,3) << " km^2.";
     return stream.str();
   }
 
@@ -437,7 +437,7 @@ public:
 
   std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const final {
     std::ostringstream stream;
-    stream << indent0 << "All-sky detector.\n";
+    stream << indent0 << "All-sky detector.";
     return stream.str();
   }
 

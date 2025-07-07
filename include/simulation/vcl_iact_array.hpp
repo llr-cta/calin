@@ -179,7 +179,7 @@ public:
       << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
-      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV";
     return stream.str();
   }
 
@@ -265,10 +265,10 @@ public:
       << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
-      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV";
     std::string fp_banner = fp_angular_response_->banner();
     if(not fp_banner.empty()) {
-      stream << indent_n << "Cone : " << fp_banner << '\n';
+      stream << indent_n << "\nCone : " << fp_banner;
     }
     return stream.str();
   }
@@ -398,6 +398,8 @@ public:
   unsigned num_propagator_sets() const { return propagator_set_.size(); }
   Eigen::Vector3d scattering_offset(unsigned ipropagator_set) const {
     return propagator_set_.at(ipropagator_set)->scattering_offset; }
+  double scattering_radius(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattering_radius; }
 
   unsigned num_propagators() const { return propagator_.size(); }
   unsigned num_scopes() const { return detector_.size(); }
@@ -566,7 +568,11 @@ add_propagator_set(double scattering_radius, const std::string& name)
   propagator_set->ipropagator_set = propagator_set_.size();
   propagator_set->scattering_radius = scattering_radius;
   propagator_set->scattering_offset = Eigen::Vector3d::Zero();
-  propagator_set->name = name;
+  if(name == "") {
+    propagator_set->name = "Propagator set "+std::to_string(propagator_set->ipropagator_set);
+  } else {
+    propagator_set->name = name;
+  }
   propagator_set_.emplace_back(propagator_set);
   return propagator_set->ipropagator_set;
 }
@@ -1066,7 +1072,7 @@ do_propagate_rays_for_detector(DetectorInfo* detector)
   double_vt emission_uz = ray.uz();
 
   if(detector->propagator_info->propagator_set->scattering_radius > 0.0) {
-    // Translate the ray origin to unscattered frame
+    // Translate the ray to unscattered frame since this is how the propagator works
     ray.translate_origin(detector->propagator_info->propagator_set->scattering_offset.template cast<double_vt>());
   }
 
@@ -1165,9 +1171,34 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
-    << detector_.size() << " detectors.\n";
+    << detector_.size() << " detectors";
+  if(propagator_set_.size()) {
+    stream << ", in " << propagator_set_.size() << " sets.\n";
+  } else {
+    stream << ".\n";
+  }
+  
+  std::vector<std::pair<std::string, unsigned>> message_counts;
   for(const auto* ipropagator : propagator_) {
-    stream << ipropagator->propagator->banner("- "+ipropagator->name+": ", "  ");
+    auto banner = ipropagator->propagator->banner("- "+ipropagator->name+": ", "  ");
+    bool banner_found = false;
+    for(auto& message : message_counts) {
+      if(message.first == banner) {
+        message.second++;
+        banner_found = true;
+        break;
+      }
+    }
+    if(not banner_found) {
+      message_counts.emplace_back(banner, 1);
+    }
+  }
+  for(const auto& message : message_counts) {
+    if(message.second == 1) {
+      stream << message.first << '\n';
+    } else if(message.second > 1) {
+      stream << message.first << " (x" << message.second << ")\n";
+    }
   }
   stream
     << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
@@ -1233,39 +1264,82 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     stream << "Refraction mode : REFRACT ONLY CLOSE RAYS\n"
       << "- Refraction safety radius : " << double_to_string_with_commas(safety_radius_*0.01,2) << " m\n";
   }
-  stream
-    << "- Displacement from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmin_), config_.observation_level())*0.01,2) << " m\n"
-    << "- Displacement from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n"
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n";
-  stream << "Detector efficiency bandwidths :\n";
-  for(const auto* ibwm : bandwidth_manager_) {
-    stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
+  if(config_.refraction_mode() != calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS) {
+    stream
+      << "- Displacement from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmin_), config_.observation_level())*0.01,2) << " m\n"
+      << "- Displacement from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n"
+      << "- Bending from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
+      << "- Bending from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n";
   }
-  bool spe_logo_sent = false;
+
+  stream << "Detector efficiency bandwidths :\n";
+  message_counts.clear();
+  for(const auto* ibwm : bandwidth_manager_) {
+    auto banner = ibwm->banner(wmin_, wmax_, "- ", "  ");
+    bool banner_found = false;
+    for(auto& message : message_counts) {
+      if(message.first == banner) {
+        message.second++;
+        banner_found = true;
+        break;
+      }
+    }
+    if(not banner_found) {
+      message_counts.emplace_back(banner, 1);
+    }
+  }
+  for(const auto& message : message_counts) {
+    if(message.second == 1) {
+      stream << message.first << '\n';
+    } else if(message.second > 1) {
+      stream << message.first << " (x" << message.second << ")\n";
+    }
+  }
+
+  message_counts.clear();
   for(const auto* ipropagator : propagator_) {
     if(ipropagator->pe_generator != nullptr) {
-      if(not spe_logo_sent) {
-        stream << "Single photo-electron spectra :\n";
-        spe_logo_sent = true;
+      auto banner = ipropagator->pe_generator->banner("- "+ipropagator->name+": ", "  ");
+      bool banner_found = false;
+      for(auto& message : message_counts) {
+        if(message.first == banner) {
+          message.second++;
+          banner_found = true;
+          break;
+        }
       }
-      stream << ipropagator->pe_generator->banner("- "+ipropagator->name+": ", "  ");
+      if(not banner_found) {
+        message_counts.emplace_back(banner, 1);
+      }
+    }
+  }
+
+  if(message_counts.empty()) {
+    stream << "No photo-electron spectra configured.\n";
+  } else {
+    stream << "Single photo-electron spectra :\n";
+    for(const auto& message : message_counts) {
+      if(message.second == 1) {
+        stream << message.first << '\n';
+      } else if(message.second > 1) {
+        stream << message.first << " (x" << message.second << ")\n";
+      }
     }
   }
   return stream.str();
