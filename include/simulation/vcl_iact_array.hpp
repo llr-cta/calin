@@ -396,8 +396,10 @@ public:
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
 
   unsigned num_propagator_sets() const { return propagator_set_.size(); }
-  Eigen::Vector3d scattering_offset(unsigned ipropagator_set) const {
-    return propagator_set_.at(ipropagator_set)->scattering_offset; }
+  double scattered_distance(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattered_distance; }
+  Eigen::Vector3d scattered_offset(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattered_offset; }
   double scattering_radius(unsigned ipropagator_set) const {
     return propagator_set_.at(ipropagator_set)->scattering_radius; }
 
@@ -439,7 +441,8 @@ protected:
   struct PropagatorSet {
     unsigned ipropagator_set;
     double scattering_radius;
-    Eigen::Vector3d scattering_offset;
+    double scattered_distance;
+    Eigen::Vector3d scattered_offset;
     std::string name;
     std::vector<PropagatorInfo*> propagators;
   };
@@ -567,7 +570,7 @@ add_propagator_set(double scattering_radius, const std::string& name)
   auto* propagator_set = new PropagatorSet;
   propagator_set->ipropagator_set = propagator_set_.size();
   propagator_set->scattering_radius = scattering_radius;
-  propagator_set->scattering_offset = Eigen::Vector3d::Zero();
+  propagator_set->scattered_offset = Eigen::Vector3d::Zero();
   if(name == "") {
     propagator_set->name = "Propagator set "+std::to_string(propagator_set->ipropagator_set);
   } else {
@@ -926,19 +929,20 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   for(auto* propagator_set : propagator_set_) {
     if(propagator_set->scattering_radius > 0.0) {
       double b = propagator_set->scattering_radius*std::sqrt(scalar_rng.uniform());
+      propagator_set->scattered_distance = b;
       double theta = scalar_rng.uniform()*M_PI*2.0;
       double bx = b*std::cos(theta);
       double by = b*std::sin(theta);
       Eigen::Vector3d bvec = bx*e1 + by*e2;
       bvec -= (bvec.y()/event.u0.y())*event.u0;
-      propagator_set->scattering_offset = bvec;
+      propagator_set->scattered_offset = bvec;
       for(auto* propagator_info : propagator_set->propagators) {
         for(auto* detector_info : propagator_info->detector_infos) {
           detector_info->sphere.r0 += bvec;
         }
       }
     } else {
-      propagator_set->scattering_offset = Eigen::Vector3d::Zero();
+      propagator_set->scattered_offset = Eigen::Vector3d::Zero();
     }
   }
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
@@ -1073,7 +1077,7 @@ do_propagate_rays_for_detector(DetectorInfo* detector)
 
   if(detector->propagator_info->propagator_set->scattering_radius > 0.0) {
     // Translate the ray to unscattered frame since this is how the propagator works
-    ray.translate_origin(detector->propagator_info->propagator_set->scattering_offset.template cast<double_vt>());
+    ray.translate_origin(detector->propagator_info->propagator_set->scattered_offset.template cast<double_vt>());
   }
 
   FocalPlaneParameters fp_parameters;
