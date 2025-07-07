@@ -83,6 +83,11 @@ message VCLIACTArrayConfiguration
 
   RefractionMode refraction_mode                           = 30
     [(CFO).desc = "Atmospheric refraction mode." ];
+
+  double scattering_radius                                = 31
+    [(CFO).desc = "Radius of the scattering region for the array center, "
+      "perpendicular to primary direction.",
+     (CFO).units = "cm" ];
 };
 
 message VCLIACTGroundMapDetectorConfiguration
