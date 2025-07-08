@@ -570,6 +570,7 @@ add_propagator_set(double scattering_radius, const std::string& name)
   auto* propagator_set = new PropagatorSet;
   propagator_set->ipropagator_set = propagator_set_.size();
   propagator_set->scattering_radius = scattering_radius;
+  propagator_set->scattered_distance = 0.0;
   propagator_set->scattered_offset = Eigen::Vector3d::Zero();
   if(name == "") {
     propagator_set->name = "Propagator set "+std::to_string(propagator_set->ipropagator_set);
