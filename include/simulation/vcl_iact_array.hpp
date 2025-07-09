@@ -1221,7 +1221,7 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
     std::fill(grid_detector_y_, grid_detector_y_+grid_array_size_, 0.0);
     std::fill(grid_detector_z_, grid_detector_z_+grid_array_size_, 0.0);
     std::fill(grid_detector_ssr_, grid_detector_ssr_+grid_array_size_, 0.0);
-    std::fill(grid_idetector_, grid_idetector+grid_array_size_, -1);
+    std::fill(grid_idetector_, grid_idetector_+grid_array_size_, -1);
 
     for(int idetector=0; idetector<int(detector_.size()); ++idetector) {
       int ii = idetector;
