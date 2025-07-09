@@ -4,7 +4,12 @@
 
    Class for imaging atmospheric cherenkov technique - produce rays from charged
    tracks in the atmosphere, propagate them to the ground and trace them through
-   telescope ptics.
+   telescope optics.
+
+   This has become a very complex class that supports multiple propagators with 
+   multiple telescopes, each with different detector efficiency and angular
+   response. It also now supports multiple propagator sets, each with a different
+   scattering radius. IT IS NOT A GOOD EXAMPLE OF HOW TO WRITE CODE.
 
    Copyright 2022, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -30,6 +35,7 @@
 #include <util/log.hpp>
 #include <util/string.hpp>
 #include <math/special.hpp>
+#include <math/hex_array.hpp>
 #include <simulation/vcl_iact.hpp>
 #include <simulation/vcl_ray_propagator.hpp>
 #include <simulation/vcl_raytracer.hpp>
@@ -436,6 +442,8 @@ protected:
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
 
+  void make_detector_grid();
+
   struct PropagatorInfo;
 
   struct PropagatorSet {
@@ -512,6 +520,18 @@ protected:
   double ref_index_;
   double ref_index_correction_;
   double safety_radius_;
+
+  double grid_sep_ = 0.0;
+  double grid_sep_inv_ = 0.0;
+  unsigned grid_ncells_ = 0;
+  unsigned grid_ndetector_per_cell_ = 0;
+  unsigned grid_array_size_ = 0;
+  double* grid_x = nullptr;
+  double* grid_y = nullptr;
+  double* grid_z = nullptr;
+  double* grid_r = nullptr;
+  int* grid_idetector = nullptr;
+
 #endif
 };
 
@@ -946,6 +966,8 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
       propagator_set->scattered_offset = Eigen::Vector3d::Zero();
     }
   }
+  make_detector_grid();
+
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
 }
 
@@ -1131,6 +1153,165 @@ do_propagate_rays_for_detector(DetectorInfo* detector)
           fplane_t[iray], detector->ray_weights_to_propagate[iray]);
       }
       fp_rays_bitmask >>= 1;
+    }
+  }
+}
+
+namespace {
+  inline double projected_radius(double r, double zcenter, double zobs, double sin_zn_max, double tan_zn_max)
+  {
+    double dz = std::abs(zcenter - zobs) + r/sin_zn_max;
+    return dz*tan_zn_max;
+  }
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_detector_grid()
+{
+  // Create a hexagonal grid of detectors based on the detector positions
+  // and the observation zenith angle. The grid is used to efficiently
+  // find detectors that are close to a given ray at the observation level.
+
+  using namespace calin::util::log;
+
+  const double cos60 = 0.5;
+  const double sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
+
+  double zn = std::acos(wmin_);
+  double sin_zn_max = std::sin(zn);
+  double tan_zn_max = std::tan(zn);
+
+  double xmin = std::numeric_limits<double>::infinity();
+  double xmax = -std::numeric_limits<double>::infinity();
+  double ymin = std::numeric_limits<double>::infinity();
+  double ymax = -std::numeric_limits<double>::infinity();
+  double rmax = 0.0;
+  for(auto* detector : detector_) {
+    double r = projected_radius(detector->sphere.radius + safety_radius_, 
+      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+    xmin = std::min(xmin, detector->sphere.r0.x()-r);
+    xmax = std::max(xmax, detector->sphere.r0.x()+r);
+    ymin = std::min(ymin, detector->sphere.r0.y()-r);
+    ymax = std::max(ymax, detector->sphere.r0.y()+r);
+    rmax = std::max(rmax, r);
+  }
+  double area = (xmax-xmin)*(ymax-ymin);
+  grid_sep_ = std::max(10*rmax, std::sqrt(area/256)); // 256 cells
+  grid_sep_inv_ = 1.0/grid_sep_;
+  LOG(INFO) << "Detector grid separation: " << grid_sep_;
+
+  std::map<unsigned, std::vector<DetectorInfo*>> detector_grid;
+  for(auto* detector : detector_) {
+    double x = detector->sphere.r0.x()*grid_sep_inv_;
+    double y = detector->sphere.r0.y()*grid_sep_inv_;
+    double r = projected_radius(detector->sphere.radius + safety_radius_, 
+      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max)*grid_sep_inv_;
+    double dx = x;
+    double dy = y;
+    int u;
+    int v;
+    calin::math::hex_array::xy_to_uv_with_remainder(dx,dy,u,v);
+    unsigned hexid = calin::math::hex_array::uv_to_hexid(u,v);
+    detector_grid[hexid].emplace_back(detector);
+
+    LOG(INFO) << "Detector " << detector->propagator_iscope
+      << " at (" << x << ", " << y << ") with radius " << r
+      << " in hexagon id " << hexid;
+
+    double dx_cos60 = dx * cos60;
+    double dy_sin60 = dy * sin60;
+
+    double dx_pos60 = std::abs(dx_cos60 - dy_sin60);
+    double dx_neg60 = std::abs(dx_cos60 + dy_sin60);
+
+    if(dx+r > 0.5) {
+      // Add the detector to the next hexagon in the x direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " in hexagon id " << hexid_next << " ** ADDITIONAL **";
+    }
+    if(dx_neg60+r > 0.5) {
+      // Add the detector to the next hexagon in the x-60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v+1);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " ALSO in hexagon id " << hexid_next;
+    }
+    if(dx_pos60+r > 0.5) {
+      // Add the detector to the next hexagon in the x+60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v-1);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " ALSO in hexagon id " << hexid_next;
+    }
+    if(dx-r < -0.5) {
+      // Add the detector to the next hexagon in the -x direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " ALSO in hexagon id " << hexid_next;
+    }  
+    if(dx_neg60-r < -0.5) {
+      // Add the detector to the next hexagon in the -x-60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v-1);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " ALSO in hexagon id " << hexid_next;
+    }
+    if(dx_pos60-r < -0.5) {
+      // Add the detector to the next hexagon in the -x+60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v+1);
+      detector_grid[hexid_next].emplace_back(detector);
+      LOG(INFO) << "Detector " << detector->propagator_iscope
+        << " at (" << x << ", " << y << ") with radius " << r
+        << " ALSO in hexagon id " << hexid_next;
+    }
+  }
+  LOG(INFO) << "Detector grid contains " << detector_grid.size() << " occupied hexagons.";
+  unsigned max_detectors_per_cell = 0;
+  unsigned hexid_max = 0;
+  for(auto& [hexid, detectors] : detector_grid) {
+    hexid_max = std::max(hexid_max, hexid);
+    max_detectors_per_cell = std::max(max_detectors_per_cell, unsigned(detectors.size()));
+    if(detectors.size() > 1) {
+      LOG(INFO) << "Hexagon id " << hexid << " contains " << detectors.size()
+        << " detectors.";
+    }
+  }
+  LOG(INFO) << "Maximum number of detectors per hexagon: " << max_detectors_per_cell;
+  LOG(INFO) << "Number of hexagonal cells in grid: " << hexid_max+1;
+
+  grid_ncells_ = hexid_max+1;
+  grid_ndetector_per_cell_ = max_detectors_per_cell;
+  unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
+  if(array_size > grid_array_size_) {
+    grid_array_size_ = 2*array_size;
+    calin::util::memory::safe_aligned_recalloc(grid_x, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_y, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_z, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_r, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_idetector, grid_array_size_);
+  }
+
+  std::fill(grid_x, grid_x+grid_array_size_, 0.0);
+  std::fill(grid_y, grid_y+grid_array_size_, 0.0);
+  std::fill(grid_z, grid_z+grid_array_size_, 0.0);
+  std::fill(grid_r, grid_r+grid_array_size_, 0.0);
+  std::fill(grid_idetector, grid_idetector+grid_array_size_, -1);
+
+  for(auto& [hexid, detectors] : detector_grid) {
+    for(int idetector=0; idetector<int(detectors.size()); ++idetector) {
+      int ii = hexid*grid_ndetector_per_cell_ + idetector;
+      grid_x[ii] = detectors[idetector]->sphere.r0.x();
+      grid_y[ii] = detectors[idetector]->sphere.r0.y();
+      grid_z[ii] = detectors[idetector]->sphere.r0.z();
+      grid_r[ii] = detectors[idetector]->sphere.radius;
+      grid_idetector[ii] = detectors[idetector]->global_iscope;
     }
   }
 }
