@@ -529,8 +529,8 @@ protected:
   double* grid_x = nullptr;
   double* grid_y = nullptr;
   double* grid_z = nullptr;
-  double* grid_r = nullptr;
-  int* grid_idetector = nullptr;
+  double* grid_ssr = nullptr;
+  int64_t* grid_idetector = nullptr;
 
 #endif
 };
@@ -571,16 +571,16 @@ VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
-  for(auto* ipropagator : propagator_) {
-    if(ipropagator->adopt_propagator)delete ipropagator->propagator;
-    if(ipropagator->adopt_pe_processor)delete ipropagator->pe_processor;
-    delete ipropagator;
+  for(auto* propagator : propagator_) {
+    if(propagator->adopt_propagator)delete propagator->propagator;
+    if(propagator->adopt_pe_processor)delete propagator->pe_processor;
+    delete propagator;
   }
   for(auto* detector : detector_) {
     delete detector;
   }
-  for(auto* ibandwidth_manager : bandwidth_manager_) {
-    delete ibandwidth_manager;
+  for(auto* bandwidth_manager : bandwidth_manager_) {
+    delete bandwidth_manager;
   }
 }
 
@@ -808,11 +808,11 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
   const Eigen::VectorXd&  el_deg, const Eigen::VectorXd&  phi_deg)
 {
-  for(auto* ipropagator : propagator_) {
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+  for(auto* propagator : propagator_) {
+    for(unsigned propagator_isphere=0; propagator_isphere<propagator->ndetector;
         ++propagator_isphere) {
-      unsigned isphere = ipropagator->detector0 + propagator_isphere;
-      ipropagator->propagator->point_telescope_az_el_phi_deg(
+      unsigned isphere = propagator->detector0 + propagator_isphere;
+      propagator->propagator->point_telescope_az_el_phi_deg(
         propagator_isphere, az_deg[isphere], el_deg[isphere],
         phi_deg[isphere]);
     }
@@ -983,8 +983,8 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_eve
       do_propagate_rays_for_detector(detector);
     }
   }
-  for(auto* ipropagator : propagator_) {
-    ipropagator->pe_processor->finish_processing();
+  for(auto* propagator : propagator_) {
+    propagator->pe_processor->finish_processing();
   }
 }
 
@@ -1017,37 +1017,66 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   bandwidth.store(bandwidth_array);
   ray_weight.store(ray_weight_array);
 
-  for(auto* detector : detector_) {
-    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(detector->sphere.r0.template cast<double_vt>()) < detector->squared_safety_radius);
+  int64_vt grid_hexid;
+  if(grid_ncells_ == 1) {
+    // If there is only one cell, we can skip the grid calculation
+    grid_hexid = 0;
+  } else {
+    calin::math::ray::VCLRay<double_real> ray_copy(ray);
+    ray_copy.propagate_to_z_plane_with_mask(ray_mask, -zobs_);
+    double_vt grid_x = ray_copy.x() * grid_sep_inv_;
+    double_vt grid_y = ray_copy.y() * grid_sep_inv_;
+    int64_vt u;
+    int64_vt v;
+    calin::math::hex_array::VCL<VCLArchitecture>::xy_to_uv(grid_x, grid_y, u, v);
+    grid_hexid = calin::math::hex_array::VCL<VCLArchitecture>::uv_to_hexid_ccw(u, v);
+  }
+
+  for(unsigned icell_detector=0;icell_detector<grid_ndetector_per_cell_; ++icell_detector) {
+    int64_vt igrid_array = 
+      vcl::min(grid_hexid,grid_ncells_)*grid_ndetector_per_cell_ + icell_detector;
+    double_vt detector_x = vcl::lookup<0x40000000>(igrid_array, grid_x);
+    double_vt detector_y = vcl::lookup<0x40000000>(igrid_array, grid_y);
+    double_vt detector_z = vcl::lookup<0x40000000>(igrid_array, grid_z);
+    double_vt detector_squared_safety_radius = vcl::lookup<0x40000000>(igrid_array, grid_ssr);
+    int64_vt idetector = vcl::lookup<0x40000000>(igrid_array, grid_idetector);
+    Vector3d_vt detector_pos { detector_x, detector_y, detector_z };
+
+    auto intersecting_rays = ray_mask 
+      & (ray.squared_distance_at_closest_approach(detector_pos) < detector_squared_safety_radius)
+      & double_bvt(idetector != -1);
     unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
-    if(intersecting_rays_bitmask) {
-      for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
-        if(intersecting_rays_bitmask & 1) {
-          switch(config_.refraction_mode()) {
-          case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
-          case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
-            detector->rays_to_propagate.insert_one_ray(detector->nrays_to_propagate, ray_array.extract_one_ray(iray));
-            detector->bandwidths_to_propagate[detector->nrays_to_propagate] = bandwidth_array[iray];
-            detector->ray_weights_to_propagate[detector->nrays_to_propagate] = ray_weight_array[iray];
-            ++detector->nrays_to_propagate;
-            if(detector->nrays_to_propagate == VCLArchitecture::num_double) {
-              do_propagate_rays_for_detector(detector);
-            }
-            break;
-          case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
-          default:
-            detector->rays_to_refract.insert_one_ray(detector->nrays_to_refract, ray_array.extract_one_ray(iray));
-            detector->bandwidths_to_refract[detector->nrays_to_refract] = bandwidth_array[iray];
-            detector->ray_weights_to_refract[detector->nrays_to_refract] = ray_weight_array[iray];
-            ++detector->nrays_to_refract;
-            if(detector->nrays_to_refract == VCLArchitecture::num_double) {
-              do_refract_rays_for_detector(detector);
-            }
-            break;
+
+    int64_at idetector_array;
+    idetector.store(idetector_array);
+
+    for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
+      if(intersecting_rays_bitmask & 1) {
+        auto* detector = detector_[idetector_array[iray]];
+        switch(config_.refraction_mode()) {
+        case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
+        case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
+          detector->rays_to_propagate.insert_one_ray(detector->nrays_to_propagate, ray_array.extract_one_ray(iray));
+          detector->bandwidths_to_propagate[detector->nrays_to_propagate] = bandwidth_array[iray];
+          detector->ray_weights_to_propagate[detector->nrays_to_propagate] = ray_weight_array[iray];
+          ++detector->nrays_to_propagate;
+          if(detector->nrays_to_propagate == VCLArchitecture::num_double) {
+            do_propagate_rays_for_detector(detector);
           }
+          break;
+        case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
+        default:
+          detector->rays_to_refract.insert_one_ray(detector->nrays_to_refract, ray_array.extract_one_ray(iray));
+          detector->bandwidths_to_refract[detector->nrays_to_refract] = bandwidth_array[iray];
+          detector->ray_weights_to_refract[detector->nrays_to_refract] = ray_weight_array[iray];
+          ++detector->nrays_to_refract;
+          if(detector->nrays_to_refract == VCLArchitecture::num_double) {
+            do_refract_rays_for_detector(detector);
+          }
+          break;
         }
-        intersecting_rays_bitmask >>= 1;
       }
+      intersecting_rays_bitmask >>= 1;
     }
   }
 }
@@ -1171,6 +1200,41 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
   // and the observation zenith angle. The grid is used to efficiently
   // find detectors that are close to a given ray at the observation level.
 
+  if(detector_.size() <= std::max(1U, config_.grid_theshold())) 
+  {
+    grid_sep_ = std::numeric_limits<double>::infinity();
+    grid_sep_inv_ = 0.0;
+
+    grid_ncells_ = 1;
+    grid_ndetector_per_cell_ = detector_.size();
+    unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
+    if(array_size > grid_array_size_) {
+      grid_array_size_ = 2*array_size;
+      calin::util::memory::safe_aligned_recalloc(grid_x, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_y, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_z, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_ssr, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_idetector, grid_array_size_);
+    }
+
+    std::fill(grid_x, grid_x+grid_array_size_, 0.0);
+    std::fill(grid_y, grid_y+grid_array_size_, 0.0);
+    std::fill(grid_z, grid_z+grid_array_size_, 0.0);
+    std::fill(grid_ssr, grid_ssr+grid_array_size_, 0.0);
+    std::fill(grid_idetector, grid_idetector+grid_array_size_, -1);
+
+    for(int idetector=0; idetector<int(detector_.size()); ++idetector) {
+      int ii = idetector;
+      grid_x[ii] = detector_[idetector]->sphere.r0.x();
+      grid_y[ii] = detector_[idetector]->sphere.r0.y();
+      grid_z[ii] = detector_[idetector]->sphere.r0.z();
+      grid_ssr[ii] = detector_[idetector]->squared_safety_radius;
+      grid_idetector[ii] = detector_[idetector]->global_iscope;
+    }
+
+    return;    
+  }
+
   using namespace calin::util::log;
 
   const double cos60 = 0.5;
@@ -1180,24 +1244,27 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
   double sin_zn_max = std::sin(zn);
   double tan_zn_max = std::tan(zn);
 
-  double xmin = std::numeric_limits<double>::infinity();
-  double xmax = -std::numeric_limits<double>::infinity();
-  double ymin = std::numeric_limits<double>::infinity();
-  double ymax = -std::numeric_limits<double>::infinity();
-  double rmax = 0.0;
-  for(auto* detector : detector_) {
-    double r = projected_radius(detector->sphere.radius + safety_radius_, 
-      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
-    xmin = std::min(xmin, detector->sphere.r0.x()-r);
-    xmax = std::max(xmax, detector->sphere.r0.x()+r);
-    ymin = std::min(ymin, detector->sphere.r0.y()-r);
-    ymax = std::max(ymax, detector->sphere.r0.y()+r);
-    rmax = std::max(rmax, r);
+  if(config_.grid_separation() > 0.0) {
+    grid_sep_ = config_.grid_separation();
+  } else {
+    double xmin = std::numeric_limits<double>::infinity();
+    double xmax = -std::numeric_limits<double>::infinity();
+    double ymin = std::numeric_limits<double>::infinity();
+    double ymax = -std::numeric_limits<double>::infinity();
+    double rmax = 0.0;
+    for(auto* detector : detector_) {
+      double r = projected_radius(detector->sphere.radius + safety_radius_, 
+        detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+      xmin = std::min(xmin, detector->sphere.r0.x()-r);
+      xmax = std::max(xmax, detector->sphere.r0.x()+r);
+      ymin = std::min(ymin, detector->sphere.r0.y()-r);
+      ymax = std::max(ymax, detector->sphere.r0.y()+r);
+      rmax = std::max(rmax, r);
+    }
+    double area = (xmax-xmin)*(ymax-ymin);
+    grid_sep_ = std::max(4*rmax, std::sqrt(area/std::max(config_.grid_area_divisor(),1.0)));
   }
-  double area = (xmax-xmin)*(ymax-ymin);
-  grid_sep_ = std::max(10*rmax, std::sqrt(area/256)); // 256 cells
   grid_sep_inv_ = 1.0/grid_sep_;
-  LOG(INFO) << "Detector grid separation: " << grid_sep_;
 
   std::map<unsigned, std::vector<DetectorInfo*>> detector_grid;
   for(auto* detector : detector_) {
@@ -1213,10 +1280,6 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
     unsigned hexid = calin::math::hex_array::uv_to_hexid(u,v);
     detector_grid[hexid].emplace_back(detector);
 
-    LOG(INFO) << "Detector " << detector->propagator_iscope
-      << " at (" << x << ", " << y << ") with radius " << r
-      << " in hexagon id " << hexid;
-
     double dx_cos60 = dx * cos60;
     double dy_sin60 = dy * sin60;
 
@@ -1227,64 +1290,39 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
       // Add the detector to the next hexagon in the x direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " in hexagon id " << hexid_next << " ** ADDITIONAL **";
     }
     if(dx_neg60+r > 0.5) {
       // Add the detector to the next hexagon in the x-60 direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v+1);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " ALSO in hexagon id " << hexid_next;
     }
     if(dx_pos60+r > 0.5) {
       // Add the detector to the next hexagon in the x+60 direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v-1);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " ALSO in hexagon id " << hexid_next;
     }
     if(dx-r < -0.5) {
       // Add the detector to the next hexagon in the -x direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " ALSO in hexagon id " << hexid_next;
     }  
     if(dx_neg60-r < -0.5) {
       // Add the detector to the next hexagon in the -x-60 direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v-1);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " ALSO in hexagon id " << hexid_next;
     }
     if(dx_pos60-r < -0.5) {
       // Add the detector to the next hexagon in the -x+60 direction
       unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v+1);
       detector_grid[hexid_next].emplace_back(detector);
-      LOG(INFO) << "Detector " << detector->propagator_iscope
-        << " at (" << x << ", " << y << ") with radius " << r
-        << " ALSO in hexagon id " << hexid_next;
     }
   }
-  LOG(INFO) << "Detector grid contains " << detector_grid.size() << " occupied hexagons.";
   unsigned max_detectors_per_cell = 0;
   unsigned hexid_max = 0;
   for(auto& [hexid, detectors] : detector_grid) {
     hexid_max = std::max(hexid_max, hexid);
     max_detectors_per_cell = std::max(max_detectors_per_cell, unsigned(detectors.size()));
-    if(detectors.size() > 1) {
-      LOG(INFO) << "Hexagon id " << hexid << " contains " << detectors.size()
-        << " detectors.";
-    }
   }
-  LOG(INFO) << "Maximum number of detectors per hexagon: " << max_detectors_per_cell;
-  LOG(INFO) << "Number of hexagonal cells in grid: " << hexid_max+1;
 
   grid_ncells_ = hexid_max+1;
   grid_ndetector_per_cell_ = max_detectors_per_cell;
@@ -1294,14 +1332,14 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
     calin::util::memory::safe_aligned_recalloc(grid_x, grid_array_size_);
     calin::util::memory::safe_aligned_recalloc(grid_y, grid_array_size_);
     calin::util::memory::safe_aligned_recalloc(grid_z, grid_array_size_);
-    calin::util::memory::safe_aligned_recalloc(grid_r, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_ssr, grid_array_size_);
     calin::util::memory::safe_aligned_recalloc(grid_idetector, grid_array_size_);
   }
 
   std::fill(grid_x, grid_x+grid_array_size_, 0.0);
   std::fill(grid_y, grid_y+grid_array_size_, 0.0);
   std::fill(grid_z, grid_z+grid_array_size_, 0.0);
-  std::fill(grid_r, grid_r+grid_array_size_, 0.0);
+  std::fill(grid_ssr, grid_ssr+grid_array_size_, 0.0);
   std::fill(grid_idetector, grid_idetector+grid_array_size_, -1);
 
   for(auto& [hexid, detectors] : detector_grid) {
@@ -1310,7 +1348,7 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
       grid_x[ii] = detectors[idetector]->sphere.r0.x();
       grid_y[ii] = detectors[idetector]->sphere.r0.y();
       grid_z[ii] = detectors[idetector]->sphere.r0.z();
-      grid_r[ii] = detectors[idetector]->sphere.radius;
+      grid_ssr[ii] = detectors[idetector]->squared_safety_radius;
       grid_idetector[ii] = detectors[idetector]->global_iscope;
     }
   }
@@ -1324,6 +1362,8 @@ VCLIACTArray<VCLArchitecture>::default_config()
   config.set_detector_energy_lo(1.25);
   config.set_detector_energy_hi(4.8);
   config.set_detector_energy_bin_width(0.05);
+  config.set_grid_theshold(4);
+  config.set_grid_area_divisor(256.0);
   return config;
 }
 
