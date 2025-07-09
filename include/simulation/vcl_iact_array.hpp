@@ -526,11 +526,11 @@ protected:
   unsigned grid_ncells_ = 0;
   unsigned grid_ndetector_per_cell_ = 0;
   unsigned grid_array_size_ = 0;
-  double* grid_x = nullptr;
-  double* grid_y = nullptr;
-  double* grid_z = nullptr;
-  double* grid_ssr = nullptr;
-  int64_t* grid_idetector = nullptr;
+  double* grid_detector_x_ = nullptr;
+  double* grid_detector_y_ = nullptr;
+  double* grid_detector_z_ = nullptr;
+  double* grid_detector_ssr_ = nullptr;
+  int64_t* grid_idetector_ = nullptr;
 
 #endif
 };
@@ -1035,10 +1035,10 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   for(unsigned icell_detector=0;icell_detector<grid_ndetector_per_cell_; ++icell_detector) {
     int64_vt igrid_array = 
       vcl::min(grid_hexid,grid_ncells_)*grid_ndetector_per_cell_ + icell_detector;
-    double_vt detector_x = vcl::lookup<0x40000000>(igrid_array, grid_x);
-    double_vt detector_y = vcl::lookup<0x40000000>(igrid_array, grid_y);
-    double_vt detector_z = vcl::lookup<0x40000000>(igrid_array, grid_z);
-    double_vt detector_squared_safety_radius = vcl::lookup<0x40000000>(igrid_array, grid_ssr);
+    double_vt detector_x = vcl::lookup<0x40000000>(igrid_array, grid_detector_x);
+    double_vt detector_y = vcl::lookup<0x40000000>(igrid_array, grid_detector_y);
+    double_vt detector_z = vcl::lookup<0x40000000>(igrid_array, grid_detector_z);
+    double_vt detector_squared_safety_radius = vcl::lookup<0x40000000>(igrid_array, grid_detector_ssr);
     int64_vt idetector = vcl::lookup<0x40000000>(igrid_array, grid_idetector);
     Vector3d_vt detector_pos { detector_x, detector_y, detector_z };
 
@@ -1210,25 +1210,25 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
     unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
     if(array_size > grid_array_size_) {
       grid_array_size_ = 2*array_size;
-      calin::util::memory::safe_aligned_recalloc(grid_x, grid_array_size_);
-      calin::util::memory::safe_aligned_recalloc(grid_y, grid_array_size_);
-      calin::util::memory::safe_aligned_recalloc(grid_z, grid_array_size_);
-      calin::util::memory::safe_aligned_recalloc(grid_ssr, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_x, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_y, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_z, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_ssr, grid_array_size_);
       calin::util::memory::safe_aligned_recalloc(grid_idetector, grid_array_size_);
     }
 
-    std::fill(grid_x, grid_x+grid_array_size_, 0.0);
-    std::fill(grid_y, grid_y+grid_array_size_, 0.0);
-    std::fill(grid_z, grid_z+grid_array_size_, 0.0);
-    std::fill(grid_ssr, grid_ssr+grid_array_size_, 0.0);
+    std::fill(grid_detector_x, grid_detector_x+grid_array_size_, 0.0);
+    std::fill(grid_detector_y, grid_detector_y+grid_array_size_, 0.0);
+    std::fill(grid_detector_z, grid_detector_z+grid_array_size_, 0.0);
+    std::fill(grid_detector_ssr, grid_detector_ssr+grid_array_size_, 0.0);
     std::fill(grid_idetector, grid_idetector+grid_array_size_, -1);
 
     for(int idetector=0; idetector<int(detector_.size()); ++idetector) {
       int ii = idetector;
-      grid_x[ii] = detector_[idetector]->sphere.r0.x();
-      grid_y[ii] = detector_[idetector]->sphere.r0.y();
-      grid_z[ii] = detector_[idetector]->sphere.r0.z();
-      grid_ssr[ii] = detector_[idetector]->squared_safety_radius;
+      grid_detector_x[ii] = detector_[idetector]->sphere.r0.x();
+      grid_detector_y[ii] = detector_[idetector]->sphere.r0.y();
+      grid_detector_z[ii] = detector_[idetector]->sphere.r0.z();
+      grid_detector_ssr[ii] = detector_[idetector]->squared_safety_radius;
       grid_idetector[ii] = detector_[idetector]->global_iscope;
     }
 
@@ -1329,27 +1329,27 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
   unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
   if(array_size > grid_array_size_) {
     grid_array_size_ = 2*array_size;
-    calin::util::memory::safe_aligned_recalloc(grid_x, grid_array_size_);
-    calin::util::memory::safe_aligned_recalloc(grid_y, grid_array_size_);
-    calin::util::memory::safe_aligned_recalloc(grid_z, grid_array_size_);
-    calin::util::memory::safe_aligned_recalloc(grid_ssr, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_x, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_y, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_z, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_ssr, grid_array_size_);
     calin::util::memory::safe_aligned_recalloc(grid_idetector, grid_array_size_);
   }
 
-  std::fill(grid_x, grid_x+grid_array_size_, 0.0);
-  std::fill(grid_y, grid_y+grid_array_size_, 0.0);
-  std::fill(grid_z, grid_z+grid_array_size_, 0.0);
-  std::fill(grid_ssr, grid_ssr+grid_array_size_, 0.0);
+  std::fill(grid_detector_x, grid_detector_x+grid_array_size_, 0.0);
+  std::fill(grid_detector_y, grid_detector_y+grid_array_size_, 0.0);
+  std::fill(grid_detector_z, grid_detector_z+grid_array_size_, 0.0);
+  std::fill(grid_detector_ssr, grid_detector_ssr+grid_array_size_, 0.0);
   std::fill(grid_idetector, grid_idetector+grid_array_size_, -1);
 
   for(auto& [hexid, detectors] : detector_grid) {
     for(int idetector=0; idetector<int(detectors.size()); ++idetector) {
       int ii = hexid*grid_ndetector_per_cell_ + idetector;
-      grid_x[ii] = detectors[idetector]->sphere.r0.x();
+      grid_detector_x[ii] = detectors[idetector]->sphere.r0.x();
       grid_y[ii] = detectors[idetector]->sphere.r0.y();
-      grid_z[ii] = detectors[idetector]->sphere.r0.z();
-      grid_ssr[ii] = detectors[idetector]->squared_safety_radius;
-      grid_idetector[ii] = detectors[idetector]->global_iscope;
+      grid_detector_z[ii] = detectors[idetector]->sphere.r0.z();
+      grid_detector_ssr[ii] = detectors[idetector]->squared_safety_radius;
+      grid_detector_idetector[ii] = detectors[idetector]->global_iscope;
     }
   }
 }
