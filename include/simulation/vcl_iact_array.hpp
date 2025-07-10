@@ -418,6 +418,8 @@ public:
     return detector_.at(idetector)->nrays_propagated; }
 
   std::string banner() const;
+  std::string detector_report() const;
+  std::string grid_report() const;
 
   calin::math::spline_interpolation::CubicSpline* new_height_dependent_pe_bandwidth_spline() const;
   double fixed_pe_bandwidth() const;
@@ -571,6 +573,9 @@ VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
+  for(auto* propagator_set : propagator_set_) {
+    delete propagator_set;
+  }
   for(auto* propagator : propagator_) {
     if(propagator->adopt_propagator)delete propagator->propagator;
     if(propagator->adopt_pe_processor)delete propagator->pe_processor;
@@ -1568,6 +1573,120 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
       }
     }
   }
+  return stream.str();
+}
+
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::detector_report() const
+{
+  std::ostringstream stream;
+
+  unsigned ps_len = 0;
+  for(const auto* propagator_set : propagator_set_) {
+    ps_len = std::max(ps_len, unsigned(propagator_set->name.size()));
+  }
+
+  unsigned p_len = 0;
+  unsigned pd_len = 0;
+  for(const auto* propagator : propagator_) {
+    p_len = std::max(p_len, unsigned(propagator->name.size()));
+    auto spheres = propagator->propagator->detector_spheres();
+    unsigned one_pd_len = 0;
+    for(unsigned pd_size = spheres.size(); pd_size > 0; pd_size /= 10) {
+      ++one_pd_len;
+    }
+    pd_len = std::max(pd_len, one_pd_len);
+  }
+  unsigned spd_len = p_len + pd_len + 1;
+  if(propagator_set_.size() > 1) {
+    spd_len += ps_len + 1;
+  }
+
+  unsigned d_len = 0;
+  for(unsigned p_size = detector_.size(); p_size > 0; p_size /= 10) {
+    ++d_len;
+  }
+
+  for(const auto* detector : detector_) {
+    stream << std::left << std::setw(d_len) << detector->global_iscope << ' ';
+    std::string spd_name;
+    if(propagator_set_.size() > 1) {
+      spd_name += detector->propagator_info->propagator_set->name;
+      spd_name += "/";
+    }
+    spd_name += detector->propagator_info->name;
+    spd_name += "/";
+    spd_name += std::to_string(detector->propagator_iscope);
+    stream 
+      << std::setw(spd_len) << spd_name << ' '
+      << std::right 
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.x()*0.01 << ' '
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.y()*0.01 << ' '
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.z()*0.01 << ' '
+      << std::setw(6) << std::setprecision(2) << 2.0*std::sqrt(detector->squared_radius)*0.01 << ' '
+      << std::setw(6) << std::setprecision(2) << 2.0*std::sqrt(detector->squared_safety_radius)*0.01 << '\n';
+  }
+  return stream.str();
+}
+
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::grid_report() const
+{
+  std::ostringstream stream;
+
+  unsigned hexid_len = 0;
+  for(unsigned hexid = grid_ncells_; hexid > 0; hexid /= 10) {
+    ++hexid_len;
+  }
+
+  unsigned ndc_len = 0;
+  for(unsigned ndc = grid_ndetector_per_cell_; ndc > 0; ndc /= 10) {
+    ++ndc_len;
+  }
+
+  unsigned noccupied_cells = 0;
+  std::map<unsigned, unsigned> cell_detector_count;
+
+  for(unsigned hexid=0; hexid<grid_ncells_; ++hexid) {
+    unsigned ndetectors = 0;
+    for(unsigned idetector=0; idetector<grid_ndetector_per_cell_; ++idetector) {
+      if (grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector] >= 0) {
+        ++ndetectors;
+      }
+    }
+
+    ++cell_detector_count[ndetectors];
+
+    if(ndetectors == 0) {
+      continue;
+    }
+
+    ++noccupied_cells;
+
+    stream << std::left << std::setw(hexid_len) << hexid << " ("
+      << std::right << std::setw(ndc_len) << ndetectors << ") :";
+
+    for(unsigned idetector=0; idetector<grid_ndetector_per_cell_; ++idetector) {
+      if (grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector] >= 0) {
+        stream << ' ' << grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector];
+      }
+    }
+    stream << '\n';
+  }
+  
+  if(noccupied_cells > 0) {
+    stream << "Grid occupancy histogram:\n";
+    for(unsigned ndetectors=0; ndetectors<=grid_ndetector_per_cell_; ++ndetectors) {
+      stream << "- " << std::left << std::setw(ndc_len) << ndetectors << " : " 
+        << std::right << cell_detector_count[ndetectors] << '\n';
+    }
+  }
+
+  stream << "Grid information:\n"
+    << "- Number of cells : " << grid_ncells_ << '\n'
+    << "- Number of occupied cells : " << noccupied_cells << '\n'
+    << "- Max number of detectors per cell : " << grid_ndetector_per_cell_ << '\n'
+    << "- Grid separation : " << std::fixed << std::setprecision(2) 
+    << grid_sep_*0.01 << " m\n";
+
   return stream.str();
 }
 
