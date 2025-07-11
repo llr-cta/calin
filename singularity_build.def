@@ -131,6 +131,7 @@ From: ubuntu:22.04
 
     mkdir /data
 
+    echo /usr/lib/corsika > /etc/ld.so.conf.d/corsika.conf
     ldconfig
 
     NOW=`date`
