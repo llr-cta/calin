@@ -1031,10 +1031,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
     ray_copy.propagate_to_z_plane_with_mask(ray_mask, -zobs_);
     double_vt grid_x = ray_copy.x() * grid_sep_inv_;
     double_vt grid_y = ray_copy.y() * grid_sep_inv_;
-    int64_vt u;
-    int64_vt v;
-    calin::math::hex_array::VCL<VCLArchitecture>::xy_to_uv(grid_x, grid_y, u, v);
-    grid_hexid = calin::math::hex_array::VCL<VCLArchitecture>::uv_to_hexid_ccw(u, v);
+    grid_hexid = calin::math::hex_array::VCL<VCLArchitecture>::xy_to_hexid_ccw(grid_x, grid_y);
   }
 
   for(unsigned icell_detector=0;icell_detector<grid_ndetector_per_cell_; ++icell_detector) {
