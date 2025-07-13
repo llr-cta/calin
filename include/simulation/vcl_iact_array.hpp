@@ -523,6 +523,10 @@ protected:
   double ref_index_correction_;
   double safety_radius_;
 
+  double grid_xmin_ = 0.0;
+  double grid_xmax_ = 0.0;
+  double grid_ymin_ = 0.0;
+  double grid_ymax_ = 0.0;
   double grid_sep_ = 0.0;
   double grid_sep_inv_ = 0.0;
   unsigned grid_ncells_ = 0;
@@ -1032,11 +1036,11 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
     double_vt grid_x = ray_copy.x() * grid_sep_inv_;
     double_vt grid_y = ray_copy.y() * grid_sep_inv_;
     grid_hexid = calin::math::hex_array::VCL<VCLArchitecture>::xy_to_hexid_ccw(grid_x, grid_y);
+    grid_hexid = vcl::max(vcl::min(grid_hexid, grid_ncells_), 0); // Ensure we do not go out of bounds
   }
 
   for(unsigned icell_detector=0;icell_detector<grid_ndetector_per_cell_; ++icell_detector) {
-    int64_vt igrid_array = 
-      vcl::min(grid_hexid,grid_ncells_)*grid_ndetector_per_cell_ + icell_detector;
+    int64_vt igrid_array = grid_hexid*grid_ndetector_per_cell_ + icell_detector;
     double_vt detector_x = vcl::lookup<0x40000000>(igrid_array, grid_detector_x_);
     double_vt detector_y = vcl::lookup<0x40000000>(igrid_array, grid_detector_y_);
     double_vt detector_z = vcl::lookup<0x40000000>(igrid_array, grid_detector_z_);
@@ -1046,7 +1050,7 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
 
     auto intersecting_rays = ray_mask 
       & (ray.squared_distance_at_closest_approach(detector_pos) < detector_squared_safety_radius)
-      & double_bvt(idetector != -1);
+      & double_bvt(idetector >= 0);
     unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
 
     int64_at idetector_array;
@@ -1202,6 +1206,10 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
   // and the observation zenith angle. The grid is used to efficiently
   // find detectors that are close to a given ray at the observation level.
 
+  double zn = std::acos(wmin_);
+  double sin_zn_max = std::sin(zn);
+  double tan_zn_max = std::tan(zn);
+
   if(detector_.size() <= std::max(1U, config_.grid_theshold())) 
   {
     grid_sep_ = std::numeric_limits<double>::infinity();
@@ -1225,13 +1233,26 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
     std::fill(grid_detector_ssr_, grid_detector_ssr_+grid_array_size_, 0.0);
     std::fill(grid_idetector_, grid_idetector_+grid_array_size_, -1);
 
+    grid_xmin_ = std::numeric_limits<double>::infinity();
+    grid_xmax_ = -std::numeric_limits<double>::infinity();
+    grid_ymin_ = std::numeric_limits<double>::infinity();
+    grid_ymax_ = -std::numeric_limits<double>::infinity();
+
     for(int idetector=0; idetector<int(detector_.size()); ++idetector) {
+      auto* detector = detector_[idetector];
       int ii = idetector;
-      grid_detector_x_[ii] = detector_[idetector]->sphere.r0.x();
-      grid_detector_y_[ii] = detector_[idetector]->sphere.r0.y();
-      grid_detector_z_[ii] = detector_[idetector]->sphere.r0.z();
-      grid_detector_ssr_[ii] = detector_[idetector]->squared_safety_radius;
-      grid_idetector_[ii] = detector_[idetector]->global_iscope;
+      double r = projected_radius(detector->sphere.radius + safety_radius_, 
+        detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+      grid_xmin_ = std::min(grid_xmin_, detector->sphere.r0.x()-r);
+      grid_xmax_ = std::max(grid_xmax_, detector->sphere.r0.x()+r);
+      grid_ymin_ = std::min(grid_ymin_, detector->sphere.r0.y()-r);
+      grid_ymax_ = std::max(grid_ymax_, detector->sphere.r0.y()+r);
+
+      grid_detector_x_[ii] = detector->sphere.r0.x();
+      grid_detector_y_[ii] = detector->sphere.r0.y();
+      grid_detector_z_[ii] = detector->sphere.r0.z();
+      grid_detector_ssr_[ii] = detector->squared_safety_radius;
+      grid_idetector_[ii] = detector->global_iscope;
     }
 
     return;    
@@ -1242,28 +1263,26 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_dete
   const double cos60 = 0.5;
   const double sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
 
-  double zn = std::acos(wmin_);
-  double sin_zn_max = std::sin(zn);
-  double tan_zn_max = std::tan(zn);
+  grid_xmin_ = std::numeric_limits<double>::infinity();
+  grid_xmax_ = -std::numeric_limits<double>::infinity();
+  grid_ymin_ = std::numeric_limits<double>::infinity();
+  grid_ymax_ = -std::numeric_limits<double>::infinity();
+  double rmax = 0.0;
+
+  for(auto* detector : detector_) {
+    double r = projected_radius(detector->sphere.radius + safety_radius_, 
+      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+    grid_xmin_ = std::min(grid_xmin_, detector->sphere.r0.x()-r);
+    grid_xmax_ = std::max(grid_xmax_, detector->sphere.r0.x()+r);
+    grid_ymin_ = std::min(grid_ymin_, detector->sphere.r0.y()-r);
+    grid_ymax_ = std::max(grid_ymax_, detector->sphere.r0.y()+r);
+    rmax = std::max(rmax, r);
+  }
 
   if(config_.grid_separation() > 0.0) {
     grid_sep_ = config_.grid_separation();
   } else {
-    double xmin = std::numeric_limits<double>::infinity();
-    double xmax = -std::numeric_limits<double>::infinity();
-    double ymin = std::numeric_limits<double>::infinity();
-    double ymax = -std::numeric_limits<double>::infinity();
-    double rmax = 0.0;
-    for(auto* detector : detector_) {
-      double r = projected_radius(detector->sphere.radius + safety_radius_, 
-        detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
-      xmin = std::min(xmin, detector->sphere.r0.x()-r);
-      xmax = std::max(xmax, detector->sphere.r0.x()+r);
-      ymin = std::min(ymin, detector->sphere.r0.y()-r);
-      ymax = std::max(ymax, detector->sphere.r0.y()+r);
-      rmax = std::max(rmax, r);
-    }
-    double area = (xmax-xmin)*(ymax-ymin);
+    double area = (grid_xmax_-grid_xmin_)*(grid_ymax_-grid_ymin_);
     grid_sep_ = std::max(4*rmax, std::sqrt(area/std::max(config_.grid_area_divisor(),1.0)));
   }
   grid_sep_inv_ = 1.0/grid_sep_;
