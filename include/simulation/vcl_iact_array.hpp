@@ -417,7 +417,7 @@ public:
   uint64_t nrays_propagated_at_detector(unsigned idetector) const {
     return detector_.at(idetector)->nrays_propagated; }
 
-  std::string banner() const;
+  std::string banner();
   std::string detector_report() const;
   std::string grid_report() const;
 
@@ -1483,8 +1483,12 @@ VCLIACTArray<VCLArchitecture>::base_config(const calin::ix::simulation::vcl_iact
   return bconfig;
 }
 
-template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner()
 {
+  if(update_detector_efficiencies_is_pending_) {
+    do_update_detector_efficiencies();
+    update_detector_efficiencies_is_pending_ = false;
+  }
   constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
   using calin::util::string::double_to_string_with_commas;
   using calin::math::special::SQR;
