@@ -440,7 +440,9 @@ protected:
     SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
     bool adopt_propagator, bool adopt_pe_processor, bool adopt_pe_generator);
 
-  void update_detector_efficiencies();
+  void schedule_update_detector_efficiencies();
+  void do_update_detector_efficiencies();
+
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
 
@@ -514,8 +516,8 @@ protected:
   std::vector<PropagatorSet*> propagator_set_;
   std::vector<PropagatorInfo*> propagator_;
   std::vector<DetectorInfo*> detector_;
-  std::vector<VCLBandwidthManager<VCLArchitecture>*> bandwidth_manager_;
 
+  bool update_detector_efficiencies_is_pending_ = true;
   double zobs_;
   double wmax_ = 1.0;
   double wmin_ = 0.0;
@@ -538,7 +540,50 @@ protected:
   double* grid_detector_ssr_ = nullptr;
   int64_t* grid_idetector_ = nullptr;
 
-#endif
+  struct BandwidthManagerCacheEntry {
+    std::string name;
+    const DetectionEfficiency* detector_efficiency;
+    const AngularEfficiency* fp_angular_efficiency;
+    double zobs;
+    double e_lo;
+    double e_hi;
+    double delta_e;
+    VCLBandwidthManager<VCLArchitecture>* manager;
+  };
+
+  std::vector<BandwidthManagerCacheEntry> bandwidth_manager_cache_;
+
+  VCLBandwidthManager<VCLArchitecture>* find_cached_bandwidth_manager(
+    const std::string& name,
+    const DetectionEfficiency* detector_efficiency,
+    const AngularEfficiency* fp_angular_efficiency,
+    double zobs, double e_lo, double e_hi, double delta_e)
+  {
+    for (const auto& entry : bandwidth_manager_cache_) {
+        if (entry.name == name &&
+            entry.detector_efficiency == detector_efficiency &&
+            entry.fp_angular_efficiency == fp_angular_efficiency &&
+            entry.zobs == zobs &&
+            entry.e_lo == e_lo &&
+            entry.e_hi == e_hi &&
+            entry.delta_e == delta_e) {
+            return entry.manager;
+        }
+    }
+    return nullptr;
+  }
+
+  void cache_bandwidth_manager(
+    const std::string& name,
+    const DetectionEfficiency* detector_efficiency,
+    const AngularEfficiency* fp_angular_efficiency,
+    double zobs, double e_lo, double e_hi, double delta_e,
+    VCLBandwidthManager<VCLArchitecture>* manager)
+  {
+    BandwidthManagerCacheEntry entry{name, detector_efficiency, fp_angular_efficiency, zobs, e_lo, e_hi, delta_e, manager};
+    bandwidth_manager_cache_.push_back(entry);
+  }
+#endif // not defined SWIG
 };
 
 #ifndef SWIG
@@ -588,8 +633,8 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
   for(auto* detector : detector_) {
     delete detector;
   }
-  for(auto* bandwidth_manager : bandwidth_manager_) {
-    delete bandwidth_manager;
+  for(auto& bandwidth_manager_cache_entry : bandwidth_manager_cache_) {
+    delete bandwidth_manager_cache_entry.manager;
   }
 }
 
@@ -659,8 +704,6 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     propagator_info->detector_infos.emplace_back(detector_info);
   }
 
-  bandwidth_manager_.emplace_back(bandwidth_manager);
-
   if(propagator_set_.empty()) {
     add_propagator_set(config_.scattering_radius(), "default_propagator_set");
   }
@@ -668,7 +711,7 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
   propagator_set->propagators.emplace_back(propagator_info);
   propagator_info->propagator_set = propagator_set;
 
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture>
@@ -682,10 +725,21 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
 
-  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, &fp_angular_efficiency, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs,
+          e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, &fp_angular_efficiency, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -756,10 +810,20 @@ VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
     propagator->add_telescope(r0, radius, config_.observation_level(), focal_length, field_of_view_radius);
   }
 
-  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, zobs, e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -778,10 +842,20 @@ VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
   auto* propagator = new calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>(
     config_.observation_level(), r0, radius, field_of_view_radius, ref_index_);
 
-  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, zobs, e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -804,7 +878,7 @@ point_telescope_az_el_phi_deg(unsigned iscope,
   ipropagator->propagator->point_telescope_az_el_phi_deg(
     propagator_isphere, az_deg, el_deg, phi_deg);
 
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -826,7 +900,7 @@ point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
         phi_deg[isphere]);
     }
   }
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -855,7 +929,13 @@ point_all_telescopes_az_el_deg(double az_deg, double el_deg)
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-update_detector_efficiencies()
+schedule_update_detector_efficiencies()
+{
+  update_detector_efficiencies_is_pending_ = true;
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+do_update_detector_efficiencies()
 {
   using calin::math::special::SQR;
 
@@ -912,8 +992,8 @@ template<typename VCLArchitecture> double VCLIACTArray<VCLArchitecture>::
 fixed_pe_bandwidth() const
 {
   double bandwidth = 0;
-  for(const auto* ibandwidth_manager : bandwidth_manager_) {
-    bandwidth = std::max(bandwidth, ibandwidth_manager->bandwidth());
+  for(const auto ibandwidth_manager_cache_entry : bandwidth_manager_cache_) {
+    bandwidth = std::max(bandwidth, ibandwidth_manager_cache_entry.manager->bandwidth());
   }
   return bandwidth;
 }
@@ -921,15 +1001,15 @@ fixed_pe_bandwidth() const
 template<typename VCLArchitecture> calin::math::spline_interpolation::CubicSpline*
 VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 {
-  if(bandwidth_manager_.empty()) {
+  if(bandwidth_manager_cache_.empty()) {
     return nullptr;
   }
-  std::vector<double> heights = bandwidth_manager_.front()->
+  std::vector<double> heights = bandwidth_manager_cache_.front().manager->
     detector_bandwidth_spline()->xknot_as_stdvec();
   std::vector<double> bandwidths(heights.size(), 0.0);
-  for(const auto* ibandwidth_manager : bandwidth_manager_) {
+  for(const auto ibandwidth_manager_cache_entry : bandwidth_manager_cache_) {
     std::vector<double> detector_bandwidths =
-      ibandwidth_manager->bandwidth_vs_height(heights, wmax_);
+      ibandwidth_manager_cache_entry.manager->bandwidth_vs_height(heights, wmax_);
     std::transform(bandwidths.begin(), bandwidths.end(),
       detector_bandwidths.begin(), bandwidths.begin(),
       [](double a, double b) { return std::max(a,b); });
@@ -940,6 +1020,11 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
+  if(update_detector_efficiencies_is_pending_) {
+    do_update_detector_efficiencies();
+    update_detector_efficiencies_is_pending_ = false;
+  }
+
   calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
   calin::math::rng::RNG scalar_rng(&scalar_core);
   Eigen::Vector3d e1(1.0, 0.0, 0.0);
@@ -1537,8 +1622,8 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
 
   stream << "Detector efficiency bandwidths :\n";
   message_counts.clear();
-  for(const auto* ibwm : bandwidth_manager_) {
-    auto banner = ibwm->banner(wmin_, wmax_, "- ", "  ");
+  for(const auto& ibwm : bandwidth_manager_cache_) {
+    auto banner = ibwm.manager->banner(wmin_, wmax_, "- ", "  ");
     bool banner_found = false;
     for(auto& message : message_counts) {
       if(message.first == banner) {
