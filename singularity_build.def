@@ -15,7 +15,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Bootstrap: library
+Bootstrap: docker
 From: ubuntu:22.04
 
 %files
@@ -34,6 +34,7 @@ From: ubuntu:22.04
     export G4ABLADATA="$GEANT4_DATA_DIR/G4ABLA3.3"
     export G4INCLDATA="$GEANT4_DATA_DIR/G4INCL1.2"
     export G4ENSDFSTATEDATA="$GEANT4_DATA_DIR/G4ENSDFSTATE2.3"
+    export G4PARTICLEHPDATA="/usr/share/Geant4/data/G4TENDL1.4"
     export OMP_NUM_THREADS=1
     export SHELL=/bin/bash
 
@@ -54,9 +55,6 @@ From: ubuntu:22.04
         zlib1g                                                     \
         python3                                                    \
         python3-pip                                                \
-        python3-numpy                                              \
-        python3-scipy                                              \
-        python3-matplotlib                                         \
         cython3                                                    \
         fftw3                                                      \
         sqlite3                                                    \
@@ -80,36 +78,42 @@ From: ubuntu:22.04
         libprotobuf23                                              \
         libprotoc23                                                \
         valgrind                                                   \
-        gdb
+        gdb                                                        \
+        hdf5-tools                                                 \
+        libre2-dev                                                 \
+        libutf8proc2
+
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install notebook cdsapi ecmwf-api-client astropy gammapy
-    pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+    pip3 install --upgrade pip
+    pip3 install numpy scipy matplotlib notebook cdsapi ecmwf-api-client astropy gammapy
+    pip3 install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4/data
     # export G4URL=http://geant4-data.web.cern.ch/datasets
     export G4URL=https://cern.ch/geant4-data/datasets
     mkdir -p $G4DATADIR
 
-    curl -L $G4URL/G4NDL.4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4NDL.4.7.1.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4EMLOW.8.5.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4PhotonEvaporation.5.7.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4RadioactiveDecay.5.6.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4SAIDDATA.2.0.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4PhotonEvaporation.5.7.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4RadioactiveDecay.5.6.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4SAIDDATA.2.0.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4PARTICLEXS.4.0.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4ABLA.3.3.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4INCL.1.2.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4PII.1.3.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4ABLA.3.3.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4INCL.1.2.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4PII.1.3.tar.gz | tar -C $G4DATADIR -zxf -
     curl -L $G4URL/G4ENSDFSTATE.2.3.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4RealSurface.2.2.tar.gz | tar -C $G4DATADIR -zxf -
-    curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4RealSurface.2.2.tar.gz | tar -C $G4DATADIR -zxf -
+    # curl -L $G4URL/G4TENDL.1.4.tar.gz | tar -C $G4DATADIR -zxf -
 
     export CTA_ADH_APIS_REL=ubuntu-22.04
     export GEANT4_REL=ubuntu-22.04-11.2.2-OFF
 
     curl -L https://github.com/llr-cta/CTA_ADH_APIS_Build/releases/download/$CTA_ADH_APIS_REL/cta_adh_apis_installed.tgz | tar -zxf - -C /
     curl -L https://github.com/llr-cta/Geant4Build/releases/download/$GEANT4_REL/Geant4-$GEANT4_REL.tbz2 | tar -jxf - -C /
+    curl -L https://github.com/llr-cta/Corsika8Build/releases/download/ubuntu-22.04/corsika8_installed.tgz | tar -zxf - -C /
 
     tar -zxf /tmp/calin_installed.tgz -C /
     rm -f /tmp/calin_installed.tgz
@@ -127,6 +131,7 @@ From: ubuntu:22.04
 
     mkdir /data
 
+    echo /usr/lib/corsika > /etc/ld.so.conf.d/corsika.conf
     ldconfig
 
     NOW=`date`

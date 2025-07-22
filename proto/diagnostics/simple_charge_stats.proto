@@ -42,10 +42,17 @@ message SimpleChargeStatsConfig {
   double ped_time_hist_resolution                                   = 20 [
     (CFO).desc = "Resolution of pedestal mean and variance vs time histogram.",
     (CFO).units = "s" ];
-  double dual_gain_sample_resolution                                = 21 [
+  double channel_ped_time_hist_range                                = 21 [
+    (CFO).desc = "Maximum time of channel pedestal mean and variance vs time histogram.",
+    (CFO).units = "s" ];
+  double camera_ped_time_hist_range                                 = 22 [
+    (CFO).desc = "Maximum time of camera-wide pedestal mean and variance vs time histogram.",
+    (CFO).units = "s" ];
+    
+    double dual_gain_sample_resolution                              = 30 [
     (CFO).desc = "Resolution of high-gain vs low-gain max sample histogram.",
     (CFO).units = "DC" ];
-  double dual_gain_sum_resolution                                   = 22 [
+  double dual_gain_sum_resolution                                   = 40 [
     (CFO).desc = "Resolution of high-gain vs low-gain window sum histogram.",
     (CFO).units = "DC" ];
 };
@@ -225,17 +232,22 @@ message SimpleChargeStats {
     (CFO).desc = "Number of events for which the trigger bit is set for each channel "
       "in physics events where the nearest-neighbor trigger is seemingly not "
       "satisfied." ];
-  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 32 [
+  repeated int64 muon_candidate_channel_triggered_count             = 32 [
+    (CFO).desc = "Number of events for which the trigger bit is set for each channel." ];
+  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 33 [
     (CFO).desc = "Histogram of number of channels triggered.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
-  calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 33 [
+  calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 34 [
     (CFO).desc = "Histogram of number of channels triggered.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
-  calin.ix.math.histogram.Histogram1DData phy_trigger_num_channel_triggered_hist = 34 [
+  calin.ix.math.histogram.Histogram1DData phy_trigger_num_channel_triggered_hist = 35 [
     (CFO).desc = "Histogram of number of channels triggered in physics events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
-  calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 35 [
+  calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 36 [
     (CFO).desc = "Histogram of number of channels triggered in physics events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData muon_candidate_num_channel_triggered_hist = 37 [
+    (CFO).desc = "Histogram of number of channels triggered in muon-candidate events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
@@ -375,6 +387,9 @@ message PartialChannelSimpleChargeStats {
       "in physics events where the nearest-neighbor trigger is seemingly not "
       "satisfied.",
     (CFO).is_counter=true ];
+  int64 muon_candidate_num_events_triggered                         = 22 [
+    (CFO).desc = "Number of events where channel has trigger bit set.",
+    (CFO).is_counter=true ];    
 };
 
 message PartialOneGainCameraSimpleChargeStats {
@@ -432,6 +447,10 @@ message PartialCameraSimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData phys_trig_num_contiguous_channel_triggered_hist = 25 [
     (CFO).desc = "Histogram of number of channels triggered in physics-trigger events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData muon_candidate_num_channel_triggered_hist = 26 [
+    (CFO).desc = "Histogram of number of channels triggered in muon-candidate events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  
 };
 
 message PartialSimpleChargeStats {

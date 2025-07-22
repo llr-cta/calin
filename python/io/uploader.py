@@ -28,10 +28,13 @@ import matplotlib.backends.backend_agg
 
 import pickle
 import os.path
-import googleapiclient.http
-import googleapiclient.discovery
-# import google_auth_oauthlib.flow
+
 import google.auth.transport.requests
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+import googleapiclient.http
 import socket
 
 class Uploader:
@@ -68,7 +71,7 @@ class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
         self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
         if(not os.path.isdir(self.root_directory)):
-            raise RuntimeError('Base path os not directory : '+self.root_directory)
+            raise RuntimeError('Base path is not directory : '+self.root_directory)
         super().__init__(overwrite=overwrite,loud=loud)
 
     def make_path(self, rel_path):
@@ -89,15 +92,15 @@ class FilesystemUploader(Uploader):
     def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
         (rel_path, filename) = os.path.split(rel_filepath)
         abs_path = os.path.join(self.make_path(rel_path), filename)
-        mode = 'wb' if iostream is io.StringIO else 'w'
-        if(os.exists(abs_path)):
+        mode = 'wb' if isinstance(iostream, io.BytesIO) else 'w'
+        if(os.path.exists(abs_path)):
             if(self.overwrite):
+                if(self.loud):
+                    print("Updating:",rel_filepath)
+            else:
                 if(self.loud):
                     print("Skipping:",rel_filepath)
                 return None
-            else:
-                if(self.loud):
-                    print("Updating:",rel_filepath)
         else:
             if(self.loud):
                 print("Uploading:",rel_filepath)
@@ -114,7 +117,7 @@ class FilesystemUploader(Uploader):
             return ''
 
 class GoogleDriveUploader(Uploader):
-    def __init__(self, token_file, root_folder_id, credentials_file=None,
+    def __init__(self, token_file, root_folder_id, credentials_file='',
             overwrite=True, loud=False):
         self.ordinal = ["zeroth", "first", "second", "third", "fourth", "fifth",
             "sixth", "seventh", "eigth","ninth","tenth"]
@@ -150,12 +153,14 @@ class GoogleDriveUploader(Uploader):
     def auth(self):
         self.lock()
         try:
-            # The file token.pickle stores the user's access and refresh tokens, and is
+            # The file token.json stores the user's access and refresh tokens, and is
             # created automatically when the authorization flow completes for the first
             # time.
-            if os.path.exists(self.token_file):
-                with open(self.token_file, 'rb') as token:
-                    self.creds = pickle.load(token)
+            try:
+                if os.path.exists(self.token_file):
+                    self.creds = google.oauth2.credentials.Credentials.from_authorized_user_file(self.token_file, self.scopes)
+            except:
+                pass
 
             # If there are no (valid) credentials available, let the user log in.
             if not self.creds or not self.creds.valid:
@@ -164,13 +169,13 @@ class GoogleDriveUploader(Uploader):
                 elif self.credentials_file and os.path.exists(self.credentials_file):
                     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
                         self.credentials_file, self.scopes)
-                    creds = flow.run_local_server(port=0)
+                    self.creds = flow.run_local_server(port=0)
                 else:
                     raise RuntimeError('GoogleDriveUploader: could not find valid access token')
 
                 # Save the credentials for the next run
-                with open(self.token_file, 'wb') as token:
-                    pickle.dump(self.creds, token)
+                with open(self.token_file, 'w') as token:
+                    token.write(self.creds.to_json())
         except:
             self.unlock()
             raise
@@ -298,18 +303,19 @@ class GoogleDriveUploader(Uploader):
         else:
             raise RuntimeError("Could not understand sheet and tab specification: "+sheet_id_and_tab_name)
 
-    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2):
+    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2, formatted_values=False):
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
         if range:
             range = "'" + range + "'!"
         range += 'A%d:ZZZ'%(row_start+1)
+        format = 'FORMATTED_VALUE' if formatted_values else 'UNFORMATTED_VALUE'
         ntry = 0
         retrieved = False
         while(not retrieved):
             ntry += 1
             try:
                 response = self.sheets_service.spreadsheets().values().get(
-                    spreadsheetId=sheet_id,range=range).execute()
+                    spreadsheetId=sheet_id,range=range,valueRenderOption=format).execute()
                 retrieved = True
             except googleapiclient.errors.HttpError:
                 if(ntry<max_try):

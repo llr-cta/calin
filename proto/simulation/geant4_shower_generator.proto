@@ -42,8 +42,8 @@ message GEANT4ShowerGeneratorConfiguration
     [(CFO).desc = "Number of atmospheric layers." ];
   double zground                                           = 2
     [(CFO).desc = "Altitude of ground level.", (CFO).units = "cm" ];
-  double ztop                                              = 3
-    [(CFO).desc = "Altitude of top of atmophere.", (CFO).units = "cm" ];
+  double ztop_of_atmosphere                                = 3
+    [(CFO).desc = "Altitude of top of atmosphere.", (CFO).units = "cm" ];
   double tracking_cut_scale                                = 4
     [(CFO).desc = "Particle tracking cut scale.", (CFO).units = "cm" ];
 
@@ -58,4 +58,7 @@ message GEANT4ShowerGeneratorConfiguration
     [(CFO).desc = "GEANT4 random number seed." ];
   VerbosityLevel verbosity                                 = 21
     [(CFO).desc = "Verbosity of shower generator" ];
+
+  repeated string pre_init_commands                        = 30
+    [(CFO).desc = "Commands to run before GEANT4 initialization." ];
 };

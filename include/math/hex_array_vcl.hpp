@@ -713,6 +713,81 @@ public:
     return xy_to_uv_with_remainder_double(x_in_dx_out, y_in_dy_out, u, v);
   }
 
+  // ***************************************************************************
+  //
+  // XY <-> HEXID
+  //
+  // ***************************************************************************  
+
+  static inline int32_vt xy_to_hexid_ccw_float(float_vt x, float_vt y)
+  {
+    int32_vt u, v;
+    xy_to_uv_float(x, y, u, v);
+    return uv_to_hexid_ccw(u, v);
+  }
+
+  static inline int64_vt xy_to_hexid_ccw_double(double_vt x, double_vt y)
+  {
+    int64_vt u, v;
+    xy_to_uv_double(x, y, u, v);
+    return uv_to_hexid_ccw(u, v);
+  }
+
+  static inline int32_vt xy_to_hexid_ccw(float_vt x, float_vt y)
+  {
+    return xy_to_hexid_ccw_float(x, y);
+  }
+
+  static inline int64_vt xy_to_hexid_ccw(double_vt x, double_vt y)
+  {
+    return xy_to_hexid_ccw_double(x, y);
+  }
+
+  static inline int32_vt xy_to_hexid_cw_float(float_vt x, float_vt y)
+  {
+    int32_vt u, v;
+    xy_to_uv_float(x, y, u, v);
+    return uv_to_hexid_cw(u, v);
+  }
+
+  static inline int64_vt xy_to_hexid_cw_double(double_vt x, double_vt y)
+  {
+    int64_vt u, v;
+    xy_to_uv_double(x, y, u, v);
+    return uv_to_hexid_cw(u, v);
+  }
+
+  static inline int32_vt xy_to_hexid_cw(float_vt x, float_vt y)
+  {
+    return xy_to_hexid_cw_float(x, y);
+  }
+
+  static inline int64_vt xy_to_hexid_cw(double_vt x, double_vt y)
+  {
+    return xy_to_hexid_cw_double(x, y);
+  }
+
+  static inline int32_vt xy_to_hexid_float(float_vt x, float_vt y, bool clockwise=false)
+  {
+    if(clockwise)return xy_to_hexid_cw_float(x, y);
+    else return xy_to_hexid_ccw_float(x, y);
+  }
+
+  static inline int64_vt xy_to_hexid_double(double_vt x, double_vt y, bool clockwise=false)
+  {
+    if(clockwise)return xy_to_hexid_cw_double(x, y);
+    else return xy_to_hexid_ccw_double(x, y);
+  }
+
+  static inline int32_vt xy_to_hexid(float_vt x, float_vt y, bool clockwise=false)
+  {
+    return xy_to_hexid_float(x, y, clockwise);
+  }
+
+  static inline int64_vt xy_to_hexid(double_vt x, double_vt y, bool clockwise=false)
+  {
+    return xy_to_hexid_double(x, y, clockwise);
+  }
 };
 
 template<typename VCLRealArch> class VCLReal: public VCLRealArch

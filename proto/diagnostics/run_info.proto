@@ -55,9 +55,13 @@ message RunInfoConfig {
     (CFO).desc = "Resolution of event number histogram.", (CFO).units="events" ];
   double event_time_histogram_resolution                   = 11 [
     (CFO).desc = "Resolution of event time histograms.", (CFO).units="s" ];
-  double log10_delta_t_histogram_binsize                   = 12 [
+  double event_time_histogram_max                          = 12 [
+    (CFO).desc = "Maximum of event time histogram.", (CFO).units="s" ];
+  double event_time_histogram_min                          = 13 [
+    (CFO).desc = "Minimum of event time histogram.", (CFO).units="s" ];  
+  double log10_delta_t_histogram_binsize                   = 14 [
     (CFO).desc = "Resolution of log10(delta-T) histograms." ];
-  double delta_t_timeslice                                 = 13 [
+  double delta_t_timeslice                                 = 15 [
     (CFO).desc = "Resolution of time-dependent delta-T histogram time slices.",
     (CFO).units="s" ];
   CameraRunInfoConfig default_nectarcam_config             = 100;

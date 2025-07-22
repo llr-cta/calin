@@ -34,6 +34,7 @@ import "diagnostics/clock_regression.proto";
 import "provenance/anthology.proto";
 import "iact_data/waveform_treatment_event_visitor.proto";
 import "iact_data/nectarcam_ancillary_data.proto";
+import "diagnostics/reduced_event_writer.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.stage1;
@@ -62,6 +63,9 @@ message Stage1Config {
   // bool enable_all_code_hists                                        = 11 [
   //   (CFO).desc = "Enable all-sample code histograms, histograms of the "
   //     "frequency of each waveform sample value, for each trigger type." ];
+
+  bool enable_write_reduced_event_file                     = 20 [
+    (CFO).desc = "Enable writing of reduced event file." ];
 
   bool calculate_waveform_variance                         = 50 [
     (CFO).desc = "Calculate the variance of the individual waveform sample for "
@@ -100,8 +104,14 @@ message Stage1Config {
   calin.ix.diagnostics.clock_regression.ClockRegressionConfig clock_regression = 110 [
     (CFO).desc = "Configuration of clock regression calculator." ];
 
+  calin.ix.diagnostics.reduced_event_writer.ReducedEventWriterConfig reduced_event_writer = 120 [
+    (CFO).desc = "Configuration of reduced event writer." ];
+
   string ancillary_database                                = 200 [
-    (CFO).desc = "Location of ancillary database if used." ];
+    (CFO).desc = "Full path to ancillary database including filename if used." ];
+  string ancillary_database_directory                      = 201 [
+    (CFO).desc = "Directory containing ancillary database if used. Overriden by \"ancillary_database\" "
+      "if this is given. An empty value defaults to directory housing the events data file." ];
 };
 
 message NectarCamSpecificStage1 {

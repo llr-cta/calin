@@ -87,6 +87,7 @@ public:
 
   unsigned current_fragment_index() const override;
   unsigned num_fragments() const override;
+  unsigned num_missing_fragments() const override;
   std::string fragment_name(unsigned index) const override;
 
   static config_type default_config();

@@ -4,7 +4,12 @@
 
    Class for imaging atmospheric cherenkov technique - produce rays from charged
    tracks in the atmosphere, propagate them to the ground and trace them through
-   telescope ptics.
+   telescope optics.
+
+   This has become a very complex class that supports multiple propagators with 
+   multiple telescopes, each with different detector efficiency and angular
+   response. It also now supports multiple propagator sets, each with a different
+   scattering radius. IT IS NOT A GOOD EXAMPLE OF HOW TO WRITE CODE.
 
    Copyright 2022, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -30,6 +35,7 @@
 #include <util/log.hpp>
 #include <util/string.hpp>
 #include <math/special.hpp>
+#include <math/hex_array.hpp>
 #include <simulation/vcl_iact.hpp>
 #include <simulation/vcl_ray_propagator.hpp>
 #include <simulation/vcl_raytracer.hpp>
@@ -179,7 +185,7 @@ public:
       << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
-      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV";
     return stream.str();
   }
 
@@ -265,10 +271,10 @@ public:
       << indent_n << "Absorbed from 10 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmin),3)
       << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(10e5,wmax),3) << " eV\n"
       << indent_n << "Absorbed from 15 km : " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmin),3)
-      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV\n";
+      << " to " << double_to_string_with_commas(detector_bandwidth_spline_->value(15e5,wmax),3) << " eV";
     std::string fp_banner = fp_angular_response_->banner();
     if(not fp_banner.empty()) {
-      stream << indent_n << "Cone : " << fp_banner << '\n';
+      stream << indent_n << "\nCone : " << fp_banner;
     }
     return stream.str();
   }
@@ -343,6 +349,8 @@ public:
 
   virtual ~VCLIACTArray();
 
+  unsigned add_propagator_set(double scattering_radius = 0.0, const std::string& name = "");
+
   DaviesCottonVCLFocalPlaneRayPropagator* add_davies_cotton_propagator(
     calin::simulation::vs_optics::VSOArray* array, PEProcessor* pe_processor,
     const DetectionEfficiency& detector_efficiency, const AngularEfficiency& fp_angular_efficiency,
@@ -393,6 +401,14 @@ public:
 
   static calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration default_config();
 
+  unsigned num_propagator_sets() const { return propagator_set_.size(); }
+  double scattered_distance(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattered_distance; }
+  Eigen::Vector3d scattered_offset(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattered_offset; }
+  double scattering_radius(unsigned ipropagator_set) const {
+    return propagator_set_.at(ipropagator_set)->scattering_radius; }
+
   unsigned num_propagators() const { return propagator_.size(); }
   unsigned num_scopes() const { return detector_.size(); }
 
@@ -401,7 +417,9 @@ public:
   uint64_t nrays_propagated_at_detector(unsigned idetector) const {
     return detector_.at(idetector)->nrays_propagated; }
 
-  std::string banner() const;
+  std::string banner();
+  std::string detector_report() const;
+  std::string grid_report() const;
 
   calin::math::spline_interpolation::CubicSpline* new_height_dependent_pe_bandwidth_spline() const;
   double fixed_pe_bandwidth() const;
@@ -422,13 +440,30 @@ protected:
     SplinePEAmplitudeGenerator* pe_generator, const std::string& propagator_name,
     bool adopt_propagator, bool adopt_pe_processor, bool adopt_pe_generator);
 
-  void update_detector_efficiencies();
+  void schedule_update_detector_efficiencies();
+  void do_update_detector_efficiencies();
+
   static calin::ix::simulation::vcl_iact::VCLIACTConfiguration base_config(
     const calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration& config);
+
+  void make_detector_grid();
+
+  struct PropagatorInfo;
+
+  struct PropagatorSet {
+    unsigned ipropagator_set;
+    double scattering_radius;
+    double scattered_distance;
+    Eigen::Vector3d scattered_offset;
+    std::string name;
+    std::vector<PropagatorInfo*> propagators;
+  };
 
   struct DetectorInfo;
 
   struct PropagatorInfo {
+    PropagatorSet* propagator_set;
+
     FocalPlaneRayPropagator* propagator;
     unsigned ipropagator;
     PEProcessor* pe_processor;
@@ -448,6 +483,7 @@ protected:
     PropagatorInfo* propagator_info;
 
     RayProcessorDetectorSphere sphere;
+    RayProcessorDetectorSphere unscattered_sphere;
     double squared_radius;
     double squared_safety_radius;
     FocalPlaneRayPropagator* propagator;
@@ -472,22 +508,82 @@ protected:
     uint64_t nrays_propagated;
   };
 
-  void do_propagate_rays_for_detector(DetectorInfo* idetector);
-  void do_refract_rays_for_detector(DetectorInfo* idetector);
+  void do_propagate_rays_for_detector(DetectorInfo* detector);
+  void do_refract_rays_for_detector(DetectorInfo* detector);
 
   calin::ix::simulation::vcl_iact::VCLIACTArrayConfiguration config_;
   calin::simulation::detector_efficiency::AtmosphericAbsorption atm_abs_;
+  std::vector<PropagatorSet*> propagator_set_;
   std::vector<PropagatorInfo*> propagator_;
   std::vector<DetectorInfo*> detector_;
-  std::vector<VCLBandwidthManager<VCLArchitecture>*> bandwidth_manager_;
 
+  bool update_detector_efficiencies_is_pending_ = true;
   double zobs_;
   double wmax_ = 1.0;
   double wmin_ = 0.0;
   double ref_index_;
   double ref_index_correction_;
   double safety_radius_;
-#endif
+
+  double grid_xmin_ = 0.0;
+  double grid_xmax_ = 0.0;
+  double grid_ymin_ = 0.0;
+  double grid_ymax_ = 0.0;
+  double grid_sep_ = 0.0;
+  double grid_sep_inv_ = 0.0;
+  unsigned grid_ncells_ = 0;
+  unsigned grid_ndetector_per_cell_ = 0;
+  unsigned grid_array_size_ = 0;
+  double* grid_detector_x_ = nullptr;
+  double* grid_detector_y_ = nullptr;
+  double* grid_detector_z_ = nullptr;
+  double* grid_detector_ssr_ = nullptr;
+  int64_t* grid_idetector_ = nullptr;
+
+  struct BandwidthManagerCacheEntry {
+    std::string name;
+    const DetectionEfficiency* detector_efficiency;
+    const AngularEfficiency* fp_angular_efficiency;
+    double zobs;
+    double e_lo;
+    double e_hi;
+    double delta_e;
+    VCLBandwidthManager<VCLArchitecture>* manager;
+  };
+
+  std::vector<BandwidthManagerCacheEntry> bandwidth_manager_cache_;
+
+  VCLBandwidthManager<VCLArchitecture>* find_cached_bandwidth_manager(
+    const std::string& name,
+    const DetectionEfficiency* detector_efficiency,
+    const AngularEfficiency* fp_angular_efficiency,
+    double zobs, double e_lo, double e_hi, double delta_e)
+  {
+    for (const auto& entry : bandwidth_manager_cache_) {
+        if (entry.name == name &&
+            entry.detector_efficiency == detector_efficiency &&
+            entry.fp_angular_efficiency == fp_angular_efficiency &&
+            entry.zobs == zobs &&
+            entry.e_lo == e_lo &&
+            entry.e_hi == e_hi &&
+            entry.delta_e == delta_e) {
+            return entry.manager;
+        }
+    }
+    return nullptr;
+  }
+
+  void cache_bandwidth_manager(
+    const std::string& name,
+    const DetectionEfficiency* detector_efficiency,
+    const AngularEfficiency* fp_angular_efficiency,
+    double zobs, double e_lo, double e_hi, double delta_e,
+    VCLBandwidthManager<VCLArchitecture>* manager)
+  {
+    BandwidthManagerCacheEntry entry{name, detector_efficiency, fp_angular_efficiency, zobs, e_lo, e_hi, delta_e, manager};
+    bandwidth_manager_cache_.push_back(entry);
+  }
+#endif // not defined SWIG
 };
 
 #ifndef SWIG
@@ -526,17 +622,37 @@ VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
 template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
 ~VCLIACTArray()
 {
-  for(auto* ipropagator : propagator_) {
-    if(ipropagator->adopt_propagator)delete ipropagator->propagator;
-    if(ipropagator->adopt_pe_processor)delete ipropagator->pe_processor;
-    delete ipropagator;
+  for(auto* propagator_set : propagator_set_) {
+    delete propagator_set;
   }
-  for(auto* idetector : detector_) {
-    delete idetector;
+  for(auto* propagator : propagator_) {
+    if(propagator->adopt_propagator)delete propagator->propagator;
+    if(propagator->adopt_pe_processor)delete propagator->pe_processor;
+    delete propagator;
   }
-  for(auto* ibandwidth_manager : bandwidth_manager_) {
-    delete ibandwidth_manager;
+  for(auto* detector : detector_) {
+    delete detector;
   }
+  for(auto& bandwidth_manager_cache_entry : bandwidth_manager_cache_) {
+    delete bandwidth_manager_cache_entry.manager;
+  }
+}
+
+template<typename VCLArchitecture> unsigned VCLIACTArray<VCLArchitecture>::
+add_propagator_set(double scattering_radius, const std::string& name)
+{
+  auto* propagator_set = new PropagatorSet;
+  propagator_set->ipropagator_set = propagator_set_.size();
+  propagator_set->scattering_radius = scattering_radius;
+  propagator_set->scattered_distance = 0.0;
+  propagator_set->scattered_offset = Eigen::Vector3d::Zero();
+  if(name == "") {
+    propagator_set->name = "Propagator set "+std::to_string(propagator_set->ipropagator_set);
+  } else {
+    propagator_set->name = name;
+  }
+  propagator_set_.emplace_back(propagator_set);
+  return propagator_set->ipropagator_set;
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -571,6 +687,7 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     auto detector_info = new DetectorInfo;
     detector_info->propagator_info        = propagator_info;
     detector_info->sphere                 = sphere[isphere];
+    detector_info->unscattered_sphere     = sphere[isphere];
     detector_info->squared_radius         = SQR(sphere[isphere].radius);
     detector_info->squared_safety_radius  = SQR(sphere[isphere].radius + safety_radius_);
     detector_info->propagator             = propagator;
@@ -587,9 +704,14 @@ add_propagator(FocalPlaneRayPropagator* propagator, PEProcessor* pe_processor,
     propagator_info->detector_infos.emplace_back(detector_info);
   }
 
-  bandwidth_manager_.emplace_back(bandwidth_manager);
+  if(propagator_set_.empty()) {
+    add_propagator_set(config_.scattering_radius(), "default_propagator_set");
+  }
+  PropagatorSet* propagator_set = propagator_set_.back();
+  propagator_set->propagators.emplace_back(propagator_info);
+  propagator_info->propagator_set = propagator_set;
 
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture>
@@ -603,10 +725,21 @@ VCLIACTArray<VCLArchitecture>::add_davies_cotton_propagator(
   auto* propagator = new calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>(
     array, this->rng_, ref_index_, adopt_array, /* adopt_rng= */ false);
 
-  auto* bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, &fp_angular_efficiency, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLDCBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, fp_angular_efficiency, zobs,
+          e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, &fp_angular_efficiency, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -677,10 +810,20 @@ VCLIACTArray<VCLArchitecture>::add_perfect_optics_propagator(
     propagator->add_telescope(r0, radius, config_.observation_level(), focal_length, field_of_view_radius);
   }
 
-  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, zobs, e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -699,10 +842,20 @@ VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
   auto* propagator = new calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>(
     config_.observation_level(), r0, radius, field_of_view_radius, ref_index_);
 
-  auto* bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
-    &atm_abs_, detector_efficiency, zobs_,
-    config_.detector_energy_lo(), config_.detector_energy_hi(),
-    config_.detector_energy_bin_width(), propagator_name);
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+      propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e);
+
+  if (!bandwidth_manager) {
+      bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+          &atm_abs_, detector_efficiency, zobs, e_lo, e_hi, delta_e, propagator_name);
+      cache_bandwidth_manager(
+          propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
 
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
@@ -718,14 +871,14 @@ point_telescope_az_el_phi_deg(unsigned iscope,
     throw std::out_of_range("Telescope ID out of range");
   }
 
-  DetectorInfo* idetector(detector_[iscope]);
-  PropagatorInfo* ipropagator(idetector->propagator_info);
+  DetectorInfo* detector(detector_[iscope]);
+  PropagatorInfo* ipropagator(detector->propagator_info);
   unsigned propagator_isphere = iscope-ipropagator->detector0;
 
   ipropagator->propagator->point_telescope_az_el_phi_deg(
     propagator_isphere, az_deg, el_deg, phi_deg);
 
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -738,16 +891,16 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 point_all_telescopes_az_el_phi_deg(const Eigen::VectorXd& az_deg,
   const Eigen::VectorXd&  el_deg, const Eigen::VectorXd&  phi_deg)
 {
-  for(auto* ipropagator : propagator_) {
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+  for(auto* propagator : propagator_) {
+    for(unsigned propagator_isphere=0; propagator_isphere<propagator->ndetector;
         ++propagator_isphere) {
-      unsigned isphere = ipropagator->detector0 + propagator_isphere;
-      ipropagator->propagator->point_telescope_az_el_phi_deg(
+      unsigned isphere = propagator->detector0 + propagator_isphere;
+      propagator->propagator->point_telescope_az_el_phi_deg(
         propagator_isphere, az_deg[isphere], el_deg[isphere],
         phi_deg[isphere]);
     }
   }
-  update_detector_efficiencies();
+  schedule_update_detector_efficiencies();
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
@@ -776,39 +929,46 @@ point_all_telescopes_az_el_deg(double az_deg, double el_deg)
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-update_detector_efficiencies()
+schedule_update_detector_efficiencies()
+{
+  update_detector_efficiencies_is_pending_ = true;
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+do_update_detector_efficiencies()
 {
   using calin::math::special::SQR;
 
   double znmin = M_PI_2;
   double znmax = 0;
-  for(auto* ipropagator : propagator_) {
-    auto spheres = ipropagator->propagator->detector_spheres();
-    if(spheres.size() != ipropagator->ndetector) {
+  for(auto* propagator : propagator_) {
+    auto spheres = propagator->propagator->detector_spheres();
+    if(spheres.size() != propagator->ndetector) {
       // this should never happen
       throw std::runtime_error("Number of detectors proposed by propagator must remain constant over events.");
     }
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+    for(unsigned propagator_isphere=0; propagator_isphere<propagator->ndetector;
         ++propagator_isphere) {
-      const auto& isphere(spheres[propagator_isphere]);
-      auto* idetector(ipropagator->detector_infos[propagator_isphere]);
-      if(isphere.iobs != config_.observation_level()) {
+      const auto& sphere(spheres[propagator_isphere]);
+      auto* detector(propagator->detector_infos[propagator_isphere]);
+      if(sphere.iobs != config_.observation_level()) {
         throw std::runtime_error("Detector observation level does not match configured value.");
       }
-      idetector->sphere = isphere;
-      double zn = std::atan2(std::sqrt(SQR(isphere.obs_dir.x())+SQR(isphere.obs_dir.y())), isphere.obs_dir.z());
-      znmin = std::min(znmin, std::max(zn - isphere.field_of_view_radius, 0.0));
-      znmax = std::max(znmax, std::min(zn + isphere.field_of_view_radius, M_PI_2));
+      detector->sphere = sphere;
+      detector->unscattered_sphere = sphere;
+      double zn = std::atan2(std::sqrt(SQR(sphere.obs_dir.x())+SQR(sphere.obs_dir.y())), sphere.obs_dir.z());
+      znmin = std::min(znmin, std::max(zn - sphere.field_of_view_radius, 0.0));
+      znmax = std::max(znmax, std::min(zn + sphere.field_of_view_radius, M_PI_2));
     }
     wmax_ = std::cos(znmin);
     wmin_ = std::cos(znmax);
     safety_radius_ = this->atm_->refraction_safety_radius(znmax, config_.observation_level());
-    for(unsigned propagator_isphere=0; propagator_isphere<ipropagator->ndetector;
+    for(unsigned propagator_isphere=0; propagator_isphere<propagator->ndetector;
         ++propagator_isphere) {
-      auto* idetector(ipropagator->detector_infos[propagator_isphere]);
-      const auto& isphere(idetector->sphere);
-      idetector->squared_radius         = SQR(isphere.radius);
-      idetector->squared_safety_radius  = SQR(isphere.radius + safety_radius_);
+      auto* detector(propagator->detector_infos[propagator_isphere]);
+      const auto& sphere(detector->sphere);
+      detector->squared_radius         = SQR(sphere.radius);
+      detector->squared_safety_radius  = SQR(sphere.radius + safety_radius_);
     }
   }
 
@@ -832,8 +992,8 @@ template<typename VCLArchitecture> double VCLIACTArray<VCLArchitecture>::
 fixed_pe_bandwidth() const
 {
   double bandwidth = 0;
-  for(const auto* ibandwidth_manager : bandwidth_manager_) {
-    bandwidth = std::max(bandwidth, ibandwidth_manager->bandwidth());
+  for(const auto ibandwidth_manager_cache_entry : bandwidth_manager_cache_) {
+    bandwidth = std::max(bandwidth, ibandwidth_manager_cache_entry.manager->bandwidth());
   }
   return bandwidth;
 }
@@ -841,15 +1001,15 @@ fixed_pe_bandwidth() const
 template<typename VCLArchitecture> calin::math::spline_interpolation::CubicSpline*
 VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 {
-  if(bandwidth_manager_.empty()) {
+  if(bandwidth_manager_cache_.empty()) {
     return nullptr;
   }
-  std::vector<double> heights = bandwidth_manager_.front()->
+  std::vector<double> heights = bandwidth_manager_cache_.front().manager->
     detector_bandwidth_spline()->xknot_as_stdvec();
   std::vector<double> bandwidths(heights.size(), 0.0);
-  for(const auto* ibandwidth_manager : bandwidth_manager_) {
+  for(const auto ibandwidth_manager_cache_entry : bandwidth_manager_cache_) {
     std::vector<double> detector_bandwidths =
-      ibandwidth_manager->bandwidth_vs_height(heights, wmax_);
+      ibandwidth_manager_cache_entry.manager->bandwidth_vs_height(heights, wmax_);
     std::transform(bandwidths.begin(), bandwidths.end(),
       detector_bandwidths.begin(), bandwidths.begin(),
       [](double a, double b) { return std::max(a,b); });
@@ -860,15 +1020,47 @@ VCLIACTArray<VCLArchitecture>::new_height_dependent_pe_bandwidth_spline() const
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  for(auto* ipropagator : propagator_) {
-    ipropagator->pe_processor->start_processing();
+  if(update_detector_efficiencies_is_pending_) {
+    do_update_detector_efficiencies();
+    update_detector_efficiencies_is_pending_ = false;
   }
-  for(auto* idetector : detector_) {
-    idetector->nrays_to_refract = 0;
-    idetector->nrays_to_propagate = 0;
-    idetector->nrays_refracted = 0;
-    idetector->nrays_propagated = 0;
+
+  calin::math::rng::VCLToScalarRNGCore scalar_core(this->rng_->core());
+  calin::math::rng::RNG scalar_rng(&scalar_core);
+  Eigen::Vector3d e1(1.0, 0.0, 0.0);
+  Eigen::Vector3d e2(0.0, 1.0, 0.0);
+  calin::math::geometry::rotate_in_place_z_to_u_Rzy(e1, event.u0);
+  calin::math::geometry::rotate_in_place_z_to_u_Rzy(e2, event.u0);
+  for(auto* propagator : propagator_) {
+    propagator->pe_processor->start_processing();
   }
+  for(auto* detector : detector_) {
+    detector->nrays_to_refract = 0;
+    detector->nrays_to_propagate = 0;
+    detector->nrays_refracted = 0;
+    detector->nrays_propagated = 0;
+    detector->sphere = detector->unscattered_sphere;
+  }
+  for(auto* propagator_set : propagator_set_) {
+    if(propagator_set->scattering_radius > 0.0) {
+      double b = propagator_set->scattering_radius*std::sqrt(scalar_rng.uniform());
+      propagator_set->scattered_distance = b;
+      double theta = scalar_rng.uniform()*M_PI*2.0;
+      double bx = b*std::cos(theta);
+      double by = b*std::sin(theta);
+      Eigen::Vector3d bvec = bx*e1 + by*e2;
+      bvec -= (bvec.z()/event.u0.z())*event.u0;
+      propagator_set->scattered_offset = bvec;
+      for(auto* propagator_info : propagator_set->propagators) {
+        for(auto* detector_info : propagator_info->detector_infos) {
+          detector_info->sphere.r0 += bvec;
+        }
+      }
+    } else {
+      propagator_set->scattered_offset = Eigen::Vector3d::Zero();
+    }
+  }
+  make_detector_grid();
 
   return VCLIACTTrackVisitor<VCLArchitecture>::visit_event(event, kill_event);
 }
@@ -877,16 +1069,16 @@ template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::leave_eve
 {
   VCLIACTTrackVisitor<VCLArchitecture>::leave_event();
 
-  for(auto* idetector : detector_) {
-    if(idetector->nrays_to_refract) {
-      do_refract_rays_for_detector(idetector);
+  for(auto* detector : detector_) {
+    if(detector->nrays_to_refract) {
+      do_refract_rays_for_detector(detector);
     }
-    if(idetector->nrays_to_propagate) {
-      do_propagate_rays_for_detector(idetector);
+    if(detector->nrays_to_propagate) {
+      do_propagate_rays_for_detector(detector);
     }
   }
-  for(auto* ipropagator : propagator_) {
-    ipropagator->pe_processor->finish_processing();
+  for(auto* propagator : propagator_) {
+    propagator->pe_processor->finish_processing();
   }
 }
 
@@ -919,68 +1111,60 @@ propagate_rays(calin::math::ray::VCLRay<double_real> ray, double_bvt ray_mask,
   bandwidth.store(bandwidth_array);
   ray_weight.store(ray_weight_array);
 
-  for(auto* idetector : detector_) {
-    auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector->sphere.r0.template cast<double_vt>()) < idetector->squared_safety_radius);
-    unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
-    if(intersecting_rays_bitmask) {
-      for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
-        if(intersecting_rays_bitmask & 1) {
-          switch(config_.refraction_mode()) {
-          case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
-          case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
-            idetector->rays_to_propagate.insert_one_ray(idetector->nrays_to_propagate, ray_array.extract_one_ray(iray));
-            idetector->bandwidths_to_propagate[idetector->nrays_to_propagate] = bandwidth_array[iray];
-            idetector->ray_weights_to_propagate[idetector->nrays_to_propagate] = ray_weight_array[iray];
-            ++idetector->nrays_to_propagate;
-            if(idetector->nrays_to_propagate == VCLArchitecture::num_double) {
-              do_propagate_rays_for_detector(idetector);
-            }
-            break;
-          case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
-          default:
-            idetector->rays_to_refract.insert_one_ray(idetector->nrays_to_refract, ray_array.extract_one_ray(iray));
-            idetector->bandwidths_to_refract[idetector->nrays_to_refract] = bandwidth_array[iray];
-            idetector->ray_weights_to_refract[idetector->nrays_to_refract] = ray_weight_array[iray];
-            ++idetector->nrays_to_refract;
-            if(idetector->nrays_to_refract == VCLArchitecture::num_double) {
-              do_refract_rays_for_detector(idetector);
-            }
-            break;
-          }
-        }
-        intersecting_rays_bitmask >>= 1;
-      }
-    }
+  int64_vt grid_hexid;
+  if(grid_ncells_ == 1) {
+    // If there is only one cell, we can skip the grid calculation
+    grid_hexid = 0;
+  } else {
+    calin::math::ray::VCLRay<double_real> ray_copy(ray);
+    ray_copy.propagate_to_z_plane_with_mask(ray_mask, -zobs_);
+    double_vt grid_x = ray_copy.x() * grid_sep_inv_;
+    double_vt grid_y = ray_copy.y() * grid_sep_inv_;
+    grid_hexid = calin::math::hex_array::VCL<VCLArchitecture>::xy_to_hexid_ccw(grid_x, grid_y);
+    grid_hexid = vcl::max(vcl::min(grid_hexid, grid_ncells_), 0); // Ensure we do not go out of bounds
   }
-}
 
-template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-do_refract_rays_for_detector(DetectorInfo* idetector)
-{
-  Ray ray;
-  idetector->rays_to_refract.get_rays(ray);
-  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_refract;
-  idetector->nrays_refracted += idetector->nrays_to_refract;
-  idetector->nrays_to_refract = 0;
+  for(unsigned icell_detector=0;icell_detector<grid_ndetector_per_cell_; ++icell_detector) {
+    int64_vt igrid_array = grid_hexid*grid_ndetector_per_cell_ + icell_detector;
+    double_vt detector_x = vcl::lookup<0x40000000>(igrid_array, grid_detector_x_);
+    double_vt detector_y = vcl::lookup<0x40000000>(igrid_array, grid_detector_y_);
+    double_vt detector_z = vcl::lookup<0x40000000>(igrid_array, grid_detector_z_);
+    double_vt detector_squared_safety_radius = vcl::lookup<0x40000000>(igrid_array, grid_detector_ssr_);
+    int64_vt idetector = vcl::lookup<0x40000000>(igrid_array, grid_idetector_);
+    Vector3d_vt detector_pos { detector_x, detector_y, detector_z };
 
-  double_vt dz = ray.z()-zobs_;
-  this->atm_->template vcl_propagate_ray_with_refraction_and_mask<VCLArchitecture>(ray, ray_mask, config_.observation_level());
-  // Note propagation backwards by distance since uz() is negative
-  ray.propagate_dist_with_mask(ray_mask, dz/ray.uz(), ref_index_);
+    auto intersecting_rays = ray_mask 
+      & (ray.squared_distance_at_closest_approach(detector_pos) < detector_squared_safety_radius)
+      & double_bvt(idetector >= 0);
+    unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
 
-  idetector->rays_to_refract.set_rays(ray);
+    int64_at idetector_array;
+    idetector.store(idetector_array);
 
-  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(idetector->sphere.r0.template cast<double_vt>()) < idetector->squared_radius);
-  unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
-  if(intersecting_rays_bitmask) {
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(intersecting_rays_bitmask & 1) {
-        idetector->rays_to_propagate.insert_one_ray(idetector->nrays_to_propagate, idetector->rays_to_refract.extract_one_ray(iray));
-        idetector->bandwidths_to_propagate[idetector->nrays_to_propagate] = idetector->bandwidths_to_refract[iray];
-        idetector->ray_weights_to_propagate[idetector->nrays_to_propagate] = idetector->ray_weights_to_refract[iray];
-        ++idetector->nrays_to_propagate;
-        if(idetector->nrays_to_propagate == VCLArchitecture::num_double) {
-          do_propagate_rays_for_detector(idetector);
+        auto* detector = detector_[idetector_array[iray]];
+        switch(config_.refraction_mode()) {
+        case calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS:
+        case calin::ix::simulation::vcl_iact::REFRACT_ALL_RAYS:
+          detector->rays_to_propagate.insert_one_ray(detector->nrays_to_propagate, ray_array.extract_one_ray(iray));
+          detector->bandwidths_to_propagate[detector->nrays_to_propagate] = bandwidth_array[iray];
+          detector->ray_weights_to_propagate[detector->nrays_to_propagate] = ray_weight_array[iray];
+          ++detector->nrays_to_propagate;
+          if(detector->nrays_to_propagate == VCLArchitecture::num_double) {
+            do_propagate_rays_for_detector(detector);
+          }
+          break;
+        case calin::ix::simulation::vcl_iact::REFRACT_ONLY_CLOSE_RAYS:
+        default:
+          detector->rays_to_refract.insert_one_ray(detector->nrays_to_refract, ray_array.extract_one_ray(iray));
+          detector->bandwidths_to_refract[detector->nrays_to_refract] = bandwidth_array[iray];
+          detector->ray_weights_to_refract[detector->nrays_to_refract] = ray_weight_array[iray];
+          ++detector->nrays_to_refract;
+          if(detector->nrays_to_refract == VCLArchitecture::num_double) {
+            do_refract_rays_for_detector(detector);
+          }
+          break;
         }
       }
       intersecting_rays_bitmask >>= 1;
@@ -989,26 +1173,65 @@ do_refract_rays_for_detector(DetectorInfo* idetector)
 }
 
 template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
-do_propagate_rays_for_detector(DetectorInfo* idetector)
+do_refract_rays_for_detector(DetectorInfo* detector)
 {
   Ray ray;
-  idetector->rays_to_propagate.get_rays(ray);
-  double_bvt ray_mask = VCLArchitecture::double_iota()<idetector->nrays_to_propagate;
-  idetector->nrays_propagated += idetector->nrays_to_propagate;
-  idetector->nrays_to_propagate = 0;
+  detector->rays_to_refract.get_rays(ray);
+  double_bvt ray_mask = VCLArchitecture::double_iota()<detector->nrays_to_refract;
+  detector->nrays_refracted += detector->nrays_to_refract;
+  detector->nrays_to_refract = 0;
+
+  double_vt dz = ray.z()-zobs_;
+  this->atm_->template vcl_propagate_ray_with_refraction_and_mask<VCLArchitecture>(ray, ray_mask, config_.observation_level());
+  // Note propagation backwards by distance since uz() is negative
+  ray.propagate_dist_with_mask(ray_mask, dz/ray.uz(), ref_index_);
+
+  detector->rays_to_refract.set_rays(ray);
+
+  auto intersecting_rays = ray_mask & (ray.squared_distance_at_closest_approach(detector->sphere.r0.template cast<double_vt>()) < detector->squared_radius);
+  unsigned intersecting_rays_bitmask = vcl::to_bits(intersecting_rays);
+  if(intersecting_rays_bitmask) {
+    for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
+      if(intersecting_rays_bitmask & 1) {
+        detector->rays_to_propagate.insert_one_ray(detector->nrays_to_propagate, detector->rays_to_refract.extract_one_ray(iray));
+        detector->bandwidths_to_propagate[detector->nrays_to_propagate] = detector->bandwidths_to_refract[iray];
+        detector->ray_weights_to_propagate[detector->nrays_to_propagate] = detector->ray_weights_to_refract[iray];
+        ++detector->nrays_to_propagate;
+        if(detector->nrays_to_propagate == VCLArchitecture::num_double) {
+          do_propagate_rays_for_detector(detector);
+        }
+      }
+      intersecting_rays_bitmask >>= 1;
+    }
+  }
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::
+do_propagate_rays_for_detector(DetectorInfo* detector)
+{
+  Ray ray;
+  detector->rays_to_propagate.get_rays(ray);
+  double_bvt ray_mask = VCLArchitecture::double_iota()<detector->nrays_to_propagate;
+  detector->nrays_propagated += detector->nrays_to_propagate;
+  detector->nrays_to_propagate = 0;
 
   double_vt emission_z = ray.z();
   double_vt emission_uz = ray.uz();
 
+  if(detector->propagator_info->propagator_set->scattering_radius > 0.0) {
+    // Translate the ray to unscattered frame since this is how the propagator works
+    ray.translate_origin(detector->propagator_info->propagator_set->scattered_offset.template cast<double_vt>());
+  }
+
   FocalPlaneParameters fp_parameters;
-  ray_mask = idetector->propagator->propagate_rays_to_focal_plane(
-    idetector->propagator_iscope, ray, ray_mask, fp_parameters);
+  ray_mask = detector->propagator->propagate_rays_to_focal_plane(
+    detector->propagator_iscope, ray, ray_mask, fp_parameters);
 
   if(not this->do_color_photons_) {
     double_vt emission_bandwidth;
-    emission_bandwidth.load(idetector->bandwidths_to_propagate);
+    emission_bandwidth.load(detector->bandwidths_to_propagate);
     double_vt ground_bandwidth =
-      idetector->bandwidth_manager->bandwidth_for_pe(emission_z, emission_uz,
+      detector->bandwidth_manager->bandwidth_for_pe(emission_z, emission_uz,
         fp_parameters.fplane_ux, fp_parameters.fplane_uy, fp_parameters.fplane_uz);
     double_vt bw_scaled_uniform_rand = emission_bandwidth * this->rng_->uniform_double();
     double_vt bw_scaled_detection_prob = fp_parameters.detection_prob * ground_bandwidth;
@@ -1035,21 +1258,204 @@ do_propagate_rays_for_detector(DetectorInfo* idetector)
     fp_parameters.fplane_t.store(fplane_t);
     fp_parameters.pixel_id.store(pixel_id);
 
-    if(idetector->pe_generator != nullptr) {
+    if(detector->pe_generator != nullptr) {
       double_vt weight;
-      weight.load(idetector->ray_weights_to_propagate);
-      weight *= idetector->pe_generator->
+      weight.load(detector->ray_weights_to_propagate);
+      weight *= detector->pe_generator->
         template vcl_generate_amplitude<VCLArchitecture>(*this->rng_);
-      weight.store(idetector->ray_weights_to_propagate);
+      weight.store(detector->ray_weights_to_propagate);
     }
 
     for(unsigned iray=0; iray<VCLArchitecture::num_double; ++iray) {
       if(fp_rays_bitmask & 1) {
-        idetector->pe_processor->process_focal_plane_hit(idetector->propagator_iscope,
+        detector->pe_processor->process_focal_plane_hit(detector->propagator_iscope,
           pixel_id[iray], fplane_x[iray], fplane_y[iray], fplane_ux[iray], fplane_uy[iray],
-          fplane_t[iray], idetector->ray_weights_to_propagate[iray]);
+          fplane_t[iray], detector->ray_weights_to_propagate[iray]);
       }
       fp_rays_bitmask >>= 1;
+    }
+  }
+}
+
+namespace {
+  inline double projected_radius(double r, double zcenter, double zobs, double sin_zn_max, double tan_zn_max)
+  {
+    double dz = std::abs(zcenter - zobs) + r/sin_zn_max;
+    return dz*tan_zn_max;
+  }
+}
+
+template<typename VCLArchitecture> void VCLIACTArray<VCLArchitecture>::make_detector_grid()
+{
+  // Create a hexagonal grid of detectors based on the detector positions
+  // and the observation zenith angle. The grid is used to efficiently
+  // find detectors that are close to a given ray at the observation level.
+
+  double zn = std::acos(wmin_);
+  double sin_zn_max = std::sin(zn);
+  double tan_zn_max = std::tan(zn);
+
+  if(detector_.size() <= std::max(1U, config_.grid_theshold())) 
+  {
+    grid_sep_ = std::numeric_limits<double>::infinity();
+    grid_sep_inv_ = 0.0;
+
+    grid_ncells_ = 1;
+    grid_ndetector_per_cell_ = detector_.size();
+    unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
+    if(array_size > grid_array_size_) {
+      grid_array_size_ = 2*array_size;
+      calin::util::memory::safe_aligned_recalloc(grid_detector_x_, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_y_, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_z_, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_detector_ssr_, grid_array_size_);
+      calin::util::memory::safe_aligned_recalloc(grid_idetector_, grid_array_size_);
+    }
+
+    std::fill(grid_detector_x_, grid_detector_x_+grid_array_size_, 0.0);
+    std::fill(grid_detector_y_, grid_detector_y_+grid_array_size_, 0.0);
+    std::fill(grid_detector_z_, grid_detector_z_+grid_array_size_, 0.0);
+    std::fill(grid_detector_ssr_, grid_detector_ssr_+grid_array_size_, 0.0);
+    std::fill(grid_idetector_, grid_idetector_+grid_array_size_, -1);
+
+    grid_xmin_ = std::numeric_limits<double>::infinity();
+    grid_xmax_ = -std::numeric_limits<double>::infinity();
+    grid_ymin_ = std::numeric_limits<double>::infinity();
+    grid_ymax_ = -std::numeric_limits<double>::infinity();
+
+    for(int idetector=0; idetector<int(detector_.size()); ++idetector) {
+      auto* detector = detector_[idetector];
+      int ii = idetector;
+      double r = projected_radius(detector->sphere.radius + safety_radius_, 
+        detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+      grid_xmin_ = std::min(grid_xmin_, detector->sphere.r0.x()-r);
+      grid_xmax_ = std::max(grid_xmax_, detector->sphere.r0.x()+r);
+      grid_ymin_ = std::min(grid_ymin_, detector->sphere.r0.y()-r);
+      grid_ymax_ = std::max(grid_ymax_, detector->sphere.r0.y()+r);
+
+      grid_detector_x_[ii] = detector->sphere.r0.x();
+      grid_detector_y_[ii] = detector->sphere.r0.y();
+      grid_detector_z_[ii] = detector->sphere.r0.z();
+      grid_detector_ssr_[ii] = detector->squared_safety_radius;
+      grid_idetector_[ii] = detector->global_iscope;
+    }
+
+    return;    
+  }
+
+  using namespace calin::util::log;
+
+  const double cos60 = 0.5;
+  const double sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
+
+  grid_xmin_ = std::numeric_limits<double>::infinity();
+  grid_xmax_ = -std::numeric_limits<double>::infinity();
+  grid_ymin_ = std::numeric_limits<double>::infinity();
+  grid_ymax_ = -std::numeric_limits<double>::infinity();
+  double rmax = 0.0;
+
+  for(auto* detector : detector_) {
+    double r = projected_radius(detector->sphere.radius + safety_radius_, 
+      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max);
+    grid_xmin_ = std::min(grid_xmin_, detector->sphere.r0.x()-r);
+    grid_xmax_ = std::max(grid_xmax_, detector->sphere.r0.x()+r);
+    grid_ymin_ = std::min(grid_ymin_, detector->sphere.r0.y()-r);
+    grid_ymax_ = std::max(grid_ymax_, detector->sphere.r0.y()+r);
+    rmax = std::max(rmax, r);
+  }
+
+  if(config_.grid_separation() > 0.0) {
+    grid_sep_ = config_.grid_separation();
+  } else {
+    double area = (grid_xmax_-grid_xmin_)*(grid_ymax_-grid_ymin_);
+    grid_sep_ = std::max(4*rmax, std::sqrt(area/std::max(config_.grid_area_divisor(),1.0)));
+  }
+  grid_sep_inv_ = 1.0/grid_sep_;
+
+  std::map<unsigned, std::vector<DetectorInfo*>> detector_grid;
+  for(auto* detector : detector_) {
+    double x = detector->sphere.r0.x()*grid_sep_inv_;
+    double y = detector->sphere.r0.y()*grid_sep_inv_;
+    double r = projected_radius(detector->sphere.radius + safety_radius_, 
+      detector->sphere.r0.z(), zobs_, sin_zn_max, tan_zn_max)*grid_sep_inv_;
+    double dx = x;
+    double dy = y;
+    int u;
+    int v;
+    calin::math::hex_array::xy_to_uv_with_remainder(dx,dy,u,v);
+    unsigned hexid = calin::math::hex_array::uv_to_hexid(u,v);
+    detector_grid[hexid].emplace_back(detector);
+
+    double dx_cos60 = dx * cos60;
+    double dy_sin60 = dy * sin60;
+
+    double dx_pos60 = std::abs(dx_cos60 - dy_sin60);
+    double dx_neg60 = std::abs(dx_cos60 + dy_sin60);
+
+    if(dx+r > 0.5) {
+      // Add the detector to the next hexagon in the x direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v);
+      detector_grid[hexid_next].emplace_back(detector);
+    }
+    if(dx_neg60+r > 0.5) {
+      // Add the detector to the next hexagon in the x-60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v+1);
+      detector_grid[hexid_next].emplace_back(detector);
+    }
+    if(dx_pos60+r > 0.5) {
+      // Add the detector to the next hexagon in the x+60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u+1,v-1);
+      detector_grid[hexid_next].emplace_back(detector);
+    }
+    if(dx-r < -0.5) {
+      // Add the detector to the next hexagon in the -x direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v);
+      detector_grid[hexid_next].emplace_back(detector);
+    }  
+    if(dx_neg60-r < -0.5) {
+      // Add the detector to the next hexagon in the -x-60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u,v-1);
+      detector_grid[hexid_next].emplace_back(detector);
+    }
+    if(dx_pos60-r < -0.5) {
+      // Add the detector to the next hexagon in the -x+60 direction
+      unsigned hexid_next = calin::math::hex_array::uv_to_hexid(u-1,v+1);
+      detector_grid[hexid_next].emplace_back(detector);
+    }
+  }
+  unsigned max_detectors_per_cell = 0;
+  unsigned hexid_max = 0;
+  for(auto& [hexid, detectors] : detector_grid) {
+    hexid_max = std::max(hexid_max, hexid);
+    max_detectors_per_cell = std::max(max_detectors_per_cell, unsigned(detectors.size()));
+  }
+
+  grid_ncells_ = hexid_max+1;
+  grid_ndetector_per_cell_ = max_detectors_per_cell;
+  unsigned array_size = (grid_ncells_ + 1) * grid_ndetector_per_cell_;
+  if(array_size > grid_array_size_) {
+    grid_array_size_ = 2*array_size;
+    calin::util::memory::safe_aligned_recalloc(grid_detector_x_, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_y_, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_z_, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_detector_ssr_, grid_array_size_);
+    calin::util::memory::safe_aligned_recalloc(grid_idetector_, grid_array_size_);
+  }
+
+  std::fill(grid_detector_x_, grid_detector_x_+grid_array_size_, 0.0);
+  std::fill(grid_detector_y_, grid_detector_y_+grid_array_size_, 0.0);
+  std::fill(grid_detector_z_, grid_detector_z_+grid_array_size_, 0.0);
+  std::fill(grid_detector_ssr_, grid_detector_ssr_+grid_array_size_, 0.0);
+  std::fill(grid_idetector_, grid_idetector_+grid_array_size_, -1);
+
+  for(auto& [hexid, detectors] : detector_grid) {
+    for(int idetector=0; idetector<int(detectors.size()); ++idetector) {
+      int ii = hexid*grid_ndetector_per_cell_ + idetector;
+      grid_detector_x_[ii] = detectors[idetector]->sphere.r0.x();
+      grid_detector_y_[ii] = detectors[idetector]->sphere.r0.y();
+      grid_detector_z_[ii] = detectors[idetector]->sphere.r0.z();
+      grid_detector_ssr_[ii] = detectors[idetector]->squared_safety_radius;
+      grid_idetector_[ii] = detectors[idetector]->global_iscope;
     }
   }
 }
@@ -1062,6 +1468,8 @@ VCLIACTArray<VCLArchitecture>::default_config()
   config.set_detector_energy_lo(1.25);
   config.set_detector_energy_hi(4.8);
   config.set_detector_energy_bin_width(0.05);
+  config.set_grid_theshold(4);
+  config.set_grid_area_divisor(256.0);
   return config;
 }
 
@@ -1075,8 +1483,12 @@ VCLIACTArray<VCLArchitecture>::base_config(const calin::ix::simulation::vcl_iact
   return bconfig;
 }
 
-template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner() const
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::banner()
 {
+  if(update_detector_efficiencies_is_pending_) {
+    do_update_detector_efficiencies();
+    update_detector_efficiencies_is_pending_ = false;
+  }
   constexpr double EV_NM = 1239.84193009239; // gunits: c/(ev/h) -> nm
   using calin::util::string::double_to_string_with_commas;
   using calin::math::special::SQR;
@@ -1095,9 +1507,34 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
   stream
     << "Class : " << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTArray") << '\n'
     << "Number of focal-plane propagators : " << propagator_.size() << ", with "
-    << detector_.size() << " detectors.\n";
+    << detector_.size() << " detectors";
+  if(propagator_set_.size()) {
+    stream << ", in " << propagator_set_.size() << " sets.\n";
+  } else {
+    stream << ".\n";
+  }
+  
+  std::vector<std::pair<std::string, unsigned>> message_counts;
   for(const auto* ipropagator : propagator_) {
-    stream << ipropagator->propagator->banner("- "+ipropagator->name+": ", "  ");
+    auto banner = ipropagator->propagator->banner("- "+ipropagator->name+": ", "  ");
+    bool banner_found = false;
+    for(auto& message : message_counts) {
+      if(message.first == banner) {
+        message.second++;
+        banner_found = true;
+        break;
+      }
+    }
+    if(not banner_found) {
+      message_counts.emplace_back(banner, 1);
+    }
+  }
+  for(const auto& message : message_counts) {
+    if(message.second == 1) {
+      stream << message.first << '\n';
+    } else if(message.second > 1) {
+      stream << message.first << " (x" << message.second << ")\n";
+    }
   }
   stream
     << "Detector zenith range : " << double_to_string_with_commas(std::acos(wmax_)/M_PI*180.0,1)
@@ -1163,41 +1600,198 @@ template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::ba
     stream << "Refraction mode : REFRACT ONLY CLOSE RAYS\n"
       << "- Refraction safety radius : " << double_to_string_with_commas(safety_radius_*0.01,2) << " m\n";
   }
-  stream
-    << "- Displacement from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmin_), config_.observation_level())*0.01,2) << " m\n"
-    << "- Displacement from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n"
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
-    << "- Bending from 5, 10, 15 km at Zn="
-    << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
-    << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
-    << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n";
-  stream << "Detector efficiency bandwidths :\n";
-  for(const auto* ibwm : bandwidth_manager_) {
-    stream << ibwm->banner(wmin_, wmax_, "- ", "  ");
+  if(config_.refraction_mode() != calin::ix::simulation::vcl_iact::REFRACT_NO_RAYS) {
+    stream
+      << "- Displacement from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmin_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmin_), config_.observation_level())*0.01,2) << " m\n"
+      << "- Displacement from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(5e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(10e5, std::acos(wmax_), config_.observation_level())*0.01,2) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_displacement(15e5, std::acos(wmax_), config_.observation_level())*0.01,2) << " m\n"
+      << "- Bending from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmin_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmin_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n"
+      << "- Bending from 5, 10, 15 km at Zn="
+      << double_to_string_with_commas(std::acos(wmax_)/M_PI*180,1) << " deg : "
+      << double_to_string_with_commas(this->atm_->refraction_bending(5e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(10e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << ", "
+      << double_to_string_with_commas(this->atm_->refraction_bending(15e5, std::acos(wmax_), config_.observation_level())/M_PI*180*3600,1) << " arcsec\n";
   }
-  bool spe_logo_sent = false;
-  for(const auto* ipropagator : propagator_) {
-    if(ipropagator->pe_generator != nullptr) {
-      if(not spe_logo_sent) {
-        stream << "Single photo-electron spectra :\n";
-        spe_logo_sent = true;
+
+  stream << "Detector efficiency bandwidths :\n";
+  message_counts.clear();
+  for(const auto& ibwm : bandwidth_manager_cache_) {
+    auto banner = ibwm.manager->banner(wmin_, wmax_, "- ", "  ");
+    bool banner_found = false;
+    for(auto& message : message_counts) {
+      if(message.first == banner) {
+        message.second++;
+        banner_found = true;
+        break;
       }
-      stream << ipropagator->pe_generator->banner("- "+ipropagator->name+": ", "  ");
+    }
+    if(not banner_found) {
+      message_counts.emplace_back(banner, 1);
     }
   }
+  for(const auto& message : message_counts) {
+    if(message.second == 1) {
+      stream << message.first << '\n';
+    } else if(message.second > 1) {
+      stream << message.first << " (x" << message.second << ")\n";
+    }
+  }
+
+  message_counts.clear();
+  for(const auto* ipropagator : propagator_) {
+    if(ipropagator->pe_generator != nullptr) {
+      auto banner = ipropagator->pe_generator->banner("- "+ipropagator->name+": ", "  ");
+      bool banner_found = false;
+      for(auto& message : message_counts) {
+        if(message.first == banner) {
+          message.second++;
+          banner_found = true;
+          break;
+        }
+      }
+      if(not banner_found) {
+        message_counts.emplace_back(banner, 1);
+      }
+    }
+  }
+
+  if(message_counts.empty()) {
+    stream << "No photo-electron spectra configured.\n";
+  } else {
+    stream << "Single photo-electron spectra :\n";
+    for(const auto& message : message_counts) {
+      if(message.second == 1) {
+        stream << message.first << '\n';
+      } else if(message.second > 1) {
+        stream << message.first << " (x" << message.second << ")\n";
+      }
+    }
+  }
+  return stream.str();
+}
+
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::detector_report() const
+{
+  std::ostringstream stream;
+
+  unsigned ps_len = 0;
+  for(const auto* propagator_set : propagator_set_) {
+    ps_len = std::max(ps_len, unsigned(propagator_set->name.size()));
+  }
+
+  unsigned p_len = 0;
+  unsigned pd_len = 0;
+  for(const auto* propagator : propagator_) {
+    p_len = std::max(p_len, unsigned(propagator->name.size()));
+    auto spheres = propagator->propagator->detector_spheres();
+    unsigned one_pd_len = 0;
+    for(unsigned pd_size = spheres.size(); pd_size > 0; pd_size /= 10) {
+      ++one_pd_len;
+    }
+    pd_len = std::max(pd_len, one_pd_len);
+  }
+  unsigned spd_len = p_len + pd_len + 1;
+  if(propagator_set_.size() > 1) {
+    spd_len += ps_len + 1;
+  }
+
+  unsigned d_len = 0;
+  for(unsigned p_size = detector_.size(); p_size > 0; p_size /= 10) {
+    ++d_len;
+  }
+
+  for(const auto* detector : detector_) {
+    stream << std::left << std::setw(d_len) << detector->global_iscope << ' ';
+    std::string spd_name;
+    if(propagator_set_.size() > 1) {
+      spd_name += detector->propagator_info->propagator_set->name;
+      spd_name += "/";
+    }
+    spd_name += detector->propagator_info->name;
+    spd_name += "/";
+    spd_name += std::to_string(detector->propagator_iscope);
+    stream 
+      << std::setw(spd_len) << spd_name << ' '
+      << std::right 
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.x()*0.01 << ' '
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.y()*0.01 << ' '
+      << std::fixed << std::setw(8) << std::setprecision(1) << detector->sphere.r0.z()*0.01 << ' '
+      << std::setw(6) << std::setprecision(2) << 2.0*std::sqrt(detector->squared_radius)*0.01 << ' '
+      << std::setw(6) << std::setprecision(2) << 2.0*std::sqrt(detector->squared_safety_radius)*0.01 << '\n';
+  }
+  return stream.str();
+}
+
+template<typename VCLArchitecture> std::string VCLIACTArray<VCLArchitecture>::grid_report() const
+{
+  std::ostringstream stream;
+
+  unsigned hexid_len = 0;
+  for(unsigned hexid = grid_ncells_; hexid > 0; hexid /= 10) {
+    ++hexid_len;
+  }
+
+  unsigned ndc_len = 0;
+  for(unsigned ndc = grid_ndetector_per_cell_; ndc > 0; ndc /= 10) {
+    ++ndc_len;
+  }
+
+  unsigned noccupied_cells = 0;
+  std::map<unsigned, unsigned> cell_detector_count;
+
+  for(unsigned hexid=0; hexid<grid_ncells_; ++hexid) {
+    unsigned ndetectors = 0;
+    for(unsigned idetector=0; idetector<grid_ndetector_per_cell_; ++idetector) {
+      if (grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector] >= 0) {
+        ++ndetectors;
+      }
+    }
+
+    ++cell_detector_count[ndetectors];
+
+    if(ndetectors == 0) {
+      continue;
+    }
+
+    ++noccupied_cells;
+
+    stream << std::left << std::setw(hexid_len) << hexid << " ("
+      << std::right << std::setw(ndc_len) << ndetectors << ") :";
+
+    for(unsigned idetector=0; idetector<grid_ndetector_per_cell_; ++idetector) {
+      if (grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector] >= 0) {
+        stream << ' ' << grid_idetector_[hexid*grid_ndetector_per_cell_ + idetector];
+      }
+    }
+    stream << '\n';
+  }
+  
+  if(noccupied_cells > 0) {
+    stream << "Grid occupancy histogram:\n";
+    for(unsigned ndetectors=0; ndetectors<=grid_ndetector_per_cell_; ++ndetectors) {
+      stream << "- " << std::left << std::setw(ndc_len) << ndetectors << " : " 
+        << std::right << cell_detector_count[ndetectors] << '\n';
+    }
+  }
+
+  stream << "Grid information:\n"
+    << "- Number of cells : " << grid_ncells_ << '\n'
+    << "- Number of occupied cells : " << noccupied_cells << '\n'
+    << "- Max number of detectors per cell : " << grid_ndetector_per_cell_ << '\n'
+    << "- Grid separation : " << std::fixed << std::setprecision(2) 
+    << grid_sep_*0.01 << " m\n";
+
   return stream.str();
 }
 

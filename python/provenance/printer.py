@@ -54,7 +54,7 @@ def print_provenance(writer, anthology):
         for i in range(l.message_size()):
             m = l.const_message(i)
             for s in m.message().split('\n'):
-                print(f'{calin.ix.util.log.LogMessage_Level_Name(m.level())} : {s}')
+                print(f'{calin.ix.util.log.LogMessage.Level_Name(m.level())} : {s}')
         print('')
 
         if(c.file_io_record_size()):

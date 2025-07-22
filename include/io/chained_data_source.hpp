@@ -35,6 +35,7 @@ public:
 
   virtual unsigned current_fragment_index() const = 0;
   virtual unsigned num_fragments() const = 0;
+  virtual unsigned num_missing_fragments() const = 0;
   virtual std::string fragment_name(unsigned index) const = 0;
 
   std::string current_fragment_name() const {
@@ -53,6 +54,7 @@ public:
   CALIN_TYPEALIAS(data_source_type, DST);
   virtual ~DataSourceOpener() { }
   virtual unsigned num_sources() const = 0;
+  virtual unsigned num_missing_sources() const = 0;
   virtual std::string source_name(unsigned isource) const = 0;
   std::vector<std::string> source_names() const {
     std::vector<std::string> source_names;
@@ -61,31 +63,6 @@ public:
     return source_names;
   }
   virtual DST* open(unsigned isource) = 0;
-};
-
-template<typename DST> class FileOpener: public DataSourceOpener<DST>
-{
-public:
-  using DataSourceOpener<DST>::data_source_type;
-
-  FileOpener(const std::vector<std::string>& filenames):
-    DataSourceOpener<DST>(), filenames_(filenames) { /* nothing to see here */ }
-  virtual ~FileOpener() { /* nothing to see here */ }
-  unsigned num_sources() const override { return filenames_.size(); }
-  DST* open(unsigned isource) override {
-    if(isource<filenames_.size())return open_filename(filenames_[isource]);
-    return nullptr;
-  }
-  std::string filename(unsigned isource) const {
-    if(isource<filenames_.size())return filenames_[isource];
-    return {};
-  }
-  std::string source_name(unsigned isource) const override {
-    return filename(isource);
-  }
-  virtual DST* open_filename(const std::string& filename) = 0;
-protected:
-  std::vector<std::string> filenames_;
 };
 
 template<typename DST> class BasicChainedDataSource:
@@ -127,6 +104,7 @@ public:
 
   unsigned current_fragment_index() const override { return isource_; }
   unsigned num_fragments() const override { return opener_->num_sources(); }
+  unsigned num_missing_fragments() const override { return opener_->num_missing_sources(); }
   std::string fragment_name(unsigned index) const override {
     return opener_->source_name(index); }
 

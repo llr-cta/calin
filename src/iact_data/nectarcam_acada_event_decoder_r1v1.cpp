@@ -311,6 +311,9 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
     return false;
   }
 
+  calin_run_config->set_data_transcoder(
+    "calin::iact_data::unified_event_decoder::NectarCam_ACADACameraEventDecoder_R1v1");
+
   // const data_stream_type* cta_data_stream = cta_messages.data_stream;
   // const header_type* cta_run_header = cta_messages.header;
   // const event_type* cta_event = cta_messages.event;
@@ -386,11 +389,11 @@ bool NectarCam_ACADACameraEventDecoder_R1v1::decode_run_config(
       calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
       delete nccc;
     } else {
-      LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
+      LOG(NOTICE) << "Could not parse NectarCAM module configuration XML file "
         << nmc_file;
     }
   } else {
-    auto logger = LOG(WARNING);
+    auto logger = LOG(NOTICE);
     logger << "Could not find NectarCAM module configuration XML file, tried:\n";
     for(auto try_fn : nmc_file_tried) {
       logger << "- " << try_fn << '\n';

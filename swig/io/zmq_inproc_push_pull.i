@@ -22,8 +22,10 @@
 
 */
 
-%module (package="calin.io") zmq_inproc_push_pull
+%module (package="calin.io", threads=1) zmq_inproc_push_pull
 %feature(autodoc,2);
+
+%nothread;
 
 %{
 #include "io/zmq_inproc_push_pull.hpp"
@@ -37,7 +39,12 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%newobject new_puller;
+%newobject new_pusher;
+
 %apply std::string &CALIN_BYTES_OUT { std::string &data_pull };
 %apply const std::string &CALIN_BYTES_IN { const std::string& data_push };
 
+%thread; // Release Python GIL for all functions here (since some use threads)
 %include "io/zmq_inproc_push_pull.hpp"
+%nothread;

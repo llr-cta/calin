@@ -83,6 +83,29 @@ message VCLIACTArrayConfiguration
 
   RefractionMode refraction_mode                           = 30
     [(CFO).desc = "Atmospheric refraction mode." ];
+
+  double scattering_radius                                 = 40
+    [(CFO).desc = "Radius of the scattering region for the array center, "
+      "perpendicular to primary direction.",
+     (CFO).units = "cm" ];
+
+  uint32 grid_theshold                                     = 50
+    [(CFO).desc = "Threshold for the number of detectors in the array above "
+      "which the grid is used.",
+     (CFO).units = "detectors" ];   
+
+  double grid_separation                                   = 51
+    [(CFO).desc = "Separation between hexagonal grid cells, or zero meaning "
+      "grid separation is defined by the total area of the detector array using "
+      "\"grid_area_divisor\".",
+     (CFO).units = "cm" ];
+
+  double grid_area_divisor                                 = 52
+    [(CFO).desc = "If the grid separation is not given directly then it is "
+      "determined by determining the area of the array from its bounding "
+      "box, A, and dividing it by this parameter. The separation, s, is then "
+      "given by s^2=A/grid_area_divisor.",
+     (CFO).units = "1" ];
 };
 
 message VCLIACTGroundMapDetectorConfiguration

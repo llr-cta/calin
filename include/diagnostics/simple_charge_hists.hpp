@@ -116,9 +116,11 @@ private:
       opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
       opt_win_qtsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qtsum())),
       opt_win_index(calin::math::histogram::new_histogram_if_enabled(config.opt_win_index())),
+      opt_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.opt_ped_qsum_diff())),
       ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
       sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum())),
-      sig_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.sig_ped_qsum_diff()))
+      sig_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.sig_ped_qsum_diff())),
+      rel_qsum(calin::math::histogram::new_histogram_if_enabled(config.rel_qsum()))
     {
       /* nothing to see here */
     }
@@ -130,9 +132,11 @@ private:
       delete opt_win_qsum;
       delete opt_win_qtsum;
       delete opt_win_index;
+      delete opt_ped_qsum_diff;
       delete ped_win_qsum;
       delete sig_win_qsum;
       delete sig_ped_qsum_diff;
+      delete rel_qsum;
     }
 
     calin::math::histogram::Histogram1D* full_wf_qsum = nullptr;
@@ -141,9 +145,11 @@ private:
     calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* opt_win_qtsum = nullptr;
     calin::math::histogram::Histogram1D* opt_win_index = nullptr;
+    calin::math::histogram::Histogram1D* opt_ped_qsum_diff = nullptr;
     calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* sig_ped_qsum_diff = nullptr;
+    calin::math::histogram::Histogram1D* rel_qsum = nullptr;
   };
 
   struct DualGainChannelHists {
@@ -158,39 +164,51 @@ private:
     SingleGainCameraHists(const
         calin::ix::diagnostics::simple_charge_hists::SingleGainSimpleChargeHistsConfig& config):
       nchan_present(calin::math::histogram::new_histogram_if_enabled(config.nchan_present())),
-      opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
+      full_wf_qsum(calin::math::histogram::new_histogram_if_enabled(config.full_wf_qsum())),
       ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
-      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum()))
+      opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
+      opt_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.opt_ped_qsum_diff())),
+      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum())),
+      sig_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.sig_ped_qsum_diff()))
     {
       /* nothing to see here */
     }
 
     ~SingleGainCameraHists() {
       delete nchan_present;
-      delete opt_win_qsum;
+      delete full_wf_qsum;
       delete ped_win_qsum;
+      delete opt_win_qsum;
+      delete opt_ped_qsum_diff;
       delete sig_win_qsum;
+      delete sig_ped_qsum_diff;
     }
 
     void reset_sums() {
       event_nchan_present_sum = 0;
       event_full_wf_qsum = 0;
-      event_opt_win_qsum = 0;
       event_ped_win_qsum = 0;
+      event_opt_win_qsum = 0;
+      event_opt_ped_win_qsum_diff = 0;
       event_sig_win_qsum = 0;
+      event_sig_ped_win_qsum_diff = 0;
     }
 
     unsigned event_nchan_present_sum = 0;
     double event_full_wf_qsum = 0;
-    double event_opt_win_qsum = 0;
     double event_ped_win_qsum = 0;
+    double event_opt_win_qsum = 0;
+    double event_opt_ped_win_qsum_diff = 0;
     double event_sig_win_qsum = 0;
+    double event_sig_ped_win_qsum_diff = 0;
 
     calin::math::histogram::Histogram1D* nchan_present = nullptr;
     calin::math::histogram::Histogram1D* full_wf_qsum = nullptr;
-    calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* opt_ped_qsum_diff = nullptr;
     calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* sig_ped_qsum_diff = nullptr;
   };
 
   struct DualGainCameraHists {

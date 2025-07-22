@@ -106,12 +106,14 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   chan_hists_.resize(run_config->configured_channel_id_size());
   for(auto*& h : chan_hists_) {
     // For now on do not use per-channel low gain histograms
-    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution(), 3600.0,
+    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution(), 
+      config_.channel_ped_time_hist_range(),
       config_.dual_gain_sample_resolution(), config_.dual_gain_sum_resolution());
   }
 
   delete camera_hists_;
-  camera_hists_ = new CameraHists(has_dual_gain_, config_.ped_time_hist_resolution(), 86400.0);
+  camera_hists_ = new CameraHists(has_dual_gain_, config_.ped_time_hist_resolution(), 
+    config_.camera_ped_time_hist_range());
 
   delete data_order_camera_;
   data_order_camera_ = calin::iact_data::instrument_layout::reorder_camera_channels(
@@ -471,6 +473,57 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_camera_hists_to_par
   delete hp;
 }
 
+void SimpleChargeStatsParallelEventVisitor::SingleGainChannelHists::insert_from_and_clear(
+  SimpleChargeStatsParallelEventVisitor::SingleGainChannelHists* from)
+{
+  all_pedwin_1_sum_vs_time->insert_hist(*from->all_pedwin_1_sum_vs_time);
+  from->all_pedwin_1_sum_vs_time->clear();
+
+  all_pedwin_q_sum_vs_time->insert_hist(*from->all_pedwin_q_sum_vs_time);
+  from->all_pedwin_q_sum_vs_time->clear();
+
+  all_pedwin_q2_sum_vs_time->insert_hist(*from->all_pedwin_q2_sum_vs_time);
+  from->all_pedwin_q2_sum_vs_time->clear();
+
+  ped_wf_1_sum_vs_time->insert_hist(*from->ped_wf_1_sum_vs_time);
+  from->ped_wf_1_sum_vs_time->clear();
+
+  ped_wf_q_sum_vs_time->insert_hist(*from->ped_wf_q_sum_vs_time);
+  from->ped_wf_q_sum_vs_time->clear();
+
+  ped_wf_q2_sum_vs_time->insert_hist(*from->ped_wf_q2_sum_vs_time);
+  from->ped_wf_q2_sum_vs_time->clear();
+}
+
+void SimpleChargeStatsParallelEventVisitor::merge_time_histograms_if_necessary()
+{
+  // This function added to do on-the-fly merging of the time histograms if they get very
+  // large. Only used on very long runs with more than 1000 bins (corresponding to 5000 
+  // seconds by default), to avoid memory problems in multi-threaded envrionment, since these
+  // histograms are duplicated across all the threads
+
+  if(parent_ == nullptr or camera_hists_->high_gain->all_pedwin_1_sum_vs_time->size()<1000) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock { parent_->on_the_fly_merge_lock_ };
+
+  for(int ichan = 0; ichan<chan_hists_.size(); ichan++) {
+    if(chan_hists_[ichan]->high_gain) {
+      parent_->chan_hists_[ichan]->high_gain->insert_from_and_clear(chan_hists_[ichan]->high_gain);
+    }
+    if(chan_hists_[ichan]->low_gain) {
+      parent_->chan_hists_[ichan]->low_gain->insert_from_and_clear(chan_hists_[ichan]->low_gain);
+    }
+  }
+  if(camera_hists_->high_gain) {
+    parent_->camera_hists_->high_gain->insert_from_and_clear(camera_hists_->high_gain);
+  }
+  if(camera_hists_->low_gain) {
+    parent_->camera_hists_->low_gain->insert_from_and_clear(camera_hists_->low_gain);
+  }
+}
+
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
@@ -515,6 +568,10 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
   partials_.mutable_camera()->mutable_phys_trig_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
   delete hp;
 
+  hp = camera_hists_->muon_candidate_num_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_muon_candidate_num_channel_triggered_hist()->IntegrateFrom(*hp);
+  delete hp;
+
   if(parent_)return true;
 
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
@@ -526,6 +583,7 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
     }
     if(partials_.camera().num_event_trigger_hitmap_found() > 0) {
       results_.add_channel_triggered_count(partials_chan.all_trig_num_events_triggered());
+      results_.add_muon_candidate_channel_triggered_count(partials_chan.muon_candidate_num_events_triggered());
       results_.add_phy_trigger_few_neighbor_channel_triggered_count(partials_chan.phy_trig_few_neighbor_channel_triggered_count());
     }
   }
@@ -541,6 +599,8 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
     partials_.camera().phys_trig_num_channel_triggered_hist());
   results_.mutable_phy_trigger_num_contiguous_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().phys_trig_num_contiguous_channel_triggered_hist());
+  results_.mutable_muon_candidate_num_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().muon_candidate_num_channel_triggered_hist());
 
   partials_.Clear();
   return true;
@@ -752,6 +812,8 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     for(auto ichan : event->trigger_map().hit_channel_id()) {
       partials_.mutable_channel(ichan)->increment_all_trig_num_events_triggered();
+      partials_.mutable_channel(ichan)->increment_muon_candidate_num_events_triggered(
+        event->is_muon_candidate());
     }
     camera_hists_->num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
     int num_contiguous_channel_triggered = 0;
@@ -760,7 +822,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
         *data_order_camera_, reinterpret_cast<const int*>(event->trigger_map().hit_channel_id().data()),
         event->trigger_map().hit_channel_id_size(), channel_island_id_.data(),
         channel_island_count_.data());
-      num_contiguous_channel_triggered = channel_island_count_[0]; // guarenteed to have at least one island
+      num_contiguous_channel_triggered = channel_island_count_[0]; // guaranteed to have at least one island
       for(unsigned iisland=1; iisland<nisland; iisland++) {
         num_contiguous_channel_triggered = std::max(num_contiguous_channel_triggered, channel_island_count_[iisland]);
       }
@@ -775,7 +837,11 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
         }
       }
     }
+    if(event->is_muon_candidate()) {
+      camera_hists_->muon_candidate_num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
+    }
   }
+  merge_time_histograms_if_necessary();
   return true;
 }
 
@@ -804,6 +870,8 @@ SimpleChargeStatsParallelEventVisitor::default_config()
   config.set_low_gain_wf_clipping_value(4095);
   config.set_nearest_neighbor_nchannel_threshold(3);
   config.set_ped_time_hist_resolution(5.0);
+  config.set_channel_ped_time_hist_range(86400.0);
+  config.set_camera_ped_time_hist_range(86400.0);
   config.set_dual_gain_sample_resolution(1.0);
   config.set_dual_gain_sum_resolution(5.0);
   return config;

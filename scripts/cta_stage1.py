@@ -19,10 +19,13 @@
 
 import sys
 import traceback
-import numpy
 import time
+import shutil
+import os
+import fcntl
+import concurrent.futures 
 
-import calin.ix.io.zmq_data_source
+# import calin.ix.io.zmq_data_source
 import calin.iact_data.event_dispatcher
 import calin.io.sql_serializer
 import calin.util.log
@@ -30,122 +33,333 @@ import calin.io.options_processor
 import calin.diagnostics.stage1
 import calin.ix.scripts.cta_stage1
 import calin.provenance.chronicle
+import calin.ix.iact_data.zfits_data_source
+import calin.iact_data.raw_acada_event_data_source
 
-py_log = calin.util.log.PythonLogger()
-py_log.this.disown()
-calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
-calin.util.log.default_logger().add_logger(py_log,True)
+def good_tag(tag):
+    return "\x1b[37;42;97;38;5;15;1m" + tag + "\x1b[0m"
 
-cfg = calin.iact_data.event_dispatcher.ParallelEventDispatcher.default_config()
+def bad_tag(tag):
+    return "\x1b[37;41;97;101;1m" + tag + "\x1b[0m"
 
-opt = calin.ix.scripts.cta_stage1.CommandLineOptions()
-opt.set_run_number(0)
-opt.set_o('calin_stage1.sqlite')
-opt.set_db_stage1_table_name('stage1')
-opt.set_log_frequency(cfg.log_frequency())
-opt.set_nthread(1)
-opt.mutable_decoder().CopyFrom(cfg.decoder())
-opt.mutable_zfits().CopyFrom(cfg.zfits())
-opt.mutable_zmq().CopyFrom(cfg.zmq())
-opt.mutable_stage1().CopyFrom(calin.diagnostics.stage1.Stage1ParallelEventVisitor.default_config())
+def info_tag(tag):
+    return "\x1b[37;46;97;1m" + tag + "\x1b[0m"
 
-opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
-opt_proc.process_arguments(sys.argv)
+def marshall(m, bsmax=2**31):
+    # To overcome the limit of 2GB for the size of a serialized message, we split the message 
+    # into sub-components and store them in a dictionary. The main message is stored
+    # under the key '/'. The sub-components are stored under the key corresponding to the
+    # field name. Each sub-component is itself a dictionary with the same structure.
+    # All messages should be less than 2GB in size. This should be generalized and moved
+    # to the __get_state__ functions of the protobuf messages but this is OK for now.
+    mdict = dict()
+    while m.ByteSize()>=bsmax:
+        fmax, fmaxbs = '', 0
+        for f in m.GetDescriptor().GetSimpleMessages():
+            if getattr(m,"has_"+f)():
+                bs = getattr(m,f)().ByteSize()
+                if bs>fmaxbs:
+                    fmax, fmaxbs = f, bs
+        if fmaxbs==0:
+            break
+        fm = getattr(m,fmax)().New()
+        getattr(m,'mutable_'+fmax)().Swap(fm)
+        mdict[fmax] = marshall(fm, bsmax)
+    mdict['/'] = m
+    return mdict
 
-if(opt_proc.help_requested()):
-    print('Usage:',opt_proc.program_name(),'[options] zmq_endpoint [zmq_endpoint...]')
-    print('or:   ',opt_proc.program_name(),'[options] zfits_file [zfits_file...]\n')
-    print('Options:\n')
-    print(opt_proc.usage())
-    exit(0)
+def unmarshall(mdict):
+    m = mdict['/']
+    del mdict['/']
+    for f in mdict:
+        fm = unmarshall(mdict[f])
+        getattr(m,'mutable_'+f)().Swap(fm)
+    return m
 
-if(len(opt_proc.arguments()) < 1):
-    print('No endpoint supplied! Use "-help" option to get usage information.')
-    exit(1)
+def init_dispatcher(local_opt, local_nfile):
+    global py_log, opt, cfg, dispatcher, s1cfg, s1pev, nfile
 
-if(len(opt_proc.unknown_options()) != 0):
-    print('Unknown options given. Use "-help" option to get usage information.\n')
-    for o in opt_proc.unknown_options():
-        print("  \"%s\""%o)
-    exit(1)
+    if('py_log' not in globals() or py_log is None):
+        py_log = calin.util.log.PythonLogger()
+        py_log.this.disown()
+        calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
+        calin.util.log.default_logger().add_logger(py_log,True)
 
-if(len(opt_proc.problem_options()) != 0):
-    print('Problems with option values (unexpected, missing, incorrect type, etc.).')
-    print('Use "-help" option to get usage information.\n')
-    for o in opt_proc.problem_options():
-        print("  \"%s\""%o)
-    exit(1)
+    opt = local_opt
 
-endpoints          = opt_proc.arguments()
-sql_file           = opt.o();
+    cfg = calin.iact_data.event_dispatcher.ParallelEventDispatcher.default_config()
+    cfg.set_run_number(opt.run_number())
+    cfg.set_log_frequency(opt.log_frequency())
+    cfg.set_nthread(opt.nthread())
+    cfg.mutable_decoder().CopyFrom(opt.decoder())
+    cfg.mutable_zfits().CopyFrom(opt.zfits())
+    cfg.mutable_zmq().CopyFrom(opt.zmq())
 
-cfg.set_run_number(opt.run_number())
-cfg.set_log_frequency(opt.log_frequency())
-cfg.set_nthread(opt.nthread())
-cfg.mutable_decoder().CopyFrom(opt.decoder())
-cfg.mutable_zfits().CopyFrom(opt.zfits())
-cfg.mutable_zmq().CopyFrom(opt.zmq())
+    # Create the dispatcher
+    dispatcher = calin.iact_data.event_dispatcher.ParallelEventDispatcher()
 
-# Create the dispatcher
-dispatcher = calin.iact_data.event_dispatcher.ParallelEventDispatcher()
+    # Create the stage1 visitor
+    s1cfg = opt.const_stage1().Clone()
+    if(opt.const_stage1().ancillary_database_directory() == ""):
+        s1cfg.set_ancillary_database_directory(opt.copy_ancillary_db())
+    s1pev = calin.diagnostics.stage1.Stage1ParallelEventVisitor(s1cfg)
+    dispatcher.add_visitor(s1pev)
 
-# Create the stage1 visitor
-s1pev = calin.diagnostics.stage1.Stage1ParallelEventVisitor(opt.stage1())
-dispatcher.add_visitor(s1pev)
+    nfile = local_nfile
 
-# Open SQL file
-sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
-if opt.truncate_db():
-    sql_mode = calin.io.sql_serializer.SQLite3Serializer.TRUNCATE_RW
-sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-sql.create_or_extend_tables(opt.db_stage1_table_name(),
-    calin.ix.diagnostics.stage1.Stage1.descriptor())
+def init_writer(local_opt):
+    global sql, opt
 
-# Run all the visitors
-if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
-        or endpoints[0].startswith('pgm://') or endpoints[0].startswith('pgme://')):
-    dispatcher.process_cta_zmq_run(endpoints, cfg)
-    sql.insert(opt.db_stage1_table_name(), visitor.stage1_results())
-else:
-    first_file = True
-    failed_files = []
-    nsuccess = 0;
-    nskip = 0;
-    for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
-        ifile += opt.start_file_index()
-        if not first_file:
-            print("-"*80)
-        first_file = False
-        if(opt.skip_existing() or opt.replace_existing()):
+    opt = local_opt
+
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), 
+        calin.io.sql_serializer.SQLite3Serializer.EXISTING_RW)
+    sql.set_busy_timeout(3600000) # 1hr
+
+def copy_ancillary_db(src_ancillary_db, dst_ancillary_db):
+    if(not os.path.isfile(src_ancillary_db)):
+        # Nothing we can do except print a warning if the destination doesn't exist
+        if(not os.path.isfile(dst_ancillary_db)):
+            print("*** Could not copy ancillary DB %s ***"%(src_ancillary_db))
+        return False
+       
+    src_ancillary_db_size = os.path.getsize(src_ancillary_db)
+    if(os.path.isfile(dst_ancillary_db) and
+            os.path.getsize(dst_ancillary_db) == src_ancillary_db_size):
+        # Destination file already exists and is the same size as the source. We outie.
+        return False
+    
+    with open(dst_ancillary_db, 'ab') as dst_file:
+        fcntl.lockf(dst_file, fcntl.LOCK_EX)
+
+        if(os.path.getsize(dst_ancillary_db) == src_ancillary_db_size):
+            # Destination file is the same size as the source. No need to copy.
+            fcntl.lockf(dst_file, fcntl.LOCK_UN)
+            return False
+        
+        print(f'Copying {src_ancillary_db} -> {dst_ancillary_db} ({src_ancillary_db_size/1024**2:,.1f} MB)')
+
+        dst_file.truncate() # If file sizes don't match then (re-)copy the file
+        with open(src_ancillary_db, 'rb') as src_file:
+            shutil.copyfileobj(src_file, dst_file)
+        fcntl.lockf(dst_file, fcntl.LOCK_UN)
+        return True
+
+def dispatch_file(ifile, filename):
+    global nfile, dispatcher, dispatcher, s1pev, s1cfg, opt
+    if(dispatcher is None):
+        dispatcher, s1pev, s1cfg = make_dispatcher()
+
+    print("#%d / %d: processing %s"%(ifile+1,nfile,filename))
+
+    copied_ancillary_db = ''
+    if(opt.copy_ancillary_db() != ''):
+        src_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
+            opt.const_stage1().ancillary_database(), opt.const_stage1().ancillary_database_directory())
+        dst_ancillary_db = calin.diagnostics.stage1.Stage1ParallelEventVisitor.nectarcam_ancillary_database_filename(filename,0,
+            s1cfg.ancillary_database(), s1cfg.ancillary_database_directory())
+        if(copy_ancillary_db(src_ancillary_db, dst_ancillary_db)):
+            copied_ancillary_db = dst_ancillary_db
+
+    try:
+        calin.util.log.prune_default_protobuf_log()
+        calin.provenance.chronicle.prune_the_chronicle()
+        dispatcher.process_cta_zfits_run(filename, cfg)
+        s1res = s1pev.stage1_results()
+        return filename, 'success', s1res, copied_ancillary_db
+    except Exception as x:
+        traceback.print_exception(*sys.exc_info())
+        return filename, 'failed', None, copied_ancillary_db
+
+def dispatch_file_and_marshall(ifile, filename):
+    _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
+    if(status == 'success'):
+        return filename, status, marshall(s1res), copied_ancillary_db
+    else:
+        return filename, status, None, copied_ancillary_db
+
+def insert_stage1_results(s1res, filename):
+    global sql, opt
+
+    try:
+        run_number_str = str(s1res.run_number()) if s1res.run_number() != 0 else '????'
+        if(opt.replace_existing()):
             selector = calin.ix.diagnostics.stage1.SelectByFilename()
             selector.set_filename(filename)
             oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
-            if oids and opt.skip_existing():
-                print("#%d: skipping %s"%(ifile,filename))
-                nskip += 1
-                continue
-            if oids and opt.replace_existing():
+            if oids:
                 for oid in oids:
+                    print(f'{info_tag(" DATABASE ")} Run {run_number_str} deleting old stage1 results from database, OID : {oid}')
                     sql.delete_by_oid(opt.db_stage1_table_name(), oid)
-        print("#%d: processing %s"%(ifile,filename))
-        try:
-            calin.util.log.prune_default_protobuf_log()
-            calin.provenance.chronicle.prune_the_chronicle()
-            dispatcher.process_cta_zfits_run(filename, cfg)
-            s1res = s1pev.stage1_results()
-            print(f"Inserting stage1 results into database, size: {s1res.SpaceUsedLong()/1024**2:,.1f} MB",)
-            start_time = time.time()
-            good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
-            if(good):
-                print(f"Inserted results into database in {time.time()-start_time:,.3f} sec, OID : {oid}")
-                nsuccess += 1
+
+        data_size = s1res.ByteSize()/1024**2
+        print(f'{info_tag(" DATABASE ")} Run {run_number_str} inserting stage1 results into database, size: {data_size:,.1f} MB')
+        start_time = time.time()
+        good, oid = sql.insert(opt.db_stage1_table_name(), s1res)
+        if(good):
+            print(f'{good_tag(" DATABASE ")} Run {run_number_str} inserted {data_size:,.1f} MB into database in {time.time()-start_time:,.3f} sec, OID : {oid}')
+        else:
+            print(f'{bad_tag(" DATABASE ")} Run {run_number_str} failed to insert stage1 results into database')
+        return filename, good
+    except Exception as x:
+        traceback.print_exception(*sys.exc_info())
+        return filename, False
+
+# Entry point for the program
+if __name__ == '__main__':
+    global py_log
+    py_log = calin.util.log.PythonLogger()
+    py_log.this.disown()
+    calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
+    calin.util.log.default_logger().add_logger(py_log,True)
+
+    # Process command line options
+    default_cfg = calin.iact_data.event_dispatcher.ParallelEventDispatcher.default_config()
+
+    opt = calin.ix.scripts.cta_stage1.CommandLineOptions()
+    opt.set_run_number(0)
+    opt.set_o('calin_stage1.sqlite')
+    opt.set_db_stage1_table_name('stage1')
+    opt.set_log_frequency(default_cfg.log_frequency())
+    opt.set_nthread(1)
+    opt.set_num_zfits_writers(4)
+    opt.mutable_decoder().CopyFrom(default_cfg.decoder())
+    opt.mutable_zfits().CopyFrom(default_cfg.zfits())
+    opt.mutable_zmq().CopyFrom(default_cfg.zmq())
+    opt.mutable_stage1().CopyFrom(calin.diagnostics.stage1.Stage1ParallelEventVisitor.default_config())
+
+    opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
+    opt_proc.process_arguments(sys.argv)
+
+    if(opt_proc.help_requested()):
+        print('Usage:',opt_proc.program_name(),'[options] zmq_endpoint [zmq_endpoint...]')
+        print('or:   ',opt_proc.program_name(),'[options] zfits_file [zfits_file...]\n')
+        print('Options:\n')
+        print(opt_proc.usage())
+        exit(0)
+
+    if(len(opt_proc.arguments()) < 1):
+        print('No filename or endpoint supplied! Use "-help" option to get usage information.')
+        exit(1)
+
+    if(len(opt_proc.unknown_options()) != 0):
+        print('Unknown options given. Use "-help" option to get usage information.\n')
+        for o in opt_proc.unknown_options():
+            print("  \"%s\""%o)
+        exit(1)
+
+    if(len(opt_proc.problem_options()) != 0):
+        print('Problems with option values (unexpected, missing, incorrect type, etc.).')
+        print('Use "-help" option to get usage information.\n')
+        for o in opt_proc.problem_options():
+            print("  \"%s\""%o)
+        exit(1)
+
+    endpoints = opt_proc.arguments()
+    endpoints = endpoints[opt.start_file_index():]
+ 
+    # Create or extend SQL file
+    sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
+    if(opt.truncate_db()):
+        sql_mode = calin.io.sql_serializer.SQLite3Serializer.TRUNCATE_RW
+    sql = calin.io.sql_serializer.SQLite3Serializer(opt.o(), sql_mode)
+    sql.create_or_extend_tables(opt.db_stage1_table_name(),
+        calin.ix.diagnostics.stage1.Stage1.descriptor())
+
+    # Check if the files are already in the database
+    if(opt.skip_existing()):
+        filtered_endpoints = []
+        for endpoint in endpoints:
+            selector = calin.ix.diagnostics.stage1.SelectByFilename()
+            selector.set_filename(endpoint)
+            oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
+            if oids:
+                print("Skipping %s"%(endpoint))
+            elif endpoint in filtered_endpoints:
+                print("Duplicate %s"%(endpoint))
             else:
-                print("Failed to insert stage1 results into database")
+                filtered_endpoints.append(endpoint)
+        endpoints = filtered_endpoints
+
+    # Check if the run has missing fragments and ignore them if so (if requested)
+    if(opt.skip_runs_with_missing_fragments()):
+        cfg = calin.iact_data.raw_acada_event_data_source.ZFITSACADACameraEventDataSource_R1v1.default_config()
+        filtered_endpoints = []
+        for endpoint in endpoints:
+            ff, nmf = calin.iact_data.raw_acada_event_data_source.generate_fragment_list(endpoint,cfg)
+            if nmf > 0:
+                print(f"Skipping {endpoint} ({nmf} missing fragments)")
+            elif opt.num_zfits_writers()>1 and (len(ff)%opt.num_zfits_writers())!=0:
+                print(f"Skipping {endpoint} ({len(ff)} fragments not divisible by {opt.num_zfits_writers()})")
+            else:
+                filtered_endpoints.append(endpoint)
+        endpoints = filtered_endpoints
+
+    if(len(endpoints) == 0):
+        print("No files to process.")
+        exit(0)
+
+    all_copied_ancillary_db = []
+    failed_files = []
+    nsuccess = 0;
+    nskip = 0;
+
+    # Run all the visitors
+    if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
+            or endpoints[0].startswith('pgm://') or endpoints[0].startswith('pgme://')):
+        init_dispatcher(opt,1)
+        dispatcher.process_cta_zmq_run(endpoints, cfg)
+        s1res = s1pev.stage1_results()
+        sql.insert(opt.db_stage1_table_name(), s1res)
+    elif(opt.process_pool() >= 1):
+        filelist = [ (ifile, filename) for ifile, filename in enumerate(endpoints) ]
+        nfile = len(filelist)
+        with concurrent.futures.ProcessPoolExecutor(1, initializer=init_writer, initargs=(opt,)) as writer_executor:
+            writer_futures = []
+            with concurrent.futures.ProcessPoolExecutor(opt.process_pool(), initializer=init_dispatcher, initargs=(opt,nfile)) as dispatcher_executor:
+                dispatcher_futures = [ dispatcher_executor.submit(dispatch_file_and_marshall, *ifile_filename) for ifile_filename in filelist ]
+                for future in concurrent.futures.as_completed(dispatcher_futures):
+                    filename, status, s1res_dict, copied_ancillary_db = future.result()
+                    if(status == 'success'):
+                        s1res = unmarshall(s1res_dict)
+                        writer_futures.append(writer_executor.submit(insert_stage1_results, s1res, filename))
+                    else:
+                        failed_files.append(filename)
+                    
+                    if(copied_ancillary_db != ''):
+                        all_copied_ancillary_db.append(copied_ancillary_db)
+
+            for future in concurrent.futures.as_completed(writer_futures):
+                filename, good = future.result()
+                if(good):
+                    nsuccess += 1
+                else:
+                    failed_files.append(filename)
+    else:
+        init_dispatcher(opt, len(endpoints))
+        copied_ancillary_db = ''
+        first_file = True
+        for ifile, filename in enumerate(endpoints):
+            if not first_file:
+                print("-"*80)
+            first_file = False
+            _, status, s1res, copied_ancillary_db = dispatch_file(ifile, filename)
+            if(status == 'success'):
+                _, good = insert_stage1_results(s1res, filename)
+                if(good):
+                    nsuccess += 1
+                else:
+                    failed_files.append(filename)
+            else:
                 failed_files.append(filename)
-        except Exception as x:
-            traceback.print_exception(*sys.exc_info())
-            failed_files.append(filename)
-            pass
+
+            if(copied_ancillary_db != ''):
+                all_copied_ancillary_db.append(copied_ancillary_db)
+
+    # for copied_ancillary_db in all_copied_ancillary_db:
+    #     print("Deleting %s"%copied_ancillary_db)
+    #     os.unlink(copied_ancillary_db)
 
     print("")
     print("="*80)
@@ -163,4 +377,4 @@ else:
             print("Failed file :",failed_files[0])
     print("="*80)
 
-# The end
+    # The end

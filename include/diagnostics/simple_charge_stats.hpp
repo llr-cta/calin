@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <math/histogram.hpp>
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
@@ -96,6 +98,8 @@ private:
       delete ped_wf_q2_sum_vs_time;
     }
 
+    void insert_from_and_clear(SingleGainChannelHists* from);
+
     calin::math::histogram::Histogram1D* all_pedwin_1_sum_vs_time;
     calin::math::histogram::Histogram1D* all_pedwin_q_sum_vs_time;
     calin::math::histogram::Histogram1D* all_pedwin_q2_sum_vs_time;
@@ -160,7 +164,8 @@ private:
       num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       phys_trig_num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
-      phys_trig_num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0))
+      phys_trig_num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
+      muon_candidate_num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0))
     { /* nothing to see here */ }
 
     ~CameraHists() {
@@ -168,6 +173,7 @@ private:
       delete num_contiguous_channel_triggered_hist;
       delete phys_trig_num_channel_triggered_hist;
       delete phys_trig_num_contiguous_channel_triggered_hist;
+      delete muon_candidate_num_channel_triggered_hist;
       delete high_gain;
       delete low_gain;
     }
@@ -179,6 +185,7 @@ private:
     calin::math::histogram::Histogram1D* num_contiguous_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* phys_trig_num_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* phys_trig_num_contiguous_channel_triggered_hist = nullptr;
+    calin::math::histogram::Histogram1D* muon_candidate_num_channel_triggered_hist = nullptr;
   };
 
   void integrate_one_gain_partials(
@@ -205,6 +212,8 @@ private:
     const SingleGainChannelHists& hists,
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats* partials);
 
+  void merge_time_histograms_if_necessary();
+
   void record_one_gain_channel_data(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
     unsigned ichan, double elapsed_event_time,
@@ -224,6 +233,7 @@ private:
   void record_dual_visitor_data(uint64_t seq_index);
 
   SimpleChargeStatsParallelEventVisitor* parent_ = nullptr;
+  std::mutex on_the_fly_merge_lock_;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor_ = nullptr;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor_ = nullptr;

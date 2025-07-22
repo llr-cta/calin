@@ -31,6 +31,7 @@
 #include <diagnostics/simple_charge_hists.hpp>
 #include <diagnostics/clock_regression.hpp>
 #include <diagnostics/waveform.hpp>
+#include <diagnostics/reduced_event_writer.hpp>
 #include <iact_data/nectarcam_ancillary_data.hpp>
 #include <provenance/chronicle.hpp>
 
@@ -61,6 +62,9 @@ public:
 #endif
 
   static calin::ix::diagnostics::stage1::Stage1Config default_config();
+
+  static std::string nectarcam_ancillary_database_filename(const std::string run_filename, uint64_t run_start_time_ns=0, 
+    const std::string forced_filename = "", const std::string forced_directory = "");
 
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
@@ -95,6 +99,8 @@ private:
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ped_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_ext_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformPSDParallelVisitor* wf_psd_int_pev_ = nullptr;
+
+  calin::diagnostics::reduced_event_writer::ReducedEventWriterParallelEventVisitor* reduced_event_writer_pev_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::stage1

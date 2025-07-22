@@ -360,9 +360,9 @@ std::string VSOArray::banner(const std::string& indent0, const std::string& inde
   std::ostringstream stream;
   stream << indent0 << "Array of " << this->numTelescopes()
     << " DC-like telescopes covering "
-    << double_to_string_with_commas(A,3) << " km^2.\n";
+    << double_to_string_with_commas(A,3) << " km^2.";
   for(const auto& scope_banner : scope_banners) {
-    stream << indentN << scope_banner.second << " x " << scope_banner.first << '\n';
+    stream << '\n' << indentN << scope_banner.second << " x " << scope_banner.first;
   }
   return stream.str();
 }

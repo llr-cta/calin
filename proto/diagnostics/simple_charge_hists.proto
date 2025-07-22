@@ -28,6 +28,13 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.simple_charge_hists;
 
+enum RelativeQSumSource {
+  OPT_PED_DIFF = 0;
+  SIG_PED_DIFF = 1;
+  OPT_WINDOW = 2;
+  SIG_WINDOW = 3;
+};
+
 message SingleGainSimpleChargeHistsConfig {
   bool enable_hists                                                 = 1 [
     (CFO).desc = "Enable histogramming for this gain channel." ];
@@ -56,10 +63,17 @@ message SingleGainSimpleChargeHistsConfig {
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_win_qsum = 17 [
     (CFO).desc = "Configuration for fixed signal-window charge sum." ];
 
-  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_ped_qsum_diff = 18 [
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_ped_qsum_diff = 18 [
+    (CFO).desc = "Configuration for difference between optimal signal and fixed pedestal-window charge sum." ];
+
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_ped_qsum_diff = 19 [
     (CFO).desc = "Configuration for difference between fixed signal and pedestal-window charge sum." ];
 
-  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 20 [
+  
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig rel_qsum = 20 [
+    (CFO).desc = "Configuration for signal relative to camera average." ];
+  
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 30 [
     (CFO).desc = "Configuration for number of channels present in image." ];
 };
 
@@ -67,11 +81,13 @@ message DualGainSimpleChargeHistsConfig {
   bool enable_hists                                                 = 1 [
     (CFO).desc = "Enable histogramming for this gain channel." ];
 
-  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 20 [
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 30 [
     (CFO).desc = "Configuration for number of channels present in image." ];
 };
 
 message SimpleChargeHistsConfig {
+  RelativeQSumSource rel_qsum_source                                = 1 [
+    (CFO).desc = "Source for relative charge sum." ];
   SingleGainSimpleChargeHistsConfig high_gain                       = 10 [
     (CFO).desc = "Configuration for high or single-gain histograms." ];
   SingleGainSimpleChargeHistsConfig low_gain                        = 20 [
@@ -113,9 +129,17 @@ message OneGainSimpleChargeHists {
     (CFO).desc = "Histogram of sum of samples over fixed signal window.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
 
-  calin.ix.math.histogram.Histogram1DData sig_ped_qsum_diff         = 18 [
+  calin.ix.math.histogram.Histogram1DData opt_ped_qsum_diff         = 18 [
+    (CFO).desc = "Histogram of difference between sum of samples over optimal signal and fixed pedestal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_ped_qsum_diff         = 19 [
     (CFO).desc = "Histogram of difference between sum of samples over fixed signal and pedestal window.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData rel_qsum         = 20 [
+    (CFO).desc = "Histogram of the signal relative to the camera-average.",
+    (CFO).units = "Unity (bin-units), events (value-units)" ];
 }
 
 message OneGainSimpleChargeCameraHists {
@@ -137,6 +161,14 @@ message OneGainSimpleChargeCameraHists {
 
   calin.ix.math.histogram.Histogram1DData sig_win_qsum              = 17 [
     (CFO).desc = "Histogram of sum of samples over fixed signal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData opt_ped_qsum_diff         = 18 [
+    (CFO).desc = "Histogram of difference between sum of samples over optimal signal and fixed pedestal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+  
+  calin.ix.math.histogram.Histogram1DData sig_ped_qsum_diff         = 19 [
+    (CFO).desc = "Histogram of difference between sum of samples over fixed signal and pedestal window.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
 }
 

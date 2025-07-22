@@ -43,15 +43,16 @@ const char* ansi_color_string(Level level)
 {
   switch(level)
   {
-    case Level::FATAL:    return "\x1b[37;41;97;101;1m";
-    case Level::ERROR:    return "\x1b[30;45;105;1m";
-    case Level::WARNING:  return "\x1b[30;43;103;1m";
+    case Level::FATAL:    return "\x1b[37;41;97;101;1m";     // Bright White on Bright Red
+    case Level::ERROR:    return "\x1b[30;45;105;1m";        // Black on Bright Magenta
+    case Level::WARNING:  return "\x1b[30;43;103;1m";        // Black on Bright Yellow
+    case Level::NOTICE:   return "\x1b[37;44;97;104;1m";     // Bright White on Bright Blue
       //case Level::SUCCESS:  return "\x1b[37;42;97;1m";
-    case Level::SUCCESS:  return "\x1b[37;42;97;38;5;15;1m";
-    case Level::FAILURE:  return "\x1b[31;91;47;1m";
+    case Level::SUCCESS:  return "\x1b[37;42;97;38;5;15;1m"; // Bright White on Bright Green
+    case Level::FAILURE:  return "\x1b[31;91;47;1m";         // Bright Red on White
       //case Level::FAILURE:  return "\x1b[30;41;101;1m";
-    case Level::INFO:     return "\x1b[37;46;97;1m";
-    case Level::VERBOSE:  return "";
+    case Level::INFO:     return "\x1b[37;46;97;1m";         // Bright White on Cyan
+    case Level::VERBOSE:  return ""; 
     case Level::DISCARD:  return "";
     default: assert(0); return "";
   }
@@ -64,7 +65,7 @@ const char* level_string(Level level)
     case Level::FATAL:    return "FATAL";
     case Level::ERROR:    return "ERROR";
     case Level::WARNING:  return "WARNING";
-    case Level::FAILURE:  return "FAILURE";
+    case Level::NOTICE:   return "NOTICE";
     case Level::SUCCESS:  return "SUCCESS";
     case Level::INFO:     return "INFO";
     case Level::VERBOSE:  return "";
@@ -268,6 +269,8 @@ log_message(Level level, const std::string& message,
     m->set_level(calin::ix::util::log::LogMessage::ERROR); break;
   case WARNING:
     m->set_level(calin::ix::util::log::LogMessage::WARNING); break;
+  case NOTICE:
+    m->set_level(calin::ix::util::log::LogMessage::NOTICE); break;
   case INFO:
     m->set_level(calin::ix::util::log::LogMessage::INFO); break;
   case SUCCESS:

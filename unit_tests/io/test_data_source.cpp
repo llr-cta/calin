@@ -74,6 +74,9 @@ public:
   unsigned num_sources() const override {
     return nsource_;
   }
+  unsigned num_missing_sources() const override {
+    return 0;
+  }
   std::string source_name(unsigned isource) const override {
     if(isource>=nsource_)return {};
     return std::to_string(isource);

@@ -154,6 +154,11 @@ private:
   data_stream_type* data_stream_ = nullptr;
 };
 
+void generate_fragment_list(std::string filename,
+  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
+  std::vector<std::string>& fragment_filenames,
+  unsigned& num_missing_fragments, bool log_missing_fragments = true);
+
 template<typename MessageSet>
 class ZFITSACADACameraEventDataSourceOpener:
   public calin::io::data_source::DataSourceOpener<
@@ -172,6 +177,7 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSACADACameraEventDataSourceOpener();
   unsigned num_sources() const override;
+  unsigned num_missing_sources() const override;
   std::string source_name(unsigned isource) const override;
   ZFITSSingleFileACADACameraEventDataSource<MessageSet>* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
@@ -182,6 +188,7 @@ private:
   std::vector<std::string> filenames_;
   config_type config_;
   bool has_opened_file_ = false;
+  unsigned num_missing_fragments_ = 0;
 };
 
 calin::ix::iact_data::zfits_data_source::ACADADataModel get_zfits_data_model(const std::string& filename);

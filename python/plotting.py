@@ -582,13 +582,9 @@ def plot_histogram(h, density = False, normalise = False,
 
     hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
 
-    if(hx[0] < xleft):
-        if(hx[1] < xleft):
-            raise ValueError("xleft outside of first bin")
+    if(hx[0] < xleft and hx[1] > xleft):
         hx[0] = xleft
-    if(hx[-1] > xright):
-        if(hx[-2] > xright):
-            raise ValueError("xright outside of final bin")
+    if(hx[-1] > xright and hx[-2] < xright):
         hx[-1] = xright
 
     if density:

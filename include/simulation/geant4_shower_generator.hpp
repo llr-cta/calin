@@ -76,19 +76,7 @@ public:
                         double default_cut_value_cm = 10.0,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
-#if 0
-  Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                        calin::simulation::atmosphere::Atmosphere* atm,
-                        unsigned num_atm_layers, double zground, double ztop,
-                        VerbosityLevel verbose_level,
-                        calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
-                        uint32_t seed = 0,
-                        bool adopt_visitor = false,
-                        bool adopt_atm = false,
-                        bool adopt_bfield = false):
-    Geant4ShowerGenerator(visitor, atm, num_atm_layers, zground, ztop, bfield,
-      verbose_level, seed, adopt_visitor, adopt_atm, adopt_bfield) { }
-#endif
+
   virtual ~Geant4ShowerGenerator();
 
   void set_minimum_energy_cut(double emin_mev);
@@ -100,26 +88,31 @@ public:
                         const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
                         double weight=1.0) override;
 
-  uint32_t random_seed() const { return seed_; }
+  const config_type& config() const { return config_; }
+  uint32_t random_seed() const { return config_.seed(); }
 
-  void apply_command(const std::string command);
+  int apply_command(const std::string command);
 
   static double get_material_density(const std::string& material_name);
+  
   static config_type default_config();
+
+  static config_type customized_config(unsigned num_atm_layers, double zground, double ztop,
+    VerbosityLevel verbose_level = VerbosityLevel::SUPRESSED_STDOUT,
+    uint32_t seed = 0, double default_cut_value_cm = 10.0);
 
   std::string pdg_type_to_string(int pdg_type);
 
 protected:
-  void construct(unsigned num_atm_layers, VerbosityLevel verbose_level,
-    double default_cut_value_cm, double detector_size, const std::string& material_name);
+  void construct();
 
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
-  double ztop_of_atm_ = 0;
-  double zground_ = 0;
+
+  config_type config_;
+
   calin::simulation::world_magnetic_model::FieldVsElevation* bfield_ = nullptr;
   bool adopt_bfield_ = false;
-  uint32_t seed_ = 0;
 
   G4UImanager* ui_manager_                = nullptr;    // don't delete me
   G4UIsession* ui_session_                = nullptr;    // delete me

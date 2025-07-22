@@ -96,6 +96,16 @@ string class_name(const google::protobuf::Descriptor* d)
   return class_name;
 }
 
+std::string stream_writer_name(const google::protobuf::Descriptor* d) 
+{
+  return class_name(d) + "_StreamWriter";
+}
+
+std::string stream_reader_name(const google::protobuf::Descriptor* d) 
+{
+  return class_name(d) + "_StreamReader";
+}
+
 // Make the full type for an enum for use as an argument
 string enum_type(const google::protobuf::EnumDescriptor* d,
   const google::protobuf::Descriptor* d_referrer = nullptr)
@@ -256,6 +266,27 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "\n"
     "%newobject $class_name$::New() const;\n"
     "%newobject $class_name$::Clone() const;\n"
+    "%newobject $class_name$::NewHDFStreamWriter;\n"
+    "%newobject $class_name$::NewHDFStreamReader;\n"
+    "\n"
+    "class $class_name$;\n"
+    "\n"
+    "class $stream_writer_name$\n"
+    "{\n"
+    "public:\n"
+    "  virtual ~$stream_writer_name$();\n"
+    "  virtual uint64_t nrow() = 0;\n"
+    "  virtual void write(const $class_name$& m) = 0;\n"
+    "  virtual void flush() = 0;\n"
+    "};\n"
+    "class $stream_reader_name$\n"
+    "{\n"
+    "public:\n"
+    "  virtual ~$stream_reader_name$();\n"
+    "  virtual uint64_t nrow() = 0;\n"
+    "  virtual bool read(uint64_t irow, $class_name$* m) = 0;\n"
+    "  virtual bool preload(uint64_t start, uint64_t count) = 0;\n"
+    "};\n"
     "\n"
     "class $class_name$ : public google::protobuf::Message \n"
     "{\n"
@@ -272,6 +303,8 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "    $class_name$* Clone(google::protobuf::Arena* arena) const {\n"
     "      $class_type$* the_clone = $$self->New(arena);\n"
     "      the_clone->MergeFrom(*$$self); return the_clone; }\n"
+    "    bool Equals(const $class_name$& other) const {\n"
+    "      return google::protobuf::util::MessageDifferencer::Equals(*$$self,other); }\n"
     "    %pythoncode %{"
     "\n"
     "      def __getstate__(self):\n"
@@ -284,11 +317,16 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "    %}\n"
     "  }\n"
     "  void Swap($class_name$* other);\n"
+    "  const google::protobuf::Descriptor* GetDescriptor() const;\n"
     "\n"
     "  static const google::protobuf::Descriptor* descriptor();\n"
-    "  static const $class_name$& default_instance();\n",
+    "  static const $class_name$& default_instance();\n"
+    "  static $stream_writer_name$* NewHDFStreamWriter(const std::string& filename, const std::string& groupname, bool truncate = false);\n" 
+    "  static $stream_reader_name$* NewHDFStreamReader(const std::string& filename, const std::string& groupname);\n",
     "class_name", the_class_name,
-    "class_type", the_class_type);
+    "class_type", the_class_type,
+    "stream_writer_name", stream_writer_name(d),
+    "stream_reader_name", stream_reader_name(d));
 
   const google::protobuf::MessageOptions* mopt = &d->options();
   const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
@@ -698,7 +736,8 @@ Generate(const google::protobuf::FileDescriptor * file,
     "#include<map>\n"
     "#include<stdexcept>\n"
     "#include<google/protobuf/message.h>\n"
-    "#include<google/protobuf/descriptor.h>\n");
+    "#include<google/protobuf/descriptor.h>\n"
+    "#include<google/protobuf/util/message_differencer.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
   I->Print("\n#define SWIG_FILE_WITH_INIT\n\n");
   I->Print(

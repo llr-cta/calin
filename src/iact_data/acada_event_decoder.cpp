@@ -325,9 +325,8 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
-    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->stereo_pattern & 0x01);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
@@ -354,9 +353,8 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
     calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
     calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
-    calin_cdts_data->set_local_trigger(cdts_data->trigger_type & 0x80);
-    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x40);
-    calin_cdts_data->set_busy_trigger(cdts_data->stereo_pattern & 0x80);
+    calin_cdts_data->set_local_trigger(cdts_data->stereo_pattern & 0x01);
+    calin_cdts_data->set_muon_candidate(cdts_data->stereo_pattern & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
@@ -463,7 +461,7 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   calin_tib_data->set_pps_counter(tib_data->pps_counter);
   calin_tib_data->set_clock_counter(tib_data->clock_counter_lo16
     + (tib_data->clock_counter_hi8<<16) );
-  calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x0001FFFF);
+  calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x1FF);
   calin_tib_data->set_trigger_type(tib_data->trigger_type);
   calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
 
@@ -530,11 +528,44 @@ calin::iact_data::acada_event_decoder::determine_trigger_type(
   return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
 }
 
+namespace {
+  template<typename SWATData> inline void copy_swat_data(
+    calin::ix::iact_data::telescope_event::SWATData* calin_swat_data,
+    const SWATData* swat_data)
+  {
+    calin_swat_data->set_trigger_id(swat_data->trigger_id);
+    calin_swat_data->set_bunch_id(swat_data->bunch_id);
+    calin_swat_data->set_trigger_type_code(swat_data->trigger_type);
+    calin_swat_data->set_trigger_time_s(swat_data->trigger_time_s);
+    calin_swat_data->set_trigger_time_qns(swat_data->trigger_time_qns);
+    calin_swat_data->set_readout_requested(swat_data->readout_requested);
+    calin_swat_data->set_data_available(swat_data->data_available);
+    calin_swat_data->set_hardware_stereo_trigger_mask(swat_data->hardware_stereo_trigger_mask);
+
+    calin_swat_data->set_mono_trigger(swat_data->trigger_type & 0x0001);
+    calin_swat_data->set_stereo_trigger(swat_data->trigger_type & 0x0002);
+    calin_swat_data->set_calibration_trigger(swat_data->trigger_type & 0x0004);
+    calin_swat_data->set_photo_electron_trigger(swat_data->trigger_type & 0x0008);
+    calin_swat_data->set_software_trigger(swat_data->trigger_type & 0x0010);
+    calin_swat_data->set_pedestal_trigger(swat_data->trigger_type & 0x0020);
+    calin_swat_data->set_slow_control_trigger(swat_data->trigger_type & 0x0040);
+    calin_swat_data->set_neighbour_1_trigger(swat_data->trigger_type & 0x0100);
+    calin_swat_data->set_neighbour_2_trigger(swat_data->trigger_type & 0x0200);
+    calin_swat_data->set_neighbour_3_trigger(swat_data->trigger_type & 0x0400);
+    calin_swat_data->set_neighbour_4_trigger(swat_data->trigger_type & 0x0800);
+    calin_swat_data->set_neighbour_5_trigger(swat_data->trigger_type & 0x1000);
+    calin_swat_data->set_neighbour_6_trigger(swat_data->trigger_type & 0x2000);
+    calin_swat_data->set_neighbour_7_trigger(swat_data->trigger_type & 0x4000);
+                                                  
+    calin_swat_data->set_trigger_type(calin::ix::iact_data::telescope_event::SwatTriggerType(swat_data->trigger_type));
+  }
+}
+
 void calin::iact_data::acada_event_decoder::
 decode_swat_data(calin::ix::iact_data::telescope_event::SWATData* calin_swat_data,
   const AnyArray& cta_array)
 {
-  struct SWATMessageData {
+  struct SWATMessageData40 {
     uint64_t trigger_id;
     uint64_t bunch_id;
     uint32_t trigger_type;
@@ -545,37 +576,30 @@ decode_swat_data(calin::ix::iact_data::telescope_event::SWATData* calin_swat_dat
     uint32_t hardware_stereo_trigger_mask;
   } __attribute__((__packed__));
 
+  struct SWATMessageData56 {
+    uint64_t trigger_id;
+    uint64_t zero_1;
+    uint64_t bunch_id;
+    uint64_t zero_2;
+    uint32_t trigger_type;
+    uint32_t trigger_time_s;
+    uint32_t trigger_time_qns;
+    uint32_t readout_requested;
+    uint32_t data_available;
+    uint32_t hardware_stereo_trigger_mask;
+  } __attribute__((__packed__));
+
   const auto& cta_swat_data = cta_array.data();
-  if(cta_swat_data.size() != sizeof(SWATMessageData))
+  if(cta_swat_data.size() == sizeof(SWATMessageData40)) {
+    const auto* swat_data =
+      reinterpret_cast<const SWATMessageData40*>(&cta_swat_data.front());
+    copy_swat_data(calin_swat_data, swat_data);
+  } else if(cta_swat_data.size() == sizeof(SWATMessageData56)) {
+    const auto* swat_data =
+      reinterpret_cast<const SWATMessageData56*>(&cta_swat_data.front());
+    copy_swat_data(calin_swat_data, swat_data);
+  } else {
     throw std::runtime_error("SWAT data array not expected size : " 
-      + std::to_string(cta_swat_data.size())  + " != "
-      + std::to_string(sizeof(SWATMessageData)));
-  const auto* swat_data =
-    reinterpret_cast<const SWATMessageData*>(&cta_swat_data.front());
-
-  calin_swat_data->set_trigger_id(swat_data->trigger_id);
-  calin_swat_data->set_bunch_id(swat_data->bunch_id);
-  calin_swat_data->set_trigger_type_code(swat_data->trigger_type);
-  calin_swat_data->set_trigger_time_s(swat_data->trigger_time_s);
-  calin_swat_data->set_trigger_time_qns(swat_data->trigger_time_qns);
-  calin_swat_data->set_readout_requested(swat_data->readout_requested);
-  calin_swat_data->set_data_available(swat_data->data_available);
-  calin_swat_data->set_hardware_stereo_trigger_mask(swat_data->hardware_stereo_trigger_mask);
-
-  calin_swat_data->set_mono_trigger(swat_data->trigger_type & 0x0001);
-  calin_swat_data->set_stereo_trigger(swat_data->trigger_type & 0x0002);
-  calin_swat_data->set_calibration_trigger(swat_data->trigger_type & 0x0004);
-  calin_swat_data->set_photo_electron_trigger(swat_data->trigger_type & 0x0008);
-  calin_swat_data->set_software_trigger(swat_data->trigger_type & 0x0010);
-  calin_swat_data->set_pedestal_trigger(swat_data->trigger_type & 0x0020);
-  calin_swat_data->set_slow_control_trigger(swat_data->trigger_type & 0x0040);
-  calin_swat_data->set_neighbour_1_trigger(swat_data->trigger_type & 0x0100);
-  calin_swat_data->set_neighbour_2_trigger(swat_data->trigger_type & 0x0200);
-  calin_swat_data->set_neighbour_3_trigger(swat_data->trigger_type & 0x0400);
-  calin_swat_data->set_neighbour_4_trigger(swat_data->trigger_type & 0x0800);
-  calin_swat_data->set_neighbour_5_trigger(swat_data->trigger_type & 0x1000);
-  calin_swat_data->set_neighbour_6_trigger(swat_data->trigger_type & 0x2000);
-  calin_swat_data->set_neighbour_7_trigger(swat_data->trigger_type & 0x4000);
-                                                
-  calin_swat_data->set_trigger_type(calin::ix::iact_data::telescope_event::SwatTriggerType(swat_data->trigger_type));
+      + std::to_string(cta_swat_data.size())  + " != 40 or 56");
+  }
 }

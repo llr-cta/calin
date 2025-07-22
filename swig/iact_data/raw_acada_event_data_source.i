@@ -48,6 +48,9 @@
 %newobject get_run_header();
 %newobject get_data_stream();
 
+%apply std::vector<std::string>& OUTPUT { std::vector<std::string>& fragment_filenames };
+%apply unsigned& OUTPUT { unsigned& num_missing_fragments };
+
 %include "io/chained_data_source.hpp"
 %include "iact_data/acada_data_source.hpp"
 %include "iact_data/zfits_acada_data_source.hpp"

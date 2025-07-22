@@ -139,8 +139,9 @@ private:
   void do_dispatcher_loop(
     calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-    unsigned log_frequency, unsigned nevents_to_dispatch,
-    const std::chrono::system_clock::time_point& start_time,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* run_config, 
+    unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
   void write_initial_log_message(calin::ix::iact_data::

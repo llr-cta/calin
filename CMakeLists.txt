@@ -96,6 +96,10 @@ find_package(SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 
+## Find HDF5
+find_package(HDF5 REQUIRED)
+include_directories(${HDF5_INCLUDE_DIRS})
+
 ## Find Python interpreter and libraries
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 include_directories(${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
@@ -132,9 +136,22 @@ else()
 	if(GEANT4_FOUND)
 		message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR})
 		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR})
-		include_directories(${GEANT4_INCLUDE_DIR})
-		link_directories(${GEANT4_LIBRARY_DIR})
 		set(CALIN_HAVE_GEANT4 TRUE)
+		link_directories(${GEANT4_LIBRARY_DIR})
+	endif()
+endif()
+
+## Find CORSIKA8 if requested
+SET(CALIN_HAVE_CORSIKA8 FALSE)
+if(NO_CORSIKA8)
+	message(STATUS "Skipping CORSIKA8 as requested")
+	set(CORSIKA8_FOUND FALSE)
+else()
+	find_package(CORSIKA8)
+	if(CORSIKA8_FOUND)
+		message(STATUS "CORSIKA8_INCLUDE_DIR: " ${CORSIKA8_INCLUDE_DIR})
+		set(CALIN_HAVE_CORSIKA8 TRUE)
+		find_package(Boost 1.85.0 REQUIRED COMPONENTS serialization filesystem)
 	endif()
 endif()
 

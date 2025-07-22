@@ -15,3 +15,4 @@
 
 add_subdirectory(protoc-gen-swig)
 add_subdirectory(protoc-gen-calin-cpp-extensions)
+add_subdirectory(protoc-gen-hdf-streamers)

@@ -1,0 +1,67 @@
+/*
+
+   calin/proto/diagnostics/reduced_event_writer.proto -- Stephen Fegan -- 2025-02-20
+
+   Protobufs for reduced event writer configuration
+
+   Copyright 2025, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.diagnostics.reduced_event_writer;
+
+message ReducedEventWriterConfig {
+  string directory                                         = 1 [
+    (CFO).desc = "Directory for reduced file or CWD if none." ];
+  string file_prefix                                       = 2 [
+    (CFO).desc = "Prefix for reduced file. If the prefix is \"reduced_file_\""
+      "then run number X will be written to \"reduced_file_X.h5\"." ];
+  bool truncate                                            = 3 [
+    (CFO).desc = "Truncate file if it exists." ];
+  string run_configuration_group                           = 4 [
+    (CFO).desc = "Group name for run info." ];
+  string event_group                                       = 5 [
+    (CFO).desc = "Group name for event data." ];
+
+  bool write_max_index                                     = 12 [
+    (CFO).desc = "Write index of maximum signal within readout window in samples." ];
+  bool write_max_sample                                    = 13 [
+    (CFO).desc = "Write maximum sample within readout window." ];
+  bool write_bkg_qsum                                      = 14 [
+    (CFO).desc = "Write integrated charges in background window." ];
+  bool write_sig_qsum                                      = 15 [
+    (CFO).desc = "Write integrated charges in signal window." ];
+  bool write_opt_qsum                                      = 16 [
+    (CFO).desc = "Write integrated charges in optimal window." ];
+  bool write_opt_qtsum                                     = 17 [
+    (CFO).desc = "Write integrated charges * index in optimal window." ];
+  bool write_opt_index                                     = 18 [
+    (CFO).desc = "Write index of start of optimal window within readout window in samples." ];
+  bool write_all_qsum                                      = 19 [
+    (CFO).desc = "Write integrated charges in readout window." ];
+  bool write_opt_bkg_qsum_diff                             = 20 [
+    (CFO).desc = "Write difference between optimal and background window charges." ];
+  
+  bool write_gain1                                         = 100 [
+    (CFO).desc = "Write first gain charge sums (high/single/mixed gain)." ];
+  bool write_gain2                                         = 101 [
+    (CFO).desc = "Write second gain charge sums (low gain)." ];
+  bool write_l0_trigger_map                                = 102 [
+    (CFO).desc = "Write LO trigger status for each channel." ];
+};

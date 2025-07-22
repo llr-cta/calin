@@ -137,6 +137,12 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
       ClockRegressionParallelEventVisitor(config_.clock_regression());
     this->add_visitor(clock_regression_pev_);
   }
+
+  if(config_.enable_write_reduced_event_file()) {
+    reduced_event_writer_pev_ = new calin::diagnostics::reduced_event_writer::
+      ReducedEventWriterParallelEventVisitor(hg_sum_pev_, lg_sum_pev_, config_.reduced_event_writer());
+    this->add_visitor(reduced_event_writer_pev_);
+  }
 }
 
 Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
@@ -161,6 +167,7 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete wf_psd_ext_pev_;
   delete wf_psd_int_pev_;
   delete nectarcam_ancillary_data_;
+  delete reduced_event_writer_pev_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
@@ -200,30 +207,16 @@ bool Stage1ParallelEventVisitor::leave_telescope_run(
     start_time = std::max(start_time-30, int64_t(0));
     end_time = end_time+30;
 
-    std::string db_filename = config_.ancillary_database();
+    std::string db_filename;
 
     switch(run_config_->camera_layout().camera_type()) {
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM:
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL:
       case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL:
-        if(db_filename.empty()) {
-          db_filename = calin::util::file::dirname(run_config_->filename());
-          std::string utdate = calin::util::file::basename(db_filename);
-          db_filename += "/nectarcam_monitoring_db_";
-          if(utdate.size() == 8) {
-            db_filename += utdate.substr(0,4);
-            db_filename += "-";
-            db_filename += utdate.substr(4,2);
-            db_filename += "-";
-            db_filename += utdate.substr(6,2);
-          } else {
-            db_filename += calin::util::timestamp::
-              Timestamp(run_config_->run_start_time().time_ns()).as_string().substr(0,10);
-          }
-          db_filename += ".sqlite";
-        }
-        if(calin::util::file::is_file(db_filename))
-        {
+        db_filename = nectarcam_ancillary_database_filename(run_config_->filename(), 
+          run_config_->run_start_time().time_ns(), config_.ancillary_database(),
+          config_.ancillary_database_directory());
+        if(calin::util::file::is_file(db_filename)) {
           nectarcam_ancillary_data_ =
             calin::iact_data::nectarcam_ancillary_data::
               retrieve_nectarcam_ancillary_data(db_filename, run_config_->telescope_id(),
@@ -240,6 +233,33 @@ bool Stage1ParallelEventVisitor::leave_telescope_run(
   }
 
   return good;
+}
+
+std::string Stage1ParallelEventVisitor::
+nectarcam_ancillary_database_filename(const std::string run_filename, uint64_t run_start_time_ns, 
+  const std::string forced_filename, const std::string forced_directory)
+{
+  std::string db_filename = forced_filename;
+  if(db_filename.empty()) {
+    db_filename = forced_directory;
+    if(db_filename.empty()) {
+      db_filename = calin::util::file::dirname(run_filename);
+    }
+    std::string utdate = calin::util::file::basename(calin::util::file::dirname(run_filename));
+    db_filename += "/nectarcam_monitoring_db_";
+    if(utdate.size() == 8) {
+      db_filename += utdate.substr(0,4);
+      db_filename += "-";
+      db_filename += utdate.substr(4,2);
+      db_filename += "-";
+      db_filename += utdate.substr(6,2);
+    } else {
+      db_filename += calin::util::timestamp::
+        Timestamp(run_start_time_ns).as_string().substr(0,10);
+    }
+    db_filename += ".sqlite";
+  }
+  return db_filename;
 }
 
 calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_results(
@@ -337,6 +357,7 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
   cfg.set_enable_clock_regression(true);
   cfg.set_enable_pedestal_waveform_psd(true);
   cfg.set_enable_all_waveform_psd(false);
+  cfg.set_enable_write_reduced_event_file(false);
 
   cfg.mutable_high_gain_opt_sum()->CopyFrom(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor::default_config());
@@ -365,6 +386,9 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
 
   cfg.mutable_clock_regression()->CopyFrom(
     calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::default_config());
+
+  cfg.mutable_reduced_event_writer()->CopyFrom(
+    calin::diagnostics::reduced_event_writer::ReducedEventWriterParallelEventVisitor::default_config());
 
   return cfg;
 }

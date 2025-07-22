@@ -69,6 +69,7 @@ def stage1_summary_elements(stage1, logsheet_url='', dqm_url=''):
         zero_suppress(run_info.num_pedestal_trigger()),
         zero_suppress(run_info.num_external_calibration_trigger()),
         zero_suppress(run_info.num_internal_calibration_trigger()),
+        zero_suppress(run_info.num_muon_candidate()),
 
         zero_suppress(int(numpy.sum(run_info.const_duplicate_event_numbers().count()))),
         zero_suppress(num_event_missing),
@@ -95,6 +96,7 @@ def stage1_summary_elements(stage1, logsheet_url='', dqm_url=''):
         '=HYPERLINK("' + logsheet_url + '","Logbook")' if logsheet_url else '',
         '=HYPERLINK("' + dqm_url + '","DQM")' if dqm_url else '',
         '%d'%run_config.fragment_filename_size(),
+        '%d'%run_config.num_missing_fragments(),
         '%.3f'%(run_config.file_size()/1e9),
         '%d'%run_config.configured_module_id_size(),
         '%.1f'%calin.diagnostics.stage1_analysis.num_wf(stage1),

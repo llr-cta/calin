@@ -22,6 +22,7 @@
 
 #include <Eigen/Dense>
 
+#include <calin_global_config.hpp>
 #include <math/rng.hpp>
 #include <simulation/corsika8_shower_generator.hpp>
 #include <provenance/chronicle.hpp>
@@ -33,18 +34,6 @@ using namespace calin::util::log;
 CORSIKA8ShowerGenerator::~CORSIKA8ShowerGenerator()
 {
   // nothing to see here
-}
-
-void CORSIKA8ShowerGenerator::
-generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
-                unsigned num_events,
-                calin::simulation::tracker::ParticleType type,
-                double total_energy,
-                const Eigen::Vector3d& x0,
-                const Eigen::Vector3d& u0,
-                double weight)
-{
-  // don't do anything
 }
 
 CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
@@ -62,15 +51,20 @@ CORSIKA8ShowerGenerator::config_type CORSIKA8ShowerGenerator::default_config()
   config.set_earth_radius(6371.0 * 1E5);
   config.set_zground(0.0);
   config.set_ztop(112.8 * 1E5);
-  // calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d{10.0,12.0,13.0});
+  calin::vec_to_xyz(config.mutable_uniform_magnetic_field(), Eigen::Vector3d{-3.2, 30.4, -23.8});
+  config.set_detector_box_side(1000.0 * 1E5);
 
   config.set_seed(0);
-  config.set_verbosity(C8_WARNING);
+  config.set_verbosity(VERBOSITY_LEVEL_INFO);
 
-  config.set_electrion_photon_cut(0.5);
+  config.set_electron_photon_cut(0.5);
   config.set_hadronic_cut(300.0);
   config.set_muon_cut(300.0);
-  config.set_he_hadronic_model(SIBYLL_2_3d);
+  config.set_tau_cut(300.0);
+  config.set_max_deflection_angle(12.0);
+  config.set_proposal_step_size_fraction(1.0);
+
+  config.set_he_hadronic_model(SIBYLL);
   config.set_he_hadronic_transition_energy(79400.0 /* 10^1.9 GeV = 79.4 GeV */);
 
   return config;

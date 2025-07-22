@@ -62,6 +62,8 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode):
     throw std::runtime_error("Could not open: " + filename_in + "\n" +
       sqlite3_errmsg(db_));
 
+  sqlite3_busy_timeout(db_, 300000); // 5 minutes
+
   calin::ix::provenance::chronicle::AccessType access;
   switch(open_mode) {
   case EXISTING_OR_NEW_RW:

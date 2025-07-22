@@ -79,7 +79,7 @@ NectarCam_ACADACameraEventDecoder_L0::NectarCam_ACADACameraEventDecoder_L0(
     default:
       exchange_gain_channels_ = run_number>=32 and run_number<621;
       if(exchange_gain_channels_)
-        LOG(WARNING) << "High/Low gain exchange automatically configured.";
+        LOG(NOTICE) << "High/Low gain exchange automatically configured.";
       break;
   }
 }
@@ -517,11 +517,11 @@ bool NectarCam_ACADACameraEventDecoder_L0::decode_run_config(
       calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
       delete nccc;
     } else {
-      LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
+      LOG(NOTICE) << "Could not parse NectarCAM module configuration XML file "
         << nmc_file;
     }
   } else {
-    auto logger = LOG(WARNING);
+    auto logger = LOG(NOTICE);
     logger << "Could not find NectarCAM module configuration XML file, tried:\n";
     for(auto try_fn : nmc_file_tried) {
       logger << "- " << try_fn << '\n';

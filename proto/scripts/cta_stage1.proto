@@ -40,7 +40,7 @@ message CommandLineOptions {
 
   string o                                                 = 10 [
     (CFO).desc = "SQLite3 output file name." ];
-  string db_stage1_table_name                             = 11 [
+  string db_stage1_table_name                              = 11 [
     (CFO).desc = "Table name of results structure in database." ];
   bool truncate_db                                         = 12 [
     (CFO).desc = "Truncate the SQLite3 file when opening it. Warning, this "
@@ -55,13 +55,34 @@ message CommandLineOptions {
   uint32 start_file_index                                  = 15 [
     (CFO).desc = "Set the start index if multiple files are given. Only really "
       "useful for processing a large list of runs where one of the runs caused "
-      "the processing to teminate with a segfault. Hopefully this never happens."];
+      "the processing to terminate with a segfault. Hopefully this never happens."];
+  bool skip_runs_with_missing_fragments                   = 16 [
+    (CFO).desc = "Skip runs that have missing fragments. This is useful when processing "
+      "a large list of runs where some of them are incomplete. The default is to "
+      "process all runs, even if they are incomplete. Note that missing fragments "
+      "at the end of the run may not be correctly detected."];
+  uint32 num_zfits_writers                                = 17 [
+    (CFO).desc = "Number of ZFITS writers. Only used to attempt to detect fragments "
+      "missing from end of file by testing that number of fragments is an even multiple "
+      "of the number of writers."];   
 
   uint32 log_frequency                                     = 20 [
     (CFO).desc = "Print a message to log every \"log_frequency\" events." ];
   int32 nthread                                            = 21 [
     (CFO).desc = "Number of computation threads. A value of -1 disables "
       "threading completely." ];
+  int32 process_pool                                       = 22 [
+    (CFO).desc = "Use process pool to treat multiple files at once. The value gives "
+      "the number of processes to use in the pool, a value less than 2 disables "
+      "process pooling. Note each process in the pool will use a number of threads "
+      "given by the \"ntread\" option." ];
+  string copy_ancillary_db                                 = 23 [
+    (CFO).desc = "Specify directory to which the ancillary database should be copied "
+      "before processing the data file. If left blank no copy is made, the ancillary "
+      "database will be read from its original place. This option is useful " 
+      "when processing data on NSF filesystems as SQLITE3 perfromance is bad "
+      "on these systems. Autotomatically sents the \"stage1.ancillary_database_directory\" "
+      "option." ];
 
   calin.ix.iact_data.cta_data_source.CTACameraEventDecoderConfig decoder = 30 [
     (CFO).desc = "CTA event decoder options." ];
