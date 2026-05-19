@@ -37,18 +37,19 @@ uint64_t calin::math::healpix_array::
 npixel_in_ring(unsigned nside, unsigned ringid)
 {
   unsigned nring = 4*nside-1;
-  assert(ringid < nring);
+  if(ringid >= nring) {
+    throw std::out_of_range("calin::math::healpix_array::npixel_in_ring: ringid out of range");
+  }
   return 4*std::min(nside, std::min(ringid+1, nring-ringid));
-  // if(ringid < nside)return 4*(ringid+1);
-  // else if(ringid < nring-nside)return 4*nside;
-  // else return 4*(nring - ringid);
 }
 
 uint64_t calin::math::healpix_array::
 npixel_contained_by_ring(unsigned nside, unsigned ringid)
 {
   unsigned nring = 4*nside-1;
-  assert(ringid < nring);
+  if(ringid >= nring) {
+    throw std::out_of_range("calin::math::healpix_array::npixel_contained_by_ring: ringid out of range");
+  }
   unsigned npixpolar_2 = nside*(nside+1);
   unsigned ringid_conj = nring-ringid;
   return 2*(std::min((ringid+1)*(ringid+2), npixpolar_2)
@@ -59,7 +60,9 @@ npixel_contained_by_ring(unsigned nside, unsigned ringid)
 uint64_t calin::math::healpix_array::
 pixid_to_ringid(unsigned nside, uint64_t pixid)
 {
-  assert(pixid < npixel(nside));
+  if(pixid >= npixel(nside)) {
+    throw std::out_of_range("calin::math::healpix_array::pixid_to_ringid: pixid out of range");
+  }
   unsigned npixpolar = nside*(nside+1)/2;
   pixid /= 4;
   // In the formula below sqrt(1+8*(pixid+0.5))=sqrt(5+8*pixid)

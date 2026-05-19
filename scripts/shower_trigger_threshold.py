@@ -311,8 +311,8 @@ def gen_event():
     theta = args.theta * numpy.pi/180
     phi = args.phi * numpy.pi/180
     v = numpy.asarray([numpy.sin(theta)*numpy.cos(phi), numpy.sin(theta)*numpy.sin(phi), numpy.cos(theta)])
-    calin.math.geometry.rotate_in_place_z_to_u_Rzy(u, v)
-    calin.math.geometry.rotate_in_place_z_to_u_Rzy(u, -pt_dir)
+    u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, v)
+    u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, -pt_dir)
 
     x0 = numpy.asarray([0,0,atm.zobs(0)]) + u/u[2]*(atm.top_of_atmosphere() - atm.zobs(0))
     if args.primary == 'gamma':
@@ -428,8 +428,8 @@ def print_line():
             f'{args.n*args.reuse/num_events*config["_run_time"]/3600:.2f} hr ;',
             f'{num_events/config["_run_time"]:,.2f} Hz ;',
             f'{num_rays:,d} rays ;',
-            f'{num_rays/num_steps:.2f}',
-            f'{num_steps/num_tracks:.2f}')
+            f'{num_rays/max(num_steps,1):.2f}',
+            f'{num_steps/max(num_tracks,1):.2f}')
     
 def process_results(results):
     global num_events
@@ -474,6 +474,7 @@ with open(args.output, 'wb') as f:
     # Run the simulations in this thread
     if max_workers == 1:
         init()
+        print(iact.banner())
         for _ in range(args.n):
             process_results(one_event())
     else:

@@ -176,9 +176,8 @@ namespace {
     Eigen::Vector2d d = b.c - a.c;
     double dist = d.norm();
 
-    if (dist < 1e-12) {
-      return (a.r >= b.r) ? a : b;
-    }
+    if (dist + a.r <= b.r + 1e-12) return b;
+    if (dist + b.r <= a.r + 1e-12) return a;
 
     Eigen::Vector2d dir = d / dist;
     Eigen::Vector2d p1 = a.c - dir * a.r;

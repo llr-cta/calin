@@ -98,7 +98,7 @@ def calc_psf(vs_scope, theta_deg, phi_deg, refocus_at_infinity = True, mc_sampli
         pos_gen = calin.math.ray_generator.HexGridPlanePositionGenerator(R, dx)
     dir_gen = calin.math.ray_generator.SingleDirectionGenerator()
     ray_gen = calin.math.ray_generator.PositionNestedByDirectionRayGenerator(x00,
-        calin.math.geometry.rotation_theta_phi((180-theta_deg)/180*numpy.pi,phi_deg/180*numpy.pi),
+        calin.math.geometry._Rzy((180-theta_deg)/180*numpy.pi,phi_deg/180*numpy.pi),
         numpy.asarray([0,0,-100e5]), dir_gen, pos_gen)
 
     nray = processor.process_all_from_ray_generator(ray_gen)

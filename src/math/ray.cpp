@@ -364,6 +364,253 @@ Ray::IPOut Ray::propagate_to_sphere(const Eigen::Vector3d& center, double radius
   return ipo;
 }
 
+bool Ray::propagate_to_standard_cone_1st_interaction_fwd_bwd(double slope,
+  double n)
+{
+  return propagate_to_y_cone_1st_interaction_fwd_bwd(slope, 0, n);
+}
+
+bool Ray::propagate_to_standard_cone_1st_interaction_fwd_only(double slope,
+  double n)
+{
+  return propagate_to_y_cone_1st_interaction_fwd_only(slope, 0, n);
+}
+
+bool Ray::propagate_to_y_cone_1st_interaction_fwd_bwd(double slope,
+  double vertex_y, double n)
+{
+  const double m2 = SQR(slope);
+  const double dy = pos_.y() - vertex_y;
+  const double a = SQR(dir_.x()) + SQR(dir_.z()) - m2 * SQR(dir_.y());
+  const double b = 2.0 * (pos_.x() * dir_.x() + pos_.z() * dir_.z() - m2 * dy * dir_.y());
+  const double c = SQR(pos_.x()) + SQR(pos_.z()) - m2 * SQR(dy);
+
+  const double disc = SQR(b) - 4.0 * a * c;
+  if(disc < 0) return false;
+
+  double t1, t2;
+  if(a != 0) {
+    double q = -0.5 * (b + (b < 0 ? -1.0 : 1.0) * std::sqrt(disc));
+    t1 = c / q;
+    t2 = q / a;
+    if(t2 < t1) std::swap(t1, t2);
+  } else {
+    if(b == 0) return false;
+    t1 = t2 = -c / b;
+  }
+
+  propagate_dist(t1, n);
+  return true;
+}
+
+bool Ray::propagate_to_y_cone_1st_interaction_fwd_only(double slope,
+  double vertex_y, double n)
+{
+  const double m2 = SQR(slope);
+  const double dy = pos_.y() - vertex_y;
+  const double a = SQR(dir_.x()) + SQR(dir_.z()) - m2 * SQR(dir_.y());
+  const double b = 2.0 * (pos_.x() * dir_.x() + pos_.z() * dir_.z() - m2 * dy * dir_.y());
+  const double c = SQR(pos_.x()) + SQR(pos_.z()) - m2 * SQR(dy);
+
+  const double disc = SQR(b) - 4.0 * a * c;
+  if(disc < 0) return false;
+
+  double t1, t2;
+  if(a != 0) {
+    double q = -0.5 * (b + (b < 0 ? -1.0 : 1.0) * std::sqrt(disc));
+    t1 = c / q;
+    t2 = q / a;
+    if(t2 < t1) std::swap(t1, t2);
+  } else {
+    if(b == 0) return false;
+    t1 = t2 = -c / b;
+  }
+
+  if(t1 > 0) {
+    propagate_dist(t1, n);
+    return true;
+  }
+  return false;
+}
+
+bool Ray::propagate_to_standard_cone_2nd_interaction_fwd_bwd(double slope,
+  double n)
+{
+  return propagate_to_y_cone_2nd_interaction_fwd_bwd(slope, 0, n);
+}
+
+bool Ray::propagate_to_standard_cone_2nd_interaction_fwd_only(double slope,
+  double n)
+{
+  return propagate_to_y_cone_2nd_interaction_fwd_only(slope, 0, n);
+}
+
+bool Ray::propagate_to_y_cone_2nd_interaction_fwd_bwd(double slope,
+  double vertex_y, double n)
+{
+  const double m2 = SQR(slope);
+  const double dy = pos_.y() - vertex_y;
+  const double a = SQR(dir_.x()) + SQR(dir_.z()) - m2 * SQR(dir_.y());
+  const double b = 2.0 * (pos_.x() * dir_.x() + pos_.z() * dir_.z() - m2 * dy * dir_.y());
+  const double c = SQR(pos_.x()) + SQR(pos_.z()) - m2 * SQR(dy);
+
+  const double disc = SQR(b) - 4.0 * a * c;
+  if(disc < 0) return false;
+
+  double t1, t2;
+  if(a != 0) {
+    double q = -0.5 * (b + (b < 0 ? -1.0 : 1.0) * std::sqrt(disc));
+    t1 = c / q;
+    t2 = q / a;
+    if(t2 < t1) std::swap(t1, t2);
+  } else {
+    if(b == 0) return false;
+    t1 = t2 = -c / b;
+  }
+
+  propagate_dist(t2, n);
+  return true;
+}
+
+bool Ray::propagate_to_y_cone_2nd_interaction_fwd_only(double slope,
+  double vertex_y, double n)
+{
+  const double m2 = SQR(slope);
+  const double dy = pos_.y() - vertex_y;
+  const double a = SQR(dir_.x()) + SQR(dir_.z()) - m2 * SQR(dir_.y());
+  const double b = 2.0 * (pos_.x() * dir_.x() + pos_.z() * dir_.z() - m2 * dy * dir_.y());
+  const double c = SQR(pos_.x()) + SQR(pos_.z()) - m2 * SQR(dy);
+
+  const double disc = SQR(b) - 4.0 * a * c;
+  if(disc < 0) return false;
+
+  double t1, t2;
+  if(a != 0) {
+    double q = -0.5 * (b + (b < 0 ? -1.0 : 1.0) * std::sqrt(disc));
+    t1 = c / q;
+    t2 = q / a;
+    if(t2 < t1) std::swap(t1, t2);
+  } else {
+    if(b == 0) return false;
+    t1 = t2 = -c / b;
+  }
+
+  if(t2 > 0) {
+    propagate_dist(t2, n);
+    return true;
+  }
+  return false;
+}
+
+Ray::IPOut Ray::propagate_to_cone(const Eigen::Vector3d& vertex,
+  const Eigen::Vector3d& axis, double slope,
+  IntersectionPoint ip, bool time_reversal_ok, double n)
+{
+  // Transformation to local coordinates where vertex is origin and axis is Y
+  Eigen::Vector3d pos_rel = pos_ - vertex;
+  Eigen::Matrix3d rot;
+  calin::math::geometry::rotation_y_to_vec_Ryx(rot, axis);
+  
+  // Rotate to align axis with Y: local_pos = rot^T * pos_rel
+  Eigen::Vector3d local_pos = rot.transpose() * pos_rel;
+  Eigen::Vector3d local_dir = rot.transpose() * dir_;
+
+  const double m2 = SQR(slope);
+  const double a = SQR(local_dir.x()) + SQR(local_dir.z()) - m2 * SQR(local_dir.y());
+  const double b = 2.0 * (local_pos.x() * local_dir.x() + local_pos.z() * local_dir.z() - m2 * local_pos.y() * local_dir.y());
+  const double c = SQR(local_pos.x()) + SQR(local_pos.z()) - m2 * SQR(local_pos.y());
+
+  const double disc = SQR(b) - 4.0 * a * c;
+  if(disc < 0) return IPO_NONE;
+
+  double t1, t2;
+  if(a != 0) {
+    double q = -0.5 * (b + (b < 0 ? -1.0 : 1.0) * std::sqrt(disc));
+    t1 = c / q;
+    t2 = q / a;
+    if(t2 < t1) std::swap(t1, t2);
+  } else {
+    if(b == 0) return IPO_NONE;
+    t1 = t2 = -c / b;
+  }
+
+  double time = 0;
+  IPOut ipo = IPO_NONE;
+  switch(ip)
+  {
+  case IP_CLOSEST:
+    if(time_reversal_ok) {
+      if(std::fabs(t1) < std::fabs(t2)) ipo = IPO_FIRST;
+      else ipo = IPO_SECOND;
+    } else {
+      if(t1 >= 0) ipo = IPO_FIRST;
+      else if(t2 >= 0) ipo = IPO_SECOND;
+      else return IPO_NONE;
+    }
+    break;
+
+  case IP_FARTHEST:
+    if(time_reversal_ok) {
+      if(std::fabs(t1) < std::fabs(t2)) ipo = IPO_SECOND;
+      else ipo = IPO_FIRST;
+    } else {
+      if(t2 >= 0) ipo = IPO_SECOND;
+      else return IPO_NONE;
+    }
+    break;
+
+  case IP_NEXT:
+    if(t1 > 0) ipo = IPO_FIRST;
+    else if(t2 > 0) ipo = IPO_SECOND;
+    else return IPO_NONE;
+    break;
+
+  case IP_PREVIOUS:
+    if(!time_reversal_ok) return IPO_NONE;
+    else if(t2 < 0) ipo = IPO_SECOND;
+    else if(t1 < 0) ipo = IPO_FIRST;
+    else return IPO_NONE;
+    break;
+
+  case IP_EARLIEST:
+    if(time_reversal_ok || t1 >= 0) ipo = IPO_FIRST;
+    else return IPO_NONE;
+    break;
+
+  case IP_LATEST:
+    if(time_reversal_ok || t2 >= 0) ipo = IPO_SECOND;
+    else return IPO_NONE;
+    break;
+  };
+
+  switch(ipo)
+  {
+  case IPO_FIRST: time = t1; break;
+  case IPO_SECOND: time = t2; break;
+  case IPO_NONE: assert(0);
+  }
+
+  propagate_dist(time, n);
+  return ipo;
+}
+
+Eigen::Vector3d Ray::norm_of_conical_surface(double slope, double vertex_y,
+  bool convex) const
+{
+  const double dy = pos_.y() - vertex_y;
+  const double m2 = SQR(slope);
+  Eigen::Vector3d norm(pos_.x(), -m2 * dy, pos_.z());
+  norm.normalize();
+  if(!convex) norm = -norm;
+  return norm;
+}
+
+double Ray::reflect_from_conical_surface(double slope, double vertex_y,
+  bool convex)
+{
+  return reflect_from_surface(norm_of_conical_surface(slope, vertex_y, convex));
+}
+
 Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
   const Eigen::Vector3d& normal, double radius,
   IntersectionPoint ip, bool time_reversal_ok, double n)

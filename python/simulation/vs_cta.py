@@ -342,7 +342,7 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
+def mstn_generic_config(el, scope_x, scope_y, scope_z, array_lat, array_lon, array_alt,
         obscure_camera = True, include_window = False):
     mst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
     mst.mutable_array_origin().set_latitude(array_lat*180/numpy.pi)
@@ -383,7 +383,8 @@ def mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_a
     dc.set_facet_spot_size_probability(0.8)
     dc.set_facet_spot_size(0.5 * 1.4)
     dc.set_facet_spot_size_dispersion(0.5 * 0.16)
-    dc.set_facet_alignment_dispersion(0.24) # This value tuned to match PSF curve presented by DESY
+    alignment_disp = 0.22 + (el - 60)**2 * 0.2/30**2
+    dc.set_facet_alignment_dispersion(alignment_disp) # This value tuned to match PSF curve presented by DESY
     #############################################################################################################################
     dc.set_facet_labeling_parity(True)
     dc.set_weathering_factor(1.0)
@@ -433,7 +434,7 @@ def mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_a
 
     return mst
 
-def mstn1_config(obscure_camera = True, assets_file = ctan_default_assets_filename(),
+def mstn1_config(elevation = 60, obscure_camera = True, assets_file = ctan_default_assets_filename(),
         include_window = False):
     array_lat,array_lon,array_alt,all_assets = ctan_assets(filename = assets_file)
     scope_x = []
@@ -444,10 +445,10 @@ def mstn1_config(obscure_camera = True, assets_file = ctan_default_assets_filena
             scope_x.append(a[7]*100)
             scope_y.append(a[8]*100)
             scope_z.append(a[4]*100)
-    return mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+    return mstn_generic_config(elevation, scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
         obscure_camera = obscure_camera, include_window = include_window)
 
-def msts1_config(obscure_camera = True, assets_file = ctas_default_assets_filename(),
+def msts1_config(elevation = 60, obscure_camera = True, assets_file = ctas_default_assets_filename(),
         include_window = False):
     array_lat,array_lon,array_alt,all_assets = ctas_assets(filename = assets_file)
     scope_x = []
@@ -458,10 +459,10 @@ def msts1_config(obscure_camera = True, assets_file = ctas_default_assets_filena
             scope_x.append(a[7]*100)
             scope_y.append(a[8]*100)
             scope_z.append(a[4]*100)
-    return mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+    return mstn_generic_config(elevation, scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
         obscure_camera = obscure_camera, include_window = include_window)
 
-def mstn_config(obscure_camera = True, assets_file = ctan_default_assets_filename(),
+def mstn_config(elevation = 60, obscure_camera = True, assets_file = ctan_default_assets_filename(),
         include_window = False):
     array_lat,array_lon,array_alt,all_assets = ctan_assets(filename = assets_file)
     scope_x = []
@@ -472,7 +473,7 @@ def mstn_config(obscure_camera = True, assets_file = ctan_default_assets_filenam
             scope_x.append(a[7]*100)
             scope_y.append(a[8]*100)
             scope_z.append(a[4]*100)
-    return mstn_generic_config(scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
+    return mstn_generic_config(elevation, scope_x, scope_y, scope_z, array_lat, array_lon, array_alt*100,
         obscure_camera = obscure_camera, include_window = include_window)
 
 def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):

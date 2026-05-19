@@ -155,7 +155,7 @@ def init(args):
     theta = args.theta * numpy.pi/180
     phi = args.phi * numpy.pi/180
     vc_dir= numpy.asarray([numpy.sin(theta)*numpy.cos(phi), numpy.sin(theta)*numpy.sin(phi), numpy.cos(theta)])
-    calin.math.geometry.rotate_in_place_z_to_u_Rzy(vc_dir, -pt_dir)
+    vc_dir = calin.math.geometry.rotate_vec_z_to_u_Rzy(vc_dir, -pt_dir)
     if(len(args.viewcone_polynomial)==0):
         viewcone_polynomial = numpy.asarray([0.0])
     else:
@@ -349,7 +349,7 @@ def gen_event(args):
     theta = numpy.arccos(costheta)
     phi = numpy.random.uniform() * 2*numpy.pi
     u = numpy.asarray([numpy.sin(theta)*numpy.cos(phi), numpy.sin(theta)*numpy.sin(phi), numpy.cos(theta)])
-    calin.math.geometry.rotate_in_place_z_to_u_Rzy(u, vc_dir)
+    u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, vc_dir)
 
     ct0 = 1.0/u[2]*(atm.top_of_atmosphere() - atm.zobs(0))
     x0 = numpy.asarray([0,0,atm.zobs(0)]) + ct0*u
