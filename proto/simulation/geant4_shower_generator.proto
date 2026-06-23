@@ -50,7 +50,9 @@ message GEANT4ShowerGeneratorConfiguration
     [(CFO).desc = "Cut on minimum energy of tracked particles (KE for e-,p+,n,ions or Etot).", (CFO).units = "MeV" ];
   bool enable_ions                                         = 6
     [(CFO).desc = "Enable simulation of ions (as primaries and secondaries)" ];
-
+  string physics_list                                      = 7
+    [(CFO).desc = "Name of physics list to use, e.g., 'FTFP_BERT' (which is the default when an empty string is provided)." ];
+    
   double detector_box_size                                 = 10
     [(CFO).desc = "Size of box containing detector (in X & Y).",
      (CFO).units = "cm" ];
