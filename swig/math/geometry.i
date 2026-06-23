@@ -37,6 +37,8 @@
 
 %apply double &OUTPUT { double& x_out, double& y_out };
 %apply double &OUTPUT { double& tmin_out, double& tmax_out };
+
+%apply const Eigen::Vector3d& { const Eigen::Vector3d& v };
 %apply Eigen::Matrix3d &OUTPUT { Eigen::Matrix3d& m };
 
 %include "math/geometry.hpp"

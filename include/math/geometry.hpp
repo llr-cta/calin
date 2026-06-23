@@ -470,7 +470,7 @@ inline Eigen::Matrix3d rotation_z_to_xyz_Rzy(
   return m;
 }
 
-inline Eigen::Matrix3d rotation_z_to_vec_Rzy(const Eigen::Vector3d v)
+inline Eigen::Matrix3d rotation_z_to_vec_Rzy(const Eigen::Vector3d& v)
 {
   Eigen::Matrix3d m;
   rotation_z_to_vec_Rzy(m, v);
@@ -485,7 +485,7 @@ inline Eigen::Matrix3d rotation_y_to_xyz_Ryx(
   return m;
 }
 
-inline Eigen::Matrix3d rotation_y_to_vec_Ryx(const Eigen::Vector3d v)
+inline Eigen::Matrix3d rotation_y_to_vec_Ryx(const Eigen::Vector3d& v)
 {
   Eigen::Matrix3d m;
   rotation_y_to_vec_Ryx(m, v);
@@ -500,7 +500,7 @@ inline Eigen::Matrix3d rotation_x_to_xyz_Rxz(
   return m;
 }
 
-inline Eigen::Matrix3d rotation_x_to_vec_Rxz(const Eigen::Vector3d v)
+inline Eigen::Matrix3d rotation_x_to_vec_Rxz(const Eigen::Vector3d& v)
 {
   Eigen::Matrix3d m;
   rotation_x_to_vec_Rxz(m, v);
@@ -515,7 +515,7 @@ inline Eigen::Matrix3d rotation_z_to_xyz_Rzyz(
   return m;
 }
 
-inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
+inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d& v)
 {
   Eigen::Matrix3d m;
   rotation_z_to_vec_Rzyz(m, v);
