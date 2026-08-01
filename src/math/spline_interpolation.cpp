@@ -25,6 +25,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <Eigen/Dense>
 
 #include <math/spline_interpolation.hpp>
 #include <math/special.hpp>
@@ -217,6 +218,68 @@ Eigen::VectorXd calin::math::spline_interpolation::generate_cubic_spline_interpo
   return std_to_eigenvec(
     generate_cubic_spline_interpolation(eigen_to_stdvec(x), eigen_to_stdvec(y),
       bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
+}
+
+std::vector<double> calin::math::spline_interpolation::
+fit_spline(
+  const std::vector<double>& xknots,
+  const std::vector<double>& xdata,
+  const std::vector<double>& ydata,
+  const std::vector<double>& wdata,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val)
+{
+  unsigned N = xknots.size();
+  unsigned M = xdata.size();
+  if (ydata.size() != M) {
+    throw std::runtime_error("fit_spline: xdata and ydata must have the same size");
+  }
+  if (!wdata.empty() && wdata.size() != M) {
+    throw std::runtime_error("fit_spline: wdata must have the same size as xdata");
+  }
+  if (N < 3) {
+    throw std::runtime_error("fit_spline: need at least 3 knots");
+  }
+
+  Eigen::MatrixXd A(M, N);
+  Eigen::VectorXd b(M);
+
+  CubicMultiSpline multi_basis(xknots);
+
+  std::vector<double> zero_y(N, 0.0);
+  unsigned idx_inhom = multi_basis.add_spline(zero_y, "inhom", bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+
+  std::vector<unsigned> basis_idx(N);
+  for (unsigned i = 0; i < N; ++i) {
+    std::vector<double> basis_y(N, 0.0);
+    basis_y[i] = 1.0;
+    basis_idx[i] = multi_basis.add_spline(basis_y, "", bc_lhs, 0.0, bc_rhs, 0.0);
+  }
+
+  for (unsigned j = 0; j < M; ++j) {
+    double x = xdata[j];
+    std::vector<double> vals = multi_basis.value(x);
+    b(j) = ydata[j] - vals[idx_inhom];
+    for (unsigned i = 0; i < N; ++i) {
+      A(j, i) = vals[basis_idx[i]];
+    }
+  }
+
+  if (!wdata.empty()) {
+    for (unsigned j = 0; j < M; ++j) {
+      double w = std::sqrt(wdata[j]);
+      A.row(j) *= w;
+      b(j) *= w;
+    }
+  }
+
+  Eigen::VectorXd y = A.colPivHouseholderQr().solve(b);
+
+  std::vector<double> result(N);
+  for (unsigned i = 0; i < N; ++i) {
+    result[i] = y(i);
+  }
+  return result;
 }
 
 double calin::math::spline_interpolation::
