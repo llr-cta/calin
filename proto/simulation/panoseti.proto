@@ -1,0 +1,78 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/*
+
+   calin/proto/simulations/panoseti.proto -- Stephen Fegan -- 2026-04-24
+
+   Protobufs for defining PANOSETI optics arrays
+
+   Copyright 2026, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "common_types.proto";
+
+package calin.ix.simulation.panoseti;
+
+message ArrayParameters {
+  common_types.EarthCoordinates array_origin               = 1
+    [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
+
+  repeated common_types.Vector3D scope_positions           = 2
+    [(CFO).desc = "Telescope positions within the array. "
+     "X : East-West coordinate of scope in array frame, positive "
+     "values are East of the origin, negative values are West. "
+     "Y : North-South coordinate of scope in array frame, positive "
+     "values are North of the origin, negative values are South. "
+     "Z : Up-Down coordinate of scope in array frame, positive "
+     "values are above the origin, negative values are below.",
+     (CFO).units = "cm"];
+
+  double fresnel_lens_aperture                             = 10
+    [(CFO).desc = "Diameter of the Fresnel lens (aperture) at the rear (Fresnel convex) surface y=0).",
+     (CFO).units = "cm"];
+
+  repeated double fresnel_lens_polynomial                  = 11
+    [(CFO).desc = "Coefficients of the polynomial describing the surface normals of the Fresnel lens "
+      "as a function of rho^2, where rho=0 is the center of the lens. The coefficients are ordered from "
+      "lowest to highest degree. The zeroth coefficient is not used, as the normals are defined by the "
+      "derivative of the polynomial."
+     (CFO).units = "cm"];
+
+  double fresnel_lens_thickness                            = 12
+    [(CFO).desc = "Thickness of the Fresnel lens. In the telescope frame, the front (planar) "
+      "surface of the lens is at y=thickness and the rear surface (Fresnel convex)is at y=0.",
+     (CFO).units = "cm"];
+
+  double fresnel_lens_groove_width                         = 13
+    [(CFO).desc = "Width of the grooves in the Fresnel lens. If the groove width is zero or negative" 
+      "the lens is modelled as an idealized, infinately discontinuous surface. If positive "
+      "the lens is modelled as a series of concentric conic grooves.",       
+     (CFO).units = "cm"]  ;
+
+  double fresnel_lens_draft_angle                          = 14
+    [(CFO).desc = "Draft angle of the grooves in the Fresnel lens. If the draft angle is zero or negative "
+      "the grooves are modelled as having vertical walls. If positive the grooves are modelled as having "
+      "walls that are sloped at the specified angle with respect to the vertical. This is relevant only "
+      "if the groove width is positive.",
+     (CFO).units = "degrees"];
+
+  double detector_separation                               = 15
+    [(CFO).desc = "Distance between inner (curved) surface of lens and detector.",
+     (CFO).units = "cm" ]
+};
