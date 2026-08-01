@@ -26,6 +26,7 @@
 
 #include <limits>
 
+#include <math/least_squares.hpp>
 #include <util/vcl.hpp>
 #include <math/rng_vcl.hpp>
 
@@ -330,6 +331,30 @@ public:
     // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
     rotate_in_place_z_to_u_Rzy(x, v);
     v = x;
+  }
+
+  static inline vec3_vt 
+  norm_and_y_of_common_polynomial_surface(real_vt& yps, 
+    real_vt x, real_vt z, const real_t* p, unsigned np, bool convex = true)
+  {
+    real_vt dyps_drho2;
+    real_vt rho2 = x*x + z*z;
+    calin::math::least_squares::general_polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
+    vec3_vt norm;
+    if(convex ^ (p[1]<0)) {
+      norm << 2*x*dyps_drho2, -1, 2*z*dyps_drho2;
+    } else {
+      norm << -2*x*dyps_drho2, 1, -2*z*dyps_drho2;
+    }
+    norm.normalize();
+    return norm;
+  }
+
+  static inline vec3_vt 
+  norm_of_common_polynomial_surface(real_vt x, real_vt z, const real_t* p, unsigned np, bool convex = true)
+  {
+    real_vt yps;
+    return norm_and_y_of_common_polynomial_surface(yps, x, z, p, np, convex);
   }
 
 };
