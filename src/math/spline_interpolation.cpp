@@ -829,6 +829,21 @@ std::vector<double> CubicMultiSpline::value(double x) const
   return values;
 }
 
+Eigen::VectorXd CubicMultiSpline::value_as_eigen(double x) const
+{
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  Eigen::VectorXd values(y_.size());
+  for(unsigned ispline=0;ispline<y_.size();ispline++) {
+    values(ispline) =
+      cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+        dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+  }
+  return values;
+}
+
 std::vector<double> CubicMultiSpline::derivative(double x) const
 {
   double dx;
