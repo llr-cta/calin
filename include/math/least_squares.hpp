@@ -171,6 +171,15 @@ inline void polyval_and_derivative(double& y, double& dy_dx,
 
 #endif
 
+inline Eigen::VectorXd polyder(const Eigen::VectorXd& p)
+{
+  Eigen::VectorXd pout(p.size()-1);
+  for(unsigned i=1; i<p.size(); ++i) {
+    pout[i-1] = double(i)*p[i];
+  }
+  return pout;
+}
+
 inline double polyval(const Eigen::VectorXd& p, double x)
 {
   return polyval(p.data(), p.size(), x);
