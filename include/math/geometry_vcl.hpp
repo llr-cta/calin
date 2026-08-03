@@ -357,6 +357,23 @@ public:
     return norm_and_y_of_common_polynomial_surface(yps, x, z, p, np, convex);
   }
 
+  static inline vec3_vt 
+  norm_of_common_derivative_polynomial_surface(real_vt x, real_vt z, 
+    const real_t* dp_dx, unsigned ndp_dx, bool convex = true)
+  {
+    real_vt dyps_drho2;
+    real_vt rho2 = x*x + z*z;
+    dyps_drho2 = calin::math::least_squares::general_polyval(dp_dx, ndp_dx, rho2);
+    vec3_vt norm;
+    if(convex ^ (dp_dx[0]<0)) {
+      norm << 2*x*dyps_drho2, -1, 2*z*dyps_drho2;
+    } else {
+      norm << -2*x*dyps_drho2, 1, -2*z*dyps_drho2;
+    }
+    norm.normalize();
+    return norm;
+  }
+
 };
 
 } } } // namespace calin::math::geometry
