@@ -145,6 +145,9 @@ public:
       detector_rotation_ = calin::math::geometry::euler_to_matrix(array_params.detector_rotation()).cast<real_t>();
     }
 
+    real_t roughness = array_params.fresnel_lens_roughness();
+    scattering_sigma_theta_ = (detector_distance_ > 0) ? (roughness / detector_distance_) : 0.0;
+
     pixel_spacing_           = array_params.pixel_pitch();
     pixel_spacing_inv_       = 1.0/pixel_spacing_;
     pixel_nside_             = array_params.num_pixels_per_axis();
@@ -278,6 +281,10 @@ public:
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
+
+    if(scattering_sigma_theta_ > 0) {
+      ray.scatter_direction(select(mask, scattering_sigma_theta_, 0.0), *rng_);
+    }
 
     ray.translate_origin(detector_origin_.template cast<real_vt>());
     if(detector_has_rotation_) {
@@ -450,6 +457,8 @@ private:
   double          pixel_spacing_inv_;
   unsigned        pixel_nside_;
   double          pixel_array_halfwidth_;
+  
+  real_t          scattering_sigma_theta_;
 
   RNG* rng_ = nullptr;
   bool adopt_rng_ = false;

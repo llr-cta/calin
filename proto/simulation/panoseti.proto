@@ -72,22 +72,26 @@ message ArrayParameters {
       "if the groove width is positive.",
      (CFO).units = "degrees"];
 
-  double detector_separation                               = 15
+  double fresnel_lens_roughness                            = 15
+    [(CFO).desc = "Surface roughness of the Fresnel lens. Used to calculate the scattering angle (roughness / focal_length).",
+     (CFO).units = "cm" ];
+
+  double detector_separation                               = 16
     [(CFO).desc = "Distance between inner (curved) surface of lens and detector.",
      (CFO).units = "cm" ];
 
-  double pixel_pitch                                      = 16
+  double pixel_pitch                                       = 17
     [(CFO).desc = "Distance between centers of adjacent pixels in the detector.",
      (CFO).units = "cm" ];
 
-  uint32 num_pixels_per_axis                              = 17
+  uint32 num_pixels_per_axis                               = 18
     [(CFO).desc = "Number of pixels on each axis of the detector." ];
 
-  calin.ix.common_types.Vector3D detector_shift           = 18
+  calin.ix.common_types.Vector3D detector_shift            = 19
     [(CFO).desc = "Shift of the detector from nominal position with respect to the lens.",
      (CFO).units = "cm" ];
 
-  calin.ix.common_types.EulerAngles3D detector_rotation   = 19
+  calin.ix.common_types.EulerAngles3D detector_rotation    = 20
     [(CFO).desc = "Euler angles describing rotation of the detector with respect to the lens.",
      (CFO).units = "degrees" ];
 };
