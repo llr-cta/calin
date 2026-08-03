@@ -32,6 +32,7 @@
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
 #include <math/geometry_vcl.hpp>
+#include <math/spline_interpolation.hpp>
 #include <util/log.hpp>
 #include <simulation/panoseti.pb.h>
 
@@ -44,18 +45,12 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 
 enum VCLPanosetiScopeTraceStatus {
   PSTS_MASKED_ON_ENTRY,                        // 0
-  PSTS_TRAVELLING_AWAY_REFLECTOR,              // 1
-  PSTS_MISSED_REFLECTOR_SPHERE,                // 2
-  PSTS_OUTSIDE_REFLECTOR_APERTURE,             // 3
-  PSTS_NO_MIRROR,                              // 4
-  PSTS_MISSED_MIRROR_SPHERE,                   // 5
-  PSTS_MISSED_MIRROR_EDGE,                     // 6
-  PSTS_OBSCURED_BEFORE_MIRROR,                 // 7
-  PSTS_OBSCURED_BEFORE_FOCAL_PLANE,            // 9
-  PSTS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,       // 10
-  PSTS_OUTSIDE_FOCAL_PLANE_APERTURE,           // 11
-  PSTS_TS_NO_PIXEL,                            // 12
-  PSTS_TS_FOUND_PIXEL                          // 13
+  PSTS_TRAVELLING_AWAY_LENS,                   // 1
+  PSTS_OUTSIDE_LENS_APERTURE,                  // 2
+  PSTS_NO_LENS_EXIT,                           // 3
+  PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE,    // 4
+  PSTS_TS_OUTSIDE_DETECTOR,                    // 5
+  PSTS_TS_FOUND_PIXEL                          // 6
 };
 
 template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLPanosetiScopeTraceInfo: public VCLReal
@@ -69,28 +64,27 @@ public:
   using typename VCLReal::vec3_vt;
   using typename VCLReal::mat3_vt;
 
-  int_vt              status;          // Status of ray at end of tracing
+  int_vt              status;           // Status of ray at end of tracing
 
-  real_vt             reflec_x;        // Ray intersection point on reflector sphere
-  real_vt             reflec_y;        // Ray intersection point on reflector sphere
-  real_vt             reflec_z;        // Ray intersection point on reflector sphere
+  real_vt             lens_in_x;        // Ray intersection with lens aperture
+  real_vt             lens_in_y;        // Ray intersection with lens aperture
+  real_vt             lens_in_z;        // Ray intersection with lens aperture
+  real_vt             lens_in_n_dot_u;  // Cosine of angle between ray and incoming lens normal
 
-  int_vt              lens_groove      // Lens groove number for
-  real_vt             lens_x_out;      // Ray exit point from lens
-  real_vt             lens_y_out;      // Ray exit point from lens
-  real_vt             lens_z_out;      // Ray exit point from lens
-  real_vt             lens_nin_dot_u;  // Cosine if angle between ray and incoming lens normal
-  real_vt             lens_nout_dot_u; // Cosine if angle between ray and utgoing lens normal
+  int_vt              lens_groove;      // Lens groove number for
+  real_vt             lens_out_x;       // Ray exit point from lens
+  real_vt             lens_out_y;       // Ray exit point from lens
+  real_vt             lens_out_z;       // Ray exit point from lens
+  real_vt             lens_out_n_dot_u; // Cosine of angle between ray and outgoing lens normal
 
-  real_vt             fplane_x;         // Ray intersection point on focal plane
-  real_vt             fplane_z;         // Ray intersection point on focal plane
-  real_vt             fplane_t;         // Ray intersection time on focal plane
-  real_vt             fplane_ux;        // X directional cosine of ray at focal plane
-  real_vt             fplane_uy;        // Cosine of angle between ray and focal plane (normal)
-  real_vt             fplane_uz;        // Z directional cosine of ray at focal plane
+  real_vt             detector_x;        // Ray intersection point on detector plane
+  real_vt             detector_z;        // Ray intersection point on detector plane
+  real_vt             detector_t;        // Ray intersection time on detector plane
+  real_vt             detector_ux;       // X directional cosine of ray at detector plane
+  real_vt             detector_uy;       // Y directional cosine of ray at detector plane
+  real_vt             detector_uz;       // Z directional cosine of ray at detector plane
 
-  int_vt              pixel_hexid;      // Grid hex ID of pixel on focal plane
-  int_vt              pixel_id;         // Sequential ID of pixel on focal plane (or -1)
+  int_vt              pixel_id;          // Sequential ID of pixel on focal plane (or -1)
 };
 
 template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLPanosetiThinLensScopeRayTracer: public VCLReal
@@ -109,50 +103,52 @@ public:
   using typename VCLReal::uint_vt;
   using typename VCLReal::vec3_vt;
   using typename VCLReal::mat3_vt;
+  using typename VCLReal::vecX_t;
   using Ray = calin::math::ray::VCLRay<VCLReal>;
-  using TraceInfo = VCLScopeTraceInfo<VCLReal>;
+  using TraceInfo = VCLPanosetiScopeTraceInfo<VCLReal>;
   using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
-  VCLPanosetiThinLensScopeRayTracer(const& calin::ix::simulation::panoseti::ArrayParameters& array_params,
-      unsigned scope_id, real_t air_refractive_index = 1.0,
+  VCLPanosetiThinLensScopeRayTracer(const calin::simulation::panoseti::ArrayParameters& array_params,
+      unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
+      real_t air_refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
-    VCLReal(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
+    VCLReal(), lens_refractive_index_spline_(lens_refractive_index_spline),
+    rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
     using calin::math::special::SQR;
 
-    global_to_reflector_off_ = scope->translationGlobalToReflector().cast<real_t>();
-    global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
-    air_ref_index_           = refractive_index;
+    if(scope_id>=array_params.scope_positions()) {
+      throw std::runtime_error("VCLPanosetiThinLensScopeRayTracer: scope_id out of range");
+    }
 
-    reflec_curvature_radius_ = scope->curvatureRadius();
-    reflec_aperture2_        = 0;
-    reflec_crot_             = scope->cosReflectorRotation();
-    reflec_srot_             = scope->sinReflectorRotation();
+    scope_position_.x()      = array_params.scope_positions(scope_id).x();
+    scope_position_.y()      = array_params.scope_positions(scope_id).y();
+    scope_position_.z()      = array_params.scope_positions(scope_id).z();
+    pointTelescopeAzElPhi(0.0, 0.0, 0.0);
 
-    fp_pos_                  = scope->focalPlanePosition().cast<real_t>();
-    fp_has_rot_              = scope->hasFPRotation();
-    fp_rot_                  = scope->rotationReflectorToFP().cast<real_t>();
-    fp_aperture2_            = 0;
+    air_ref_index_           = air_refractive_index;
 
-    pixel_crot_              = scope->cosPixelRotation();
-    pixel_srot_              = scope->sinPixelRotation();
-    pixel_scaleinv_          = 1.0/scope->pixelSpacing();
-    pixel_shift_x_           = scope->pixelGridShiftX();
-    pixel_shift_z_           = scope->pixelGridShiftZ();
-    pixel_cw_                = scope->pixelParity();
+    Eigen::VectorXd lens_polynomial = calin::protobuf_to_eigenvec(array_params.fresnel_lens_polynomial());
+    lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).cast<real_t>();
 
-    pixel_hexid_end_         = scope->numPixelHexSites();
-    pixel_id_end_            = scope->numPixels();
+    lens_aperture2_          = SQR(array_params.fresnel_lens_aperture());
 
-    fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
+    detector_distance_       = array_params.detector_separation();
+    detector_origin_         = calin::protobuf_to_eigenvec(array_params.detector_shift()).cast<real_t>();
+    detector_origin_.y()     -= detector_distance_;
+    if(calin::math::geometry::euler_is_zero(array_params.detector_rotation())) {
+      detector_has_rotation_ = false;
+      detector_rotation_ = mat3_t::Identity(); // Unused in this case, but set to identity for safety
+    } else {
+      detector_has_rotation_ = true;
+      detector_rotation_ = calin::math::geometry::euler_to_matrix(array_params.detector_rotation()).cast<real_t>();
+    }
 
-#if 0
-    std::cout << pixel_crot_ << ' ' << pixel_srot_ << ' ' << pixel_scaleinv_ << ' '
-      << pixel_shift_x_ << ' ' << pixel_shift_z_ << ' ' << pixel_cw_ << ' '
-      << pixel_hexid_end_ << ' ' << pixel_id_end_ << ' '
-      << fp_aperture2_ << ' ' << std::sqrt(fp_aperture2_) << '\n';
-#endif
+    pixel_spacing_           = array_params.pixel_pitch();
+    pixel_spacing_inv_       = 1.0/pixel_spacing_;
+    pixel_nside_             = array_params.num_pixels_per_axis();
+    pixel_array_halfwidth_   = pixel_spacing_ * pixel_nside_ / 2.0;
   }
 
   ~VCLPanosetiThinLensScopeRayTracer()
@@ -160,16 +156,32 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
-  void point_telescope(const calin::simulation::vs_optics::VSOTelescope* scope) {
-    global_to_reflector_off_ = scope->translationGlobalToReflector().cast<real_t>();
-    global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
+  bool pointTelescope(const Eigen::Vector3d& v)
+  {
+    if(v.squaredNorm()==0)return false;
+    return pointTelescopeAzElPhi(atan2(v.x(),v.y()), atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y())), 0.0);
   }
 
-  static void transform_to_scope_reflector_frame(Ray& ray,
-      const calin::simulation::vs_optics::VSOTelescope* scope)
+  bool pointTelescopeAzEl(const double az_rad, const double el_rad)
   {
-    ray.translate_origin(scope->translationGlobalToReflector().cast<real_vt>());
-    ray.rotate(scope->rotationGlobalToReflector().cast<real_vt>());
+    return pointTelescopeAzElPhi(az_rad, el_rad, 0.0);
+  }
+
+  bool pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad)
+  {
+    az_rad_ = az_rad;
+    el_rad_ = el_rad;
+    phi_rad_ = phi_rad;
+    Eigen::Matrix3d rot_reflector_to_global =
+      Eigen::AngleAxisd(-az_rad_,   Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(el_rad_,  Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(phi_rad_,   Eigen::Vector3d::UnitZ());
+    Eigen::Matrix3d rot_global_to_reflector = rot_reflector_to_global.transpose();
+    Eigen::Vector3d off_global_to_reflector_ = scope_position_;
+
+    global_to_reflector_off_ = off_global_to_reflector_.template cast<real_t>(); // Cast double to float if necessary
+    global_to_reflector_rot_ = rot_global_to_reflector.template cast<real_t>();
+    return true;
   }
 
   real_bvt trace_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
@@ -208,12 +220,12 @@ public:
 
   real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, TraceInfo& info)
   {
-    info.status = STS_MASKED_ON_ENTRY;
+    info.status = PSTS_MASKED_ON_ENTRY;
 #ifdef DEBUG_STATUS
     std::cout << mask[0] << '/' << info.status[0];
 #endif
 
-    info.status = select(int_bvt(mask), STS_TRAVELLING_AWAY_REFLECTOR, info.status);
+    info.status = select(int_bvt(mask), PSTS_TRAVELLING_AWAY_LENS, info.status);
     mask &= ray.uy() < 0;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
@@ -223,39 +235,22 @@ public:
     // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
     // *************************************************************************
 
-    // Test for obscuration of incoming ray
-    real_bvt was_obscured = false;
-    real_vt ct_obscured = std::numeric_limits<real_t>::infinity();
-    uint_vt hitmask = 1;
-    info.pre_reflection_obs_hitmask = uint_vt(0);
-    for(const auto* obs : pre_reflection_obscuration) {
-      Ray ray_out;
-      real_bvt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
-      ct_obscured = vcl::select(was_obscured_here,
-        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
-      was_obscured |= was_obscured_here;
-      info.pre_reflection_obs_hitmask |= vcl::select(uint_bvt(was_obscured_here), hitmask, 0);
-      hitmask <<= 1;
-    }
-
     // Remember initial ct to test reflection happens after emission
     real_vt ct0 = ray.ct();
 
-    // Propagate to intersection with the reflector sphere (allow to go backwards a bit)
-    info.status = select(int_bvt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
-    mask = ray.propagate_to_y_sphere_2nd_interaction_mostly_fwd_with_mask(mask,
-      reflec_curvature_radius_, 0, (-2.0/CALIN_HEX_ARRAY_SQRT3)*mirror_dhex_max_, ref_index_);
+    // Propagate to lens plane
+    info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
+    mask = ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    info.reflec_x     = select(mask, ray.position().x(), 0);
-    info.reflec_y     = select(mask, ray.position().y(), 0);
-    info.reflec_z     = select(mask, ray.position().z(), 0);
+    info.lens_in_x    = select(mask, ray.position().x(), 0);
+    info.lens_in_y    = select(mask, ray.position().y(), 0);
+    info.lens_in_z    = select(mask, ray.position().z(), 0);
 
     // Test aperture
-    info.status = select(int_bvt(mask), STS_OUTSIDE_REFLECTOR_APERTURE, info.status);
-    mask &= (info.reflec_x*info.reflec_x + info.reflec_z*info.reflec_z) <= reflec_aperture2_;
+    mask &= (info.lens_in_x*info.lens_in_x + info.lens_in_z*info.lens_in_z) <= lens_aperture2_;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -265,233 +260,76 @@ public:
       return mask;
     }
 
-    // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
-    info.status = select(int_bvt(mask), STS_NO_MIRROR, info.status);
-    info.mirror_hexid = calin::math::hex_array::VCLReal<VCLReal>::
-      xy_trans_to_hexid_scaleinv(info.reflec_x, info.reflec_z,
-        reflec_crot_, reflec_srot_, reflec_scaleinv_, reflec_shift_x_, reflec_shift_z_,
-        reflec_cw_);
+    // Calculate reftactive index of lens
+    real_vt lens_ref_index = lens_refractive_index_spline_.value(ray.energy());
 
-    // Test we have a valid mirror hexid
-    mask &= typename VCLReal::real_bvt(info.mirror_hexid < mirror_hexid_end_);
+    // Refract into lens
+    ray.refract_at_surface_in_with_mask(mask, vec3d::UnitY(), lens_ref_index);
+
+    // In thin lens approximation, we assume the ray exits the lens at the same point it 
+    // entered, but with a new direction. Calculate normal from polynomial.
+    vec3_vt lens_norm = calin::math::geometry::vcl<VCLReal>::norm_of_common_derivative_polynomial_surface(
+      ray.x(), ray.z(), lens_derivative_polynomial_.data(), lens_derivative_polynomial_.size(),
+      /* convex= */ true);
+
+    // Refract out of lens
+    info.status = select(int_bvt(mask), PSTS_NO_LENS_EXIT, info.status);
+    mask = ray.refract_at_surface_out_with_mask(mask, lens_norm, air_ref_index_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    if(not horizontal_or(mask)) {
-      // We outie ...
-      return mask;
+    ray.translate_origin(detector_origin_.template cast<real_vt>());
+    if(detector_has_rotation_) {
+      ray.rotate(detector_rotation_.template cast<real_vt>());
     }
 
-    info.mirror_hexid = select(int_bvt(mask), info.mirror_hexid, mirror_hexid_end_);
+    // *************************************************************************
+    // **************** RAY IS NOW IN DETECTOR PLANE COORDINATES ***************
+    // *************************************************************************
 
-    // Find the mirror ID
-    info.mirror_id = vcl::lookup<0x40000000>(info.mirror_hexid, mirror_id_lookup_);
-
-    // Test we have a valid mirror id
-    mask &= typename VCLReal::real_bvt(info.mirror_id < mirror_id_end_);
+    if(detector_has_rotation_) {
+      // Test ray is travelling to detector plane.. should always be case unless
+      // plane is strongly tilted
+      info.status = select(int_bvt(mask), PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE, info.status);
+      mask &= ray.uy() < 0;
 #ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
+      std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
-
-    vec3_vt mirror_dir;
-    mirror_dir.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nx_lookup_);
-    mirror_dir.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nz_lookup_);
-#if 1
-    // Is it faster to use lookup table than to compute ?
-    mirror_dir.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_ny_lookup_);
-#else
-    mirror_dir.y() = sqrt(nmul_add(mirror_dir.z(), mirror_dir.z(),
-      nmul_add( mirror_dir.x(), mirror_dir.x(),1.0)));
-#endif
-
-    real_vt mirror_r = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
-
-    vec3_vt mirror_pos;
-    mirror_pos.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_);
-    mirror_pos.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_);
-    mirror_pos.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
-
-    vec3_vt mirror_center = mirror_pos + mirror_dir * mirror_r;
-
-    ray.translate_origin(mirror_center);
-
-    // *************************************************************************
-    // ******************* RAY IS NOW IN MIRROR COORDINATES ********************
-    // *************************************************************************
-
-    // Propagate to intersection with the mirror sphere
-    info.status = select(int_bvt(mask), STS_MISSED_MIRROR_SPHERE, info.status);
-    mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
-      mirror_r, -mirror_r, ref_index_);
-    mask &= ray.ct() >= ct0;
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
-    // Impact point relative to facet attchment point
-    vec3_vt ray_pos = ray.position() + mirror_center - mirror_pos;
-    calin::math::geometry::VCL<VCLReal>::
-      derotate_in_place_Ry(ray_pos, reflec_crot_, reflec_srot_);
-
-    calin::math::geometry::VCL<VCLReal>::
-      derotate_in_place_Ry(mirror_dir, reflec_crot_, reflec_srot_);
-
-    calin::math::geometry::VCL<VCLReal>::
-      derotate_in_place_y_to_u_Ryxy(ray_pos, mirror_dir);
-
-    // Verify that ray impacts inside of hexagonal mirror surface
-    const real_vt cos60 = 0.5;
-    const real_vt sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
-
-    const real_vt x_cos60 = ray_pos.x() * cos60;
-    const real_vt z_sin60 = ray_pos.z() * sin60;
-
-    const real_vt dhex_pos60 = abs(x_cos60 - z_sin60);
-    const real_vt dhex_neg60 = abs(x_cos60 + z_sin60);
-
-    info.status = select(int_bvt(mask), STS_MISSED_MIRROR_EDGE, info.status);
-    mask &= max(max(dhex_pos60, dhex_neg60), abs(ray_pos.x())) < mirror_dhex_max_;
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
-    // Calculate mirror normal at impact point
-    vec3_vt mirror_normal = -ray.position() * (1.0/mirror_r);
-
-    // Scatter the normal to account for the spot size ot the focal length of the
-    // radius. The spot size is given as the DIAMETER at the focal distance.
-    // Must divide by 2 (for reflection) and another 2 for diameter -> radius
-    real_vt mirror_normal_dispersion =
-      vcl::lookup<0x40000000>(info.mirror_id, mirror_normdisp_lookup_);
-
-    // Scatter the normal direction randomly
-    calin::math::geometry::VCL<VCLReal>::scatter_direction_in_place(
-      mirror_normal, mirror_normal_dispersion, *rng_);
-
-    // Reflect ray
-#if 1
-    info.mirror_n_dot_u = ray.direction().dot(mirror_normal);
-    ray.mutable_direction() -= mirror_normal * select(mask, 2.0*info.mirror_n_dot_u, 0);
-#else
-    // Do not use this function any longer as we wish to keep u dot n
-    ray.reflect_from_surface_with_mask(mask, info.mirror_normal_scattered);
-#endif
-
-    // Translate back to reflector frame
-    ray.untranslate_origin(mirror_center);
-
-    info.mirror_x     = select(mask, ray.position().x(), 0);
-    info.mirror_y     = select(mask, ray.position().y(), 0);
-    info.mirror_z     = select(mask, ray.position().z(), 0);
-
-    // *************************************************************************
-    // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
-    // *************************************************************************
-
-    // Finish checking obscuration before mirror hit
-    info.status = select(int_bvt(mask), STS_OBSCURED_BEFORE_MIRROR, info.status);
-    mask &= ~(was_obscured & (ct_obscured < ray.ct()));
-
-    if(not horizontal_or(mask)) {
-      // We outie ...
-      return mask;
     }
 
-    // Test for obscuration on way to focal plane - first with obscurations
-    // that are given in reflector coordinates (telescope arms etc)
-    was_obscured = false;
-    ct_obscured = std::numeric_limits<real_t>::infinity();
-    hitmask = uint_vt(1);
-    info.post_reflection_obs_hitmask = uint_vt(0);
-    for(const auto* obs : post_reflection_obscuration) {
-      Ray ray_out;
-      real_bvt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
-      ct_obscured = vcl::select(was_obscured_here,
-        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
-      was_obscured |= was_obscured_here;
-      info.post_reflection_obs_hitmask |= vcl::select(uint_bvt(was_obscured_here), hitmask, 0);
-      hitmask <<= 1;
-    }
+    // Propagate to detector plane
+    ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
 
-    // Refract in window
+    // We good, record position on detector plane etc
+    info.detector_x = select(mask, ray.x(), 0);
+    info.detector_z = select(mask, ray.z(), 0);
+    info.detector_t = select(mask, ray.time(), 0);
+    info.detector_ux = select(mask, ray.ux(), 0);
+    info.detector_uy = select(mask, ray.uy(), 0);
+    info.detector_uz = select(mask, ray.uz(), 0);
 
-    ray.translate_origin(fp_pos_.template cast<real_vt>());
-    if(fp_has_rot_)ray.rotate(fp_rot_.template cast<real_vt>());
-
-    // *************************************************************************
-    // ***************** RAY IS NOW IN FOCAL PLANE COORDINATES *****************
-    // *************************************************************************
-
-    // Test for obscuration on way to focal plane - second with obscurations
-    // that are given in focal plane coordinates
-    hitmask = uint_vt(1);
-    info.camera_obs_hitmask = uint_vt(0);
-    for(const auto* obs : camera_obscuration) {
-      Ray ray_out;
-      real_bvt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
-      ct_obscured = vcl::select(was_obscured_here,
-        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
-      was_obscured |= was_obscured_here;
-      info.camera_obs_hitmask |= vcl::select(uint_bvt(was_obscured_here), hitmask, 0);
-      hitmask <<= 1;
-    }
-
-    // Propagate to focal plane
-    info.status = select(int_bvt(mask), STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE, info.status);
-    mask = ray.propagate_to_y_plane_with_mask(mask, 0, false, ref_index_);
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
-    // Finish checking obscuration after mirror reflection
-    info.status = select(int_bvt(mask), STS_OBSCURED_BEFORE_FOCAL_PLANE, info.status);
-    mask &= ~(was_obscured & (ct_obscured < ray.ct()));
-
-    // We good, record position on focal plane etc
-    info.fplane_x = select(mask, ray.x(), 0);
-    info.fplane_z = select(mask, ray.z(), 0);
-    info.fplane_t = select(mask, ray.time(), 0);
-    info.fplane_ux = select(mask, ray.ux(), 0);
-    info.fplane_uy = select(mask, ray.uy(), 0);
-    info.fplane_uz = select(mask, ray.uz(), 0);
-
-    info.status = select(int_bvt(mask), STS_OUTSIDE_FOCAL_PLANE_APERTURE, info.status);
-    mask &= (info.fplane_x*info.fplane_x + info.fplane_z*info.fplane_z) <= fp_aperture2_;
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
-    info.pixel_hexid =
-    calin::math::hex_array::VCLReal<VCLReal>::
-      xy_trans_to_hexid_scaleinv(info.fplane_x, info.fplane_z,
-        pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
-        pixel_cw_);
-
-    // Test we have a valid pixel hexid
-    info.status = select(int_bvt(mask), STS_TS_NO_PIXEL, info.status);
-    mask &= typename VCLReal::real_bvt(info.pixel_hexid < pixel_hexid_end_);
+    // Test we hit the detector array
+    info.status = select(int_bvt(mask), PSTS_TS_OUTSIDE_DETECTOR, info.status);
+    mask &= vcl::max(vcl::abs(info.detector_x), vcl::abs(info.detector_z)) <= pixel_array_halfwidth_;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
     // Find the pixel ID
-    info.pixel_id =
-      vcl::lookup<0x40000000>(select(int_bvt(mask), info.pixel_hexid, pixel_hexid_end_),
-        pixel_id_lookup_);
+    int_vt pixel_j = select(int_bvt(mask), vcl::floor((info.detector_z + pixel_array_halfwidth_) * pixel_spacing_inv_), 0);
+    int_vt pixel_i = select(int_bvt(mask), vcl::floor((info.detector_x + pixel_array_halfwidth_) * pixel_spacing_inv_), 0);
+    info.pixel_id = select(int_bvt(mask), pixel_j * pixel_nside_ + pixel_i, -1);
 
-    mask &= typename VCLReal::real_bvt(info.pixel_id < pixel_id_end_);
+    info.status = select(int_bvt(mask), PSTS_TS_FOUND_PIXEL, info.status);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    info.status = select(int_bvt(mask), STS_TS_FOUND_PIXEL, info.status);
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
-    if(fp_has_rot_)ray.derotate(fp_rot_.template cast<real_vt>());
-    ray.untranslate_origin(fp_pos_.template cast<real_vt>());
+    if(detector_has_rotation_) {
+      ray.derotate(detector_rotation_.template cast<real_vt>());
+    }
+    ray.untranslate_origin(detector_origin_.template cast<real_vt>());
 
     // *************************************************************************
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
@@ -514,14 +352,14 @@ public:
       sintheta*std::cos(phi), std::cos(theta), sintheta*std::sin(phi));
 
     if(radius <= 0) {
-      radius = std::sqrt(reflec_aperture2_);
+      radius = std::sqrt(lens_aperture2_);
     }
     if(distance <= 0) {
       throw std::runtime_error("Light emission distance must be positive or infinity");
     }
 
     double dcospolar = 1.0 - std::cos(radius / distance);
-    double fppos_2y = 2.0 * fp_pos_.y();
+    double fppos_2y = 2.0 * detector_origin_.y();
 
     unsigned ntraced = 0;
     unsigned iray = 0;
@@ -569,13 +407,13 @@ public:
       typename VCLReal::real_at yfp;
       typename VCLReal::real_at tfp;
       info.status.store_a(status);
-      info.fplane_x.store_a(xfp);
-      info.fplane_z.store_a(yfp);
-      info.fplane_t.store_a(tfp);
+      info.detector_x.store_a(xfp);
+      info.detector_z.store_a(yfp);
+      info.detector_t.store_a(tfp);
 
       for(unsigned i=0; i< VCLReal::num_real; i++) {
         ntraced++;
-        if(status[i] >= STS_OUTSIDE_FOCAL_PLANE_APERTURE) {
+        if(status[i] >= PSTS_TS_OUTSIDE_DETECTOR) {
           x_out[iray] = xfp[i];
           y_out[iray] = yfp[i];
           t_out[iray] = tfp[i];
@@ -589,74 +427,35 @@ public:
 
 private:
 
-  void populate_obscuration(std::vector<VCLObscuration<VCLReal>*>& to,
-    const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from,
-    const std::string& type)
-  {
-    using namespace calin::simulation::vs_optics;
-    for(const auto* obs : from) {
-      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        to.push_back(new VCLAlignedBoxObscuration<VCLReal>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        to.push_back(new VCLAlignedRectangularAperture<VCLReal>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        to.push_back(new VCLAlignedCircularAperture<VCLReal>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOTubeObscuration*>(obs)) {
-        to.push_back(new VCLTubeObscuration<VCLReal>(*dc_obs));
-      } else {
-        throw std::runtime_error("Unsupported " + type + " obscuration type");
-      }
-    }
-  }
+  const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline_;
 
+  vec3_t          scope_position_;
+  real_t          az_rad_;
+  real_t          el_rad_;
+  real_t          phi_rad_;
   vec3_t          global_to_reflector_off_;
   mat3_t          global_to_reflector_rot_;
-  real_t          ref_index_;
+  real_t          air_ref_index_;
 
-  real_t          reflec_curvature_radius_;
-  real_t          reflec_aperture2_;
-  real_t          reflec_crot_;
-  real_t          reflec_srot_;
-  real_t          reflec_scaleinv_;
-  real_t          reflec_shift_x_;
-  real_t          reflec_shift_z_;
-  bool            reflec_cw_;
+  vecX_t          lens_derivative_polynomial_;
 
-  int_t           mirror_hexid_end_;
-  int_t           mirror_id_end_;
-  int_t*          mirror_id_lookup_ = nullptr;
-  real_t*         mirror_nx_lookup_ = nullptr;
-  real_t*         mirror_nz_lookup_ = nullptr;
-  real_t*         mirror_ny_lookup_ = nullptr;
-  real_t*         mirror_r_lookup_ = nullptr;
-  real_t*         mirror_x_lookup_ = nullptr;
-  real_t*         mirror_z_lookup_ = nullptr;
-  real_t*         mirror_y_lookup_ = nullptr;
-  real_t          mirror_dhex_max_;
-  real_t*         mirror_normdisp_lookup_ = nullptr;
+  real_t          lens_aperture2_;
 
-  vec3_t          fp_pos_;
-  bool            fp_has_rot_;
-  mat3_t          fp_rot_;
-  real_t          fp_aperture2_;
-
-  real_t          pixel_crot_;
-  real_t          pixel_srot_;
-  real_t          pixel_scaleinv_;
-  real_t          pixel_shift_x_;
-  real_t          pixel_shift_z_;
-  bool            pixel_cw_;
-
-  int_t           pixel_hexid_end_;
-  int_t           pixel_id_end_;
-  int_t*          pixel_id_lookup_ = nullptr;
-
-  std::vector<VCLObscuration<VCLReal>*> pre_reflection_obscuration;
-  std::vector<VCLObscuration<VCLReal>*> post_reflection_obscuration;
-  std::vector<VCLObscuration<VCLReal>*> camera_obscuration;
+  real_t          detector_distance_;
+  vec3_t          detector_origin_;
+  bool            detector_has_rotation_;
+  mat3_t          detector_rotation_;
+  
+  double          pixel_spacing_;
+  double          pixel_spacing_inv_;
+  unsigned        pixel_nside_;
+  double          pixel_array_halfwidth_;
 
   RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
 };
 
-} } } // namespace calin::simulations::vcl_raytracer
+#endif // SWIG
+
+} } } // namespace calin::simulation::vcl_raytracer
+`

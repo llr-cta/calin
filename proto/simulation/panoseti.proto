@@ -74,5 +74,20 @@ message ArrayParameters {
 
   double detector_separation                               = 15
     [(CFO).desc = "Distance between inner (curved) surface of lens and detector.",
-     (CFO).units = "cm" ]
+     (CFO).units = "cm" ];
+
+  double pixel_pitch                                      = 16
+    [(CFO).desc = "Distance between centers of adjacent pixels in the detector.",
+     (CFO).units = "cm" ];
+
+  uint32 num_pixels_per_axis                              = 17
+    [(CFO).desc = "Number of pixels on each axis of the detector." ];
+
+  calin.ix.common_types.Vector3D detector_shift           = 18
+    [(CFO).desc = "Shift of the detector from nominal position with respect to the lens.",
+     (CFO).units = "cm" ];
+
+  calin.ix.common_types.EulerAngles3D detector_rotation   = 19
+    [(CFO).desc = "Euler angles describing rotation of the detector with respect to the lens.",
+     (CFO).units = "degrees" ];
 };
