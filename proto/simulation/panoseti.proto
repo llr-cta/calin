@@ -51,7 +51,7 @@ message ArrayParameters {
     [(CFO).desc = "Coefficients of the polynomial describing the surface normals of the Fresnel lens "
       "as a function of rho^2, where rho=0 is the center of the lens. The coefficients are ordered from "
       "lowest to highest degree. The zeroth coefficient is not used, as the normals are defined by the "
-      "derivative of the polynomial."
+      "derivative of the polynomial.",
      (CFO).units = "cm"];
 
   double fresnel_lens_thickness                            = 12
