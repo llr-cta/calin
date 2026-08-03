@@ -36,10 +36,8 @@ using namespace calin::math::geometry;
 Eigen::Quaterniond calin::math::geometry::
 euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler)
 {
-  using Eigen::Quaterniond;
   using Eigen::AngleAxisd;
   using Eigen::Vector3d;
-  Eigen::Quaterniond q;
   switch(euler.rotation_order()) {
   case calin::ix::common_types::EulerAngles3D::ZXZ:
     return AngleAxisd(euler.alpha()*(M_PI/180.0), Vector3d::UnitZ())
