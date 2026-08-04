@@ -26,7 +26,7 @@
 %feature(autodoc,2);
 
 %{
-#include "simulation/vcl_panosetitracer.hpp"
+#include "simulation/vcl_panoseti_raytracer.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -52,10 +52,10 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
   public:
     using real_t = typename VCLReal::real_t;
     using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
-    VCLPanosetiThinLensScopeRayTracer(const calin::simulation::panoseti_optics::ArrayParameters& array_params,
+    VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
         unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
         real_t air_refractive_index = 1.0,
-        RNG* rng = nullptr, bool adopt_rng = false):
+        RNG* rng = nullptr, bool adopt_rng = false);
     ~VCLPanosetiThinLensScopeRayTracer();
     bool point_telescope(const Eigen::Vector3d& v);
     bool point_telescope_az_el(const double az_rad, const double el_rad);
@@ -66,18 +66,18 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 
 } } } // namespace calin::simulation::vcl_raytracer
 
-%include "simulation/panoseti_raytracer.hpp" // nothing is defined here for SWIG
+%include "simulation/vcl_panoseti_raytracer.hpp" // nothing is defined here for SWIG
 
-%template (VCLPanosetiThinLensScopeRayTracerDouble128) 
-  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128DoubleReal>;
+// %template (VCLPanosetiThinLensScopeRayTracerDouble128) 
+//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128DoubleReal>;
 %template (VCLPanosetiThinLensScopeRayTracerDouble256) 
   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256DoubleReal>;
-%template (VCLPanosetiThinLensScopeRayTracerDouble512) 
-  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512DoubleReal>;
+// %template (VCLPanosetiThinLensScopeRayTracerDouble512) 
+//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512DoubleReal>;
 
-%template (VCLPanosetiThinLensScopeRayTracerFloat128) 
-  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128FloatReal>;
-%template (VCLPanosetiThinLensScopeRayTracerFloat256) 
-  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256FloatReal>;
-%template (VCLPanosetiThinLensScopeRayTracerFloat512) 
-  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512FloatReal>;
+// %template (VCLPanosetiThinLensScopeRayTracerFloat128) 
+//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128FloatReal>;
+// %template (VCLPanosetiThinLensScopeRayTracerFloat256) 
+//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256FloatReal>;
+// %template (VCLPanosetiThinLensScopeRayTracerFloat512) 
+//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512FloatReal>;

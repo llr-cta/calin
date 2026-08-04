@@ -108,7 +108,7 @@ public:
   using TraceInfo = VCLPanosetiScopeTraceInfo<VCLReal>;
   using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
-  VCLPanosetiThinLensScopeRayTracer(const calin::simulation::panoseti_optics::ArrayParameters& array_params,
+  VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
       unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
       real_t air_refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
@@ -118,35 +118,35 @@ public:
   {
     using calin::math::special::SQR;
 
-    if(scope_id>=array_params.scope_positions()) {
+    if(scope_id>=unsigned(array_params.scope_positions_size())) {
       throw std::runtime_error("VCLPanosetiThinLensScopeRayTracer: scope_id out of range");
     }
 
     scope_position_.x()      = array_params.scope_positions(scope_id).x();
     scope_position_.y()      = array_params.scope_positions(scope_id).y();
     scope_position_.z()      = array_params.scope_positions(scope_id).z();
-    pointTelescopeAzElPhi(0.0, 0.0, 0.0);
+    point_telescope_az_el_phi(0.0, 0.0, 0.0);
 
     air_ref_index_           = air_refractive_index;
 
     Eigen::VectorXd lens_polynomial = calin::protobuf_to_eigenvec(array_params.fresnel_lens_polynomial());
-    lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).cast<real_t>();
+    lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).template cast<real_t>();
 
     lens_aperture2_          = SQR(array_params.fresnel_lens_aperture());
 
     detector_distance_       = array_params.detector_separation();
-    detector_origin_         = calin::protobuf_to_eigenvec(array_params.detector_shift()).cast<real_t>();
+    detector_origin_         = calin::xyz_to_eigenvec(array_params.detector_shift()).template cast<real_t>();
     detector_origin_.y()     -= detector_distance_;
     if(calin::math::geometry::euler_is_zero(array_params.detector_rotation())) {
       detector_has_rotation_ = false;
       detector_rotation_ = mat3_t::Identity(); // Unused in this case, but set to identity for safety
     } else {
       detector_has_rotation_ = true;
-      detector_rotation_ = calin::math::geometry::euler_to_matrix(array_params.detector_rotation()).cast<real_t>();
+      detector_rotation_ = calin::math::geometry::euler_to_matrix(array_params.detector_rotation()).template cast<real_t>();
     }
 
     real_t roughness = array_params.fresnel_lens_roughness();
-    scattering_sigma_theta_ = (detector_distance_ > 0) ? (roughness / detector_distance_) : 0.0;
+    scattering_sigma_theta_ = (detector_distance_ > 0) ? (roughness / detector_distance_ * M_SQRT1_2) : 0.0;
 
     pixel_spacing_           = array_params.pixel_pitch();
     pixel_spacing_inv_       = 1.0/pixel_spacing_;
@@ -176,9 +176,9 @@ public:
     el_rad_ = el_rad;
     phi_rad_ = phi_rad;
     Eigen::Matrix3d rot_reflector_to_global =
-      Eigen::AngleAxisd(-az_rad_,   Eigen::Vector3d::UnitZ()) *
-      Eigen::AngleAxisd(el_rad_,  Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(phi_rad_,   Eigen::Vector3d::UnitZ());
+      (Eigen::AngleAxisd(-az_rad_,   Eigen::Vector3d::UnitZ()) *
+       Eigen::AngleAxisd(el_rad_,  Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(phi_rad_,   Eigen::Vector3d::UnitZ())).toRotationMatrix();
     Eigen::Matrix3d rot_global_to_reflector = rot_reflector_to_global.transpose();
     Eigen::Vector3d off_global_to_reflector_ = scope_position_;
 
@@ -264,14 +264,14 @@ public:
     }
 
     // Calculate reftactive index of lens
-    real_vt lens_ref_index = lens_refractive_index_spline_.value(ray.energy());
+    real_vt lens_ref_index = lens_refractive_index_spline_.vcl_value<typename VCLReal::architecture>(ray.energy());
 
     // Refract into lens
-    ray.refract_at_surface_in_with_mask(mask, vec3d::UnitY(), lens_ref_index);
+    ray.refract_at_surface_in_with_mask(mask, vec3_t::UnitY(), lens_ref_index);
 
     // In thin lens approximation, we assume the ray exits the lens at the same point it 
     // entered, but with a new direction. Calculate normal from polynomial.
-    vec3_vt lens_norm = calin::math::geometry::vcl<VCLReal>::norm_of_common_derivative_polynomial_surface(
+    vec3_vt lens_norm = calin::math::geometry::VCL<VCLReal>::norm_of_common_derivative_polynomial_surface(
       ray.x(), ray.z(), lens_derivative_polynomial_.data(), lens_derivative_polynomial_.size(),
       /* convex= */ true);
 
@@ -324,8 +324,10 @@ public:
 #endif
 
     // Find the pixel ID
-    int_vt pixel_j = select(int_bvt(mask), vcl::floor((info.detector_z + pixel_array_halfwidth_) * pixel_spacing_inv_), 0);
-    int_vt pixel_i = select(int_bvt(mask), vcl::floor((info.detector_x + pixel_array_halfwidth_) * pixel_spacing_inv_), 0);
+    int_vt pixel_j = select(int_bvt(mask), VCLReal::truncate_to_int_limited(
+      vcl::floor((info.detector_z + pixel_array_halfwidth_) * pixel_spacing_inv_)), 0);
+    int_vt pixel_i = select(int_bvt(mask), VCLReal::truncate_to_int_limited(
+      vcl::floor((info.detector_x + pixel_array_halfwidth_) * pixel_spacing_inv_)), 0);
     info.pixel_id = select(int_bvt(mask), pixel_j * pixel_nside_ + pixel_i, -1);
 
     info.status = select(int_bvt(mask), PSTS_TS_FOUND_PIXEL, info.status);
@@ -453,10 +455,10 @@ private:
   bool            detector_has_rotation_;
   mat3_t          detector_rotation_;
   
-  double          pixel_spacing_;
-  double          pixel_spacing_inv_;
-  unsigned        pixel_nside_;
-  double          pixel_array_halfwidth_;
+  real_t          pixel_spacing_;
+  real_t          pixel_spacing_inv_;
+  uint_t          pixel_nside_;
+  real_t          pixel_array_halfwidth_;
   
   real_t          scattering_sigma_theta_;
 
@@ -467,4 +469,3 @@ private:
 #endif // SWIG
 
 } } } // namespace calin::simulation::vcl_raytracer
-`
