@@ -53,14 +53,14 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
     using real_t = typename VCLReal::real_t;
     using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
     VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
-        unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
-        real_t air_refractive_index = 1.0,
+        unsigned scope_id, real_t air_refractive_index = 1.0,
         RNG* rng = nullptr, bool adopt_rng = false);
     ~VCLPanosetiThinLensScopeRayTracer();
     bool point_telescope(const Eigen::Vector3d& v);
     bool point_telescope_az_el(const double az_rad, const double el_rad);
     bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad);
-    unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+    unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+      double lens_ref_index,
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
   };
 
