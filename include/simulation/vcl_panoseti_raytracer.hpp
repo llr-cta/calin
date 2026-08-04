@@ -238,9 +238,6 @@ public:
     // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
     // *************************************************************************
 
-    // Remember initial ct to test reflection happens after emission
-    real_vt ct0 = ray.ct();
-
     // Propagate to lens plane
     info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
     mask = ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
@@ -318,7 +315,8 @@ public:
 
     // Test we hit the detector array
     info.status = select(int_bvt(mask), PSTS_TS_OUTSIDE_DETECTOR, info.status);
-    mask &= vcl::max(vcl::abs(info.detector_x), vcl::abs(info.detector_z)) <= pixel_array_halfwidth_;
+    mask &= (vcl::abs(info.detector_x) <= pixel_array_halfwidth_) & 
+            (vcl::abs(info.detector_z) <= pixel_array_halfwidth_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif

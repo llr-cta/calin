@@ -156,7 +156,7 @@ public:
     real_vt eta = n;
     const real_vt cosi = dir_.dot(surface_norm);
     real_vt etacosi = n*cosi;
-    const real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
+    real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
     real_bvt mask = mask_in & (c2>0);
     eta = select(mask, eta, 1.0);
     etacosi = select(mask, etacosi, cosi);

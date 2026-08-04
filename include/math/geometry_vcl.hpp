@@ -346,7 +346,8 @@ public:
     } else {
       norm << -2*x*dyps_drho2, 1, -2*z*dyps_drho2;
     }
-    norm.normalize();
+    real_vt norm2 = norm.squaredNorm(); // can never be zero
+    norm /= sqrt(norm2);
     return norm;
   }
 
@@ -370,7 +371,8 @@ public:
     } else {
       norm << -2*x*dyps_drho2, 1, -2*z*dyps_drho2;
     }
-    norm.normalize();
+    real_vt norm2 = norm.squaredNorm(); // can never be zero
+    norm /= sqrt(norm2);
     return norm;
   }
 
