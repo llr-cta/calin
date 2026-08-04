@@ -159,18 +159,18 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
-  bool pointTelescope(const Eigen::Vector3d& v)
+  bool point_telescope(const Eigen::Vector3d& v)
   {
     if(v.squaredNorm()==0)return false;
-    return pointTelescopeAzElPhi(atan2(v.x(),v.y()), atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y())), 0.0);
+    return point_telescope_az_el_phi(atan2(v.x(),v.y()), atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y())), 0.0);
   }
 
-  bool pointTelescopeAzEl(const double az_rad, const double el_rad)
+  bool point_telescope_az_el(const double az_rad, const double el_rad)
   {
-    return pointTelescopeAzElPhi(az_rad, el_rad, 0.0);
+    return point_telescope_az_el_phi(az_rad, el_rad, 0.0);
   }
 
-  bool pointTelescopeAzElPhi(double az_rad, double el_rad, double phi_rad)
+  bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad)
   {
     az_rad_ = az_rad;
     el_rad_ = el_rad;
