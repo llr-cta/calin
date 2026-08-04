@@ -264,7 +264,7 @@ public:
     real_vt lens_ref_index = lens_refractive_index_spline_.vcl_value<typename VCLReal::architecture>(ray.energy());
 
     // Refract into lens
-    ray.refract_at_surface_in_with_mask(mask, vec3_t::UnitY(), lens_ref_index);
+    ray.refract_at_surface_in_with_mask(mask, vec3_vt::UnitY(), lens_ref_index);
 
     // In thin lens approximation, we assume the ray exits the lens at the same point it 
     // entered, but with a new direction. Calculate normal from polynomial.
