@@ -2,7 +2,7 @@
 
 /*
 
-   calin/proto/simulations/panoseti.proto -- Stephen Fegan -- 2026-04-24
+   calin/proto/simulations/panoseti_optics.proto -- Stephen Fegan -- 2026-04-24
 
    Protobufs for defining PANOSETI optics arrays
 
@@ -27,7 +27,7 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 
-package calin.ix.simulation.panoseti;
+package calin.ix.simulation.panoseti_optics;
 
 message ArrayParameters {
   common_types.EarthCoordinates array_origin               = 1

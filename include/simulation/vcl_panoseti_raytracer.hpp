@@ -34,7 +34,7 @@
 #include <math/geometry_vcl.hpp>
 #include <math/spline_interpolation.hpp>
 #include <util/log.hpp>
-#include <simulation/panoseti.pb.h>
+#include <simulation/panoseti_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
@@ -108,7 +108,7 @@ public:
   using TraceInfo = VCLPanosetiScopeTraceInfo<VCLReal>;
   using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
-  VCLPanosetiThinLensScopeRayTracer(const calin::simulation::panoseti::ArrayParameters& array_params,
+  VCLPanosetiThinLensScopeRayTracer(const calin::simulation::panoseti_optics::ArrayParameters& array_params,
       unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
       real_t air_refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
