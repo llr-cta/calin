@@ -348,7 +348,9 @@ public:
     return mask;
   }
 
+  template<typename Colorizer>
   unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+    Colorizer& generate_color,
     double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
   {
     theta *= M_PI/180.0;
@@ -403,7 +405,7 @@ public:
         x.z() = rho * sinphi;
       }
 
-      Ray ray(x, u, -x.y() * calin::math::constants::g4_1_c, 0);
+      Ray ray(x, u, -x.y() * calin::math::constants::g4_1_c, generate_color());
       ray.rotate(rot);
 
       TraceInfo info;
@@ -430,6 +432,14 @@ public:
       }
     }
     return ntraced;
+  }
+
+  unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+    double photon_energy_ev,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    auto color_generator = [photon_energy_ev]() { return photon_energy_ev; };
+    return psf(x_out, y_out, t_out, nray, color_generator, theta, phi, distance, radius);
   }
 
 private:

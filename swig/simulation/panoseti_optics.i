@@ -60,7 +60,8 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
     bool point_telescope(const Eigen::Vector3d& v);
     bool point_telescope_az_el(const double az_rad, const double el_rad);
     bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad);
-    unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+    unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+      double photon_energy_ev,
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
   };
 
