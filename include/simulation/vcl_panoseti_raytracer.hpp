@@ -109,9 +109,10 @@ public:
   using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
   VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
-      unsigned scope_id, real_t air_refractive_index = 1.0,
+      unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
+      real_t air_refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
-    VCLReal(), 
+    VCLReal(), lens_refractive_index_spline_(lens_refractive_index_spline),
     rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
@@ -186,7 +187,7 @@ public:
     return true;
   }
 
-  real_bvt trace_global_frame(real_bvt mask, Ray& ray, real_vt lens_ref_index, TraceInfo& info,
+  real_bvt trace_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
     bool do_derotation = true)
   {
     // *************************************************************************
@@ -195,7 +196,7 @@ public:
 
     ray.translate_origin(global_to_reflector_off_.template cast<real_vt>());
     ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
-    mask = trace_reflector_frame(mask, ray, lens_ref_index, info);
+    mask = trace_reflector_frame(mask, ray, info);
     if(do_derotation) {
       ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
       ray.untranslate_origin(global_to_reflector_off_.template cast<real_vt>());
@@ -203,7 +204,7 @@ public:
     return mask;
   }
 
-  real_bvt trace_scope_centered_global_frame(real_bvt mask, Ray& ray, real_vt lens_ref_index, TraceInfo& info,
+  real_bvt trace_scope_centered_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
     bool do_derotation = true)
   {
     // *************************************************************************
@@ -211,7 +212,7 @@ public:
     // *************************************************************************
 
     ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
-    mask = trace_reflector_frame(mask, ray, lens_ref_index, info);
+    mask = trace_reflector_frame(mask, ray, info);
     if(do_derotation) {
       ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
     }
@@ -220,7 +221,7 @@ public:
 
 //#define DEBUG_STATUS
 
-  real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, real_vt lens_ref_index, TraceInfo& info)
+  real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, TraceInfo& info)
   {
     info.status = PSTS_MASKED_ON_ENTRY;
 #ifdef DEBUG_STATUS
@@ -258,6 +259,9 @@ public:
       // We outie ...
       return mask;
     }
+
+    // Calculate reftactive index of lens
+    real_vt lens_ref_index = lens_refractive_index_spline_.vcl_value<typename VCLReal::architecture>(ray.energy());
 
     // Refract into lens
     ray.refract_at_surface_in_with_mask(mask, vec3_vt::UnitY(), lens_ref_index);
@@ -344,10 +348,8 @@ public:
     return mask;
   }
 
-  template<typename RefractiveIndexGenerator> unsigned psf(
-    Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
-    RefractiveIndexGenerator& lens_ref_index_generator,
-    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0)
+  unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
   {
     theta *= M_PI/180.0;
     double sintheta = std::sin(theta);
@@ -405,7 +407,7 @@ public:
       ray.rotate(rot);
 
       TraceInfo info;
-      trace_reflector_frame(true, ray, lens_ref_index_generator(), info);
+      trace_reflector_frame(true, ray, info);
 
       typename VCLReal::int_at status;
       typename VCLReal::real_at xfp;
@@ -430,15 +432,9 @@ public:
     return ntraced;
   }
 
-  unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray, 
-    double lens_ref_index,
-    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
-  {
-    auto lens_ref_index_generator = [lens_ref_index]() { return lens_ref_index; };
-    return psf(x_out, y_out, t_out, nray, lens_ref_index_generator, theta, phi, distance, radius);
-  }
-
 private:
+
+  const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline_;
 
   vec3_t          scope_position_;
   real_t          az_rad_;
