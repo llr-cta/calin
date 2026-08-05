@@ -359,6 +359,9 @@ template<typename VCLArchitecture> struct VCLFloatReal
   constexpr static unsigned num_real              = VCLArchitecture::num_float;
   typedef VCLArchitecture                         architecture;
 
+  constexpr static bool is_float                  = true;
+  constexpr static bool is_double                 = false;
+
   template<typename T> static constexpr unsigned round_nreal_up_to_vector_size(unsigned ntype) {
     return VCLArchitecture::template round_ntype_up_to_vector_size<float>(ntype);
   }
@@ -424,6 +427,9 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   constexpr static unsigned vec_bytes             = VCLArchitecture::vec_bytes;
   constexpr static unsigned num_real              = VCLArchitecture::num_double;
   typedef VCLArchitecture                         architecture;
+
+  constexpr static bool is_float                  = false;
+  constexpr static bool is_double                 = true;
 
   template<typename T> static constexpr unsigned round_nreal_up_to_vector_size(unsigned ntype) {
     return VCLArchitecture::template round_ntype_up_to_vector_size<double>(ntype);
