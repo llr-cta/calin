@@ -178,7 +178,7 @@ public:
     Eigen::Matrix3d rot_reflector_to_global =
       (Eigen::AngleAxisd(-az_rad,   Eigen::Vector3d::UnitZ()) *
        Eigen::AngleAxisd(el_rad,  Eigen::Vector3d::UnitX()) *
-       Eigen::AngleAxisd(phi_rad,   Eigen::Vector3d::UnitZ())).toRotationMatrix();
+       Eigen::AngleAxisd(phi_rad,   Eigen::Vector3d::UnitY())).toRotationMatrix();
     Eigen::Matrix3d rot_global_to_reflector = rot_reflector_to_global.transpose();
     Eigen::Vector3d off_global_to_reflector = scope_position_;
 
