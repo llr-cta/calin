@@ -69,16 +69,16 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 
 %include "simulation/vcl_panoseti_raytracer.hpp" // nothing is defined here for SWIG
 
-// %template (VCLPanosetiThinLensScopeRayTracerDouble128) 
-//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128DoubleReal>;
+%template (VCLPanosetiThinLensScopeRayTracerDouble128) 
+  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128DoubleReal>;
 %template (VCLPanosetiThinLensScopeRayTracerDouble256) 
   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256DoubleReal>;
-// %template (VCLPanosetiThinLensScopeRayTracerDouble512) 
-//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512DoubleReal>;
+%template (VCLPanosetiThinLensScopeRayTracerDouble512) 
+  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512DoubleReal>;
 
-// %template (VCLPanosetiThinLensScopeRayTracerFloat128) 
-//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128FloatReal>;
-// %template (VCLPanosetiThinLensScopeRayTracerFloat256) 
-//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256FloatReal>;
-// %template (VCLPanosetiThinLensScopeRayTracerFloat512) 
-//   calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512FloatReal>;
+%template (VCLPanosetiThinLensScopeRayTracerFloat128) 
+  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL128FloatReal>;
+%template (VCLPanosetiThinLensScopeRayTracerFloat256) 
+  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL256FloatReal>;
+%template (VCLPanosetiThinLensScopeRayTracerFloat512) 
+  calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<calin::util::vcl::VCL512FloatReal>;
