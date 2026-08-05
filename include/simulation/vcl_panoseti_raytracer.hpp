@@ -261,7 +261,7 @@ public:
     }
 
     // Calculate reftactive index of lens
-    real_vt lens_ref_index = lens_refractive_index_spline_.vcl_value<typename VCLReal::architecture>(ray.energy());
+    real_vt lens_ref_index = lens_refractive_index_spline_.vcl_real_value<VCLReal>(ray.energy());
 
     // Refract into lens
     ray.refract_at_surface_in_with_mask(mask, vec3_vt::UnitY(), lens_ref_index);
