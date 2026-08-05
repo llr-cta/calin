@@ -176,13 +176,13 @@ public:
     el_rad_ = el_rad;
     phi_rad_ = phi_rad;
     Eigen::Matrix3d rot_reflector_to_global =
-      (Eigen::AngleAxisd(-az_rad_,   Eigen::Vector3d::UnitZ()) *
-       Eigen::AngleAxisd(el_rad_,  Eigen::Vector3d::UnitX()) *
-       Eigen::AngleAxisd(phi_rad_,   Eigen::Vector3d::UnitZ())).toRotationMatrix();
+      (Eigen::AngleAxisd(-az_rad,   Eigen::Vector3d::UnitZ()) *
+       Eigen::AngleAxisd(el_rad,  Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(phi_rad,   Eigen::Vector3d::UnitZ())).toRotationMatrix();
     Eigen::Matrix3d rot_global_to_reflector = rot_reflector_to_global.transpose();
-    Eigen::Vector3d off_global_to_reflector_ = scope_position_;
+    Eigen::Vector3d off_global_to_reflector = scope_position_;
 
-    global_to_reflector_off_ = off_global_to_reflector_.template cast<real_t>(); // Cast double to float if necessary
+    global_to_reflector_off_ = off_global_to_reflector.template cast<real_t>(); // Cast double to float if necessary
     global_to_reflector_rot_ = rot_global_to_reflector.template cast<real_t>();
     return true;
   }
@@ -190,6 +190,9 @@ public:
   real_bvt trace_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
     bool do_derotation = true)
   {
+    // WARNING: This function should be used with caution for VCLReal float types
+    // it is best to use the trace_scope_centered_global_frame function instead
+
     // *************************************************************************
     // ********************** RAY STARTS IN GLOBAL FRAME ***********************
     // *************************************************************************
@@ -446,7 +449,8 @@ private:
 
   const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline_;
 
-  vec3_t          scope_position_;
+  Eigen::Vector3d scope_position_;
+
   real_t          az_rad_;
   real_t          el_rad_;
   real_t          phi_rad_;
