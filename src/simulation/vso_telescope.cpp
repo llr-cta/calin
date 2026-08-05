@@ -300,7 +300,7 @@ bool VSOTelescope::pointTelescopeAzElPhi(double az_rad, double el_rad, double ph
 {
   fElevation = fmod(fmod(el_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
   fAzimuth = fmod(fmod(az_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
-  fFPOffset = fmod(fmod(phi_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI);
+  fFPOffset = fmod(fmod(phi_rad,2.0*M_PI)+2.0*M_PI, 2.0*M_PI); // NO !! Not correct for phi
   calculateRotationVector();
   return true;
 }
