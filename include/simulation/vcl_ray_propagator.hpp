@@ -267,7 +267,7 @@ public:
     }
     auto* scope = scopes_[iscope];
     scope->global_to_fp = 
-      Eigen::AngleAxisd(phi_deg*M_PI/180.0, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(-phi_deg*M_PI/180.0, Eigen::Vector3d::UnitY()) *
       Eigen::AngleAxisd(-el_deg*M_PI/180.0, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(az_deg*M_PI/180.0, Eigen::Vector3d::UnitZ());
     scope->obs_dir = scope->global_to_fp.transpose() * Eigen::Vector3d::UnitY();
