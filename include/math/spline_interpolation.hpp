@@ -382,6 +382,12 @@ public:
   vcl_real_value(typename VCLReal::real_vt x) const;
 
 private:
+  template<typename VCLReal> inline typename VCLReal::real_vt
+  vcl_real_value_impl(typename VCLReal::real_vt x, std::true_type) const;
+
+  template<typename VCLReal> inline typename VCLReal::real_vt
+  vcl_real_value_impl(typename VCLReal::real_vt x, std::false_type) const;
+
   void init();
   CubicSplineIntervals s_;
   std::vector<double> I_;
@@ -413,22 +419,23 @@ CubicSpline::vcl_value(typename VCLArchitecture::double_vt x) const
 }
 
 template<typename VCLReal> typename VCLReal::real_vt
+CubicSpline::vcl_real_value_impl(typename VCLReal::real_vt x, std::true_type) const
+{
+  return vcl_value<typename VCLReal::architecture>(x);
+}
+
+template<typename VCLReal> typename VCLReal::real_vt
+CubicSpline::vcl_real_value_impl(typename VCLReal::real_vt x, std::false_type) const
+{
+  auto xlo = vcl_value<typename VCLReal::architecture>(vcl::extend_low(x));
+  auto xhi = vcl_value<typename VCLReal::architecture>(vcl::extend_high(x));
+  return vcl::compress(xlo, xhi);
+}
+
+template<typename VCLReal> typename VCLReal::real_vt
 CubicSpline::vcl_real_value(typename VCLReal::real_vt x) const
 {
-  typedef typename VCLReal::int_vt int_vt;
-  typedef typename VCLReal::real_vt real_vt;
-
-  real_vt x0;
-  real_vt dx;
-  real_vt dx_inv;
-  int_vt iinterval = vcl_find_interval<VCLReal>(x, s_, x0, dx, dx_inv);
-  real_vt t = (x-x0)*dx_inv;
-
-  return cubic_value(t, dx, dx_inv,
-    vcl::lookup<0x40000000>(iinterval, s_.y.data()),
-    vcl::lookup<0x40000000>(iinterval, s_.y.data()+1),
-    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()),
-    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()+1));
+  return vcl_real_value_impl<VCLReal>(x, typename VCLReal::is_double());
 }
 
 struct CubicSplineInfo {
