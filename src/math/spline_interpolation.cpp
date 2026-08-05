@@ -282,6 +282,36 @@ fit_spline(
   return result;
 }
 
+std::vector<double> calin::math::spline_interpolation::
+fit_regular_spline(
+  unsigned nknot,
+  const std::vector<double>& xdata,
+  const std::vector<double>& ydata,
+  const std::vector<double>& wdata,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val)
+{
+  if (xdata.empty()) {
+    throw std::runtime_error("fit_regular_spline: xdata is empty");
+  }
+  if (nknot < 3) {
+    throw std::runtime_error("fit_regular_spline: need at least 3 knots");
+  }
+
+  auto minmax = std::minmax_element(xdata.begin(), xdata.end());
+  double xmin = *minmax.first;
+  double xmax = *minmax.second;
+
+  std::vector<double> xknots(nknot);
+  double dx = (xmax - xmin) / (nknot - 1);
+  for (unsigned i = 0; i < nknot; ++i) {
+    xknots[i] = xmin + i * dx;
+  }
+  xknots.back() = xmax;
+
+  return fit_spline(xknots, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+}
+
 double calin::math::spline_interpolation::
 cubic_solve(double y, double dx, double dx_inv, double y0, double y1, double D0, double D1)
 {

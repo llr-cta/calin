@@ -79,6 +79,14 @@ std::vector<double> fit_spline(
   BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
   BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
+std::vector<double> fit_regular_spline(
+  unsigned nknot,
+  const std::vector<double>& xdata,
+  const std::vector<double>& ydata,
+  const std::vector<double>& wdata = std::vector<double>(),
+  BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+
 // The core cubic calculation functions are templates so they can be used for
 // scalar or vector types.
 
