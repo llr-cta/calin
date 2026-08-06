@@ -2,7 +2,7 @@
 
 /*
 
-   calin/simulation/panoseti_optics.i -- Stephen Fegan -- 2036-08-04
+   calin/simulation/panoseti_optics.i -- Stephen Fegan -- 2026-08-04
 
    SWIG interface file for calin.simulation.panoseti_optics
 
