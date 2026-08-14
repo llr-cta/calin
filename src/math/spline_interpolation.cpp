@@ -282,8 +282,10 @@ fit_spline(
   return result;
 }
 
-std::vector<double> calin::math::spline_interpolation::
+void calin::math::spline_interpolation::
 fit_regular_spline(
+  std::vector<double>& xknots_out,
+  std::vector<double>& yknots_out,
   unsigned nknot,
   const std::vector<double>& xdata,
   const std::vector<double>& ydata,
@@ -302,14 +304,15 @@ fit_regular_spline(
   double xmin = *minmax.first;
   double xmax = *minmax.second;
 
-  std::vector<double> xknots(nknot);
+  xknots_out.resize(nknot);
   double dx = (xmax - xmin) / (nknot - 1);
   for (unsigned i = 0; i < nknot; ++i) {
-    xknots[i] = xmin + i * dx;
+    xknots_out[i] = xmin + i * dx;
   }
-  xknots.back() = xmax;
+  xknots_out.back() = xmax;
 
-  return fit_spline(xknots, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  yknots_out = fit_spline(xknots_out, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  return;
 }
 
 double calin::math::spline_interpolation::

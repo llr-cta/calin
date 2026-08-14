@@ -79,7 +79,9 @@ std::vector<double> fit_spline(
   BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
   BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
-std::vector<double> fit_regular_spline(
+ void fit_regular_spline(
+  std::vector<double>& xknots_out,
+  std::vector<double>& yknots_out,
   unsigned nknot,
   const std::vector<double>& xdata,
   const std::vector<double>& ydata,
