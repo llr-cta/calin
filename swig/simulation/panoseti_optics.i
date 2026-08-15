@@ -63,6 +63,7 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
     unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
       double photon_energy_ev,
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
+    Eigen::VectorXd lens_derivative_polynomial() const;
   };
 
 } } } // namespace calin::simulation::vcl_raytracer

@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <iostream>
 
 #include <util/memory.hpp>
 #include <util/vcl.hpp>
@@ -41,16 +42,19 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 // These classes are too complex for SWIG to handle directly from the header
 // files. We define a simplified subset directly in the SWIG interface file.
 
+#define DEBUG_STATUS
+
 #ifndef SWIG
 
 enum VCLPanosetiScopeTraceStatus {
   PSTS_MASKED_ON_ENTRY,                        // 0
   PSTS_TRAVELLING_AWAY_LENS,                   // 1
-  PSTS_OUTSIDE_LENS_APERTURE,                  // 2
-  PSTS_NO_LENS_EXIT,                           // 3
-  PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE,    // 4
-  PSTS_TS_OUTSIDE_DETECTOR,                    // 5
-  PSTS_TS_FOUND_PIXEL                          // 6
+  PSTS_DOES_NOT_INTERSECT_LENS,                // 2
+  PSTS_OUTSIDE_LENS_APERTURE,                  // 3
+  PSTS_NO_LENS_EXIT,                           // 4
+  PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE,    // 5
+  PSTS_TS_OUTSIDE_DETECTOR,                    // 6
+  PSTS_TS_FOUND_PIXEL                          // 7
 };
 
 template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLPanosetiScopeTraceInfo: public VCLReal
@@ -226,6 +230,11 @@ public:
 
   real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, TraceInfo& info)
   {
+#ifdef DEBUG_STATUS
+    std::cout << "Ray: maks=" << mask[0] << " pos=(" << ray.position().x()[0] << ',' << ray.position().y()[0] << ',' << ray.position().z()[0] << ") dir=("
+      << ray.direction().x()[0] << ',' << ray.direction().y()[0] << ',' << ray.direction().z()[0] << ")\n";
+#endif
+
     info.status = PSTS_MASKED_ON_ENTRY;
 #ifdef DEBUG_STATUS
     std::cout << mask[0] << '/' << info.status[0];
@@ -242,7 +251,7 @@ public:
     // *************************************************************************
 
     // Propagate to lens plane
-    info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
+    info.status = select(int_bvt(mask), PSTS_DOES_NOT_INTERSECT_LENS, info.status);
     mask = ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
@@ -253,6 +262,7 @@ public:
     info.lens_in_z    = select(mask, ray.position().z(), 0);
 
     // Test aperture
+    info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
     mask &= (info.lens_in_x*info.lens_in_x + info.lens_in_z*info.lens_in_z) <= lens_aperture2_;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
@@ -260,6 +270,9 @@ public:
 
     if(not horizontal_or(mask)) {
       // We outie ...
+#ifdef DEBUG_STATUS
+      std::cout << '\n';
+#endif
       return mask;
     }
 
@@ -277,7 +290,7 @@ public:
 
     // Refract out of lens
     info.status = select(int_bvt(mask), PSTS_NO_LENS_EXIT, info.status);
-    mask = ray.refract_at_surface_out_with_mask(mask, lens_norm, air_ref_index_);
+    mask = ray.refract_at_surface_out_with_mask(mask, lens_norm, lens_ref_index);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -371,7 +384,7 @@ public:
     }
 
     double dcospolar = 1.0 - std::cos(radius / distance);
-    double fppos_2y = 2.0 * detector_origin_.y();
+    double parallel_beam_start = 2.0*detector_distance_;
 
     unsigned ntraced = 0;
     unsigned iray = 0;
@@ -404,7 +417,7 @@ public:
         real_vt sinphi;
         rng_->sincos(sinphi, cosphi);
         x.x() = rho * cosphi;
-        x.y() = fppos_2y;   // Launch from twice the FP distance
+        x.y() = parallel_beam_start;   // Launch from twice the FP distance
         x.z() = rho * sinphi;
       }
 
@@ -425,6 +438,9 @@ public:
 
       for(unsigned i=0; i< VCLReal::num_real; i++) {
         ntraced++;
+        if(ntraced > 10*nray - 100) {
+          std::cerr << "Debug: status=" << status[i] << " x=" << xfp[i] << " y=" << yfp[i] << " t=" << tfp[i] << std::endl;
+        }
         if(status[i] >= PSTS_TS_OUTSIDE_DETECTOR) {
           x_out[iray] = xfp[i];
           y_out[iray] = yfp[i];
@@ -432,6 +448,9 @@ public:
           iray++;
           if(iray >= nray)break;
         }
+      }
+      if(ntraced >= 10*nray) {
+        break; // Avoid infinite loop if rays are not hitting the detector
       }
     }
     return ntraced;
@@ -444,6 +463,8 @@ public:
     auto color_generator = [photon_energy_ev]() { return photon_energy_ev; };
     return psf(x_out, y_out, t_out, nray, color_generator, theta, phi, distance, radius);
   }
+
+  Eigen::VectorXd lens_derivative_polynomial() const { return lens_derivative_polynomial_.template cast<double>(); }
 
 private:
 
