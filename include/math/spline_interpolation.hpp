@@ -338,6 +338,7 @@ public:
 
   void rescale(double scale);
   void extend_linear_rhs(double dx = 0);
+  void extend_linear_lhs(double dx = 0);
 
   const CubicSplineIntervals& intervals() const { return s_; }
 
@@ -368,6 +369,7 @@ public:
 #endif
 
   double value(double x) const;
+  double value_with_linear_extrapolation(double x) const;
   double derivative(double x) const;
   double derivative_and_value(double x, double& value) const;
   double second_derivative(double x) const;
@@ -377,18 +379,32 @@ public:
 
   double find(double y, double xmin = -std::numeric_limits<double>::infinity()) const;
 
+  Eigen::VectorXd turning_points(bool include_extrapolation = false) const;
+
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_value(typename VCLArchitecture::double_vt x) const;
 
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_value_with_linear_extrapolation(typename VCLArchitecture::double_vt x) const;
+
   template<typename VCLReal> inline typename VCLReal::real_vt
   vcl_real_value(typename VCLReal::real_vt x) const;
+
+  template<typename VCLReal> inline typename VCLReal::real_vt
+  vcl_real_value_with_linear_extrapolation(typename VCLReal::real_vt x) const;
 
 private:
   template<typename VCLReal> inline typename VCLReal::real_vt
   vcl_real_value_impl(typename VCLReal::real_vt x, std::true_type) const;
 
   template<typename VCLReal> inline typename VCLReal::real_vt
+  vcl_real_value_with_linear_extrapolation_impl(typename VCLReal::real_vt x, std::true_type) const;
+
+  template<typename VCLReal> inline typename VCLReal::real_vt
   vcl_real_value_impl(typename VCLReal::real_vt x, std::false_type) const;
+
+  template<typename VCLReal> inline typename VCLReal::real_vt
+  vcl_real_value_with_linear_extrapolation_impl(typename VCLReal::real_vt x, std::false_type) const;
 
   void init();
   CubicSplineIntervals s_;
@@ -420,10 +436,40 @@ CubicSpline::vcl_value(typename VCLArchitecture::double_vt x) const
     vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()+1));
 }
 
+template<typename VCLArchitecture> typename VCLArchitecture::double_vt
+CubicSpline::vcl_value_with_linear_extrapolation(typename VCLArchitecture::double_vt x) const
+{
+  typedef typename VCLArchitecture::int64_vt int64_vt;
+  typedef typename VCLArchitecture::double_vt double_vt;
+
+  double_vt x0;
+  double_vt dx;
+  double_vt dx_inv;
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_, x0, dx, dx_inv);
+  double_vt t = (x-x0)*dx_inv;
+
+  double_vt val = cubic_value(t, dx, dx_inv,
+    vcl::lookup<0x40000000>(iinterval, s_.y.data()),
+    vcl::lookup<0x40000000>(iinterval, s_.y.data()+1),
+    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()),
+    vcl::lookup<0x40000000>(iinterval, s_.dy_dx.data()+1));
+
+  val = vcl::select(x < s_.xmin, s_.y.front() + s_.dy_dx.front() * (x - s_.xmin), val);
+  val = vcl::select(x > s_.xmax, s_.y.back() + s_.dy_dx.back() * (x - s_.xmax), val);
+
+  return val;
+}
+
 template<typename VCLReal> typename VCLReal::real_vt
 CubicSpline::vcl_real_value_impl(typename VCLReal::real_vt x, std::true_type) const
 {
   return vcl_value<typename VCLReal::architecture>(x);
+}
+
+template<typename VCLReal> typename VCLReal::real_vt
+CubicSpline::vcl_real_value_with_linear_extrapolation_impl(typename VCLReal::real_vt x, std::true_type) const
+{
+  return vcl_value_with_linear_extrapolation<typename VCLReal::architecture>(x);
 }
 
 template<typename VCLReal> typename VCLReal::real_vt
@@ -435,9 +481,23 @@ CubicSpline::vcl_real_value_impl(typename VCLReal::real_vt x, std::false_type) c
 }
 
 template<typename VCLReal> typename VCLReal::real_vt
+CubicSpline::vcl_real_value_with_linear_extrapolation_impl(typename VCLReal::real_vt x, std::false_type) const
+{
+  auto xlo = vcl_value_with_linear_extrapolation<typename VCLReal::architecture>(vcl::extend_low(x));
+  auto xhi = vcl_value_with_linear_extrapolation<typename VCLReal::architecture>(vcl::extend_high(x));
+  return vcl::compress(xlo, xhi);
+}
+
+template<typename VCLReal> typename VCLReal::real_vt
 CubicSpline::vcl_real_value(typename VCLReal::real_vt x) const
 {
   return vcl_real_value_impl<VCLReal>(x, typename VCLReal::is_double());
+}
+
+template<typename VCLReal> typename VCLReal::real_vt
+CubicSpline::vcl_real_value_with_linear_extrapolation(typename VCLReal::real_vt x) const
+{
+  return vcl_real_value_with_linear_extrapolation_impl<VCLReal>(x, typename VCLReal::is_double());
 }
 
 struct CubicSplineInfo {

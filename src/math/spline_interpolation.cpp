@@ -440,12 +440,58 @@ void CubicSpline::extend_linear_rhs(double dx)
     s_.regular_xmax += dx;
     s_.irregular_begin += 1;
   }
+  
+  double new_y = s_.y.back() + s_.dy_dx.back()*dx;
+  double dI = dx * (s_.y.back() + new_y) / 2.0;
+
   s_.xmax += dx;
   s_.x.push_back(s_.x.back() + dx);
   s_.dx.push_back(dx);
   s_.dx_inv.push_back(1/dx);
-  s_.y.push_back(s_.y.back() + s_.dy_dx.back()*dx);
+  s_.y.push_back(new_y);
   s_.dy_dx.push_back(s_.dy_dx.back());
+
+  if (!I_.empty()) {
+    I_.push_back(I_.back() + dI);
+  }
+}
+
+void CubicSpline::extend_linear_lhs(double dx)
+{
+  if(dx<=0) {
+    dx = s_.dx.front();
+  }
+  
+  double new_y = s_.y.front() - s_.dy_dx.front()*dx;
+  double dI = dx * (s_.y.front() + new_y) / 2.0;
+
+  if (s_.irregular_begin > 0 && std::abs(dx - s_.regular_dx)/s_.regular_dx < 1e-6) {
+    s_.irregular_begin += 1;
+  } else if (s_.irregular_begin == 0 && std::abs(dx - s_.dx.front())/s_.dx.front() < 1e-6) {
+    s_.regular_dx = dx;
+    s_.regular_dx_inv = 1.0/dx;
+    s_.regular_xmax = s_.x[1];
+    s_.irregular_begin = 2;
+  } else {
+    s_.regular_dx = 0;
+    s_.regular_dx_inv = 0;
+    s_.regular_xmax = s_.xmin - dx;
+    s_.irregular_begin = 0;
+  }
+
+  s_.xmin -= dx;
+  s_.x.insert(s_.x.begin(), s_.xmin);
+  s_.dx.insert(s_.dx.begin(), dx);
+  s_.dx_inv.insert(s_.dx_inv.begin(), 1/dx);
+  s_.y.insert(s_.y.begin(), new_y);
+  s_.dy_dx.insert(s_.dy_dx.begin(), s_.dy_dx.front());
+
+  if (!I_.empty()) {
+    for (auto& integral : I_) {
+      integral += dI;
+    }
+    I_.insert(I_.begin(), 0.0);
+  }
 }
 
 double CubicSpline::ymax() const
@@ -577,6 +623,21 @@ double CubicSpline::value(double x) const
   return cubic_value(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
+double CubicSpline::value_with_linear_extrapolation(double x) const
+{
+  if (x < s_.xmin) {
+    return s_.y.front() + s_.dy_dx.front() * (x - s_.xmin);
+  }
+  if (x > s_.xmax) {
+    return s_.y.back() + s_.dy_dx.back() * (x - s_.xmax);
+  }
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_value(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
 double CubicSpline::derivative(double x) const
 {
   double dx;
@@ -686,6 +747,70 @@ double CubicSpline::find(double y, double xmin) const
     }
   }
   return xfound;
+}
+
+Eigen::VectorXd CubicSpline::turning_points(bool include_extrapolation) const
+{
+  std::vector<double> tps;
+  for (unsigned i = 0; i < s_.y.size() - 1; ++i) {
+    double dx = s_.dx[i];
+    double y0 = s_.y[i];
+    double y1 = s_.y[i+1];
+    double D0 = s_.dy_dx[i] * dx;
+    double D1 = s_.dy_dx[i+1] * dx;
+    double dy = y1 - y0;
+    double c = 3*dy - (2*D0 + D1);
+    double d = -2*dy + (D0 + D1);
+
+    std::vector<double> roots;
+    if (std::abs(d) < 1e-14 * std::max({std::abs(dy), std::abs(D0), std::abs(D1), 1.0})) {
+      if (std::abs(c) > 1e-14 * std::max({std::abs(D0), std::abs(D1), 1.0})) {
+        roots.push_back(-D0 / (2*c));
+      }
+    } else {
+      double disc = c*c - 3*D0*d;
+      if (disc >= 0.0) {
+        double sq = std::sqrt(disc);
+        double q = -c - std::copysign(sq, c);
+        roots.push_back(q / (3*d));
+        if (q != 0.0) {
+          roots.push_back(D0 / q);
+        }
+      }
+    }
+
+    for (double t : roots) {
+      bool keep = false;
+      if (t >= 0.0 && t <= 1.0) {
+        keep = true;
+      } else if (include_extrapolation) {
+        if (i == 0 && t < 0.0) keep = true;
+        if (i == s_.y.size() - 2 && t > 1.0) keep = true;
+      }
+      if (keep) {
+        tps.push_back(s_.x[i] + t * dx);
+      }
+    }
+  }
+
+  std::sort(tps.begin(), tps.end());
+  
+  if (!tps.empty()) {
+    std::vector<double> unique_tps;
+    unique_tps.push_back(tps[0]);
+    for (size_t i = 1; i < tps.size(); ++i) {
+      if (std::abs(tps[i] - unique_tps.back()) > 1e-9) {
+        unique_tps.push_back(tps[i]);
+      }
+    }
+    tps = std::move(unique_tps);
+  }
+
+  Eigen::VectorXd result(tps.size());
+  for (size_t i = 0; i < tps.size(); ++i) {
+    result(i) = tps[i];
+  }
+  return result;
 }
 
 CubicMultiSpline::
