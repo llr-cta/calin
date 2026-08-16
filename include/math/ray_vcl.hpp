@@ -140,8 +140,9 @@ public:
     const real_vt cosi = -dir_.dot(surface_norm);
     const real_vt etacosi = eta*cosi;
     // const real_vt c2 = 1.0-eta*eta*(1.0-cosi*cosi);
-    // const real_vt c2 = nmul_add(eta*eta,nmul_add(cosi,cosi,1.0),1.0);
-    const real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
+    // const real_vt c2 = 1.0 - eta*eta + eta*eta*cosi*cosi;
+    // const real_vt c2 = mul_add(etacosi, etacosi, 1.0 - eta*eta);
+    const real_vt c2 = mul_add(etacosi, etacosi, nmul_add(eta,eta,1.0));
     dir_ = eta*dir_ + (etacosi - sqrt(c2))*surface_norm;
   };
 
@@ -155,8 +156,8 @@ public:
     clear_dir_inv();
     real_vt eta = n;
     const real_vt cosi = dir_.dot(surface_norm);
-    real_vt etacosi = n*cosi;
-    real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
+    real_vt etacosi = eta*cosi;
+    real_vt c2 = mul_add(etacosi, etacosi, nmul_add(eta, eta, 1.0));
     real_bvt mask = mask_in & (c2>0);
     eta = select(mask, eta, 1.0);
     etacosi = select(mask, etacosi, cosi);
