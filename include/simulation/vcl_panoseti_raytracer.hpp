@@ -42,7 +42,7 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 // These classes are too complex for SWIG to handle directly from the header
 // files. We define a simplified subset directly in the SWIG interface file.
 
-#define DEBUG_STATUS
+// #define DEBUG_STATUS
 
 #ifndef SWIG
 
@@ -113,10 +113,11 @@ public:
   using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
 
   VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
-      unsigned scope_id, const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline,
+      unsigned scope_id, const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
       real_t air_refractive_index = 1.0,
-      RNG* rng = nullptr, bool adopt_rng = false):
+      RNG* rng = nullptr, bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false):
     VCLReal(), lens_refractive_index_spline_(lens_refractive_index_spline),
+    adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
     rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
@@ -136,7 +137,7 @@ public:
     Eigen::VectorXd lens_polynomial = calin::protobuf_to_eigenvec(array_params.fresnel_lens_polynomial());
     lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).template cast<real_t>();
 
-    lens_aperture2_          = SQR(array_params.fresnel_lens_aperture());
+    lens_aperture_radius2_   = 0.5*SQR(array_params.fresnel_lens_aperture());
 
     detector_distance_       = array_params.detector_separation();
     detector_origin_         = calin::xyz_to_eigenvec(array_params.detector_shift()).template cast<real_t>();
@@ -161,6 +162,7 @@ public:
   ~VCLPanosetiThinLensScopeRayTracer()
   {
     if(adopt_rng_)delete rng_;
+    if(adopt_lens_refractive_index_spline_)delete lens_refractive_index_spline_;
   }
 
   bool point_telescope(const Eigen::Vector3d& v)
@@ -226,8 +228,6 @@ public:
     return mask;
   }
 
-//#define DEBUG_STATUS
-
   real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, TraceInfo& info)
   {
 #ifdef DEBUG_STATUS
@@ -263,7 +263,7 @@ public:
 
     // Test aperture
     info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
-    mask &= (info.lens_in_x*info.lens_in_x + info.lens_in_z*info.lens_in_z) <= lens_aperture2_;
+    mask &= (info.lens_in_x*info.lens_in_x + info.lens_in_z*info.lens_in_z) <= lens_aperture_radius2_;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -271,13 +271,16 @@ public:
     if(not horizontal_or(mask)) {
       // We outie ...
 #ifdef DEBUG_STATUS
-      std::cout << '\n';
+      std::cout << std::endl;
 #endif
       return mask;
     }
 
     // Calculate reftactive index of lens
-    real_vt lens_ref_index = lens_refractive_index_spline_.vcl_real_value<VCLReal>(ray.energy());
+    real_vt lens_ref_index = lens_refractive_index_spline_->vcl_real_value<VCLReal>(ray.energy());
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << lens_ref_index[0];
+#endif
 
     // Refract into lens
     ray.refract_at_surface_in_with_mask(mask, vec3_vt::UnitY(), lens_ref_index);
@@ -287,6 +290,10 @@ public:
     vec3_vt lens_norm = calin::math::geometry::VCL<VCLReal>::norm_of_common_derivative_polynomial_surface(
       ray.x(), ray.z(), lens_derivative_polynomial_.data(), lens_derivative_polynomial_.size(),
       /* convex= */ true);
+
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << lens_norm.x()[0] << ',' << lens_norm.y()[0] << ',' << lens_norm.z()[0];
+#endif
 
     // Refract out of lens
     info.status = select(int_bvt(mask), PSTS_NO_LENS_EXIT, info.status);
@@ -359,7 +366,7 @@ public:
     // *************************************************************************
 
 #ifdef DEBUG_STATUS
-    std::cout << '\n';
+    std::cout << std::endl;
 #endif
     return mask;
   }
@@ -377,7 +384,7 @@ public:
       sintheta*std::cos(phi), std::cos(theta), sintheta*std::sin(phi));
 
     if(radius <= 0) {
-      radius = std::sqrt(lens_aperture2_);
+      radius = 0.5*std::sqrt(lens_aperture_radius2_) * 1.05; // Default to 5% larger than lens radius
     }
     if(distance <= 0) {
       throw std::runtime_error("Light emission distance must be positive or infinity");
@@ -388,9 +395,9 @@ public:
 
     unsigned ntraced = 0;
     unsigned iray = 0;
-    x_out.resize(nray);
-    y_out.resize(nray);
-    t_out.resize(nray);
+    x_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    y_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    t_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
 
     while(iray < nray) {
       vec3_vt x;
@@ -438,9 +445,6 @@ public:
 
       for(unsigned i=0; i< VCLReal::num_real; i++) {
         ntraced++;
-        if(ntraced > 10*nray - 100) {
-          std::cerr << "Debug: status=" << status[i] << " x=" << xfp[i] << " y=" << yfp[i] << " t=" << tfp[i] << std::endl;
-        }
         if(status[i] >= PSTS_TS_OUTSIDE_DETECTOR) {
           x_out[iray] = xfp[i];
           y_out[iray] = yfp[i];
@@ -468,7 +472,8 @@ public:
 
 private:
 
-  const calin::math::spline_interpolation::CubicSpline& lens_refractive_index_spline_;
+  const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_;
+  bool adopt_lens_refractive_index_spline_ = false;
 
   Eigen::Vector3d scope_position_;
 
@@ -481,7 +486,7 @@ private:
 
   vecX_t          lens_derivative_polynomial_;
 
-  real_t          lens_aperture2_;
+  real_t          lens_aperture_radius2_;
 
   real_t          detector_distance_;
   vec3_t          detector_origin_;
