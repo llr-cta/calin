@@ -137,7 +137,7 @@ public:
     Eigen::VectorXd lens_polynomial = calin::protobuf_to_eigenvec(array_params.fresnel_lens_polynomial());
     lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).template cast<real_t>();
 
-    lens_aperture_radius2_   = 0.5*SQR(array_params.fresnel_lens_aperture());
+    lens_aperture_radius2_   = SQR(0.5 * array_params.fresnel_lens_aperture());
 
     detector_distance_       = array_params.detector_separation();
     detector_origin_         = calin::xyz_to_eigenvec(array_params.detector_shift()).template cast<real_t>();
@@ -384,7 +384,7 @@ public:
       sintheta*std::cos(phi), std::cos(theta), sintheta*std::sin(phi));
 
     if(radius <= 0) {
-      radius = 0.5*std::sqrt(lens_aperture_radius2_) * 1.05; // Default to 5% larger than lens radius
+      radius = std::sqrt(lens_aperture_radius2_) * 1.05; // Default to 5% larger than lens radius
     }
     if(distance <= 0) {
       throw std::runtime_error("Light emission distance must be positive or infinity");
