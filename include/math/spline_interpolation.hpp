@@ -58,6 +58,7 @@ struct CubicSplineIntervals: public InterpolationIntervals
 };
 
 enum BoundaryConitions { BC_NOT_A_KNOT, BC_NATURAL, BC_CLAMPED_SLOPE };
+enum RegularizationType { REG_NONE, REG_FIRST_DIFFERENCE, REG_SECOND_DIFFERENCE };
 
 InterpolationIntervals make_intervals(const std::vector<double>& x);
 
@@ -77,7 +78,8 @@ std::vector<double> fit_spline(
   const std::vector<double>& ydata,
   const std::vector<double>& wdata = std::vector<double>(),
   BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
-  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0,
+  double lambda = 0.0, RegularizationType reg_type = REG_SECOND_DIFFERENCE);
 
  void fit_regular_spline(
   std::vector<double>& xknots_out,
@@ -87,7 +89,8 @@ std::vector<double> fit_spline(
   const std::vector<double>& ydata,
   const std::vector<double>& wdata = std::vector<double>(),
   BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
-  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0,
+  double lambda = 0.0, RegularizationType reg_type = REG_SECOND_DIFFERENCE);
 
 // The core cubic calculation functions are templates so they can be used for
 // scalar or vector types.
@@ -339,6 +342,8 @@ public:
   void rescale(double scale);
   void extend_linear_rhs(double dx = 0);
   void extend_linear_lhs(double dx = 0);
+
+  void make_monotonic();
 
   const CubicSplineIntervals& intervals() const { return s_; }
 

@@ -227,7 +227,8 @@ fit_spline(
   const std::vector<double>& ydata,
   const std::vector<double>& wdata,
   BoundaryConitions bc_lhs, double bc_lhs_val,
-  BoundaryConitions bc_rhs, double bc_rhs_val)
+  BoundaryConitions bc_rhs, double bc_rhs_val,
+  double lambda, RegularizationType reg_type)
 {
   unsigned N = xknots.size();
   unsigned M = xdata.size();
@@ -241,8 +242,20 @@ fit_spline(
     throw std::runtime_error("fit_spline: need at least 3 knots");
   }
 
-  Eigen::MatrixXd A(M, N);
-  Eigen::VectorXd b(M);
+  unsigned P = 0;
+  if (lambda > 0.0) {
+    if (reg_type == REG_FIRST_DIFFERENCE && N >= 2) {
+      P = N - 1;
+    } else if (reg_type == REG_SECOND_DIFFERENCE && N >= 3) {
+      P = N - 2;
+    }
+  }
+
+  Eigen::MatrixXd A(M + P, N);
+  Eigen::VectorXd b(M + P);
+
+  A.setZero();
+  b.setZero();
 
   CubicMultiSpline multi_basis(xknots);
 
@@ -273,6 +286,22 @@ fit_spline(
     }
   }
 
+  if (lambda > 0.0 && P > 0) {
+    double sqrt_lambda = std::sqrt(lambda);
+    if (reg_type == REG_FIRST_DIFFERENCE) {
+      for (unsigned i = 0; i < N - 1; ++i) {
+        A(M + i, i)     = -sqrt_lambda;
+        A(M + i, i + 1) =  sqrt_lambda;
+      }
+    } else if (reg_type == REG_SECOND_DIFFERENCE) {
+      for (unsigned i = 0; i < N - 2; ++i) {
+        A(M + i, i)     =  sqrt_lambda;
+        A(M + i, i + 1) = -2.0 * sqrt_lambda;
+        A(M + i, i + 2) =  sqrt_lambda;
+      }
+    }
+  }
+
   Eigen::VectorXd y = A.colPivHouseholderQr().solve(b);
 
   std::vector<double> result(N);
@@ -291,7 +320,8 @@ fit_regular_spline(
   const std::vector<double>& ydata,
   const std::vector<double>& wdata,
   BoundaryConitions bc_lhs, double bc_lhs_val,
-  BoundaryConitions bc_rhs, double bc_rhs_val)
+  BoundaryConitions bc_rhs, double bc_rhs_val,
+  double lambda, RegularizationType reg_type)
 {
   if (xdata.empty()) {
     throw std::runtime_error("fit_regular_spline: xdata is empty");
@@ -311,7 +341,7 @@ fit_regular_spline(
   }
   xknots_out.back() = xmax;
 
-  yknots_out = fit_spline(xknots_out, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  yknots_out = fit_spline(xknots_out, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val, lambda, reg_type);
   return;
 }
 
@@ -492,6 +522,30 @@ void CubicSpline::extend_linear_lhs(double dx)
     }
     I_.insert(I_.begin(), 0.0);
   }
+}
+
+void CubicSpline::make_monotonic()
+{
+  for (unsigned i = 0; i < s_.y.size() - 1; ++i) {
+    double m = (s_.y[i+1] - s_.y[i]) / s_.dx[i];
+    if (m == 0.0) {
+      s_.dy_dx[i] = 0.0;
+      s_.dy_dx[i+1] = 0.0;
+    } else {
+      double alpha = s_.dy_dx[i] / m;
+      double beta = s_.dy_dx[i+1] / m;
+      if (alpha < 0.0) { s_.dy_dx[i] = 0.0; alpha = 0.0; }
+      if (beta < 0.0) { s_.dy_dx[i+1] = 0.0; beta = 0.0; }
+      double norm = alpha * alpha + beta * beta;
+      if (norm > 9.0) {
+        double tau = 3.0 / std::sqrt(norm);
+        s_.dy_dx[i] = tau * alpha * m;
+        s_.dy_dx[i+1] = tau * beta * m;
+      }
+    }
+  }
+  I_.clear();
+  init();
 }
 
 double CubicSpline::ymax() const
