@@ -75,7 +75,7 @@ public:
   real_vt             lens_in_z;        // Ray intersection with lens aperture
   real_vt             lens_in_n_dot_u;  // Cosine of angle between ray and incoming lens normal
 
-  int_vt              lens_groove;      // Lens groove number for
+  int_vt              lens_groove;      // Lens groove number
   real_vt             lens_out_x;       // Ray exit point from lens
   real_vt             lens_out_y;       // Ray exit point from lens
   real_vt             lens_out_z;       // Ray exit point from lens
@@ -257,9 +257,10 @@ public:
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    info.lens_in_x    = select(mask, ray.position().x(), 0);
-    info.lens_in_y    = select(mask, ray.position().y(), 0);
-    info.lens_in_z    = select(mask, ray.position().z(), 0);
+    info.lens_in_x       = select(mask, ray.position().x(), 0);
+    info.lens_in_y       = select(mask, ray.position().y(), 0);
+    info.lens_in_z       = select(mask, ray.position().z(), 0);
+    info.lens_in_n_dot_u = select(mask, ray.direction().y(), 0);
 
     // Test aperture
     info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
@@ -305,6 +306,12 @@ public:
     if(scattering_sigma_theta_ > 0) {
       ray.scatter_direction(select(mask, scattering_sigma_theta_, 0.0), *rng_);
     }
+
+    info.lens_groove      = 0;
+    info.lens_out_x       = select(mask, ray.position().x(), 0);
+    info.lens_out_y       = select(mask, ray.position().y(), 0);
+    info.lens_out_z       = select(mask, ray.position().z(), 0);
+    info.lens_out_n_dot_u = select(mask, ray.direction().dot(lens_norm), 0);
 
     ray.translate_origin(detector_origin_.template cast<real_vt>());
     if(detector_has_rotation_) {
