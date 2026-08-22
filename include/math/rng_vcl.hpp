@@ -789,6 +789,26 @@ public:
     x = from_inverse_cdf_double(inverse_cdf);
   }
 
+  float_vt from_inverse_cdf_float(const Eigen::VectorXf& inverse_cdf)
+  {
+    return from_inverse_cdf_float(inverse_cdf.data(), inverse_cdf.size());
+  }
+
+  double_vt from_inverse_cdf_double(const Eigen::VectorXd& inverse_cdf)
+  {
+    return from_inverse_cdf_double(inverse_cdf.data(), inverse_cdf.size());
+  }
+
+  void from_inverse_cdf_real(float_vt& x, const Eigen::VectorXf& inverse_cdf)
+  {
+    x = from_inverse_cdf_float(inverse_cdf);
+  }
+
+  void from_inverse_cdf_real(double_vt& x, const Eigen::VectorXd& inverse_cdf)
+  {
+    x = from_inverse_cdf_double(inverse_cdf);
+  }
+
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
     if(seed == 0)seed = RNG::uint64_from_random_device();

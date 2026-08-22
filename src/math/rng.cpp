@@ -615,6 +615,73 @@ void RNG::generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
   cdf = inv_cdf;
 }
 
+double RNG::inverse_cdf(const Eigen::VectorXd& inv_cdf)
+{
+  double x = uniform();
+  unsigned n = inv_cdf.size();
+  if(n == 0) return 0.0;
+  double fi = x * (n - 1);
+  unsigned i = (unsigned)std::floor(fi);
+  if (i >= n - 1) return inv_cdf(n - 1);
+  double f = fi - i;
+  return inv_cdf(i) + f * (inv_cdf(i+1) - inv_cdf(i));
+}
+
+Eigen::VectorXd RNG::generate_inverse_cdf(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned nbins)
+{
+  if(nbins == 0) nbins = x.size();
+  Eigen::VectorXd inv_cdf(nbins);
+  if(nbins == 0 || x.size() == 0 || y.size() == 0) return inv_cdf;
+
+  unsigned j = 1;
+  for(unsigned i = 0; i < nbins; i++)
+  {
+    double target_y;
+    if(i==0) target_y = 0.0;
+    else if(i == nbins-1) target_y = 1.0;
+    else target_y = (double)i/(double)(nbins-1);
+
+    while(target_y > y(j) && j < y.size() - 1) j++;
+
+    double t = (target_y - y(j-1)) / (y(j) - y(j-1));
+    if (std::isnan(t) || std::isinf(t)) t = 0.0;
+    inv_cdf(i) = x(j-1) + t * (x(j) - x(j-1));
+  }
+  return inv_cdf;
+}
+
+Eigen::VectorXd RNG::generate_inverse_cdf_from_pdf(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned nbins)
+{
+  if (x.size() == 0 || y.size() == 0) return Eigen::VectorXd();
+  
+  unsigned start = 0;
+  while(start < y.size() && y(start) == 0.0) {
+    start++;
+  }
+  if (start > 0) start--; // keep the last leading zero
+
+  unsigned end = y.size();
+  while(end > start + 1 && y(end - 1) == 0.0) {
+    end--;
+  }
+  if (end < y.size()) end++; // keep the first trailing zero
+
+  unsigned n = end - start;
+  if (n <= 1) {
+    return Eigen::VectorXd(nbins == 0 ? x.size() : nbins).setZero();
+  }
+
+  Eigen::VectorXd cdf(n);
+  cdf(0) = 0.0;
+  for(unsigned i = 1; i < n; i++) {
+    cdf(i) = cdf(i-1) + 0.5 * (y(start + i) + y(start + i - 1)) * (x(start + i) - x(start + i - 1));
+  }
+  if (cdf(n-1) > 0.0) {
+    cdf /= cdf(n-1);
+  }
+  return generate_inverse_cdf(x.segment(start, n), cdf, nbins);
+}
+
 
 // *****************************************************************************
 // *****************************************************************************
