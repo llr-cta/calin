@@ -1151,7 +1151,7 @@ public:
   }
 
   template<typename Functor>
-  real_vt inverse_cdf_logit(Functor&& f) {
+  real_vt from_inverse_cdf_logit(Functor&& f) {
     real_vt x;
     rng_->inverse_cdf_logit_real(x, std::forward<Functor>(f));
     return x;
