@@ -43,7 +43,7 @@
 
 %import "simulation/panoseti_optics.pb.i"
 
-%apply Eigen::VectorXd& OUTPUT { Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out };
+%apply Eigen::VectorXd& OUTPUT { Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, Eigen::VectorXd& e_out };
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
@@ -62,6 +62,18 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
     bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad);
     unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
       double photon_energy_ev,
+      double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
+    unsigned chromatic_psf_logit_spline(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out,
+      Eigen::VectorXd& e_out, unsigned nray,
+      const calin::math::spline_interpolation::CubicSpline& color_spline,
+      double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
+    unsigned chromatic_psf_inverse_cdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+      Eigen::VectorXd& e_out, unsigned nray,
+      const Eigen::VectorXd& color_inv_cdf,
+      double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
+    unsigned chromatic_psf_pdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+      Eigen::VectorXd& e_out, unsigned nray,
+      const Eigen::VectorXd& color_pdf_x, const Eigen::VectorXd& color_pdf_y,
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
     Eigen::VectorXd lens_derivative_polynomial() const;
   };

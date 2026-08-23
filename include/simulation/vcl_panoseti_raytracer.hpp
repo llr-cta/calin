@@ -379,8 +379,8 @@ public:
   }
 
   template<typename Colorizer>
-  unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, unsigned nray,
-    Colorizer& generate_color,
+  unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, Eigen::VectorXd& e_out, 
+    unsigned nray, Colorizer& generate_color,
     double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
   {
     theta *= M_PI/180.0;
@@ -405,6 +405,7 @@ public:
     x_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
     y_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
     t_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    e_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
 
     while(iray < nray) {
       vec3_vt x;
@@ -445,10 +446,12 @@ public:
       typename VCLReal::real_at xfp;
       typename VCLReal::real_at yfp;
       typename VCLReal::real_at tfp;
+      typename VCLReal::real_at efp;
       info.status.store_a(status);
       info.detector_x.store_a(xfp);
       info.detector_z.store_a(yfp);
       info.detector_t.store_a(tfp);
+      ray.energy().store_a(efp);
 
       for(unsigned i=0; i< VCLReal::num_real; i++) {
         ntraced++;
@@ -456,6 +459,7 @@ public:
           x_out[iray] = xfp[i];
           y_out[iray] = yfp[i];
           t_out[iray] = tfp[i];
+          e_out[iray] = efp[i];
           iray++;
           if(iray >= nray)break;
         }
@@ -471,8 +475,39 @@ public:
     double photon_energy_ev,
     double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
   {
+    Eigen::VectorXd e_unused;
     auto color_generator = [photon_energy_ev]() { return photon_energy_ev; };
-    return psf(x_out, y_out, t_out, nray, color_generator, theta, phi, distance, radius);
+    return psf(x_out, y_out, t_out, e_unused, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_logit_spline(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out,
+    Eigen::VectorXd& e_out, unsigned nray, const calin::math::spline_interpolation::CubicSpline& color_spline,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    auto color_generator = [&]() {
+      return rng_->from_inverse_cdf_logit([&](const real_vt& x) { return color_spline.vcl_real_value<VCLReal>(x); });
+    };
+    return psf(x_out, y_out, t_out, e_out, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_inverse_cdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+    Eigen::VectorXd& e_out, unsigned nray, const Eigen::VectorXd& color_inv_cdf,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    vecX_t real_color_inv_cdf = color_inv_cdf.template cast<real_t>();
+    auto color_generator = [&]() {
+      return rng_->from_inverse_cdf(real_color_inv_cdf.data(), real_color_inv_cdf.size());
+    };
+    return psf(x_out, y_out, t_out, e_out, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_pdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+    Eigen::VectorXd& e_out, unsigned nray,
+    const Eigen::VectorXd& color_pdf_x, const Eigen::VectorXd& color_pdf_y,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    Eigen::VectorXd color_inv_cdf = calin::math::rng::RNG::generate_inverse_cdf_from_pdf(color_pdf_x, color_pdf_y);
+    return chromatic_psf_inverse_cdf(x_out, y_out, t_out, e_out, nray, color_inv_cdf, theta, phi, distance, radius);
   }
 
   Eigen::VectorXd lens_derivative_polynomial() const { return lens_derivative_polynomial_.template cast<double>(); }
