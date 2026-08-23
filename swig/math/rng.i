@@ -28,6 +28,7 @@
 %{
 #include "math/rng.hpp"
 #include "math/rng_vcl.hpp"
+#include "math/spline_interpolation.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -39,10 +40,17 @@
 %import "calin_global_definitions.i"
 
 %import "math/rng.pb.i"
+%import "math/spline_interpolation.i"
 
 %newobject calin::math::rng::RNG::as_proto() const;
 %newobject calin::math::rng::RNGCore::as_proto() const;
 %include "math/rng.hpp"
+
+%extend calin::math::rng::RNG {
+  double inverse_cdf_logit_spline(const calin::math::spline_interpolation::CubicSpline& spline) {
+    return $self->inverse_cdf_logit([&spline](double x) { return spline.value(x); });
+  }
+}
 
 %template(NR3_EmulateSIMD_RNGCore_4) calin::math::rng::NR3_EmulateSIMD_RNGCore<4>;
 

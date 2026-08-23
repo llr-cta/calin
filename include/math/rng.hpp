@@ -169,6 +169,13 @@ public:
 
   double inverse_cdf(const std::vector<std::pair<double,double>> &inv_cdf);
   double inverse_cdf(const Eigen::VectorXd& inv_cdf);
+
+  template<typename Functor>
+  double inverse_cdf_logit(Functor&& f) {
+    double x = uniform();
+    return f(std::log(x / (1.0 - x)));
+  }
+
   static void generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
     unsigned nbins=0);
   static Eigen::VectorXd generate_inverse_cdf(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned nbins=0);
