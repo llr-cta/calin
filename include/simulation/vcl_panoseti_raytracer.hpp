@@ -372,8 +372,6 @@ public:
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
     // *************************************************************************
 
-    detector_to_reflector(ray);
-
 #ifdef DEBUG_STATUS
     std::cout << std::endl;
 #endif
@@ -525,10 +523,10 @@ public:
 
   calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const
   {
-    Eigen::Vector3d obs_dir = rot_reflector_to_global_ * Eigen::Vector3d::UnitY();
+    Eigen::Vector3d obs_dir = double_rot_reflector_to_global_ * Eigen::Vector3d::UnitY();
     double r = std::sqrt(lens_aperture_radius2_);
     return calin::simulation::ray_processor::RayProcessorDetectorSphere(
-      scope_position_, r, obs_dir, M_PI/2.0);
+      double_scope_position_, r, obs_dir, M_PI/2.0);
   }
 
 private:
