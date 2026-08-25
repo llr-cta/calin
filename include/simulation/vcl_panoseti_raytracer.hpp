@@ -34,6 +34,7 @@
 #include <math/rng_vcl.hpp>
 #include <math/geometry_vcl.hpp>
 #include <math/spline_interpolation.hpp>
+#include <simulation/ray_processor.hpp>
 #include <util/log.hpp>
 #include <simulation/panoseti_optics.pb.h>
 
@@ -127,9 +128,9 @@ public:
       throw std::runtime_error("VCLPanosetiThinLensScopeRayTracer: scope_id out of range");
     }
 
-    scope_position_.x()      = array_params.scope_positions(scope_id).x();
-    scope_position_.y()      = array_params.scope_positions(scope_id).y();
-    scope_position_.z()      = array_params.scope_positions(scope_id).z();
+    double_scope_position_.x()      = array_params.scope_positions(scope_id).x();
+    double_scope_position_.y()      = array_params.scope_positions(scope_id).y();
+    double_scope_position_.z()      = array_params.scope_positions(scope_id).z();
     point_telescope_az_el_phi(0.0, 0.0, 0.0);
 
     air_ref_index_           = air_refractive_index;
@@ -181,15 +182,14 @@ public:
     az_rad_ = az_rad;
     el_rad_ = el_rad;
     phi_rad_ = phi_rad;
-    Eigen::Matrix3d rot_reflector_to_global =
+    double_rot_reflector_to_global_ =
       (Eigen::AngleAxisd(-az_rad,   Eigen::Vector3d::UnitZ()) *
        Eigen::AngleAxisd(el_rad,  Eigen::Vector3d::UnitX()) *
        Eigen::AngleAxisd(phi_rad,   Eigen::Vector3d::UnitY())).toRotationMatrix();
-    Eigen::Matrix3d rot_global_to_reflector = rot_reflector_to_global.transpose();
-    Eigen::Vector3d off_global_to_reflector = scope_position_;
+    double_rot_global_to_reflector_ = double_rot_reflector_to_global_.transpose();
 
-    global_to_reflector_off_ = off_global_to_reflector.template cast<real_t>(); // Cast double to float if necessary
-    global_to_reflector_rot_ = rot_global_to_reflector.template cast<real_t>();
+    global_to_reflector_off_ = double_scope_position_.template cast<real_t>();
+    global_to_reflector_rot_ = double_rot_global_to_reflector_.template cast<real_t>();
     return true;
   }
 
@@ -372,6 +372,8 @@ public:
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
     // *************************************************************************
 
+    detector_to_reflector(ray);
+
 #ifdef DEBUG_STATUS
     std::cout << std::endl;
 #endif
@@ -521,12 +523,22 @@ public:
 
   Eigen::VectorXd lens_derivative_polynomial() const { return lens_derivative_polynomial_.template cast<double>(); }
 
+  calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const
+  {
+    Eigen::Vector3d obs_dir = rot_reflector_to_global_ * Eigen::Vector3d::UnitY();
+    double r = std::sqrt(lens_aperture_radius2_);
+    return calin::simulation::ray_processor::RayProcessorDetectorSphere(
+      scope_position_, r, obs_dir, M_PI/2.0);
+  }
+
 private:
 
   const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_;
   bool adopt_lens_refractive_index_spline_ = false;
 
-  Eigen::Vector3d scope_position_;
+  Eigen::Vector3d double_scope_position_;
+  Eigen::Matrix3d double_rot_reflector_to_global_ = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d double_rot_global_to_reflector_ = Eigen::Matrix3d::Identity();
 
   real_t          az_rad_;
   real_t          el_rad_;
