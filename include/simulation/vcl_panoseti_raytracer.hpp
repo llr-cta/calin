@@ -115,7 +115,7 @@ public:
 
   VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
       unsigned scope_id, const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
-      real_t air_refractive_index = 1.0,
+      real_t air_refractive_index = 1.0, unsigned observation_layer = 0,
       RNG* rng = nullptr, bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false):
     VCLReal(), lens_refractive_index_spline_(lens_refractive_index_spline),
     adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
@@ -132,6 +132,15 @@ public:
     double_scope_position_.y()      = array_params.scope_positions(scope_id).y();
     double_scope_position_.z()      = array_params.scope_positions(scope_id).z();
     point_telescope_az_el_phi(0.0, 0.0, 0.0);
+
+    iobs_                           = observation_layer;
+    if(array_params.field_of_view() > 0) {
+      double_field_of_view_radius_rad_ = 0.5 * array_params.field_of_view() * M_PI/180.0;
+    } else {
+      double_field_of_view_radius_rad_ = std::atan2(M_SQRT1_2 * array_params.pixel_pitch()*array_params.num_pixels_per_axis(),
+        array_params.detector_separation()) * 1.1; // 10% margin
+    }
+    double_lens_aperture_radius_    = 0.5 * array_params.fresnel_lens_aperture();
 
     air_ref_index_           = air_refractive_index;
 
@@ -524,9 +533,10 @@ public:
   calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const
   {
     Eigen::Vector3d obs_dir = double_rot_reflector_to_global_ * Eigen::Vector3d::UnitY();
-    double r = std::sqrt(lens_aperture_radius2_);
     return calin::simulation::ray_processor::RayProcessorDetectorSphere(
-      double_scope_position_, r, obs_dir, M_PI/2.0);
+      double_scope_position_, double_lens_aperture_radius_, 
+      obs_dir, double_field_of_view_radius_rad_, 
+      iobs_);
   }
 
 private:
@@ -537,6 +547,10 @@ private:
   Eigen::Vector3d double_scope_position_;
   Eigen::Matrix3d double_rot_reflector_to_global_ = Eigen::Matrix3d::Identity();
   Eigen::Matrix3d double_rot_global_to_reflector_ = Eigen::Matrix3d::Identity();
+
+  unsigned        iobs_ = 0;
+  double          double_field_of_view_radius_rad_ = 0.0;
+  double          double_lens_aperture_radius_ = 0.0;
 
   real_t          az_rad_;
   real_t          el_rad_;

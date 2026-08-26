@@ -55,7 +55,7 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
     using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
     VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
         unsigned scope_id, const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
-        real_t air_refractive_index = 1.0,
+        real_t air_refractive_index = 1.0, unsigned observation_layer = 0,
         RNG* rng = nullptr, bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false);
     ~VCLPanosetiThinLensScopeRayTracer();
     bool point_telescope(const Eigen::Vector3d& v);

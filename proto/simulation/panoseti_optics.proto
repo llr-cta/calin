@@ -94,4 +94,11 @@ message ArrayParameters {
   calin.ix.common_types.EulerAngles3D detector_rotation    = 20
     [(CFO).desc = "Euler angles describing rotation of the detector with respect to the lens.",
      (CFO).units = "degrees" ];
+
+  double field_of_view                                     = 21
+    [(CFO).desc = "Field of view of camera, defining twice the maximum field "
+      "angle that a ray can have and have a non-zero detection probability. If "
+      "zero this is approximated from pixel_pitch and num_pixels_per_axis and "
+      "detector_separation with a margin of error.",
+     (CFO).units = "deg"];
 };
