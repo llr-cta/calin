@@ -32,6 +32,7 @@
 #include <math/spline_interpolation.hpp>
 #include <simulation/vso_array.hpp>
 #include <simulation/vcl_raytracer.hpp>
+#include <simulation/vcl_panoseti_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
 #include <simulation/vso_ray_processor.hpp>
 #include <util/log.hpp>
@@ -452,6 +453,111 @@ private:
   Eigen::Matrix3d global_to_fp_;        // Rotation matrix from global to focal plane
 
   double ref_index_ = 1.0;
+#endif
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) PanosetiVCLFocalPlaneRayPropagator:
+  public VCLFocalPlaneRayPropagator<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+
+  using RayTracer   = calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<Real_vt>;
+  using TraceInfo   = calin::simulation::vcl_raytracer::VCLPanosetiScopeTraceInfo<Real_vt>;
+  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
+#endif // not defined SWIG
+
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  PanosetiVCLFocalPlaneRayPropagator(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
+      const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+      ArchRNG* rng = nullptr, double air_refractive_index = 1.0, unsigned observation_layer = 0,
+      bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false):
+    array_params_(array_params),
+    lens_refractive_index_spline_(adopt_lens_refractive_index_spline ? new calin::math::spline_interpolation::CubicSpline(*lens_refractive_index_spline) : lens_refractive_index_spline),
+    adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
+    rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng)),
+    ray_tracer_(array_params.scope_positions_size()), air_ref_index_(air_refractive_index)
+  {
+    for(unsigned iscope=0;iscope<unsigned(array_params.scope_positions_size());++iscope) {
+      ray_tracer_[iscope] = new RayTracer(
+        array_params_, iscope, lens_refractive_index_spline_,
+        air_ref_index_, observation_layer, rng_, /* adopt_lens_refractive_index_spline= */ false, /* adopt_rng= */ false);
+    }
+  }
+
+  virtual ~PanosetiVCLFocalPlaneRayPropagator() {
+    for(auto* rt : ray_tracer_)delete rt;
+    if(adopt_lens_refractive_index_spline_) delete lens_refractive_index_spline_;
+    delete rng_; // adopt_rng_ is handled by RealRNG
+  }
+
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
+    std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> spheres;
+    spheres.reserve(ray_tracer_.size());
+    for(const auto* rt : ray_tracer_) {
+      spheres.push_back(rt->detector_sphere());
+    }
+    return spheres;
+  }
+
+  void start_propagating() final {
+    // nothing to see here
+  }
+
+  void point_telescope_az_el_phi_deg(unsigned iscope,
+      double az_deg, double el_deg, double phi_deg) final {
+    if(iscope >= ray_tracer_.size()) {
+      throw std::out_of_range("Telescope number out of range");
+    }
+    ray_tracer_[iscope]->point_telescope_az_el_phi(
+      az_deg/180.0*M_PI, el_deg/180.0*M_PI, phi_deg/180.0*M_PI);
+  }
+
+#ifndef SWIG
+  double_bvt propagate_rays_to_focal_plane(
+      unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
+      VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) final {
+    TraceInfo info;
+    ray_mask = ray_tracer_[scope_id]->
+      trace_global_frame(ray_mask, ray, info, /* do_derotation = */ false);
+    fp_parameters.fplane_x     = info.detector_x;
+    fp_parameters.fplane_y     = 0.0;
+    fp_parameters.fplane_z     = info.detector_z;
+    fp_parameters.fplane_ux    = info.detector_ux;
+    fp_parameters.fplane_uy    = info.detector_uy;
+    fp_parameters.fplane_uz    = info.detector_uz;
+    fp_parameters.fplane_t     = info.detector_t;
+    fp_parameters.pixel_id     = info.pixel_id.template cast<int64_vt>();
+    fp_parameters.detection_prob = 1.0;
+    return ray_mask;
+  }
+#endif
+
+  void finish_propagating() final {
+    // nothing to see here
+  }
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const final {
+    std::ostringstream stream;
+    stream << indent0 << "Array of " << this->ray_tracer_.size() << " PANOSETI telescopes.";
+    return stream.str();
+  }
+
+#ifndef SWIG
+private:
+  calin::ix::simulation::panoseti_optics::ArrayParameters array_params_;
+  const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_ = nullptr;
+  bool adopt_lens_refractive_index_spline_ = false;
+  RealRNG* rng_ = nullptr;
+  std::vector<RayTracer*> ray_tracer_;
+  double air_ref_index_ = 1.0;
 #endif
 };
 
