@@ -26,6 +26,7 @@
 %feature(autodoc,2);
 
 %{
+#include "simulation/ray_processor.hpp"
 #include "simulation/vcl_panoseti_raytracer.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -41,6 +42,7 @@
 %import "math/rng.i"
 %import "util/vcl.i"
 
+%import "simulation/ray_processor.i"
 %import "simulation/panoseti_optics.pb.i"
 
 %apply Eigen::VectorXd& OUTPUT { Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, Eigen::VectorXd& e_out };
@@ -77,6 +79,7 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
       unsigned nray, const Eigen::VectorXd& color_pdf_x, const Eigen::VectorXd& color_pdf_y,
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
     Eigen::VectorXd lens_derivative_polynomial() const;
+    calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const;
   };
 
 } } } // namespace calin::simulation::vcl_raytracer
