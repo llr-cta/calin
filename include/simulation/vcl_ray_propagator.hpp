@@ -57,8 +57,13 @@ public:
   VCLRayColorizer(ArchRNG* rng = nullptr, bool adopt_rng = false):
     rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng))
   {
+    // nothing to see here
   }
-  virtual ~VCLRayColorizer() { delete rng_; }
+
+  virtual ~VCLRayColorizer() 
+  { 
+    delete rng_; // adopt_rng is handled by RealRNG destructor
+  }
 
 #ifndef SWIG
   virtual void colorize(Ray_vt& ray, double_bvt ray_mask) = 0;
@@ -88,6 +93,7 @@ public:
     VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
     color_inv_cdf_(color_inv_cdf)
   {
+    // nothing to see here
   }
 
 #ifndef SWIG
@@ -124,6 +130,7 @@ public:
     spline_(adopt_spline ? new calin::math::spline_interpolation::CubicSpline(*spline) : spline),
     adopt_spline_(adopt_spline)
   {
+    // nothing to see here
   }
 
   ~VCLLogitSplineRayColorizer() {
@@ -169,6 +176,7 @@ public:
     VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
     base_colorizer_(base_colorizer), atm_abs_(atm_abs), zobs_(zobs), adopt_colorizer_(adopt_colorizer)
   {
+    // nothing to see here
   }
 
   ~VCLAtmosphericAbsorptionRayColorizer() {
@@ -664,11 +672,13 @@ public:
 
   PanosetiVCLFocalPlaneRayPropagator(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
       const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+      VCLRayColorizer<VCLArchitecture>* colorizer = nullptr,
       ArchRNG* rng = nullptr, double air_refractive_index = 1.0, unsigned observation_layer = 0,
-      bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false):
+      bool adopt_lens_refractive_index_spline = false, bool adopt_colorizer = false, bool adopt_rng = false):
     array_params_(array_params),
     lens_refractive_index_spline_(adopt_lens_refractive_index_spline ? new calin::math::spline_interpolation::CubicSpline(*lens_refractive_index_spline) : lens_refractive_index_spline),
     adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
+    colorizer_(colorizer), adopt_colorizer_(adopt_colorizer),
     rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng)),
     ray_tracer_(array_params.scope_positions_size()), air_ref_index_(air_refractive_index)
   {
@@ -682,6 +692,7 @@ public:
   virtual ~PanosetiVCLFocalPlaneRayPropagator() {
     for(auto* rt : ray_tracer_)delete rt;
     if(adopt_lens_refractive_index_spline_) delete lens_refractive_index_spline_;
+    if(adopt_colorizer_) delete colorizer_;
     delete rng_; // adopt_rng_ is handled by RealRNG
   }
 
@@ -711,6 +722,8 @@ public:
   double_bvt propagate_rays_to_focal_plane(
       unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
       VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) final {
+    colorizer_->colorize(ray, ray_mask);
+
     TraceInfo info;
     ray_mask = ray_tracer_[scope_id]->
       trace_global_frame(ray_mask, ray, info, /* do_derotation = */ false);
@@ -742,6 +755,8 @@ private:
   calin::ix::simulation::panoseti_optics::ArrayParameters array_params_;
   const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_ = nullptr;
   bool adopt_lens_refractive_index_spline_ = false;
+  VCLRayColorizer<VCLArchitecture>* colorizer_ = nullptr;
+  bool adopt_colorizer_ = false;
   RealRNG* rng_ = nullptr;
   std::vector<RayTracer*> ray_tracer_;
   double air_ref_index_ = 1.0;
