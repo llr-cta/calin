@@ -185,42 +185,55 @@ public:
 
 #ifndef SWIG
   void colorize(Ray_vt& ray, double_bvt ray_mask) override {
-    double_bvt active_mask = ray_mask;
+    unsigned active_bits = vcl::to_bits(ray_mask);
+
+    double_at ray_energy_at;
+    ray.energy().store(ray_energy_at);
+
+    double_at ray_z_at;
+    ray.z().store(ray_z_at);
+
+    double_vt ray_uz_inv = 1.0/abs(ray.uz());
+    double_at ray_uz_inv_at;
+    ray_uz_inv.store(ray_uz_inv_at);
     
-    // Rejection sampling loop
-    while(vcl::horizontal_or(active_mask)) {
-      // Propose energies for active rays
-      base_colorizer_->colorize(ray, active_mask);
-      
-      // Calculate acceptance probability (exp(-tau))
-      double_at energy_at, z_at;
-      ray.energy().store(energy_at);
-      ray.z().store(z_at);
-      
-      double_at prob_at;
-      unsigned active_bits = vcl::to_bits(active_mask);
-      for(unsigned i = 0; i < VCLArchitecture::num_double; ++i) {
-        if((active_bits >> i) & 1) {
-          // Calculate optical depth for the path from z_at[i] to zobs_
-          double tau = atm_abs_->optical_depth_for_altitude_and_energy(z_at[i], energy_at[i]) 
-                     - atm_abs_->optical_depth_for_altitude_and_energy(zobs_, energy_at[i]);
-          // using std::max so tau is non-negative, though it should be by definition
-          prob_at[i] = std::exp(-std::max(0.0, tau));
-        } else {
-          prob_at[i] = 1.0;
+    unsigned iray = 0;
+    while(iray<VCLArchitecture::num_double) {
+      // Propose energies for all lanes
+      base_colorizer_->colorize(ray, true);
+
+      double_at proposed_energy_at;
+      ray.energy().store(proposed_energy_at);
+
+      double_vt rand_vt = this->rng_->uniform_double();
+      double_at rand_at;
+      rand_vt.store(rand_at);
+
+      unsigned ilane = 0;
+      while(iray<VCLArchitecture::num_double and ilane<VCLArchitecture::num_double) {
+        if(not((active_bits >> iray) & 1)) {
+          ++iray;
+          continue;
         }
+
+        double tau_vertical = atm_abs_->optical_depth_for_altitude_and_energy(ray_z_at[iray], proposed_energy_at[ilane]) 
+                            - atm_abs_->optical_depth_for_altitude_and_energy(zobs_, proposed_energy_at[ilane]);
+        double prob = std::exp(-std::max(0.0, tau_vertical * ray_uz_inv_at[iray]));
+        double rand = rand_at[ilane];
+
+        if(rand < prob) {
+          // Color is accepted, set the ray energy as proposed
+          ray_energy_at[iray] = proposed_energy_at[ilane];
+          ++iray;
+        } else {
+          // Color is rejected, go again with next lane
+        }
+
+        ++ilane;
       }
-      
-      double_vt prob;
-      prob.load(prob_at);
-      
-      // Accept or reject
-      double_vt rand = this->rng_->uniform_double();
-      double_bvt accepted = rand < prob;
-      
-      // Update active mask: keep rays that are in the active mask AND were rejected
-      active_mask = active_mask & ~accepted;
     }
+
+    ray.energy().load(ray_energy_at);
   }
 #endif // not defined SWIG
 
