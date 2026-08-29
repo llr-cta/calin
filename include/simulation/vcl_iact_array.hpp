@@ -338,6 +338,7 @@ public:
   CALIN_TYPEALIAS(DaviesCottonVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::DaviesCottonVCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(PerfectOpticsVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::PerfectOpticsVCLFocalPlaneRayPropagator<VCLArchitecture>);
   CALIN_TYPEALIAS(AllSkyVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<VCLArchitecture>);
+  CALIN_TYPEALIAS(PanosetiVCLFocalPlaneRayPropagator, calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<VCLArchitecture>);
 
   VCLIACTArray(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atm_abs,
@@ -396,6 +397,14 @@ public:
     const DetectionEfficiency& detector_efficiency,
     const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
     double pe_time_spread = 0,
+    bool adopt_pe_processor = false, bool adopt_pe_generator = false);
+
+  PanosetiVCLFocalPlaneRayPropagator* add_panoseti_propagator(
+    const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
+    const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+    PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+    const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator = nullptr,
+    double pe_time_spread = 0, bool adopt_lens_refractive_index_spline = false,
     bool adopt_pe_processor = false, bool adopt_pe_generator = false);
 
   void point_telescope_az_el_phi_deg(unsigned iscope, double az_deg, double el_deg, double phi_deg);
@@ -589,6 +598,13 @@ protected:
 
   std::vector<BandwidthManagerCacheEntry> bandwidth_manager_cache_;
 
+  struct RayColorizerCacheEntry {
+    const DetectionEfficiency* detector_efficiency;
+    calin::simulation::vcl_ray_propagator::VCLRayColorizer<VCLArchitecture>* colorizer;
+  };
+
+  std::vector<RayColorizerCacheEntry> ray_colorizer_cache_;
+
   VCLBandwidthManager<VCLArchitecture>* find_cached_bandwidth_manager(
     const std::string& name,
     const DetectionEfficiency* detector_efficiency,
@@ -618,6 +634,22 @@ protected:
   {
     BandwidthManagerCacheEntry entry{name, detector_efficiency, fp_angular_efficiency, zobs, e_lo, e_hi, delta_e, manager};
     bandwidth_manager_cache_.push_back(entry);
+  }
+
+  calin::simulation::vcl_ray_propagator::VCLRayColorizer<VCLArchitecture>*
+  find_cached_ray_colorizer(const DetectionEfficiency* detector_efficiency)
+  {
+    for(const auto& entry : ray_colorizer_cache_) {
+      if(entry.detector_efficiency == detector_efficiency) return entry.colorizer;
+    }
+    return nullptr;
+  }
+
+  void cache_ray_colorizer(
+    const DetectionEfficiency* detector_efficiency,
+    calin::simulation::vcl_ray_propagator::VCLRayColorizer<VCLArchitecture>* colorizer)
+  {
+    ray_colorizer_cache_.push_back({detector_efficiency, colorizer});
   }
 #endif // not defined SWIG
 };
@@ -671,6 +703,9 @@ template<typename VCLArchitecture> VCLIACTArray<VCLArchitecture>::
   }
   for(auto& bandwidth_manager_cache_entry : bandwidth_manager_cache_) {
     delete bandwidth_manager_cache_entry.manager;
+  }
+  for(auto& ray_colorizer_cache_entry : ray_colorizer_cache_) {
+    delete ray_colorizer_cache_entry.colorizer;
   }
 }
 
@@ -913,6 +948,53 @@ VCLIACTArray<VCLArchitecture>::add_all_sky_propagator(
   add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, pe_time_spread, propagator_name,
     /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
 
+  return propagator;
+}
+
+template<typename VCLArchitecture>
+calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<VCLArchitecture>*
+VCLIACTArray<VCLArchitecture>::add_panoseti_propagator(
+  const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
+  const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+  PEProcessor* pe_processor, const DetectionEfficiency& detector_efficiency,
+  const std::string& propagator_name, SplinePEAmplitudeGenerator* pe_generator,
+  double pe_time_spread, bool adopt_lens_refractive_index_spline,
+  bool adopt_pe_processor, bool adopt_pe_generator)
+{
+  auto* colorizer = find_cached_ray_colorizer(&detector_efficiency);
+  if(!colorizer) {
+    const auto& x = detector_efficiency.all_xi();
+    const auto& y = detector_efficiency.all_yi();
+    Eigen::Map<const Eigen::VectorXd> x_pdf(x.data(), x.size());
+    Eigen::Map<const Eigen::VectorXd> y_pdf(y.data(), y.size());
+    Eigen::VectorXd inverse_cdf = calin::math::rng::RNG::generate_inverse_cdf_from_pdf(x_pdf, y_pdf);
+
+    auto* base_colorizer = new calin::simulation::vcl_ray_propagator::VCLInverseCDFRayColorizer<VCLArchitecture>(
+      inverse_cdf, this->rng_, /* adopt_rng = */ false);
+    colorizer = new calin::simulation::vcl_ray_propagator::VCLAtmosphericAbsorptionRayColorizer<VCLArchitecture>(
+      base_colorizer, &atm_abs_, zobs_, /* adopt_colorizer = */ true, this->rng_, /* adopt_rng = */ false);
+    cache_ray_colorizer(&detector_efficiency, colorizer);
+  }
+
+  auto* propagator = new calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<VCLArchitecture>(
+    array_params, lens_refractive_index_spline, colorizer, this->rng_, ref_index_, config_.observation_level(),
+    adopt_lens_refractive_index_spline, /* adopt_colorizer = */ false, /* adopt_rng = */ false);
+
+  double e_lo = config_.detector_energy_lo();
+  double e_hi = config_.detector_energy_hi();
+  double delta_e = config_.detector_energy_bin_width();
+  double zobs = zobs_;
+  auto* bandwidth_manager = find_cached_bandwidth_manager(
+    propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e);
+  if(!bandwidth_manager) {
+    bandwidth_manager = new VCLSimpleBandwidthManager<VCLArchitecture>(
+      &atm_abs_, detector_efficiency, zobs, e_lo, e_hi, delta_e, propagator_name);
+    cache_bandwidth_manager(
+      propagator_name, &detector_efficiency, nullptr, zobs, e_lo, e_hi, delta_e, bandwidth_manager);
+  }
+
+  add_propagator(propagator, pe_processor, bandwidth_manager, pe_generator, pe_time_spread, propagator_name,
+    /* adopt_propagator = */ true, adopt_pe_processor, adopt_pe_generator);
   return propagator;
 }
 
