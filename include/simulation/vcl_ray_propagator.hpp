@@ -50,19 +50,19 @@ public:
   using double_vt   = typename VCLArchitecture::double_vt;
   using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
   using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
-  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
 #endif // not defined SWIG
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
 
   VCLRayColorizer(ArchRNG* rng = nullptr, bool adopt_rng = false):
-    rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng))
+    rng_(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng),
+    adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
     // nothing to see here
   }
 
   virtual ~VCLRayColorizer() 
   { 
-    delete rng_; // adopt_rng is handled by RealRNG destructor
+    if(adopt_rng_) delete rng_;
   }
 
 #ifndef SWIG
@@ -72,7 +72,8 @@ public:
 
 #ifndef SWIG
 protected:
-  RealRNG* rng_;
+  ArchRNG* rng_;
+  bool adopt_rng_;
 #endif
 };
 
@@ -85,7 +86,6 @@ public:
   using double_vt   = typename VCLArchitecture::double_vt;
   using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
   using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
-  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
 #endif // not defined SWIG
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
 
@@ -99,7 +99,7 @@ public:
 #ifndef SWIG
   void colorize(Ray_vt& ray, double_bvt ray_mask) override {
     if(!vcl::horizontal_or(ray_mask)) return;
-    double_vt energy = this->rng_->from_inverse_cdf(color_inv_cdf_.data(), color_inv_cdf_.size());
+    double_vt energy = this->rng_->from_inverse_cdf_double(color_inv_cdf_.data(), color_inv_cdf_.size());
     ray.set_energy(vcl::select(ray_mask, energy, ray.energy()));
   }
 #endif // not defined SWIG
@@ -121,7 +121,6 @@ public:
   using double_vt   = typename VCLArchitecture::double_vt;
   using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
   using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
-  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
 #endif // not defined SWIG
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
 
@@ -140,7 +139,7 @@ public:
 #ifndef SWIG
   void colorize(Ray_vt& ray, double_bvt ray_mask) override {
     if(!vcl::horizontal_or(ray_mask)) return;
-    double_vt energy = this->rng_->from_inverse_cdf_logit([this](const double_vt& x) {
+    double_vt energy = this->rng_->inverse_cdf_logit_double([this](const double_vt& x) {
       return spline_->template vcl_value<VCLArchitecture>(x);
     });
     ray.set_energy(vcl::select(ray_mask, energy, ray.energy()));
@@ -165,7 +164,6 @@ public:
   using double_vt   = typename VCLArchitecture::double_vt;
   using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
   using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
-  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
   using double_at   = typename VCLArchitecture::double_at;
 #endif // not defined SWIG
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
@@ -749,7 +747,7 @@ public:
     fp_parameters.fplane_uy    = info.detector_uy;
     fp_parameters.fplane_uz    = info.detector_uz;
     fp_parameters.fplane_t     = info.detector_t;
-    fp_parameters.pixel_id     = info.pixel_id.template cast<int64_vt>();
+    fp_parameters.pixel_id     = info.pixel_id;
     fp_parameters.detection_prob = 1.0;
     return ray_mask;
   }
