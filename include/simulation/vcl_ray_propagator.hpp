@@ -174,7 +174,8 @@ public:
     const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs, 
     double zobs, bool adopt_colorizer = false, ArchRNG* rng = nullptr, bool adopt_rng = false):
     VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
-    base_colorizer_(base_colorizer), atm_abs_(atm_abs), zobs_(zobs), adopt_colorizer_(adopt_colorizer)
+    base_colorizer_(base_colorizer), atm_abs_(atm_abs), zobs_(zobs), adopt_colorizer_(adopt_colorizer),
+    optical_depth_at_zobs_(atm_abs->optical_depth_for_altitude(zobs))
   {
     // nothing to see here
   }
@@ -217,16 +218,16 @@ public:
         }
 
         double tau_vertical = atm_abs_->optical_depth_for_altitude_and_energy(ray_z_at[iray], proposed_energy_at[ilane]) 
-                            - atm_abs_->optical_depth_for_altitude_and_energy(zobs_, proposed_energy_at[ilane]);
+                            - optical_depth_at_zobs_(proposed_energy_at[ilane]);
         double prob = std::exp(-std::max(0.0, tau_vertical * ray_uz_inv_at[iray]));
         double rand = rand_at[ilane];
 
         if(rand < prob) {
-          // Color is accepted, set the ray energy as proposed
+          // Proposed energy is accepted, set the ray energy as proposed
           ray_energy_at[iray] = proposed_energy_at[ilane];
           ++iray;
         } else {
-          // Color is rejected, go again with next lane
+          // Proposed energy is rejected, go again with next lane
         }
 
         ++ilane;
@@ -246,6 +247,7 @@ private:
   const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_;
   double zobs_;
   bool adopt_colorizer_;
+  calin::math::interpolation_1d::InterpLinear1D optical_depth_at_zobs_;
 };
 
 template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VCLFocalPlaneParameters
