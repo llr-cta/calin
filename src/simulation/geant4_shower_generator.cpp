@@ -22,6 +22,15 @@
 
 #include <G4StateManager.hh>
 #include <G4IonTable.hh>
+#include <G4EmStandardPhysics_option4.hh>
+#include <G4EmExtraPhysics.hh>
+#include <G4DecayPhysics.hh>
+#include <G4RadioactiveDecayPhysics.hh>
+#include <G4HadronElasticPhysics.hh>
+#include <G4StoppingPhysics.hh>
+#include <G4IonPhysics.hh>
+#include <G4NeutronTrackingCut.hh>
+#include <G4PhysListFactory.hh>
 
 #include <math/rng.hpp>
 #include <simulation/geant4_shower_generator.hpp>
@@ -125,9 +134,16 @@ void Geant4ShowerGenerator::construct()
   exception_handler_ = new EAS_ExceptionHandler();
   // ---------------------------------------------------------------------------
 
-  // Make physics list and register it
-  FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
-  // physlist->RegisterPhysics(new G4StepLimiterPhysics());
+  G4PhysListFactory physListFactory;
+
+  if(config_.physics_list() != "" and !physListFactory.IsReferencePhysList(config_.physics_list())) {
+    LOG(WARNING) << "Physics list \"" << config_.physics_list() << "\" is not recognized. Defaulting to FTFP_BERT.";
+    config_.set_physics_list("FTFP_BERT");
+  } else if(config_.physics_list() == "") {
+    config_.set_physics_list("FTFP_BERT");
+  } 
+
+  G4VModularPhysicsList* physlist = physListFactory.GetReferencePhysList(config_.physics_list());
   physlist->SetDefaultCutValue(config_.tracking_cut_scale()*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
@@ -303,6 +319,7 @@ Geant4ShowerGenerator::config_type Geant4ShowerGenerator::default_config()
   config.set_ztop_of_atmosphere(100E5);
   config.set_tracking_cut_scale(10);
   config.set_minimum_energy_cut(20);
+  config.set_physics_list("FTFP_BERT");
   config.set_detector_box_size(1000E5);
   config.set_material("G4_AIR");
   config.set_seed(0);

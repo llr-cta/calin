@@ -25,6 +25,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <Eigen/Dense>
 
 #include <math/spline_interpolation.hpp>
 #include <math/special.hpp>
@@ -219,6 +220,131 @@ Eigen::VectorXd calin::math::spline_interpolation::generate_cubic_spline_interpo
       bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
 }
 
+std::vector<double> calin::math::spline_interpolation::
+fit_spline(
+  const std::vector<double>& xknots,
+  const std::vector<double>& xdata,
+  const std::vector<double>& ydata,
+  const std::vector<double>& wdata,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val,
+  double lambda, RegularizationType reg_type)
+{
+  unsigned N = xknots.size();
+  unsigned M = xdata.size();
+  if (ydata.size() != M) {
+    throw std::runtime_error("fit_spline: xdata and ydata must have the same size");
+  }
+  if (!wdata.empty() && wdata.size() != M) {
+    throw std::runtime_error("fit_spline: wdata must have the same size as xdata");
+  }
+  if (N < 3) {
+    throw std::runtime_error("fit_spline: need at least 3 knots");
+  }
+
+  unsigned P = 0;
+  if (lambda > 0.0) {
+    if (reg_type == REG_FIRST_DIFFERENCE && N >= 2) {
+      P = N - 1;
+    } else if (reg_type == REG_SECOND_DIFFERENCE && N >= 3) {
+      P = N - 2;
+    }
+  }
+
+  Eigen::MatrixXd A(M + P, N);
+  Eigen::VectorXd b(M + P);
+
+  A.setZero();
+  b.setZero();
+
+  CubicMultiSpline multi_basis(xknots);
+
+  std::vector<double> zero_y(N, 0.0);
+  unsigned idx_inhom = multi_basis.add_spline(zero_y, "inhom", bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+
+  std::vector<unsigned> basis_idx(N);
+  for (unsigned i = 0; i < N; ++i) {
+    std::vector<double> basis_y(N, 0.0);
+    basis_y[i] = 1.0;
+    basis_idx[i] = multi_basis.add_spline(basis_y, "", bc_lhs, 0.0, bc_rhs, 0.0);
+  }
+
+  for (unsigned j = 0; j < M; ++j) {
+    double x = xdata[j];
+    std::vector<double> vals = multi_basis.value(x);
+    b(j) = ydata[j] - vals[idx_inhom];
+    for (unsigned i = 0; i < N; ++i) {
+      A(j, i) = vals[basis_idx[i]];
+    }
+  }
+
+  if (!wdata.empty()) {
+    for (unsigned j = 0; j < M; ++j) {
+      double w = std::sqrt(wdata[j]);
+      A.row(j) *= w;
+      b(j) *= w;
+    }
+  }
+
+  if (lambda > 0.0 && P > 0) {
+    double sqrt_lambda = std::sqrt(lambda);
+    if (reg_type == REG_FIRST_DIFFERENCE) {
+      for (unsigned i = 0; i < N - 1; ++i) {
+        A(M + i, i)     = -sqrt_lambda;
+        A(M + i, i + 1) =  sqrt_lambda;
+      }
+    } else if (reg_type == REG_SECOND_DIFFERENCE) {
+      for (unsigned i = 0; i < N - 2; ++i) {
+        A(M + i, i)     =  sqrt_lambda;
+        A(M + i, i + 1) = -2.0 * sqrt_lambda;
+        A(M + i, i + 2) =  sqrt_lambda;
+      }
+    }
+  }
+
+  Eigen::VectorXd y = A.colPivHouseholderQr().solve(b);
+
+  std::vector<double> result(N);
+  for (unsigned i = 0; i < N; ++i) {
+    result[i] = y(i);
+  }
+  return result;
+}
+
+void calin::math::spline_interpolation::
+fit_regular_spline(
+  std::vector<double>& xknots_out,
+  std::vector<double>& yknots_out,
+  unsigned nknot,
+  const std::vector<double>& xdata,
+  const std::vector<double>& ydata,
+  const std::vector<double>& wdata,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val,
+  double lambda, RegularizationType reg_type)
+{
+  if (xdata.empty()) {
+    throw std::runtime_error("fit_regular_spline: xdata is empty");
+  }
+  if (nknot < 3) {
+    throw std::runtime_error("fit_regular_spline: need at least 3 knots");
+  }
+
+  auto minmax = std::minmax_element(xdata.begin(), xdata.end());
+  double xmin = *minmax.first;
+  double xmax = *minmax.second;
+
+  xknots_out.resize(nknot);
+  double dx = (xmax - xmin) / (nknot - 1);
+  for (unsigned i = 0; i < nknot; ++i) {
+    xknots_out[i] = xmin + i * dx;
+  }
+  xknots_out.back() = xmax;
+
+  yknots_out = fit_spline(xknots_out, xdata, ydata, wdata, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val, lambda, reg_type);
+  return;
+}
+
 double calin::math::spline_interpolation::
 cubic_solve(double y, double dx, double dx_inv, double y0, double y1, double D0, double D1)
 {
@@ -344,12 +470,82 @@ void CubicSpline::extend_linear_rhs(double dx)
     s_.regular_xmax += dx;
     s_.irregular_begin += 1;
   }
+  
+  double new_y = s_.y.back() + s_.dy_dx.back()*dx;
+  double dI = dx * (s_.y.back() + new_y) / 2.0;
+
   s_.xmax += dx;
   s_.x.push_back(s_.x.back() + dx);
   s_.dx.push_back(dx);
   s_.dx_inv.push_back(1/dx);
-  s_.y.push_back(s_.y.back() + s_.dy_dx.back()*dx);
+  s_.y.push_back(new_y);
   s_.dy_dx.push_back(s_.dy_dx.back());
+
+  if (!I_.empty()) {
+    I_.push_back(I_.back() + dI);
+  }
+}
+
+void CubicSpline::extend_linear_lhs(double dx)
+{
+  if(dx<=0) {
+    dx = s_.dx.front();
+  }
+  
+  double new_y = s_.y.front() - s_.dy_dx.front()*dx;
+  double dI = dx * (s_.y.front() + new_y) / 2.0;
+
+  if (s_.irregular_begin > 0 && std::abs(dx - s_.regular_dx)/s_.regular_dx < 1e-6) {
+    s_.irregular_begin += 1;
+  } else if (s_.irregular_begin == 0 && std::abs(dx - s_.dx.front())/s_.dx.front() < 1e-6) {
+    s_.regular_dx = dx;
+    s_.regular_dx_inv = 1.0/dx;
+    s_.regular_xmax = s_.x[1];
+    s_.irregular_begin = 2;
+  } else {
+    s_.regular_dx = 0;
+    s_.regular_dx_inv = 0;
+    s_.regular_xmax = s_.xmin - dx;
+    s_.irregular_begin = 0;
+  }
+
+  s_.xmin -= dx;
+  s_.x.insert(s_.x.begin(), s_.xmin);
+  s_.dx.insert(s_.dx.begin(), dx);
+  s_.dx_inv.insert(s_.dx_inv.begin(), 1/dx);
+  s_.y.insert(s_.y.begin(), new_y);
+  s_.dy_dx.insert(s_.dy_dx.begin(), s_.dy_dx.front());
+
+  if (!I_.empty()) {
+    for (auto& integral : I_) {
+      integral += dI;
+    }
+    I_.insert(I_.begin(), 0.0);
+  }
+}
+
+void CubicSpline::make_monotonic()
+{
+  for (unsigned i = 0; i < s_.y.size() - 1; ++i) {
+    double m = (s_.y[i+1] - s_.y[i]) / s_.dx[i];
+    if (m == 0.0) {
+      s_.dy_dx[i] = 0.0;
+      s_.dy_dx[i+1] = 0.0;
+    } else {
+      double alpha = s_.dy_dx[i] / m;
+      double beta = s_.dy_dx[i+1] / m;
+      if (alpha < 0.0) { s_.dy_dx[i] = 0.0; alpha = 0.0; }
+      if (beta < 0.0) { s_.dy_dx[i+1] = 0.0; beta = 0.0; }
+      double norm = alpha * alpha + beta * beta;
+      if (norm > 9.0) {
+        double tau = 3.0 / std::sqrt(norm);
+        s_.dy_dx[i] = tau * alpha * m;
+        s_.dy_dx[i+1] = tau * beta * m;
+      }
+    }
+  }
+  I_.clear();
+  init();
 }
 
 double CubicSpline::ymax() const
@@ -481,6 +677,21 @@ double CubicSpline::value(double x) const
   return cubic_value(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
+double CubicSpline::value_with_linear_extrapolation(double x) const
+{
+  if (x < s_.xmin) {
+    return s_.y.front() + s_.dy_dx.front() * (x - s_.xmin);
+  }
+  if (x > s_.xmax) {
+    return s_.y.back() + s_.dy_dx.back() * (x - s_.xmax);
+  }
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_value(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
 double CubicSpline::derivative(double x) const
 {
   double dx;
@@ -590,6 +801,70 @@ double CubicSpline::find(double y, double xmin) const
     }
   }
   return xfound;
+}
+
+Eigen::VectorXd CubicSpline::turning_points(bool include_extrapolation) const
+{
+  std::vector<double> tps;
+  for (unsigned i = 0; i < s_.y.size() - 1; ++i) {
+    double dx = s_.dx[i];
+    double y0 = s_.y[i];
+    double y1 = s_.y[i+1];
+    double D0 = s_.dy_dx[i] * dx;
+    double D1 = s_.dy_dx[i+1] * dx;
+    double dy = y1 - y0;
+    double c = 3*dy - (2*D0 + D1);
+    double d = -2*dy + (D0 + D1);
+
+    std::vector<double> roots;
+    if (std::abs(d) < 1e-14 * std::max({std::abs(dy), std::abs(D0), std::abs(D1), 1.0})) {
+      if (std::abs(c) > 1e-14 * std::max({std::abs(D0), std::abs(D1), 1.0})) {
+        roots.push_back(-D0 / (2*c));
+      }
+    } else {
+      double disc = c*c - 3*D0*d;
+      if (disc >= 0.0) {
+        double sq = std::sqrt(disc);
+        double q = -c - std::copysign(sq, c);
+        roots.push_back(q / (3*d));
+        if (q != 0.0) {
+          roots.push_back(D0 / q);
+        }
+      }
+    }
+
+    for (double t : roots) {
+      bool keep = false;
+      if (t >= 0.0 && t <= 1.0) {
+        keep = true;
+      } else if (include_extrapolation) {
+        if (i == 0 && t < 0.0) keep = true;
+        if (i == s_.y.size() - 2 && t > 1.0) keep = true;
+      }
+      if (keep) {
+        tps.push_back(s_.x[i] + t * dx);
+      }
+    }
+  }
+
+  std::sort(tps.begin(), tps.end());
+  
+  if (!tps.empty()) {
+    std::vector<double> unique_tps;
+    unique_tps.push_back(tps[0]);
+    for (size_t i = 1; i < tps.size(); ++i) {
+      if (std::abs(tps[i] - unique_tps.back()) > 1e-9) {
+        unique_tps.push_back(tps[i]);
+      }
+    }
+    tps = std::move(unique_tps);
+  }
+
+  Eigen::VectorXd result(tps.size());
+  for (size_t i = 0; i < tps.size(); ++i) {
+    result(i) = tps[i];
+  }
+  return result;
 }
 
 CubicMultiSpline::
@@ -760,6 +1035,21 @@ std::vector<double> CubicMultiSpline::value(double x) const
   std::vector<double> values(y_.size());
   for(unsigned ispline=0;ispline<y_.size();ispline++) {
     values[ispline] =
+      cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+        dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+  }
+  return values;
+}
+
+Eigen::VectorXd CubicMultiSpline::value_as_eigen(double x) const
+{
+  double dx;
+  double dx_inv;
+  unsigned i = find_interval(x, s_, dx, dx_inv);
+  double t = (x-s_.x[i])*dx_inv;
+  Eigen::VectorXd values(y_.size());
+  for(unsigned ispline=0;ispline<y_.size();ispline++) {
+    values(ispline) =
       cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
         dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
   }

@@ -36,6 +36,7 @@ From: ubuntu:22.04
     export G4ENSDFSTATEDATA="$GEANT4_DATA_DIR/G4ENSDFSTATE2.3"
     export G4PARTICLEHPDATA="/usr/share/Geant4/data/G4TENDL1.4"
     export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
     export SHELL=/bin/bash
 
 %post

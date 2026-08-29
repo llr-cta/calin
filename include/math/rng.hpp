@@ -45,6 +45,8 @@
 #include <utility>
 #include <cstddef>
 
+#include <Eigen/Core>
+
 #include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
 #include <provenance/chronicle.pb.h>
@@ -166,8 +168,18 @@ public:
     do x = uint32_from_random_device(); while(x==0U); return x; }
 
   double inverse_cdf(const std::vector<std::pair<double,double>> &inv_cdf);
+  double inverse_cdf(const Eigen::VectorXd& inv_cdf);
+
+  template<typename Functor>
+  double inverse_cdf_logit(Functor&& f) {
+    double x = uniform();
+    return f(std::log(x / (1.0 - x)));
+  }
+
   static void generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
     unsigned nbins=0);
+  static Eigen::VectorXd generate_inverse_cdf(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned nbins=0);
+  static Eigen::VectorXd generate_inverse_cdf_from_pdf(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned nbins=0);
 
   static constexpr uint64_t std_test_seed = 12939; // essential supply
 

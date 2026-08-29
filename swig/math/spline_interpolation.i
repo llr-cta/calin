@@ -48,6 +48,8 @@
 %apply double &OUTPUT { double& value5 };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
+%apply std::vector<double> &OUTPUT { std::vector<double>& xknots_out, std::vector<double>& yknots_out };
+
 %newobject new_regularized_multi_spline(double dx);
 %include "math/spline_interpolation.hpp"
 

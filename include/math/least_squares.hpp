@@ -122,13 +122,21 @@ private:
 Eigen::VectorXd polyfit(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned order);
 
 #ifndef SWIG
-inline double polyval(const double* p, unsigned np, double x)
+
+// Template that can be used with VCL types (e.g. double_vt)
+template<typename XYType, typename PType>
+inline XYType general_polyval(const PType* p, unsigned np, XYType x)
 {
-  double y = p[--np];
+  XYType y = p[--np];
   while(np) {
     y = y*x + p[--np];
   }
   return y;
+}
+
+inline double polyval(const double* p, unsigned np, double x)
+{
+  return general_polyval(p, np, x);
 }
 
 inline double polyval(const std::vector<double>& p, double x)
@@ -136,8 +144,10 @@ inline double polyval(const std::vector<double>& p, double x)
   return polyval(p.data(), p.size(), x);
 }
 
-inline void polyval_and_derivative(double& y, double& dy_dx,
-  const double* p, unsigned np, double x)
+// Template that can be used with VCL types (e.g. double_vt)
+template<typename XYType, typename PType>
+inline void general_polyval_and_derivative(XYType& y, XYType& dy_dx,
+  const PType* p, unsigned np, XYType x)
 {
   y = p[--np];
   dy_dx = 0.0;
@@ -148,12 +158,27 @@ inline void polyval_and_derivative(double& y, double& dy_dx,
 }
 
 inline void polyval_and_derivative(double& y, double& dy_dx,
+  const double* p, unsigned np, double x)
+{
+  general_polyval_and_derivative(y, dy_dx, p, np, x);
+} 
+
+inline void polyval_and_derivative(double& y, double& dy_dx,
   const std::vector<double>& p, double x)
 {
   polyval_and_derivative(y, dy_dx, p.data(), p.size(), x);
 }
 
 #endif
+
+inline Eigen::VectorXd polyder(const Eigen::VectorXd& p)
+{
+  Eigen::VectorXd pout(p.size()-1);
+  for(unsigned i=1; i<p.size(); ++i) {
+    pout[i-1] = double(i)*p[i];
+  }
+  return pout;
+}
 
 inline double polyval(const Eigen::VectorXd& p, double x)
 {

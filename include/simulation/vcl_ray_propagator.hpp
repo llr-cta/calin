@@ -32,12 +32,221 @@
 #include <math/spline_interpolation.hpp>
 #include <simulation/vso_array.hpp>
 #include <simulation/vcl_raytracer.hpp>
+#include <simulation/vcl_panoseti_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
 #include <simulation/vso_ray_processor.hpp>
 #include <util/log.hpp>
 #include <util/string.hpp>
 
+#include <simulation/detector_efficiency.hpp>
+
 namespace calin { namespace simulation { namespace vcl_ray_propagator {
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLRayColorizer
+{
+public:
+#ifndef SWIG
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+#endif // not defined SWIG
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  VCLRayColorizer(ArchRNG* rng = nullptr, bool adopt_rng = false):
+    rng_(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng),
+    adopt_rng_(rng==nullptr ? true : adopt_rng)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VCLRayColorizer() 
+  { 
+    if(adopt_rng_) delete rng_;
+  }
+
+#ifndef SWIG
+  virtual void colorize(Ray_vt& ray, double_bvt ray_mask) = 0;
+#endif // not defined SWIG
+  virtual std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const = 0;
+
+#ifndef SWIG
+protected:
+  ArchRNG* rng_;
+  bool adopt_rng_;
+#endif
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLInverseCDFRayColorizer:
+  public VCLRayColorizer<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+#endif // not defined SWIG
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  VCLInverseCDFRayColorizer(const Eigen::VectorXd& color_inv_cdf, ArchRNG* rng = nullptr, bool adopt_rng = false):
+    VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
+    color_inv_cdf_(color_inv_cdf)
+  {
+    // nothing to see here
+  }
+
+#ifndef SWIG
+  void colorize(Ray_vt& ray, double_bvt ray_mask) override {
+    if(!vcl::horizontal_or(ray_mask)) return;
+    double_vt energy = this->rng_->from_inverse_cdf_double(color_inv_cdf_.data(), color_inv_cdf_.size());
+    ray.set_energy(vcl::select(ray_mask, energy, ray.energy()));
+  }
+#endif // not defined SWIG
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const override {
+    return indent0 + "Inverse CDF Ray Colorizer";
+  }
+
+private:
+  Eigen::VectorXd color_inv_cdf_;
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLLogitSplineRayColorizer:
+  public VCLRayColorizer<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+#endif // not defined SWIG
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  VCLLogitSplineRayColorizer(const calin::math::spline_interpolation::CubicSpline* spline, bool adopt_spline = false, ArchRNG* rng = nullptr, bool adopt_rng = false):
+    VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
+    spline_(adopt_spline ? new calin::math::spline_interpolation::CubicSpline(*spline) : spline),
+    adopt_spline_(adopt_spline)
+  {
+    // nothing to see here
+  }
+
+  ~VCLLogitSplineRayColorizer() {
+    if(adopt_spline_) delete spline_;
+  }
+
+#ifndef SWIG
+  void colorize(Ray_vt& ray, double_bvt ray_mask) override {
+    if(!vcl::horizontal_or(ray_mask)) return;
+    double_vt energy = this->rng_->inverse_cdf_logit_double([this](const double_vt& x) {
+      return spline_->template vcl_value<VCLArchitecture>(x);
+    });
+    ray.set_energy(vcl::select(ray_mask, energy, ray.energy()));
+  }
+#endif // not defined SWIG
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const override {
+    return indent0 + "Logit Spline Ray Colorizer";
+  }
+
+private:
+  const calin::math::spline_interpolation::CubicSpline* spline_;
+  bool adopt_spline_;
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) VCLAtmosphericAbsorptionRayColorizer:
+  public VCLRayColorizer<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+  using double_at   = typename VCLArchitecture::double_at;
+#endif // not defined SWIG
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  VCLAtmosphericAbsorptionRayColorizer(VCLRayColorizer<VCLArchitecture>* base_colorizer, 
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs, 
+    double zobs, bool adopt_colorizer = false, ArchRNG* rng = nullptr, bool adopt_rng = false):
+    VCLRayColorizer<VCLArchitecture>(rng, adopt_rng),
+    base_colorizer_(base_colorizer), atm_abs_(atm_abs), zobs_(zobs), adopt_colorizer_(adopt_colorizer),
+    optical_depth_at_zobs_(atm_abs->optical_depth_for_altitude(zobs))
+  {
+    // nothing to see here
+  }
+
+  ~VCLAtmosphericAbsorptionRayColorizer() {
+    if(adopt_colorizer_) delete base_colorizer_;
+  }
+
+#ifndef SWIG
+  void colorize(Ray_vt& ray, double_bvt ray_mask) override {
+    unsigned active_bits = vcl::to_bits(ray_mask);
+
+    double_at ray_energy_at;
+    ray.energy().store(ray_energy_at);
+
+    double_at ray_z_at;
+    ray.z().store(ray_z_at);
+
+    double_vt ray_uz_inv = 1.0/abs(ray.uz());
+    double_at ray_uz_inv_at;
+    ray_uz_inv.store(ray_uz_inv_at);
+    
+    unsigned iray = 0;
+    while(iray<VCLArchitecture::num_double) {
+      // Propose energies for all lanes
+      base_colorizer_->colorize(ray, true);
+
+      double_at proposed_energy_at;
+      ray.energy().store(proposed_energy_at);
+
+      double_vt rand_vt = this->rng_->uniform_double();
+      double_at rand_at;
+      rand_vt.store(rand_at);
+
+      unsigned ilane = 0;
+      while(iray<VCLArchitecture::num_double and ilane<VCLArchitecture::num_double) {
+        if(not((active_bits >> iray) & 1)) {
+          ++iray;
+          continue;
+        }
+
+        double tau_vertical = atm_abs_->optical_depth_for_altitude_and_energy(ray_z_at[iray], proposed_energy_at[ilane]) 
+                            - optical_depth_at_zobs_(proposed_energy_at[ilane]);
+        double prob = std::exp(-std::max(0.0, tau_vertical * ray_uz_inv_at[iray]));
+        double rand = rand_at[ilane];
+
+        if(rand < prob) {
+          // Proposed energy is accepted, set the ray energy as proposed
+          ray_energy_at[iray] = proposed_energy_at[ilane];
+          ++iray;
+        } else {
+          // Proposed energy is rejected, go again with next lane
+        }
+
+        ++ilane;
+      }
+    }
+
+    ray.mutable_energy().load(ray_energy_at);
+  }
+#endif // not defined SWIG
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const override {
+    return indent0 + "Atmospheric Absorption Ray Colorizer\n" + base_colorizer_->banner(indent0 + "  ", indentN + "  ");
+  }
+
+private:
+  VCLRayColorizer<VCLArchitecture>* base_colorizer_;
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_;
+  double zobs_;
+  bool adopt_colorizer_;
+  calin::math::interpolation_1d::InterpLinear1D optical_depth_at_zobs_;
+};
 
 template<typename VCLArchitecture> struct alignas(VCLArchitecture::vec_bytes) VCLFocalPlaneParameters
 {
@@ -267,7 +476,7 @@ public:
     }
     auto* scope = scopes_[iscope];
     scope->global_to_fp = 
-      Eigen::AngleAxisd(phi_deg*M_PI/180.0, Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(-phi_deg*M_PI/180.0, Eigen::Vector3d::UnitY()) *
       Eigen::AngleAxisd(-el_deg*M_PI/180.0, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(az_deg*M_PI/180.0, Eigen::Vector3d::UnitZ());
     scope->obs_dir = scope->global_to_fp.transpose() * Eigen::Vector3d::UnitY();
@@ -452,6 +661,118 @@ private:
   Eigen::Matrix3d global_to_fp_;        // Rotation matrix from global to focal plane
 
   double ref_index_ = 1.0;
+#endif
+};
+
+template<typename VCLArchitecture> class alignas(VCLArchitecture::vec_bytes) PanosetiVCLFocalPlaneRayPropagator:
+  public VCLFocalPlaneRayPropagator<VCLArchitecture>
+{
+public:
+#ifndef SWIG
+  using int64_vt    = typename VCLArchitecture::int64_vt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using double_vt   = typename VCLArchitecture::double_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using Real_vt     = calin::util::vcl::VCLDoubleReal<VCLArchitecture>;
+  using Ray_vt      = typename calin::math::ray::VCLRay<Real_vt>;
+
+  using RayTracer   = calin::simulation::vcl_raytracer::VCLPanosetiThinLensScopeRayTracer<Real_vt>;
+  using TraceInfo   = calin::simulation::vcl_raytracer::VCLPanosetiScopeTraceInfo<Real_vt>;
+  using RealRNG     = calin::math::rng::VCLRealRNG<Real_vt>;
+#endif // not defined SWIG
+
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
+
+  PanosetiVCLFocalPlaneRayPropagator(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
+      const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+      VCLRayColorizer<VCLArchitecture>* colorizer = nullptr,
+      ArchRNG* rng = nullptr, double air_refractive_index = 1.0, unsigned observation_layer = 0,
+      bool adopt_lens_refractive_index_spline = false, bool adopt_colorizer = false, bool adopt_rng = false):
+    array_params_(array_params),
+    lens_refractive_index_spline_(adopt_lens_refractive_index_spline ? new calin::math::spline_interpolation::CubicSpline(*lens_refractive_index_spline) : lens_refractive_index_spline),
+    adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
+    colorizer_(colorizer), adopt_colorizer_(adopt_colorizer),
+    rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng)),
+    ray_tracer_(array_params.scope_positions_size()), air_ref_index_(air_refractive_index)
+  {
+    for(unsigned iscope=0;iscope<unsigned(array_params.scope_positions_size());++iscope) {
+      ray_tracer_[iscope] = new RayTracer(
+        array_params_, iscope, lens_refractive_index_spline_,
+        air_ref_index_, observation_layer, rng_, /* adopt_lens_refractive_index_spline= */ false, /* adopt_rng= */ false);
+    }
+  }
+
+  virtual ~PanosetiVCLFocalPlaneRayPropagator() {
+    for(auto* rt : ray_tracer_)delete rt;
+    if(adopt_lens_refractive_index_spline_) delete lens_refractive_index_spline_;
+    if(adopt_colorizer_) delete colorizer_;
+    delete rng_; // adopt_rng_ is handled by RealRNG
+  }
+
+  virtual std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() {
+    std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> spheres;
+    spheres.reserve(ray_tracer_.size());
+    for(const auto* rt : ray_tracer_) {
+      spheres.push_back(rt->detector_sphere());
+    }
+    return spheres;
+  }
+
+  void start_propagating() final {
+    // nothing to see here
+  }
+
+  void point_telescope_az_el_phi_deg(unsigned iscope,
+      double az_deg, double el_deg, double phi_deg) final {
+    if(iscope >= ray_tracer_.size()) {
+      throw std::out_of_range("Telescope number out of range");
+    }
+    ray_tracer_[iscope]->point_telescope_az_el_phi(
+      az_deg/180.0*M_PI, el_deg/180.0*M_PI, phi_deg/180.0*M_PI);
+  }
+
+#ifndef SWIG
+  double_bvt propagate_rays_to_focal_plane(
+      unsigned scope_id, Ray_vt& ray, double_bvt ray_mask,
+      VCLFocalPlaneParameters<VCLArchitecture>& fp_parameters) final {
+    colorizer_->colorize(ray, ray_mask);
+
+    TraceInfo info;
+    ray_mask = ray_tracer_[scope_id]->
+      trace_global_frame(ray_mask, ray, info, /* do_derotation = */ false);
+    fp_parameters.fplane_x     = info.detector_x;
+    fp_parameters.fplane_y     = 0.0;
+    fp_parameters.fplane_z     = info.detector_z;
+    fp_parameters.fplane_ux    = info.detector_ux;
+    fp_parameters.fplane_uy    = info.detector_uy;
+    fp_parameters.fplane_uz    = info.detector_uz;
+    fp_parameters.fplane_t     = info.detector_t;
+    fp_parameters.pixel_id     = info.pixel_id;
+    fp_parameters.detection_prob = 1.0;
+    return ray_mask;
+  }
+#endif
+
+  void finish_propagating() final {
+    // nothing to see here
+  }
+
+  std::string banner(const std::string& indent0 = "", const std::string& indentN = "") const final {
+    std::ostringstream stream;
+    stream << indent0 << "Array of " << this->ray_tracer_.size() << " PANOSETI telescopes.";
+    return stream.str();
+  }
+
+#ifndef SWIG
+private:
+  calin::ix::simulation::panoseti_optics::ArrayParameters array_params_;
+  const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_ = nullptr;
+  bool adopt_lens_refractive_index_spline_ = false;
+  VCLRayColorizer<VCLArchitecture>* colorizer_ = nullptr;
+  bool adopt_colorizer_ = false;
+  RealRNG* rng_ = nullptr;
+  std::vector<RayTracer*> ray_tracer_;
+  double air_ref_index_ = 1.0;
 #endif
 };
 

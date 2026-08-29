@@ -789,6 +789,52 @@ public:
     x = from_inverse_cdf_double(inverse_cdf);
   }
 
+  float_vt from_inverse_cdf_float(const Eigen::VectorXf& inverse_cdf)
+  {
+    return from_inverse_cdf_float(inverse_cdf.data(), inverse_cdf.size());
+  }
+
+  double_vt from_inverse_cdf_double(const Eigen::VectorXd& inverse_cdf)
+  {
+    return from_inverse_cdf_double(inverse_cdf.data(), inverse_cdf.size());
+  }
+
+  void from_inverse_cdf_real(float_vt& x, const Eigen::VectorXf& inverse_cdf)
+  {
+    x = from_inverse_cdf_float(inverse_cdf);
+  }
+
+  void from_inverse_cdf_real(double_vt& x, const Eigen::VectorXd& inverse_cdf)
+  {
+    x = from_inverse_cdf_double(inverse_cdf);
+  }
+
+  template<typename Functor>
+  float_vt inverse_cdf_logit_float(Functor&& f)
+  {
+    float_vt x = uniform_float();
+    return f(vcl::log(x / (1.0f - x)));
+  }
+
+  template<typename Functor>
+  double_vt inverse_cdf_logit_double(Functor&& f)
+  {
+    double_vt x = uniform_double();
+    return f(vcl::log(x / (1.0 - x)));
+  }
+
+  template<typename Functor>
+  void inverse_cdf_logit_real(float_vt& x, Functor&& f)
+  {
+    x = inverse_cdf_logit_float(std::forward<Functor>(f));
+  }
+
+  template<typename Functor>
+  void inverse_cdf_logit_real(double_vt& x, Functor&& f)
+  {
+    x = inverse_cdf_logit_double(std::forward<Functor>(f));
+  }
+
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
     if(seed == 0)seed = RNG::uint64_from_random_device();
@@ -1025,6 +1071,7 @@ template<typename VCLRealArch> class VCLRealRNG
 public:
   CALIN_TYPEALIAS(architecture, typename VCLRealArch::architecture);
   CALIN_TYPEALIAS(real_t,  typename VCLRealArch::real_t);
+  CALIN_TYPEALIAS(vecX_t,  typename VCLRealArch::vecX_t);
   CALIN_TYPEALIAS(real_vt, typename VCLRealArch::real_vt);
   CALIN_TYPEALIAS(int_vt,  typename VCLRealArch::int_vt);
   CALIN_TYPEALIAS(uint_vt, typename VCLRealArch::uint_vt);
@@ -1090,11 +1137,26 @@ public:
     rng_->from_inverse_cdf_real(x, inverse_cdf, npoints);
     return x;
   }
+
   real_vt from_inverse_cdf(const std::vector<real_t>& inverse_cdf) {
     real_vt x;
     rng_->from_inverse_cdf_real(x, inverse_cdf);
     return x;
   }
+
+  real_vt from_inverse_cdf(const vecX_t& inverse_cdf) {
+    real_vt x;
+    rng_->from_inverse_cdf_real(x, inverse_cdf);
+    return x;
+  }
+
+  template<typename Functor>
+  real_vt from_inverse_cdf_logit(Functor&& f) {
+    real_vt x;
+    rng_->inverse_cdf_logit_real(x, std::forward<Functor>(f));
+    return x;
+  }
+
 #endif // ifndef SWIG
 
 private:

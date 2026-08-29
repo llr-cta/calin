@@ -1,0 +1,584 @@
+/*
+
+   calin/simulation/vcl_panoseti_raytracer.hpp -- Stephen Fegan -- 2026-07-23
+
+   Class for raytracing on a single panoseti telescope using VCL
+
+   Copyright 2026, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+#pragma once
+
+#include <algorithm>
+#include <limits>
+#include <iostream>
+
+#include <util/memory.hpp>
+#include <util/vcl.hpp>
+#include <math/constants.hpp>
+#include <math/special.hpp>
+#include <math/ray_vcl.hpp>
+#include <math/rng_vcl.hpp>
+#include <math/geometry_vcl.hpp>
+#include <math/spline_interpolation.hpp>
+#include <simulation/ray_processor.hpp>
+#include <util/log.hpp>
+#include <simulation/panoseti_optics.pb.h>
+
+namespace calin { namespace simulation { namespace vcl_raytracer {
+
+// These classes are too complex for SWIG to handle directly from the header
+// files. We define a simplified subset directly in the SWIG interface file.
+
+// #define DEBUG_STATUS
+
+#ifndef SWIG
+
+enum VCLPanosetiScopeTraceStatus {
+  PSTS_MASKED_ON_ENTRY,                        // 0
+  PSTS_TRAVELLING_AWAY_LENS,                   // 1
+  PSTS_DOES_NOT_INTERSECT_LENS,                // 2
+  PSTS_OUTSIDE_LENS_APERTURE,                  // 3
+  PSTS_NO_LENS_EXIT,                           // 4
+  PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE,    // 5
+  PSTS_TS_OUTSIDE_DETECTOR,                    // 6
+  PSTS_TS_FOUND_PIXEL                          // 7
+};
+
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLPanosetiScopeTraceInfo: public VCLReal
+{
+public:
+  using typename VCLReal::real_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::real_bvt;
+  using typename VCLReal::int_vt;
+  using typename VCLReal::uint_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
+
+  int_vt              status;           // Status of ray at end of tracing
+
+  real_vt             lens_in_x;        // Ray intersection with lens aperture
+  real_vt             lens_in_y;        // Ray intersection with lens aperture
+  real_vt             lens_in_z;        // Ray intersection with lens aperture
+  real_vt             lens_in_n_dot_u;  // Cosine of angle between ray and incoming lens normal
+
+  int_vt              lens_groove;      // Lens groove number
+  real_vt             lens_out_x;       // Ray exit point from lens
+  real_vt             lens_out_y;       // Ray exit point from lens
+  real_vt             lens_out_z;       // Ray exit point from lens
+  real_vt             lens_out_n_dot_u; // Cosine of angle between ray and outgoing lens normal
+
+  real_vt             detector_x;        // Ray intersection point on detector plane
+  real_vt             detector_z;        // Ray intersection point on detector plane
+  real_vt             detector_t;        // Ray intersection time on detector plane
+  real_vt             detector_ux;       // X directional cosine of ray at detector plane
+  real_vt             detector_uy;       // Y directional cosine of ray at detector plane
+  real_vt             detector_uz;       // Z directional cosine of ray at detector plane
+
+  int_vt              pixel_id;          // Sequential ID of pixel on focal plane (or -1)
+};
+
+template<typename VCLReal> class alignas(VCLReal::vec_bytes) VCLPanosetiThinLensScopeRayTracer: public VCLReal
+{
+public:
+  using typename VCLReal::real_t;
+  using typename VCLReal::int_t;
+  using typename VCLReal::uint_t;
+  using typename VCLReal::int_bvt;
+  using typename VCLReal::uint_bvt;
+  using typename VCLReal::mat3_t;
+  using typename VCLReal::vec3_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::real_bvt;
+  using typename VCLReal::int_vt;
+  using typename VCLReal::uint_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
+  using typename VCLReal::vecX_t;
+  using Ray = calin::math::ray::VCLRay<VCLReal>;
+  using TraceInfo = VCLPanosetiScopeTraceInfo<VCLReal>;
+  using RNG = calin::math::rng::VCLRealRNG<VCLReal>;
+
+  VCLPanosetiThinLensScopeRayTracer(const calin::ix::simulation::panoseti_optics::ArrayParameters& array_params,
+      unsigned scope_id, const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline,
+      real_t air_refractive_index = 1.0, unsigned observation_layer = 0,
+      RNG* rng = nullptr, bool adopt_lens_refractive_index_spline = false, bool adopt_rng = false):
+    VCLReal(), lens_refractive_index_spline_(lens_refractive_index_spline),
+    adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
+    rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
+    adopt_rng_(rng==nullptr ? true : adopt_rng)
+  {
+    using calin::math::special::SQR;
+
+    if(scope_id>=unsigned(array_params.scope_positions_size())) {
+      throw std::runtime_error("VCLPanosetiThinLensScopeRayTracer: scope_id out of range");
+    }
+
+    double_scope_position_.x()      = array_params.scope_positions(scope_id).x();
+    double_scope_position_.y()      = array_params.scope_positions(scope_id).y();
+    double_scope_position_.z()      = array_params.scope_positions(scope_id).z();
+    point_telescope_az_el_phi(0.0, 0.0, 0.0);
+
+    iobs_                           = observation_layer;
+    if(array_params.field_of_view() > 0) {
+      double_field_of_view_radius_rad_ = 0.5 * array_params.field_of_view() * M_PI/180.0;
+    } else {
+      double_field_of_view_radius_rad_ = std::atan2(M_SQRT1_2 * array_params.pixel_pitch()*array_params.num_pixels_per_axis(),
+        array_params.detector_separation()) * 1.1; // 10% margin
+    }
+    double_lens_aperture_radius_    = 0.5 * array_params.fresnel_lens_aperture();
+
+    air_ref_index_           = air_refractive_index;
+
+    Eigen::VectorXd lens_polynomial = calin::protobuf_to_eigenvec(array_params.fresnel_lens_polynomial());
+    lens_derivative_polynomial_ = calin::math::least_squares::polyder(lens_polynomial).template cast<real_t>();
+
+    lens_aperture_radius2_   = SQR(0.5 * array_params.fresnel_lens_aperture());
+
+    detector_distance_       = array_params.detector_separation();
+    detector_origin_         = calin::xyz_to_eigenvec(array_params.detector_shift()).template cast<real_t>();
+    detector_origin_.y()     -= detector_distance_;
+    if(calin::math::geometry::euler_is_zero(array_params.detector_rotation())) {
+      detector_has_rotation_ = false;
+      detector_rotation_ = mat3_t::Identity(); // Unused in this case, but set to identity for safety
+    } else {
+      detector_has_rotation_ = true;
+      detector_rotation_ = calin::math::geometry::euler_to_matrix(array_params.detector_rotation()).template cast<real_t>();
+    }
+
+    real_t roughness = array_params.fresnel_lens_roughness();
+    scattering_sigma_theta_ = (detector_distance_ > 0) ? (roughness / detector_distance_ * M_SQRT1_2) : 0.0;
+
+    pixel_spacing_           = array_params.pixel_pitch();
+    pixel_spacing_inv_       = 1.0/pixel_spacing_;
+    pixel_nside_             = array_params.num_pixels_per_axis();
+    pixel_array_halfwidth_   = pixel_spacing_ * pixel_nside_ / 2.0;
+  }
+
+  ~VCLPanosetiThinLensScopeRayTracer()
+  {
+    if(adopt_rng_)delete rng_;
+    if(adopt_lens_refractive_index_spline_)delete lens_refractive_index_spline_;
+  }
+
+  bool point_telescope(const Eigen::Vector3d& v)
+  {
+    if(v.squaredNorm()==0)return false;
+    return point_telescope_az_el_phi(atan2(v.x(),v.y()), atan2(v.z(),sqrt(v.x()*v.x() + v.y()*v.y())), 0.0);
+  }
+
+  bool point_telescope_az_el(const double az_rad, const double el_rad)
+  {
+    return point_telescope_az_el_phi(az_rad, el_rad, 0.0);
+  }
+
+  bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad)
+  {
+    az_rad_ = az_rad;
+    el_rad_ = el_rad;
+    phi_rad_ = phi_rad;
+    double_rot_reflector_to_global_ =
+      (Eigen::AngleAxisd(-az_rad,   Eigen::Vector3d::UnitZ()) *
+       Eigen::AngleAxisd(el_rad,  Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(phi_rad,   Eigen::Vector3d::UnitY())).toRotationMatrix();
+    double_rot_global_to_reflector_ = double_rot_reflector_to_global_.transpose();
+
+    global_to_reflector_off_ = double_scope_position_.template cast<real_t>();
+    global_to_reflector_rot_ = double_rot_global_to_reflector_.template cast<real_t>();
+    return true;
+  }
+
+  real_bvt trace_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
+    bool do_derotation = true)
+  {
+    // WARNING: This function should be used with caution for VCLReal float types
+    // it is best to use the trace_scope_centered_global_frame function instead
+
+    // *************************************************************************
+    // ********************** RAY STARTS IN GLOBAL FRAME ***********************
+    // *************************************************************************
+
+    ray.translate_origin(global_to_reflector_off_.template cast<real_vt>());
+    ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
+    mask = trace_reflector_frame(mask, ray, info);
+    if(do_derotation) {
+      ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
+      ray.untranslate_origin(global_to_reflector_off_.template cast<real_vt>());
+    }
+    return mask;
+  }
+
+  real_bvt trace_scope_centered_global_frame(real_bvt mask, Ray& ray, TraceInfo& info,
+    bool do_derotation = true)
+  {
+    // *************************************************************************
+    // *************** RAY STARTS IN SCOPE CENTERED GLOBAL FRAME ***************
+    // *************************************************************************
+
+    ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
+    mask = trace_reflector_frame(mask, ray, info);
+    if(do_derotation) {
+      ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
+    }
+    return mask;
+  }
+
+  real_bvt trace_reflector_frame(real_bvt mask, Ray& ray, TraceInfo& info)
+  {
+#ifdef DEBUG_STATUS
+    std::cout << "Ray: maks=" << mask[0] << " pos=(" << ray.position().x()[0] << ',' << ray.position().y()[0] << ',' << ray.position().z()[0] << ") dir=("
+      << ray.direction().x()[0] << ',' << ray.direction().y()[0] << ',' << ray.direction().z()[0] << ")\n";
+#endif
+
+    info.status = PSTS_MASKED_ON_ENTRY;
+#ifdef DEBUG_STATUS
+    std::cout << mask[0] << '/' << info.status[0];
+#endif
+
+    info.status = select(int_bvt(mask), PSTS_TRAVELLING_AWAY_LENS, info.status);
+    mask &= ray.uy() < 0;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    // *************************************************************************
+    // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
+    // *************************************************************************
+
+    // Propagate to lens plane
+    info.status = select(int_bvt(mask), PSTS_DOES_NOT_INTERSECT_LENS, info.status);
+    mask = ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    info.lens_in_x       = select(mask, ray.position().x(), 0);
+    info.lens_in_y       = select(mask, ray.position().y(), 0);
+    info.lens_in_z       = select(mask, ray.position().z(), 0);
+    info.lens_in_n_dot_u = select(mask, ray.direction().y(), 0);
+
+    // Test aperture
+    info.status = select(int_bvt(mask), PSTS_OUTSIDE_LENS_APERTURE, info.status);
+    mask &= (info.lens_in_x*info.lens_in_x + info.lens_in_z*info.lens_in_z) <= lens_aperture_radius2_;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    if(not horizontal_or(mask)) {
+      // We outie ...
+#ifdef DEBUG_STATUS
+      std::cout << std::endl;
+#endif
+      return mask;
+    }
+
+    // Calculate reftactive index of lens
+    real_vt lens_ref_index = lens_refractive_index_spline_->vcl_real_value<VCLReal>(ray.energy());
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << lens_ref_index[0];
+#endif
+
+    // Refract into lens
+    ray.refract_at_surface_in_with_mask(mask, vec3_vt::UnitY(), lens_ref_index);
+
+    // In thin lens approximation, we assume the ray exits the lens at the same point it 
+    // entered, but with a new direction. Calculate normal from polynomial.
+    vec3_vt lens_norm = calin::math::geometry::VCL<VCLReal>::norm_of_common_derivative_polynomial_surface(
+      ray.x(), ray.z(), lens_derivative_polynomial_.data(), lens_derivative_polynomial_.size(),
+      /* convex= */ true);
+
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << lens_norm.x()[0] << ',' << lens_norm.y()[0] << ',' << lens_norm.z()[0];
+#endif
+
+    // Refract out of lens
+    info.status = select(int_bvt(mask), PSTS_NO_LENS_EXIT, info.status);
+    mask = ray.refract_at_surface_out_with_mask(mask, lens_norm, lens_ref_index);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    if(scattering_sigma_theta_ > 0) {
+      ray.scatter_direction(select(mask, scattering_sigma_theta_, 0.0), *rng_);
+    }
+
+    info.lens_groove      = 0;
+    info.lens_out_x       = select(mask, ray.position().x(), 0);
+    info.lens_out_y       = select(mask, ray.position().y(), 0);
+    info.lens_out_z       = select(mask, ray.position().z(), 0);
+    info.lens_out_n_dot_u = select(mask, ray.direction().dot(lens_norm), 0);
+
+    ray.translate_origin(detector_origin_.template cast<real_vt>());
+    if(detector_has_rotation_) {
+      ray.rotate(detector_rotation_.template cast<real_vt>());
+    }
+
+    // *************************************************************************
+    // **************** RAY IS NOW IN DETECTOR PLANE COORDINATES ***************
+    // *************************************************************************
+
+    if(detector_has_rotation_) {
+      // Test ray is travelling to detector plane.. should always be case unless
+      // plane is strongly tilted
+      info.status = select(int_bvt(mask), PSTS_TRAVELLING_AWAY_FROM_DETECTOR_PLANE, info.status);
+      mask &= ray.uy() < 0;
+#ifdef DEBUG_STATUS
+      std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+    }
+
+    // Propagate to detector plane
+    ray.propagate_to_y_plane_with_mask(mask, 0.0, /* time_reversal_ok = */ false, air_ref_index_);
+
+    // We good, record position on detector plane etc
+    info.detector_x = select(mask, ray.x(), 0);
+    info.detector_z = select(mask, ray.z(), 0);
+    info.detector_t = select(mask, ray.time(), 0);
+    info.detector_ux = select(mask, ray.ux(), 0);
+    info.detector_uy = select(mask, ray.uy(), 0);
+    info.detector_uz = select(mask, ray.uz(), 0);
+
+    // Test we hit the detector array
+    info.status = select(int_bvt(mask), PSTS_TS_OUTSIDE_DETECTOR, info.status);
+    mask &= (vcl::abs(info.detector_x) <= pixel_array_halfwidth_) & 
+            (vcl::abs(info.detector_z) <= pixel_array_halfwidth_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    // Find the pixel ID
+    int_vt pixel_j = select(int_bvt(mask), VCLReal::truncate_to_int_limited(
+      vcl::floor((info.detector_z + pixel_array_halfwidth_) * pixel_spacing_inv_)), 0);
+    int_vt pixel_i = select(int_bvt(mask), VCLReal::truncate_to_int_limited(
+      vcl::floor((info.detector_x + pixel_array_halfwidth_) * pixel_spacing_inv_)), 0);
+    info.pixel_id = select(int_bvt(mask), pixel_j * pixel_nside_ + pixel_i, -1);
+
+    info.status = select(int_bvt(mask), PSTS_TS_FOUND_PIXEL, info.status);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    if(detector_has_rotation_) {
+      ray.derotate(detector_rotation_.template cast<real_vt>());
+    }
+    ray.untranslate_origin(detector_origin_.template cast<real_vt>());
+
+    // *************************************************************************
+    // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
+    // *************************************************************************
+
+#ifdef DEBUG_STATUS
+    std::cout << std::endl;
+#endif
+    return mask;
+  }
+
+  template<typename Colorizer>
+  unsigned psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, Eigen::VectorXd& e_out, 
+    Eigen::VectorXi& ipixel_out, 
+    unsigned nray, Colorizer& generate_color,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    theta *= M_PI/180.0;
+    double sintheta = std::sin(theta);
+    phi *= M_PI/180.0;
+    mat3_vt rot;
+    calin::math::geometry::VCL<VCLReal>::rotation_y_to_xyz_Ryxy(rot, 
+      sintheta*std::cos(phi), std::cos(theta), sintheta*std::sin(phi));
+
+    if(radius <= 0) {
+      radius = std::sqrt(lens_aperture_radius2_) * 1.05; // Default to 5% larger than lens radius
+    }
+    if(distance <= 0) {
+      throw std::runtime_error("Light emission distance must be positive or infinity");
+    }
+
+    double dcospolar = 1.0 - std::cos(radius / distance);
+    double parallel_beam_start = 2.0*detector_distance_;
+
+    unsigned ntraced = 0;
+    unsigned iray = 0;
+    x_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    y_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    t_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    e_out = Eigen::VectorXd::Constant(nray, std::numeric_limits<double>::quiet_NaN());
+    ipixel_out = Eigen::VectorXi::Constant(nray, -1);
+
+    while(iray < nray) {
+      vec3_vt x;
+      vec3_vt u;
+
+      if(distance < std::numeric_limits<double>::infinity()) {
+        x.x() = 0; 
+        x.y() = distance;
+        x.z() = 0;
+        real_vt cospolar = 1.0 - dcospolar * rng_->uniform();
+        real_vt sinpolar = vcl::sqrt(vcl::nmul_add(cospolar, cospolar, 1.0));
+        real_vt cosazimuth;
+        real_vt sinazimuth;
+        rng_->sincos(sinazimuth, cosazimuth);
+        u.x() = sinpolar * cosazimuth;
+        u.y() = -cospolar;
+        u.z() = sinpolar * sinazimuth;
+      } else {
+        u.x() = 0;
+        u.y() = -1.0;
+        u.z() = 0;
+        real_vt rho = radius * vcl::sqrt(rng_->uniform());
+        real_vt cosphi;
+        real_vt sinphi;
+        rng_->sincos(sinphi, cosphi);
+        x.x() = rho * cosphi;
+        x.y() = parallel_beam_start;   // Launch from twice the FP distance
+        x.z() = rho * sinphi;
+      }
+
+      Ray ray(x, u, -x.y() * calin::math::constants::g4_1_c, generate_color());
+      ray.rotate(rot);
+
+      TraceInfo info;
+      trace_reflector_frame(true, ray, info);
+
+      typename VCLReal::int_at status;
+      typename VCLReal::real_at xfp;
+      typename VCLReal::real_at yfp;
+      typename VCLReal::real_at tfp;
+      typename VCLReal::real_at efp;
+      typename VCLReal::int_at ipixel;
+
+      info.status.store_a(status);
+      info.detector_x.store_a(xfp);
+      info.detector_z.store_a(yfp);
+      info.detector_t.store_a(tfp);
+      ray.energy().store_a(efp);
+      info.pixel_id.store_a(ipixel);
+
+      for(unsigned i=0; i< VCLReal::num_real; i++) {
+        ntraced++;
+        if(status[i] >= PSTS_TS_OUTSIDE_DETECTOR) {
+          x_out[iray] = xfp[i];
+          y_out[iray] = yfp[i];
+          t_out[iray] = tfp[i];
+          e_out[iray] = efp[i];
+          ipixel_out[iray] = ipixel[i];
+          iray++;
+          if(iray >= nray)break;
+        }
+      }
+      if(ntraced >= 10*nray) {
+        break; // Avoid infinite loop if rays are not hitting the detector
+      }
+    }
+    return ntraced;
+  }
+
+  unsigned monochromatic_psf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+    Eigen::VectorXi& ipixel_out, 
+    unsigned nray, double photon_energy_ev,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    Eigen::VectorXd e_unused;
+    auto color_generator = [photon_energy_ev]() { return photon_energy_ev; };
+    return psf(x_out, y_out, t_out, e_unused, ipixel_out, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_logit_spline(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out,
+    Eigen::VectorXd& e_out, Eigen::VectorXi& ipixel_out, 
+    unsigned nray, const calin::math::spline_interpolation::CubicSpline& color_spline,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    auto color_generator = [&]() {
+      return rng_->from_inverse_cdf_logit([&](const real_vt& x) { return color_spline.vcl_real_value<VCLReal>(x); });
+    };
+    return psf(x_out, y_out, t_out, e_out, ipixel_out, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_inverse_cdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+    Eigen::VectorXd& e_out, Eigen::VectorXi& ipixel_out, 
+    unsigned nray, const Eigen::VectorXd& color_inv_cdf,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    vecX_t real_color_inv_cdf = color_inv_cdf.template cast<real_t>();
+    auto color_generator = [&]() {
+      return rng_->from_inverse_cdf(real_color_inv_cdf.data(), real_color_inv_cdf.size());
+    };
+    return psf(x_out, y_out, t_out, e_out, ipixel_out, nray, color_generator, theta, phi, distance, radius);
+  }
+
+  unsigned chromatic_psf_pdf(Eigen::VectorXd& x_out, Eigen::VectorXd& y_out, Eigen::VectorXd& t_out, 
+    Eigen::VectorXd& e_out, Eigen::VectorXi& ipixel_out, 
+    unsigned nray, const Eigen::VectorXd& color_pdf_x, const Eigen::VectorXd& color_pdf_y,
+    double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0) 
+  {
+    Eigen::VectorXd color_inv_cdf = calin::math::rng::RNG::generate_inverse_cdf_from_pdf(color_pdf_x, color_pdf_y);
+    return chromatic_psf_inverse_cdf(x_out, y_out, t_out, e_out, ipixel_out, nray, color_inv_cdf, theta, phi, distance, radius);
+  }
+
+  Eigen::VectorXd lens_derivative_polynomial() const { return lens_derivative_polynomial_.template cast<double>(); }
+
+  calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const
+  {
+    Eigen::Vector3d obs_dir = double_rot_reflector_to_global_ * Eigen::Vector3d::UnitY();
+    return calin::simulation::ray_processor::RayProcessorDetectorSphere(
+      double_scope_position_, double_lens_aperture_radius_, 
+      obs_dir, double_field_of_view_radius_rad_, 
+      iobs_);
+  }
+
+private:
+
+  const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_;
+  bool adopt_lens_refractive_index_spline_ = false;
+
+  Eigen::Vector3d double_scope_position_;
+  Eigen::Matrix3d double_rot_reflector_to_global_ = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d double_rot_global_to_reflector_ = Eigen::Matrix3d::Identity();
+
+  unsigned        iobs_ = 0;
+  double          double_field_of_view_radius_rad_ = 0.0;
+  double          double_lens_aperture_radius_ = 0.0;
+
+  real_t          az_rad_;
+  real_t          el_rad_;
+  real_t          phi_rad_;
+  vec3_t          global_to_reflector_off_;
+  mat3_t          global_to_reflector_rot_;
+  real_t          air_ref_index_;
+
+  vecX_t          lens_derivative_polynomial_;
+
+  real_t          lens_aperture_radius2_;
+
+  real_t          detector_distance_;
+  vec3_t          detector_origin_;
+  bool            detector_has_rotation_;
+  mat3_t          detector_rotation_;
+  
+  real_t          pixel_spacing_;
+  real_t          pixel_spacing_inv_;
+  uint_t          pixel_nside_;
+  real_t          pixel_array_halfwidth_;
+  
+  real_t          scattering_sigma_theta_;
+
+  RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
+};
+
+#endif // SWIG
+
+} } } // namespace calin::simulation::vcl_raytracer
