@@ -233,7 +233,7 @@ public:
       }
     }
 
-    ray.energy().load(ray_energy_at);
+    ray.mutable_energy().load(ray_energy_at);
   }
 #endif // not defined SWIG
 
