@@ -35,7 +35,7 @@ import calin.ix.simulation.simulated_event
 class SiteEnvironment:
     """Container holding site-level environment, atmosphere, and detector responses."""
     def __init__(self, site, zobs, atm, atm_abs, det_eff, cone_eff, pe_gen,
-                 lens_refractive_index_spline, bfield, array_origin, array_config_fn):
+                 lens_refractive_index_spline, wmm, bfield, array_origin, array_config_fn):
         self.site = site
         self.zobs = zobs
         self.atm = atm
@@ -44,6 +44,7 @@ class SiteEnvironment:
         self.cone_eff = cone_eff
         self.pe_gen = pe_gen
         self.lens_refractive_index_spline = lens_refractive_index_spline
+        self.wmm = wmm
         self.bfield = bfield
         self.array_origin = array_origin
         self.array_config_fn = array_config_fn
@@ -91,6 +92,7 @@ def load_site_environment(site = 'ctan', enable_pe_spectrum = False,
         raise ValueError(f'Unknown site: {site}')
 
     if no_bfield:
+        wmm = None
         bfield = None
     else:
         wmm = calin.simulation.world_magnetic_model.WMM()
@@ -105,6 +107,7 @@ def load_site_environment(site = 'ctan', enable_pe_spectrum = False,
         cone_eff=cone_eff,
         pe_gen=pe_gen,
         lens_refractive_index_spline=lens_refractive_index_spline,
+        wmm=wmm,
         bfield=bfield,
         array_origin=dummy_array_origin,
         array_config_fn=array_config_fn
