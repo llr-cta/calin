@@ -44,6 +44,7 @@
 #include <math/interpolation_1d.hpp>
 #include <math/brent.hpp>
 #include <simulation/pe_processor.hpp>
+#include <simulation/vcl_detector_efficiency.hpp>
 #include <iact_data/instrument_layout.pb.h>
 #include <iact_data/instrument_layout.hpp>
 
@@ -139,7 +140,7 @@ public:
 
   void load_from_simulated_event_with_pmt_noise(
     const calin::ix::simulation::simulated_event::DetectorGroupEvent& detector_group_event,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen,
     double time_spread = 0)
   {
     this->start_processing();
@@ -160,7 +161,7 @@ public:
         int ipix = pixel_event.pixel_id();
         for(int kpe=0; kpe<pixel_event.weight_size(); ++kpe) {
           if(idev == 0) {
-            pegen->vcl_generate_amplitude<VCLArchitecture>(*rng_).store_a(pe_w);
+            pegen->vcl_generate_amplitude(*rng_).store_a(pe_w);
             if(time_spread > 0) {
               (rng_->normal_double() * time_spread).store_a(pe_dt);
             } else if (time_spread < 0) {
@@ -174,7 +175,7 @@ public:
         }
         for(int kpe=pixel_event.weight_size(); kpe<pixel_event.time_size(); ++kpe) {
           if(idev == 0) {
-            pegen->vcl_generate_amplitude<VCLArchitecture>(*rng_).store_a(pe_w);
+            pegen->vcl_generate_amplitude(*rng_).store_a(pe_w);
             if(time_spread > 0) {
               (rng_->normal_double() * time_spread).store_a(pe_dt);
             } else if (time_spread < 0) {
@@ -187,7 +188,7 @@ public:
         }
         for(int kpe=0; kpe<pixel_event.integer_time_size(); ++kpe) {
           if(idev == 0) {
-            pegen->vcl_generate_amplitude<VCLArchitecture>(*rng_).store_a(pe_w);
+            pegen->vcl_generate_amplitude(*rng_).store_a(pe_w);
             if(time_spread > 0) {
               (rng_->normal_double() * time_spread).store_a(pe_dt);
             } else if (time_spread < 0) {
@@ -381,7 +382,7 @@ public:
   ////////////////////////////////////////////////////////////////////////////
 
   void add_nsb_noise_to_waveform(const Eigen::VectorXd& nsb_freq_per_pixel_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     double t0_samples = 0)
   {
     if(nsb_freq_per_pixel_ghz.size() != int(npix_)) {
@@ -406,7 +407,7 @@ public:
         typename VCLArchitecture::double_vt dt_samples = rng_->exponential_double() * rate_samples;
         typename VCLArchitecture::double_vt charge = 1.0;
         if(pegen) {
-          charge = pegen->vcl_generate_amplitude<VCLArchitecture>(*rng_);
+          charge = pegen->vcl_generate_amplitude(*rng_);
         }
         typename VCLArchitecture::double_at dt_samples_a;
         dt_samples.store(dt_samples_a);
@@ -439,7 +440,7 @@ public:
   ////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////
 
-  unsigned register_impulse_response(vecX_t& impulse_response, 
+  unsigned register_impulse_response(const vecX_t& impulse_response, 
     const std::string& units, double window_fraction=0.6)
   {
     ImpulseResponse ir;
@@ -1210,7 +1211,108 @@ public:
         unsigned ksample = isample+jsample;
         if(ksample>=first_sample_of_interest and ntriggered[jsample] >= multiplicity) {
           ::free(cwin_tend);
-          return isample+jsample;
+          return ksample;
+        }
+      }
+    }
+    ::free(cwin_tend);
+    return -1;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //    d8888b.  .d8b.  d8b   db  .d88b.  .d8888. d88888b d888888b d888888b 
+  //    88  `8D d8' `8b 888o  88 .8P  Y8. 88'  YP 88'     `~~88~~'   `88'   
+  //    88oodD' 88ooo88 88V8o 88 88    88 `8bo.   88ooooo    88       88    
+  //    88~~~   88~~~88 88 V8o88 88    88   `Y8b. 88~~~~~    88       88    
+  //    88      88   88 88  V888 `8b  d8' db   8D 88.        88      .88.   
+  //    88      YP   YP VP   V8P  `Y88P'  `8888Y' Y88888P    YP    Y888888P 
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+
+  int trigger_panoseti_multiplicity(const vecX_t& threshold, unsigned multiplicity,
+      unsigned coincidence_window, unsigned first_sample_of_interest=0)
+  {
+    // Multiplicity trigger algorithm with triggering of the four 16x16
+    // channel quabos handled independently. Camera-level trigger is
+    // satisfied when any quabo triggers.
+
+    // Algorithm assumes all values in SIMD vector belong to same Quabo.
+    // This is always true in current Intel SIMD vectors
+    static_assert(16 % VCLReal::num_real == 0,
+      "SIMD lane count must divide the 16-channel PANOSETI module width");
+
+    if(npix_ != 1024) {
+      throw std::domain_error("PANOSETI multiplicity trigger requires exactly 1024 channels; got "
+        + std::to_string(npix_));
+    }
+    if(threshold.size()!=1 and threshold.size()!=npix_) {
+      throw std::domain_error("Trigger threshold vector length is not equal to one or number of pixels "
+        + std::to_string(threshold.size()) + " != 1 or " + std::to_string(npix_));
+    }
+
+    coincidence_window = std::max(coincidence_window, 1U); // Zero makes no sense
+
+    int_t *__restrict__ cwin_tend = calin::util::memory::aligned_calloc<int_t>(v_waveform_.cols());
+    std::fill(cwin_tend, cwin_tend+v_waveform_.cols(), -1);
+
+    unsigned isample0 = std::max(first_sample_of_interest,coincidence_window)-coincidence_window;
+    isample0 = (isample0/VCLReal::num_real)*VCLReal::num_real;
+    for(unsigned isample = isample0; isample<nsample_; isample+=VCLReal::num_real) {
+      unsigned ntriggered[4][VCLReal::num_real];
+      for(unsigned iquabo=0; iquabo<4; iquabo++) {
+        std::fill(ntriggered[iquabo], ntriggered[iquabo]+VCLReal::num_real, 0);
+      }
+      real_vt block[VCLReal::num_real];
+      for(unsigned ipix=0; ipix<npix_; ipix+=VCLReal::num_real) {
+        real_vt pix_threshold = 0;
+        if(threshold.size() == 1) {
+          pix_threshold = threshold[0];
+        } else {
+          pix_threshold.load_a(threshold.data() + ipix);
+        }
+
+        if(v_waveform_is_packed_) {
+          const real_t *__restrict__ v_waveform_ptr = v_waveform_.data() + ipix*nsample_ + isample*VCLReal::num_real;
+          for(unsigned jsample=0;jsample<VCLReal::num_real;jsample++) {
+            block[jsample].load_a(v_waveform_ptr);
+            v_waveform_ptr += VCLReal::num_real;
+          }
+        } else {
+          const real_t *__restrict__ v_waveform_ptr = v_waveform_.data() + ipix*nsample_ + isample;
+          for(unsigned jpix=0;jpix<VCLReal::num_real;jpix++) {
+            block[jpix].load_a(v_waveform_ptr);
+            v_waveform_ptr += nsample_;
+          }
+          calin::util::vcl::transpose(block);
+        }
+
+        const unsigned row = ipix / 32;
+        const unsigned col = ipix % 32;
+        const unsigned iquabo = (row / 16) * 2 + (col / 16);
+
+        int_vt cwin;
+        cwin.load_a(cwin_tend + ipix);
+        for(unsigned jsample=0;jsample<VCLReal::num_real;jsample++) {
+          int ksample = isample+jsample;
+          cwin = vcl::select(int_bvt(block[jsample] > pix_threshold),
+            ksample+coincidence_window, cwin);
+          ntriggered[iquabo][jsample] += vcl::horizontal_count(ksample < cwin);
+        }
+        cwin.store_a(cwin_tend + ipix);
+      }
+
+      for(unsigned jsample=0;jsample<VCLReal::num_real;jsample++) {
+        unsigned ksample = isample+jsample;
+        if(ksample>=first_sample_of_interest) {
+          for(unsigned iquabo=0; iquabo<4; iquabo++) {
+            if(ntriggered[iquabo][jsample] >= multiplicity) {
+              ::free(cwin_tend);
+              return ksample;
+            }
+          }
         }
       }
     }
@@ -1740,7 +1842,7 @@ public:
   }
 
   void inject_n_pes(unsigned pixel_id, unsigned npe, double t0_samples,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     double time_spread_ns = 0.0)
   {
     double time_spread_samples = time_spread_ns*sampling_freq_ghz_;
@@ -1754,7 +1856,7 @@ public:
       }        
       typename VCLArchitecture::double_vt q;
       if(pegen) {
-        q = pegen->vcl_generate_amplitude<VCLArchitecture>(*rng_);
+        q = pegen->vcl_generate_amplitude(*rng_);
       } else {
         q = 1.0;
       }
@@ -1775,7 +1877,7 @@ public:
   }
 
   void inject_poisson_pes(unsigned pixel_id, double lambda, double t0_samples,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     double time_spread_ns = 0.0)
   {
     calin::math::rng::VCLToScalarRNGCore scalar_core(rng_->core());
@@ -1785,7 +1887,7 @@ public:
   }
 
   void inject_poisson_pes(const Eigen::VectorXd& lambda, const Eigen::VectorXd& t0_samples, 
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     const Eigen::VectorXd& time_spread_ns = Eigen::VectorXd())
   {
     if(lambda.size() != npix_) {
@@ -1853,7 +1955,7 @@ public:
 
   void set_cr_nsb_rate(unsigned camera_response_id, 
     const Eigen::VectorXd& nsb_freq_per_pixel_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     bool adopt_pegen = false)
   {
     validate_camera_response_id(camera_response_id);
@@ -1972,7 +2074,7 @@ public:
     return cr.nsb_freq_per_pixel_ghz;
   }
 
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* get_cr_nsb_pegen(unsigned camera_response_id)
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* get_cr_nsb_pegen(unsigned camera_response_id)
   {
     validate_camera_response_id(camera_response_id);
     auto& cr = camera_responses_[camera_response_id];
@@ -2080,6 +2182,14 @@ public:
       first_sample_of_interest);
   }
 
+  int trigger_panoseti_multiplicity_cr(unsigned camera_response_id, unsigned first_sample_of_interest=0)
+  {
+    validate_camera_response_id(camera_response_id);
+    auto& cr = camera_responses_[camera_response_id];
+
+    return trigger_panoseti_multiplicity(cr.threshold, cr.multiplicity, cr.coincidence_window, first_sample_of_interest);
+  }
+
   int trigger_3nn_cr(unsigned camera_response_id, unsigned first_sample_of_interest=0)
   {
     validate_camera_response_id(camera_response_id);
@@ -2111,7 +2221,7 @@ public:
 
   vecX_t ac_coupling_offset(const Eigen::VectorXi& impulse_response_id, 
     const Eigen::VectorXd& nsb_freq_per_pixel_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     const vecX_t& relative_gain = vecX_t())
   {
     int iri_max = std::numeric_limits<int>::min();
@@ -2158,7 +2268,7 @@ public:
 
   vecX_t ac_coupling_offset(int impulse_response_id, 
     const Eigen::VectorXd& nsb_freq_per_pixel_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* pegen = nullptr,
     const vecX_t& relative_gain = vecX_t())
   {
     Eigen::VectorXi all_impulse_response_id(nsb_freq_per_pixel_ghz.size());
@@ -2371,7 +2481,7 @@ private:
       }
     }
     Eigen::VectorXd nsb_freq_per_pixel_ghz;
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr;
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen = nullptr;
     bool add_ac_coupling_offset = true;
     Eigen::VectorXi impulse_response_id;
     vecX_t demand_pedestal;

@@ -46,6 +46,7 @@
 
 %import "math/ray.i"
 %import "util/vcl.i"
+%import "simulation/detector_efficiency.i"
 %import "math/ray_generator.i"
 %import "math/moments_calc.i"
 

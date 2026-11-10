@@ -43,6 +43,14 @@ message ArrayParameters {
      "values are above the origin, negative values are below.",
      (CFO).units = "cm"];
 
+  repeated string scope_names                               = 3
+    [(CFO).desc = "Names of telescopes in the array in same order as \"scope_positions\"."];
+
+  bool equatorial_mount                                     = 4
+    [(CFO).desc = "If true the telescope mount is equatorial, otherwise it is alt-azimuth. If true "
+      "the telescope will be rotated about the optical axis to maintain a fixed orientation with "
+      "respect to the sky."];
+
   double fresnel_lens_aperture                             = 10
     [(CFO).desc = "Diameter of the Fresnel lens (aperture) at the rear (Fresnel convex) surface y=0).",
      (CFO).units = "cm"];

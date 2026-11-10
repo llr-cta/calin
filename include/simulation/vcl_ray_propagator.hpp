@@ -1,6 +1,6 @@
 /*
 
-   calin/simulation/vcl_ray_processor.hpp -- Stephen Fegan -- 2022-06-29
+   calin/simulation/vcl_ray_propagator.hpp -- Stephen Fegan -- 2022-06-29
 
    Class for propagating rays through VCL raytracers
 
@@ -689,7 +689,7 @@ public:
       ArchRNG* rng = nullptr, double air_refractive_index = 1.0, unsigned observation_layer = 0,
       bool adopt_lens_refractive_index_spline = false, bool adopt_colorizer = false, bool adopt_rng = false):
     array_params_(array_params),
-    lens_refractive_index_spline_(adopt_lens_refractive_index_spline ? new calin::math::spline_interpolation::CubicSpline(*lens_refractive_index_spline) : lens_refractive_index_spline),
+    lens_refractive_index_spline_(lens_refractive_index_spline),
     adopt_lens_refractive_index_spline_(adopt_lens_refractive_index_spline),
     colorizer_(colorizer), adopt_colorizer_(adopt_colorizer),
     rng_(new RealRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng, rng==nullptr ? true : adopt_rng)),
@@ -749,6 +749,7 @@ public:
     fp_parameters.fplane_t     = info.detector_t;
     fp_parameters.pixel_id     = info.pixel_id;
     fp_parameters.detection_prob = 1.0;
+
     return ray_mask;
   }
 #endif

@@ -131,6 +131,11 @@ public:
     double_scope_position_.x()      = array_params.scope_positions(scope_id).x();
     double_scope_position_.y()      = array_params.scope_positions(scope_id).y();
     double_scope_position_.z()      = array_params.scope_positions(scope_id).z();
+
+    double_sin_lat_ = std::sin(array_params.array_origin().latitude()*M_PI/180.0);
+    double_cos_lat_ = std::cos(array_params.array_origin().latitude()*M_PI/180.0);
+    equatorial_mount_ = array_params.equatorial_mount();
+    
     point_telescope_az_el_phi(0.0, 0.0, 0.0);
 
     iobs_                           = observation_layer;
@@ -183,7 +188,15 @@ public:
 
   bool point_telescope_az_el(const double az_rad, const double el_rad)
   {
-    return point_telescope_az_el_phi(az_rad, el_rad, 0.0);
+    double phi = 0.0;
+    if(equatorial_mount_) {
+      double sin_az = std::sin(az_rad);
+      double cos_az = std::cos(az_rad);
+      double sin_el = std::sin(el_rad);
+      double cos_el = std::cos(el_rad);
+      phi = -std::atan2(sin_az*double_cos_lat_, cos_el*double_sin_lat_ - sin_el*cos_az*double_cos_lat_);
+    }
+    return point_telescope_az_el_phi(az_rad, el_rad, phi);
   }
 
   bool point_telescope_az_el_phi(double az_rad, double el_rad, double phi_rad)
@@ -539,6 +552,11 @@ public:
       iobs_);
   }
 
+  const Eigen::Vector3d& scope_position() const { return double_scope_position_; }
+  const Eigen::Matrix3d& rot_reflector_to_global() const { return double_rot_reflector_to_global_; }
+  const Eigen::Matrix3d& rot_global_to_reflector() const { return double_rot_global_to_reflector_; }
+  Eigen::Vector3d pointing_direction() const { return double_rot_reflector_to_global_ * Eigen::Vector3d::UnitY(); }
+
 private:
 
   const calin::math::spline_interpolation::CubicSpline* lens_refractive_index_spline_;
@@ -551,6 +569,9 @@ private:
   unsigned        iobs_ = 0;
   double          double_field_of_view_radius_rad_ = 0.0;
   double          double_lens_aperture_radius_ = 0.0;
+  double          double_sin_lat_ = 0.0;
+  double          double_cos_lat_ = 1.0;
+  bool            equatorial_mount_ = false;
 
   real_t          az_rad_;
   real_t          el_rad_;

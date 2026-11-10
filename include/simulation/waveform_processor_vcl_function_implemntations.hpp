@@ -23,7 +23,7 @@
 #ifndef SWIG
 template<typename VCLArchitecture> void WaveformProcessor::vcl_add_nsb(
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen,
   bool ac_couple)
 {
   const double dx = trace_sampling_inv_/nsb_rate_ghz;
@@ -63,7 +63,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_nsb(
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
   double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen,
   bool ac_couple)
 {
   const double dx = trace_sampling_inv_/nsb_rate_ghz;
@@ -146,7 +146,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_nsb(
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_c,
   double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen,
   bool ac_couple)
 {
   const double dx = trace_sampling_inv_/nsb_rate_ghz;
@@ -258,7 +258,7 @@ template<typename VCLArchitecture> void WaveformProcessor::vcl_add_nsb(
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_c,
   calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_d,
   double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen,
   bool ac_couple)
 {
   const double dx = trace_sampling_inv_/nsb_rate_ghz;

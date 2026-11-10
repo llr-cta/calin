@@ -301,6 +301,23 @@ def mstn_spe_and_afterpulsing_amplitude_generator(spe = "spe_nectarcam_lmp_run15
         args['rescale_gain_to_unity'] = False
     return mstn_spe_amplitude_generator(spe = spe, spline_ninterval = spline_ninterval, **args)
 
+def vcl_mstn_spe_amplitude_generator(avx = 512, afterpulsing = False, **args):
+    """Return an architecture-specific SIMD wrapper for the MST PE spectrum."""
+    generator_classes = {
+        128: calin.simulation.detector_efficiency.VCLSplinePEAmplitudeGenerator128,
+        256: calin.simulation.detector_efficiency.VCLSplinePEAmplitudeGenerator256,
+        512: calin.simulation.detector_efficiency.VCLSplinePEAmplitudeGenerator512,
+    }
+    if avx not in generator_classes:
+        raise ValueError(f'Unsupported VCL architecture width: {avx}')
+    if afterpulsing:
+        spline_generator = mstn_spe_and_afterpulsing_amplitude_generator(**args)
+    else:
+        spline_generator = mstn_spe_amplitude_generator(**args)
+    vcl_generator = generator_classes[avx](spline_generator, True)
+    spline_generator.this.disown()
+    return vcl_generator
+
 def mstn_impulse_response(pulse_file = "Pulse_template_nectarCam_17042020-noshift.dat", pulse_length_ns=60.0, pulse_decay_ns=3.5):
     pulse_file = ds_filename(pulse_file)
     with open(pulse_file, 'r') as file:

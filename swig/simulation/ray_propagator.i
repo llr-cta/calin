@@ -43,6 +43,10 @@
 
 %include "simulation/vcl_ray_propagator.hpp"
 
+%template (VCLRayColorizer128) calin::simulation::vcl_ray_propagator::VCLRayColorizer<calin::util::vcl::VCL128Architecture>;
+%template (VCLRayColorizer256) calin::simulation::vcl_ray_propagator::VCLRayColorizer<calin::util::vcl::VCL256Architecture>;
+%template (VCLRayColorizer512) calin::simulation::vcl_ray_propagator::VCLRayColorizer<calin::util::vcl::VCL512Architecture>;
+
 %template (VCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
 %template (VCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
 %template (VCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::VCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
@@ -58,3 +62,7 @@
 %template (AllSkyVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
 %template (AllSkyVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
 %template (AllSkyVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::AllSkyVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;
+
+%template (PanosetiVCLFocalPlaneRayPropagator128) calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<calin::util::vcl::VCL128Architecture>;
+%template (PanosetiVCLFocalPlaneRayPropagator256) calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<calin::util::vcl::VCL256Architecture>;
+%template (PanosetiVCLFocalPlaneRayPropagator512) calin::simulation::vcl_ray_propagator::PanosetiVCLFocalPlaneRayPropagator<calin::util::vcl::VCL512Architecture>;

@@ -80,6 +80,10 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
       double theta = 0, double phi = 0, double distance = std::numeric_limits<double>::infinity(), double radius = 0);
     Eigen::VectorXd lens_derivative_polynomial() const;
     calin::simulation::ray_processor::RayProcessorDetectorSphere detector_sphere() const;
+    const Eigen::Vector3d& scope_position() const;
+    const Eigen::Matrix3d& rot_reflector_to_global() const;
+    const Eigen::Matrix3d& rot_global_to_reflector() const;
+    Eigen::Vector3d pointing_direction() const;
   };
 
 } } } // namespace calin::simulation::vcl_raytracer

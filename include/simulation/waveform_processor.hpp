@@ -35,6 +35,7 @@
 
 #include <Eigen/Core>
 #include <simulation/pe_processor.hpp>
+#include <simulation/vcl_detector_efficiency.hpp>
 #include <iact_data/instrument_layout.pb.h>
 #include <math/fftw_util.hpp>
 #include <math/rng_vcl.hpp>
@@ -190,14 +191,14 @@ public:
 #ifndef SWIG
   template<typename VCLArchitecture> void vcl_add_nsb(
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng, double nsb_rate_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen = nullptr,
     bool ac_couple=true);
 
   template<typename VCLArchitecture> void vcl_add_nsb(
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_a,
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
     double nsb_rate_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen = nullptr,
     bool ac_couple=true);
 
   template<typename VCLArchitecture> void vcl_add_nsb(
@@ -205,7 +206,7 @@ public:
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_b,
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_c,
     double nsb_rate_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen = nullptr,
     bool ac_couple=true);
 
   template<typename VCLArchitecture> void vcl_add_nsb(
@@ -214,7 +215,7 @@ public:
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_c,
     calin::math::rng::VCLRNG<VCLArchitecture>& vcl_rng_d,
     double nsb_rate_ghz,
-    calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+    calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<VCLArchitecture>* nsb_pegen = nullptr,
     bool ac_couple=true);
 
   template<typename VCLArchitecture> void vcl_add_electronics_noise(
@@ -245,61 +246,61 @@ public:
 #endif // SWIG
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_c, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_c, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_c, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
 
   void vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_c,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_d, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_c,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_d, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
   void vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_c,
       calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_d, double nsb_rate_ghz,
-      calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen = nullptr,
+      calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen = nullptr,
       bool ac_couple=true);
 
   void vcl128_add_electronics_noise(

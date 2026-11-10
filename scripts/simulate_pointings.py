@@ -19,27 +19,54 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 import os
+import sys
+import re
+import glob
 import argparse
 import signal
-import concurrent.futures
+import collections
+import itertools
+import traceback
+import multiprocessing
+import multiprocessing.connection
 import datetime
 import time
 import numpy
 import scipy.interpolate
 import calin.math.geometry
 import calin.math.healpix_array
-import calin.ix.simulation.vcl_iact
-import calin.simulation.tracker
-import calin.simulation.vs_cta
-import calin.simulation.vs_optics
-import calin.simulation.ray_processor
-import calin.simulation.world_magnetic_model
-import calin.simulation.geant4_shower_generator
-import calin.simulation.vcl_iact
+import calin.simulation.iact_factory
 import calin.ix.simulation.simulated_event
-import calin.iact_data.instrument_layout
-import calin.iact_data.nectarcam_layout
 import calin.provenance.anthology
+
+# =============================================================================
+# PROCESS-WIDE STATE
+#
+# stop_requested : set by the SIGINT handler in the main process (and polled by
+#                  the in-process generation loop when running with one thread)
+# stop_flag      : multiprocessing.RawValue shared between the main process and
+#                  the workers; main sets it to 1 on the first Ctrl-C and workers
+#                  poll it between events (a plain shared byte, so it is safe to
+#                  set from a signal handler)
+# heartbeat_fn   : set in worker processes, called from gen_batch() so the
+#                  supervisor can detect hung workers
+# =============================================================================
+
+stop_requested = False
+sigint_count = 0
+stop_flag = None
+heartbeat_fn = None
+
+HEARTBEAT_INTERVAL = 5.0            # seconds between heartbeats from a busy worker
+MAX_CONSECUTIVE_INIT_FAILURES = 10  # abort if workers repeatedly die during init
+
+# Command line arguments that may legitimately differ between the original run
+# and a --resume run. All other arguments must match those stored in the
+# configuration of each existing output file.
+RESUME_IGNORED_ARGS = frozenset([
+    'output', 'block_size', 'nfiles_per_pointing', 'grid_znmax', 'pointing',
+    'nthread', 'avx', 'resume', 'prune_dead_files', 'ignore_config_mismatch',
+    'max_attempts', 'job_timeout', 'recycle_after', 'dry_run'])
 
 # =============================================================================
 # POINTING GRID INTERFACE
@@ -168,15 +195,41 @@ def select_polynomial_for_zn(zn_poly_list, zn_deg):
 
     return metric[-1][1]   # unreachable, but satisfies linters
 
-def handle_sigint_quietly(signum, frame):
-    global stop_requested
-    stop_requested = True
-
 def handle_sigint(signum, frame):
-    global stop_requested
-    if not stop_requested:
-        print("\nStop requested - terminating after current pointings complete")
+    # First Ctrl-C : stop gracefully, workers finish their current event and
+    #                close their files (events written so far are kept).
+    # Second Ctrl-C: raise KeyboardInterrupt in the main process, which kills the
+    #                workers immediately (files being written are left incomplete).
+    global stop_requested, sigint_count
+    sigint_count += 1
+    if sigint_count == 1:
+        print("\nStop requested - terminating after current files complete "
+              "(Ctrl-C again to terminate immediately)", flush=True)
+    elif sigint_count == 2:
+        raise KeyboardInterrupt
     stop_requested = True
+    if stop_flag is not None:
+        stop_flag.value = 1
+
+def stopping():
+    return stop_requested or (stop_flag is not None and stop_flag.value != 0)
+
+def beat():
+    if heartbeat_fn is not None:
+        heartbeat_fn()
+
+def log(msg):
+    print(f'[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}', flush=True)
+
+def describe_exit(code):
+    if code is None:
+        return 'unknown exit status'
+    if code < 0:
+        try:
+            return f'killed by signal {-code} ({signal.Signals(-code).name})'
+        except ValueError:
+            return f'killed by signal {-code}'
+    return f'exit status {code}'
 
 def format_energy(etev):
     if etev < 0.1:
@@ -233,52 +286,13 @@ def init(args):
     instance_id = numpy.random.bit_generator.randbits(64)
     instance_event_id = 0
 
-    # Select simulation classes based on AVX size requested
-    global iact_class
-    if args.avx == 128:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray128
-    elif args.avx == 256:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray256
-    else:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray512
-
-    # Load site-specific atmosphere, observation level and array layout
-    global zobs
-    global atm
-    global atm_abs
-    global mst_config
-    if args.site == 'ctan':
-        zobs = calin.simulation.vs_cta.ctan_observation_level()
-        atm = calin.simulation.vs_cta.ctan_atmosphere(quiet=True)
-        atm_abs = calin.simulation.vs_cta.ctan_atmospheric_absorption(quiet=True)
-        mst_config = calin.simulation.vs_cta.mstn1_config
-    else:
-        zobs = calin.simulation.vs_cta.ctas_observation_level()
-        atm = calin.simulation.vs_cta.ctas_atmosphere(quiet=True)
-        atm_abs = calin.simulation.vs_cta.ctas_atmospheric_absorption(quiet=True)
-        mst_config = calin.simulation.vs_cta.msts1_config
-    mst = mst_config(elevation=0)  # dummy config to get array origin for bfield
-
-    # IACT config object (reused for every pointing, only instantiation deferred)
-    global iact_cfg
-    iact_cfg = iact_class.default_config()
-    if args.no_refraction:
-        iact_cfg.set_refraction_mode(calin.ix.simulation.vcl_iact.REFRACT_NO_RAYS)
-    else:
-        iact_cfg.set_refraction_mode(calin.ix.simulation.vcl_iact.REFRACT_ONLY_CLOSE_RAYS)
-
-    # Load detector and efficiency models and the SPE generator
-    global det_eff
-    global cone_eff
-    global pe_gen
+    # Load site environment and detector response models once per worker.
+    global site_env
     global store_pe_weights
-    det_eff = calin.simulation.vs_cta.mstn_detection_efficiency(quiet=True)
-    cone_eff = calin.simulation.vs_cta.mstn_cone_efficiency(quiet=True)
-    pe_gen = None
-    store_pe_weights = False
-    if args.enable_pe_spectrum:
-        pe_gen = calin.simulation.vs_cta.mstn_spe_amplitude_generator(quiet=True)
-        store_pe_weights = True
+    site_env = calin.simulation.iact_factory.load_site_environment(
+        args.site, enable_pe_spectrum=args.enable_pe_spectrum,
+        no_bfield=args.no_bfield, quiet=True, avx=args.avx)
+    store_pe_weights = site_env.pe_gen is not None
 
     global store_times_as_integer
     store_times_as_integer = args.store_times_as_integer
@@ -286,67 +300,21 @@ def init(args):
     # bmax and viewcone polynomials are resolved per-pointing in setup_pointing();
     # nothing to compute here.
 
-    # Magnetic field (if not disabled) — depends only on site, not pointing
-    global wmm
-    global bfield
-    if args.no_bfield:
-        bfield = None
-    else:
-        wmm = calin.simulation.world_magnetic_model.WMM()
-        bfield = wmm.field_vs_elevation(mst.array_origin().latitude(), mst.array_origin().longitude())
-
-    # Configure Geant4 shower generator
-    geant4_cfg = calin.simulation.geant4_shower_generator.Geant4ShowerGenerator.customized_config(
-        1000, 0, atm.top_of_atmosphere(),
-        calin.simulation.geant4_shower_generator.VerbosityLevel_SUPRESSED_STDOUT)
-    if args.multiple_scattering == 'minimal':
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimit Minimal')
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimitMuHad Minimal')
-    elif args.multiple_scattering == 'simple':
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimit UseSafety')
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseSafety')
-    elif args.multiple_scattering == 'normal':
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-    elif args.multiple_scattering == 'better':
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-        geant4_cfg.add_pre_init_commands('/process/msc/RangeFactor 0.01')
-        geant4_cfg.add_pre_init_commands('/process/msc/RangeFactorMuHad 0.01')
-    elif args.multiple_scattering == 'insane':
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        geant4_cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-        geant4_cfg.add_pre_init_commands('/process/msc/RangeFactor 0.001')
-        geant4_cfg.add_pre_init_commands('/process/msc/RangeFactorMuHad 0.001')
-    if args.primary == 'iron':
-        geant4_cfg.set_enable_ions(True)
-
+    # The site environment also resolves the magnetic field at the array origin.
+    # Keep site_env alive for the C++ generator and propagators that use its models.
     global generator
     global saved_geant4_cfg
-    saved_geant4_cfg = geant4_cfg
-    generator = calin.simulation.geant4_shower_generator.Geant4ShowerGenerator(atm, geant4_cfg, bfield)
+    generator, saved_geant4_cfg = calin.simulation.iact_factory.create_geant4_generator(
+        site_env.atm, bfield=site_env.bfield,
+        multiple_scattering=args.multiple_scattering,
+        primary=args.primary)
 
     # Particle type
     global particle_type
-    if args.primary == 'gamma':
-        particle_type = calin.simulation.tracker.ParticleType_GAMMA
-    elif args.primary == 'muon':
-        particle_type = calin.simulation.tracker.ParticleType_MUON
-    elif args.primary == 'electron':
-        particle_type = calin.simulation.tracker.ParticleType_ELECTRON
-    elif args.primary == 'proton':
-        particle_type = calin.simulation.tracker.ParticleType_PROTON
-    elif args.primary == 'helium':
-        particle_type = calin.simulation.tracker.ParticleType_HELIUM
-    elif args.primary == 'iron':
-        particle_type = calin.simulation.tracker.ParticleType_IRON
-    else:
-        raise ValueError(f'Unknown primary particle type: {args.primary}')
+    particle_type = calin.simulation.iact_factory.get_tracker_particle_type(args.primary)
 
     # The spectral transform depends on the per-pointing bmax and viewcone
     # polynomials, so it is computed inside setup_pointing() for each pointing.
-
-    signal.signal(signal.SIGINT, handle_sigint_quietly)
 
 # =============================================================================
 # POINTING SETUP  (called once per pointing, inside each worker)
@@ -401,78 +369,45 @@ def make_spectral_transform(bmax_polynomial, viewcone_polynomial):
         return lambda r: lx
 
 def setup_pointing(el_deg, az_deg):
-    # Generate array parameters
-    mst = mst_config(elevation = el_deg)
-    mst.mutable_prescribed_array_layout().mutable_scope_positions(0).set_x(0)
-    mst.mutable_prescribed_array_layout().mutable_scope_positions(0).set_y(0)
-    nscope = mst.prescribed_array_layout().scope_positions_size()
-
-    # Instantiate array
-    global array
-    array = calin.simulation.vs_optics.VSOArray()
-    array.generateFromArrayParameters(mst)
-    scope = array.telescope(0)
-    telescope_layout = scope.convert_to_telescope_layout()
-    nchan = telescope_layout.camera().channel_size()
+    global iact_cfg
+    global all_pe_processor
+    global all_prop
+    array_params, nscope, nchan, detector_type_name = \
+        calin.simulation.iact_factory.setup_telescope_array(
+            saved_args.site, el_deg=el_deg)
 
     # Build and return (iact, vc_dir, bmax_poly, viewcone_poly,
     # spectral_tf, sim_config) for the pointing (el_deg, az_deg).
     zn_deg = 90.0 - el_deg
-    detector_type_name = 'MST/NC'
 
     # Resolve polynomials for this zenith angle
     bmax_poly     = make_bmax_polynomial(zn_deg)
     viewcone_poly = make_viewcone_polynomial(zn_deg)
     spectral_tf   = make_spectral_transform(bmax_poly, viewcone_poly)
 
-    # Fresh IACT instance for this pointing
-    iact = iact_class(atm, atm_abs, iact_cfg)
+    # Build a fresh IACT instance for this pointing and attach its propagators.
+    iact, iact_cfg, _ = calin.simulation.iact_factory.create_iact_array(
+        site_env.atm, site_env.atm_abs, avx=saved_args.avx,
+        no_refraction=saved_args.no_refraction)
+    all_pe_processor, all_prop = calin.simulation.iact_factory.attach_iact_propagators(
+        iact, saved_args.site, array_params,
+        bmax_polynomial=numpy.flipud(bmax_poly) * 0.01,
+        reuse=saved_args.reuse, nscope=nscope, nchan=nchan,
+        det_eff=site_env.det_eff, cone_eff=site_env.cone_eff,
+        pe_gen=site_env.pe_gen,
+        tts=saved_args.tts,
+        lens_spline=site_env.lens_refractive_index_spline,
+        detector_type_name=detector_type_name)
 
-    global all_pe_processor
-    global all_prop
-    all_pe_processor = []
-    all_prop = []
-    for i in range(numpy.max([1, saved_args.reuse])):
-        iact.add_propagator_set(numpy.flipud(bmax_poly), f"Super array {i}")
-        pe_processor = calin.simulation.ray_processor.SimpleListPEProcessor(nscope, nchan)
-        prop = iact.add_davies_cotton_propagator(
-            mst, pe_processor, det_eff, cone_eff, pe_gen, saved_args.tts, detector_type_name)
-        all_pe_processor.append(pe_processor)
-        all_prop.append(prop)
-
-
-    # Pointing direction and viewcone axis
-    iact.point_all_telescopes_az_el_deg(az_deg, el_deg)
-    el = el_deg * numpy.pi / 180.0
-    az = az_deg * numpy.pi / 180.0
-    pt_dir = numpy.asarray([
-        numpy.cos(el) * numpy.sin(az),
-        numpy.cos(el) * numpy.cos(az),
-        numpy.sin(el)
-    ])
-    theta = saved_args.theta * numpy.pi / 180
-    phi   = saved_args.phi   * numpy.pi / 180
-    vc_dir = numpy.asarray([
-        numpy.sin(theta) * numpy.cos(phi),
-        numpy.sin(theta) * numpy.sin(phi),
-        numpy.cos(theta)
-    ])
-    vc_dir = calin.math.geometry.rotate_vec_z_to_u_Rzy(vc_dir, -pt_dir)
-
-    if not saved_args.no_viewcone_cut:
-        iact.set_viewcone_from_telescope_fields_of_view()
+    pt_dir, vc_dir = calin.simulation.iact_factory.set_iact_pointing(
+        iact, el_deg, az_deg, saved_args.theta, saved_args.phi,
+        apply_viewcone_cut=not saved_args.no_viewcone_cut)
 
     # Simulation configuration protobuf for this pointing
     sim_config = calin.ix.simulation.simulated_event.SimulationConfiguration()
-    particle_map = {
-        'gamma':    calin.ix.simulation.simulated_event.GAMMA,
-        'muon':     calin.ix.simulation.simulated_event.MUON,
-        'electron': calin.ix.simulation.simulated_event.ELECTRON,
-        'proton':   calin.ix.simulation.simulated_event.PROTON,
-        'helium':   calin.ix.simulation.simulated_event.HELIUM,
-        'iron':     calin.ix.simulation.simulated_event.IRON,
-    }
-    sim_config.set_particle_type(particle_map[saved_args.primary])
+    sim_config.set_particle_type(
+        calin.simulation.iact_factory.get_simulated_event_particle_type(
+            saved_args.primary))
     sim_config.set_energy_lo(saved_args.emin)
     if saved_args.emax > saved_args.emin:
         sim_config.set_energy_hi(saved_args.emax)
@@ -495,26 +430,26 @@ def setup_pointing(el_deg, az_deg):
                                      viewcone_poly=viewcone_poly,
                                      spectral_tf=spectral_tf))
 
-    atm_abs_zmin = numpy.min(atm_abs.levels_cm())
-    atm_abs_zmax = numpy.max(atm_abs.levels_cm())
-    for level in atm.get_levels():
+    atm_abs_zmin = numpy.min(site_env.atm_abs.levels_cm())
+    atm_abs_zmax = numpy.max(site_env.atm_abs.levels_cm())
+    for level in site_env.atm.get_levels():
         proto_level = sim_config.add_atmospheric_level()
         proto_level.set_altitude(level.z)
         proto_level.set_thickness(level.t)
         proto_level.set_density(level.rho)
         proto_level.set_n_minus_one(level.nmo)
-        if bfield is not None:
-            b = bfield.field_nT(level.z)
+        if site_env.bfield is not None:
+            b = site_env.bfield.field_nT(level.z)
             proto_level.mutable_bfield().set_x(b[0])
             proto_level.mutable_bfield().set_y(b[1])
             proto_level.mutable_bfield().set_z(b[2])
         if atm_abs_zmin < level.z < atm_abs_zmax:
-            proto_level.set_optical_depth_1d5ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 1.5))
-            proto_level.set_optical_depth_2d0ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 2.0))
-            proto_level.set_optical_depth_2d5ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 2.5))
-            proto_level.set_optical_depth_3d0ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 3.0))
-            proto_level.set_optical_depth_3d5ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 3.5))
-            proto_level.set_optical_depth_4d0ev(atm_abs.optical_depth_for_altitude_and_energy(level.z, 4.0))
+            proto_level.set_optical_depth_1d5ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 1.5))
+            proto_level.set_optical_depth_2d0ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 2.0))
+            proto_level.set_optical_depth_2d5ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 2.5))
+            proto_level.set_optical_depth_3d0ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 3.0))
+            proto_level.set_optical_depth_3d5ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 3.5))
+            proto_level.set_optical_depth_4d0ev(site_env.atm_abs.optical_depth_for_altitude_and_energy(level.z, 4.0))
 
     sim_config.mutable_geant4_shower_generator_config().CopyFrom(saved_geant4_cfg)
     sim_config.mutable_iact_array_config().CopyFrom(iact_cfg)
@@ -542,18 +477,20 @@ def setup_pointing(el_deg, az_deg):
 
     detector_type_config = sim_config.mutable_detector_type_config(detector_type_name)
     detector_type_config.set_type_name(detector_type_name)
-    detector_type_config.set_detector_efficiency_banner(det_eff.banner())
-    detector_type_config.set_detector_efficiency_energy(numpy.asarray(det_eff.all_xi()))
-    detector_type_config.set_detector_efficiency_efficiency(numpy.asarray(det_eff.all_yi()))
-    detector_type_config.set_angular_response_banner(cone_eff.banner())
-    detector_type_config.set_angular_response_costheta(numpy.asarray(det_eff.all_xi()))
-    detector_type_config.set_angular_response_efficiency(numpy.asarray(det_eff.all_yi()))
-    if pe_gen:
-        detector_type_config.set_pe_spectrum_banner(pe_gen.banner())
-        detector_type_config.set_pe_spectrum_banner_q(pe_gen.raw_q())
-        detector_type_config.set_pe_spectrum_banner_dp_dq(pe_gen.raw_dp_dq())
+    detector_type_config.set_detector_efficiency_banner(site_env.det_eff.banner())
+    detector_type_config.set_detector_efficiency_energy(numpy.asarray(site_env.det_eff.all_xi()))
+    detector_type_config.set_detector_efficiency_efficiency(numpy.asarray(site_env.det_eff.all_yi()))
+    if site_env.cone_eff:
+        detector_type_config.set_angular_response_banner(site_env.cone_eff.banner())
+        detector_type_config.set_angular_response_costheta(numpy.asarray(site_env.cone_eff.all_xi()))
+        detector_type_config.set_angular_response_efficiency(numpy.asarray(site_env.cone_eff.all_yi()))
+    if site_env.pe_gen:
+        detector_type_config.set_pe_spectrum_banner(site_env.pe_gen.banner())
+        detector_type_config.set_pe_spectrum_banner_q(site_env.pe_gen.raw_q())
+        detector_type_config.set_pe_spectrum_banner_dp_dq(site_env.pe_gen.raw_dp_dq())
     detector_type_config.set_pe_time_spread(saved_args.tts)
-    detector_type_config.mutable_dc_array_parameters().CopyFrom(mst)
+    if saved_args.site != 'dark100':
+        detector_type_config.mutable_dc_array_parameters().CopyFrom(array_params)
 
     args_dict = vars(saved_args)
     for arg in args_dict:
@@ -581,8 +518,8 @@ def gen_event(iact, vc_dir, viewcone_polynomial, spectral_transform):
     ])
     u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, vc_dir)
 
-    ct0 = 1.0 / u[2] * (atm.top_of_atmosphere() - atm.zobs(0))
-    x0  = numpy.asarray([0, 0, atm.zobs(0)]) + ct0 * u
+    ct0 = 1.0 / u[2] * (site_env.atm.top_of_atmosphere() - site_env.atm.zobs(0))
+    x0  = numpy.asarray([0, 0, site_env.atm.zobs(0)]) + ct0 * u
 
     generator.generate_showers(iact, 1, particle_type, e, x0, u, ct0)
 
@@ -601,15 +538,20 @@ def gen_batch(filename, pointing_index, el_deg, az_deg, nevents):
     # Worker entry point. Generates nevents events for the pointing
     # (el_deg, az_deg) and writes them to filename.
     # Returns (filename, pointing_index, el_deg, az_deg,
-    #          nevents, ntracks, nsteps, nrays, nbytes) or None if stopping.
+    #          nevents, ntracks, nsteps, nrays, nbytes) or None if stopping
+    # before any event was generated (no file is left behind in that case).
     global instance_event_id
 
-    if stop_requested:
+    if stopping():
         return None
+    beat()
 
     # Build a fresh IACT and resolve all pointing-dependent objects
     iact, vc_dir, bmax_poly, viewcone_poly, spectral_tf, sim_config = setup_pointing(el_deg, az_deg)
- 
+    beat()
+    if stopping():
+        return None
+
     # Write simulation configuration
     h5 = type(sim_config).NewHDFStreamWriter(filename, 'config', truncate=True)
     h5.write(sim_config)
@@ -624,7 +566,7 @@ def gen_batch(filename, pointing_index, el_deg, az_deg, nevents):
     num_rays   = 0
 
     for _ in range(nevents):
-        if stop_requested:
+        if stopping():
             break
         sim_event = gen_event(iact, vc_dir, viewcone_poly, spectral_tf)
         sim_event.set_instance_id(instance_id)
@@ -635,8 +577,13 @@ def gen_batch(filename, pointing_index, el_deg, az_deg, nevents):
         num_tracks += iact.num_tracks()
         num_steps  += iact.num_steps()
         num_rays   += iact.num_rays()
+        beat()
 
     del h5
+
+    if num_events == 0:
+        os.remove(filename)
+        return None
 
     # Write provenance anthology
     provenance_anthology = calin.provenance.anthology.get_current_anthology()
@@ -656,7 +603,11 @@ def get_banner(sleep_time=0, el_deg=None, az_deg=None,
     # Use nominal zn=0 polynomials for the startup banner (before any pointing
     # is known); each per-pointing banner will carry the resolved values.
     if el_deg is None:
-        zn_deg = 90.0
+        if saved_args.pointing is not None:
+            _, zn_deg, az_deg = get_grid_pointing(saved_args.grid_nside, saved_args.pointing)
+            el_deg = 90.0 - zn_deg
+        else:
+            zn_deg = 90.0
     else:
         zn_deg = 90.0 - el_deg
 
@@ -678,6 +629,8 @@ def get_banner(sleep_time=0, el_deg=None, az_deg=None,
     banner += f'- Zenith cut: {saved_args.grid_znmax} deg\n'
     banner += f'- Cell area: {calin.math.healpix_array.cell_area(saved_args.grid_nside) * (180/numpy.pi)**2:.2f} deg^2\n'
     banner += f'- Cell dimension: {calin.math.healpix_array.cell_dimension(saved_args.grid_nside) * (180/numpy.pi):.2f} deg\n'
+    if saved_args.pointing is not None:
+        banner += f'- Single pointing mode: Index {saved_args.pointing}\n'
     banner += f'- Number of pointings: {total_pointings:,d}\n'
 
     if el_deg is not None:
@@ -727,13 +680,13 @@ def print_line(filename, el_deg, az_deg,
     
     # line += f' {num_files_generated:,d} / {total_files_to_generate:,d}'
 
-    fraction = num_events_total / total_events_to_generate
+    fraction = max(num_events_total / total_events_to_generate, 1e-12)
     line += f' ; {num_events_total:,d} / {total_events_to_generate:,d} = {fraction*100.0:.2f}%'
 
     line += f' ; {format_duration(runtime)} / {format_duration(runtime/fraction)}'
     line += f' ({num_events_total/runtime:,.1f} Hz)'
     line += f' ; {num_rays_total:,d} rays'
-    if num_tracks_total > 0:
+    if num_tracks_total > 0 and num_steps_total > 0:
         line += f' ; {num_rays_total/num_steps_total:.2f} {num_steps_total/num_tracks_total:.2f}'
     line += f' ; {num_bytes_total*1e-9:,.3f} / {num_bytes_total/fraction*1e-9:,.3f} GB'
     if stop_requested:
@@ -741,10 +694,398 @@ def print_line(filename, el_deg, az_deg,
     print(line)
 
 # =============================================================================
+# WORKER PROCESS AND SUPERVISOR
+#
+# Workers are plain multiprocessing.Process objects, each with its own pipe to
+# the main process. Unlike concurrent.futures.ProcessPoolExecutor, the death of
+# one worker (SIGSEGV/SIGABRT in the C++ code, OOM kill, ...) does not affect the
+# others: the Supervisor notices the dead process, requeues the job it was
+# running (same output filename, which is simply overwritten) and starts a
+# replacement worker. A job that fails max_attempts times is skipped and
+# reported at the end.
+#
+# Messages worker -> main : ('ready',) ('hb',) ('done', result) ('error', tb)
+#                           ('init_error', tb)
+# Messages main -> worker : job tuple (fname, pointing, el_deg, az_deg, nevents)
+#                           or None (exit)
+# =============================================================================
+
+def worker_main(conn, args, shared_stop_flag, parent_pid, n_total_pointings):
+    global stop_flag, heartbeat_fn, total_pointings, stop_requested
+    signal.signal(signal.SIGINT, signal.SIG_IGN)    # the main process owns Ctrl-C
+    stop_flag = shared_stop_flag
+    total_pointings = n_total_pointings             # used by get_banner()
+    stop_requested = False
+    last_beat = [0.0]
+
+    def beat_():
+        if os.getppid() != parent_pid:              # main process is gone
+            os._exit(1)
+        now = time.monotonic()
+        if now - last_beat[0] >= HEARTBEAT_INTERVAL:
+            last_beat[0] = now
+            conn.send(('hb',))
+    heartbeat_fn = beat_
+
+    try:
+        init(args)
+    except BaseException:
+        conn.send(('init_error', traceback.format_exc()))
+        return
+    conn.send(('ready',))
+
+    while True:
+        if not conn.poll(5.0):
+            if os.getppid() != parent_pid:
+                return
+            continue
+        try:
+            job = conn.recv()
+        except EOFError:
+            return
+        if job is None:
+            return
+        last_beat[0] = 0.0
+        try:
+            result = gen_batch(*job)
+        except Exception:
+            # State of the C++ objects is unknown after an exception, so report
+            # and exit; the supervisor starts a replacement.
+            conn.send(('error', traceback.format_exc()))
+            return
+        conn.send(('done', result))
+
+
+class Supervisor:
+    def __init__(self, nworkers, jobs, njobs, args, on_result, on_started,
+                 max_attempts=3, job_timeout=0.0, recycle_after=0):
+        self.ctx = multiprocessing.get_context('fork')
+        self.nworkers = nworkers
+        self.jobs = iter(jobs)
+        self.outstanding = njobs            # jobs not yet done or finally failed
+        self.args = args
+        self.on_result = on_result
+        self.on_started = on_started
+        self.max_attempts = max_attempts
+        self.job_timeout = job_timeout      # seconds without a message; 0 = off
+        self.recycle_after = recycle_after  # jobs per worker; 0 = never
+        self.workers = {}
+        self.next_wid = 0
+        self.lookahead = collections.deque()
+        self.retry = collections.deque()
+        self.attempts = collections.Counter()
+        self.failed = []                    # (job, reason)
+        self.initial_workers = min(nworkers, njobs)
+        self.nready = 0
+        self.started = False
+        self.init_failures = 0
+
+    def run(self):
+        try:
+            self._run()
+        finally:
+            self._cleanup()
+        return self.failed
+
+    # --- main loop -----------------------------------------------------------
+
+    def _run(self):
+        while True:
+            self._rebalance()
+            if not self.workers:
+                break
+            if not self.started and self.nready >= self.initial_workers:
+                self.started = True
+                self.on_started()
+            self._dispatch()
+            waitables = [w['conn'] for w in self.workers.values()]
+            waitables += [w['proc'].sentinel for w in self.workers.values()]
+            multiprocessing.connection.wait(waitables, timeout=1.0)
+            for wid, w in list(self.workers.items()):
+                self._drain(w)
+                if w['proc'].exitcode is not None:
+                    self._drain(w)
+                    self._reap(wid)
+            self._check_timeouts()
+
+    def _rebalance(self):
+        # Keep min(nworkers, outstanding jobs) workers alive (not counting those
+        # that have been told to exit).
+        if stop_requested:
+            return
+        want = min(self.nworkers, self.outstanding)
+        have = sum(1 for w in self.workers.values() if w['state'] != 'retiring')
+        for _ in range(want - have):
+            self._spawn()
+
+    def _spawn(self):
+        wid = self.next_wid
+        self.next_wid += 1
+        parent_conn, child_conn = self.ctx.Pipe()
+        proc = self.ctx.Process(
+            target=worker_main, name=f'worker-{wid}', daemon=True,
+            args=(child_conn, self.args, stop_flag, os.getpid(), total_pointings))
+        proc.start()
+        child_conn.close()
+        self.workers[wid] = dict(proc=proc, conn=parent_conn, job=None,
+                                 state='starting', last_msg=time.monotonic(),
+                                 njobs=0, kill_reason=None)
+
+    def _has_work(self):
+        if self.retry or self.lookahead:
+            return True
+        try:
+            self.lookahead.append(next(self.jobs))
+        except StopIteration:
+            return False
+        return True
+
+    def _take_job(self):
+        return self.retry.popleft() if self.retry else self.lookahead.popleft()
+
+    def _dispatch(self):
+        for w in self.workers.values():
+            if w['state'] == 'starting' and stop_requested:
+                w['state'] = 'retiring'
+                w['proc'].terminate()
+            elif w['state'] == 'idle':
+                if stop_requested or self.outstanding <= 0:
+                    self._retire(w)
+                elif self.started and self._has_work():
+                    self._assign(w, self._take_job())
+
+    def _retire(self, w):
+        w['state'] = 'retiring'
+        try:
+            w['conn'].send(None)
+        except (OSError, ValueError):
+            pass
+
+    def _assign(self, w, job):
+        w['job'] = job
+        w['state'] = 'busy'
+        w['last_msg'] = time.monotonic()
+        try:
+            w['conn'].send(job)
+        except (OSError, ValueError):
+            # Worker already dead; the job was not started, so no attempt is used.
+            w['job'] = None
+            w['state'] = 'retiring'
+            self.retry.appendleft(job)
+
+    # --- messages from workers ---------------------------------------------------
+
+    def _drain(self, w):
+        while True:
+            try:
+                if not w['conn'].poll():
+                    return
+                msg = w['conn'].recv()
+            except (EOFError, OSError):
+                return
+            self._handle(w, msg)
+
+    def _handle(self, w, msg):
+        w['last_msg'] = time.monotonic()
+        kind = msg[0]
+        if kind == 'ready':
+            w['state'] = 'idle'
+            self.nready += 1
+            self.init_failures = 0
+        elif kind == 'done':
+            w['job'] = None
+            w['state'] = 'idle'
+            w['njobs'] += 1
+            self.outstanding -= 1
+            self.on_result(msg[1])
+            if self.recycle_after and w['njobs'] >= self.recycle_after:
+                self._retire(w)
+        elif kind == 'error':
+            job = w['job']
+            w['job'] = None
+            w['state'] = 'retiring'         # worker exits after reporting
+            log(f'Exception in worker pid {w["proc"].pid}:\n{msg[1]}')
+            self._job_failed(job, 'exception in worker')
+        elif kind == 'init_error':
+            log(f'Worker pid {w["proc"].pid} failed during initialisation:\n{msg[1]}')
+
+    def _job_failed(self, job, reason):
+        fname, p_idx, el_deg, az_deg, nevents = job
+        self.attempts[fname] += 1
+        n = self.attempts[fname]
+        log(f'FAILED {fname} (pointing {p_idx}, El={el_deg:.2f} Az={az_deg:.2f}, '
+            f'{nevents:,d} events): {reason}; attempt {n}/{self.max_attempts}')
+        if stop_requested:
+            self.failed.append((job, reason + ' (not retried: stop requested)'))
+        elif n < self.max_attempts:
+            self.retry.append(job)
+        else:
+            self.failed.append((job, reason))
+            self.outstanding -= 1
+
+    # --- worker exit -----------------------------------------------------------------
+
+    def _reap(self, wid):
+        w = self.workers.pop(wid)
+        w['conn'].close()
+        w['proc'].join()
+        code = w['proc'].exitcode
+        pid = w['proc'].pid
+        if w['job'] is not None:
+            reason = w['kill_reason'] or describe_exit(code)
+            self._job_failed(w['job'], f'worker pid {pid} died: {reason}')
+        elif w['state'] == 'starting':
+            self.init_failures += 1
+            log(f'Worker pid {pid} died during initialisation: {describe_exit(code)}')
+            if self.init_failures >= MAX_CONSECUTIVE_INIT_FAILURES:
+                raise RuntimeError(
+                    f'{self.init_failures} consecutive worker initialisation failures')
+        elif w['state'] == 'idle':
+            log(f'Idle worker pid {pid} died: {describe_exit(code)}')
+
+    def _check_timeouts(self):
+        if not self.job_timeout:
+            return
+        now = time.monotonic()
+        for w in self.workers.values():
+            if (w['job'] is not None and w['kill_reason'] is None
+                    and now - w['last_msg'] > self.job_timeout):
+                w['kill_reason'] = (f'no heartbeat for {self.job_timeout/60:.1f} min '
+                                    f'(killed by supervisor)')
+                w['proc'].kill()
+
+    def _cleanup(self):
+        for w in self.workers.values():
+            if w['proc'].is_alive():
+                w['proc'].terminate()
+        for w in self.workers.values():
+            w['proc'].join(5.0)
+            if w['proc'].is_alive():
+                w['proc'].kill()
+                w['proc'].join()
+            w['conn'].close()
+        self.workers.clear()
+
+# =============================================================================
+# RESUME
+#
+# With --resume, existing output files matching the --output template are
+# inspected with the HDF reader. Each file that opens contributes the number of
+# rows in its 'events' dataset to its pointing (taken from the {pointing} token
+# in the filename); files that cannot be read (events, provenance or config
+# missing/unreadable, e.g. because the worker died while writing) are "dead" and
+# count as zero events. Pointings that already have enough events are skipped,
+# others are topped up with the missing events.
+# =============================================================================
+
+def template_to_patterns(template):
+    # Returns (glob pattern, compiled regex whose group 1 is the pointing index)
+    glob_pat = ''
+    rx = ''
+    for part in re.split(r'(\{id\}|\{seq\}|\{pointing\})', template):
+        if part == '{id}':
+            glob_pat += '*'
+            rx += '[0-9A-Fa-f]{32}'
+        elif part == '{seq}':
+            glob_pat += '*'
+            rx += r'\d+'
+        elif part == '{pointing}':
+            glob_pat += '*'
+            rx += r'(\d+)'
+        else:
+            glob_pat += glob.escape(part)
+            rx += re.escape(part)
+    return glob_pat, re.compile(rx)
+
+def inspect_file(fname, anthology_type):
+    # Returns (number of events, stored command line args as dict of str) or
+    # raises if any of the events, provenance or config groups cannot be read.
+    event_type = calin.ix.simulation.simulated_event.SimulatedEvent
+    h5 = event_type.NewHDFStreamReader(fname, 'events')
+    nevents = h5.nrow()
+    del h5
+
+    h5 = anthology_type.NewHDFStreamReader(fname, 'provenance')
+    if h5.nrow() < 1:
+        raise RuntimeError('provenance group is empty')
+    del h5
+
+    config = calin.ix.simulation.simulated_event.SimulationConfiguration()
+    h5 = type(config).NewHDFStreamReader(fname, 'config')
+    if h5.nrow() < 1:
+        raise RuntimeError('config group is empty')
+    h5.read(0, config)
+    del h5
+    stored_args = {k: config.command_line_args(k) for k in config.command_line_args_keys()}
+    return nevents, stored_args
+
+def scan_existing(args):
+    # Returns (events per pointing, dead files, config mismatches, number of good files)
+    #   dead files       : list of (filename, pointing, error)
+    #   config mismatches: dict (arg, stored value, current value) -> [nfiles, example file]
+    glob_pat, rx = template_to_patterns(args.output)
+    found = []
+    for fname in sorted(glob.glob(glob_pat)):
+        m = rx.fullmatch(fname)
+        if m is None:
+            continue
+        p_idx = int(m.group(1))
+        if args.pointing is not None and p_idx != args.pointing:
+            continue
+        found.append((fname, p_idx))
+
+    print(f'Resume: scanning {len(found):,d} existing files')
+    anthology_type = type(calin.provenance.anthology.get_current_anthology())
+    current_args = {k: str(v) for k, v in vars(args).items() if k not in RESUME_IGNORED_ARGS}
+
+    counts = collections.Counter()
+    dead = []
+    mismatches = {}
+    ngood = 0
+    t_last = time.monotonic()
+    for i, (fname, p_idx) in enumerate(found):
+        try:
+            nevents, stored_args = inspect_file(fname, anthology_type)
+        except Exception as e:
+            dead.append((fname, p_idx, f'{type(e).__name__}: {e}'))
+            continue
+        ngood += 1
+        counts[p_idx] += nevents
+        for k, v in current_args.items():
+            if stored_args.get(k) != v:
+                entry = mismatches.setdefault((k, stored_args.get(k), v), [0, fname])
+                entry[0] += 1
+        if time.monotonic() - t_last > 10.0:
+            t_last = time.monotonic()
+            print(f'  scanned {i+1:,d} / {len(found):,d} files', flush=True)
+    return counts, dead, mismatches, ngood
+
+def prune_dead_files(dead):
+    # Delete the dead files, but only after the user types "yes".
+    print(f'{len(dead):,d} dead files will be removed, e.g.:')
+    for fname, p_idx, err in dead[:5]:
+        print(f'  {fname} ({err})')
+    try:
+        answer = input(f'Type "yes" to delete {len(dead):,d} files: ')
+    except EOFError:
+        answer = ''
+    if answer.strip() != 'yes':
+        print('Not deleting dead files; new files will use different names')
+        return
+    nremoved = 0
+    for fname, p_idx, err in dead:
+        try:
+            os.remove(fname)
+            nremoved += 1
+        except OSError as e:
+            print(f'  could not remove {fname}: {e}')
+    print(f'Removed {nremoved:,d} dead files')
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
-if __name__ == '__main__':
+def build_parser():
     parser = argparse.ArgumentParser(
         description='Nectarcam multi-pointing shower simulation over a healpix pointing grid')
 
@@ -763,14 +1104,17 @@ if __name__ == '__main__':
     parser.add_argument('--grid_znmax', type=float, default=65.0,
         help='Maximum zenith angle in degrees; pointings with zn > this value are skipped. '
              'The index-to-pointing mapping is unaffected (default: 65.0)')
+    parser.add_argument('--pointing', type=int, default=None,
+        help='Single pointing index to simulate. When specified, multi-process threading '
+             'is automatically disabled and only this pointing is processed (default: all valid grid pointings)')
     parser.add_argument('--nfiles_per_pointing', type=int, default=1,
         help='Number of HDF5 output files to generate per pointing (default: 1)')
     parser.add_argument('--block_size', type=int, default=1000,
         help='Number of shower events per output file (default: 1000)')
 
     # --- Site ---
-    parser.add_argument('--site', type=str, default='ctan', choices=['ctan', 'ctas'],
-        help='Site to simulate (default: ctan)')
+    parser.add_argument('--site', type=str, default='ctan', choices=['ctan', 'ctas', 'dark100'],
+        help='Site / instrument to simulate: ctan, ctas, or dark100 (default: ctan)')
 
     # --- Shower reuse ---
     parser.add_argument('--reuse', type=int, default=10,
@@ -836,8 +1180,47 @@ if __name__ == '__main__':
     parser.add_argument('--avx', type=int, default=512, choices=[128, 256, 512],
         help='AVX vector size in bits (default: 512)')
 
-    global args
-    args = parser.parse_args()
+    # --- Fault tolerance and resume ---
+    parser.add_argument('--resume', action='store_true',
+        help='Inspect existing output files matching the --output template (which must '
+             'contain {pointing}) and only generate the events still missing for each '
+             'pointing. Files that cannot be read count as zero events. Do not resume '
+             'while another instance is writing to the same files (default: disabled)')
+    parser.add_argument('--prune_dead_files', action='store_true',
+        help='With --resume, offer to delete unreadable files found by the scan; '
+             'nothing is deleted unless "yes" is typed at the prompt (default: disabled)')
+    parser.add_argument('--ignore_config_mismatch', action='store_true',
+        help='With --resume, only warn (instead of aborting) if the command line '
+             'arguments stored in existing files differ from the current ones, '
+             'excluding output, block_size, nfiles_per_pointing, grid_znmax, pointing, '
+             'nthread, avx and the resume/fault-tolerance options (default: abort)')
+    parser.add_argument('--max_attempts', type=int, default=3,
+        help='Maximum number of attempts for a file whose worker crashes or raises; '
+             'after this the file is skipped and reported at the end (default: 3)')
+    parser.add_argument('--job_timeout', type=float, default=0.0,
+        help='Kill a worker, and count a failed attempt, if it sends no heartbeat for '
+             'this many minutes. Heartbeats are sent between events, so this must exceed '
+             'the longest single-event time (default: 0 = disabled)')
+    parser.add_argument('--recycle_after', type=int, default=0,
+        help='Replace each worker process after it has completed this many files, '
+             'as protection against memory leaks (default: 0 = never)')
+
+    # --- Dry run ---
+    parser.add_argument('--dry_run', action='store_true',
+        help='Do everything except launch the simulation: parse the arguments, scan existing '
+             'files and prune dead files if requested (--resume, --prune_dead_files), then '
+             'print the banner and the work to be done and exit (default: disabled)')
+
+    return parser
+
+def main(argv=None):
+    global saved_args, stop_flag, stop_requested, sigint_count
+    global total_pointings, total_files_to_generate, total_events_to_generate
+    global begin_utc, num_files_generated, num_events_total, num_tracks_total
+    global num_steps_total, num_rays_total, num_bytes_total
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
 
     # Apply defaults for polynomial lists (argparse append starts from None)
     if args.bmax_polynomial is None:
@@ -855,29 +1238,76 @@ if __name__ == '__main__':
 
     args.nfiles_per_pointing = max(1, args.nfiles_per_pointing)
 
-    global total_pointings
-    global total_files_to_generate
-    global total_events_to_generate
+    if args.prune_dead_files and not args.resume:
+        parser.error('--prune_dead_files requires --resume')
+    if args.resume and '{pointing}' not in args.output:
+        parser.error('--resume requires the {pointing} token in the --output template')
+    if args.max_attempts < 1:
+        parser.error('--max_attempts must be at least 1')
 
-    # Count how many pointings survive the znmax cut (for progress reporting)
+    # get_banner() and friends read saved_args; set it here so that the main
+    # process can print the banner without initialising the simulation.
+    saved_args = args
+
     total_grid_pointings = num_grid_pointings(args.grid_nside)
-    total_pointings = sum(
-        1 for i in range(total_grid_pointings)
-        if get_grid_pointing(args.grid_nside, i)[1] <= args.grid_znmax)
 
-    total_files_to_generate = total_pointings * args.nfiles_per_pointing
-    total_events_to_generate = total_files_to_generate * args.block_size
+    if args.pointing is not None:
+        if args.pointing < 0 or args.pointing >= total_grid_pointings:
+            parser.error(f'--pointing {args.pointing} is out of range [0, {total_grid_pointings - 1}] for grid_nside={args.grid_nside}')
+        p_idx, p_zn, p_az = get_grid_pointing(args.grid_nside, args.pointing)
+        if p_zn > args.grid_znmax:
+            parser.error(f'--pointing {args.pointing} has zenith angle {p_zn:.2f} deg which exceeds --grid_znmax {args.grid_znmax:.2f} deg')
+        valid_pointings = [(p_idx, p_zn, p_az)]
+        max_workers = 1
+    else:
+        # Pointings that survive the znmax cut
+        valid_pointings = []
+        for i in range(total_grid_pointings):
+            p_idx, p_zn, p_az = get_grid_pointing(args.grid_nside, i)
+            if p_zn <= args.grid_znmax:
+                valid_pointings.append((p_idx, p_zn, p_az))
+        max_workers = args.nthread or os.cpu_count() or 1
+    total_pointings = len(valid_pointings)
 
-    max_workers = args.nthread or os.cpu_count() or 1
+    # Events needed per pointing, minus those already in readable existing files
+    events_per_pointing = args.nfiles_per_pointing * args.block_size
+    existing = collections.Counter()
+    if args.resume:
+        existing, dead, mismatches, ngood = scan_existing(args)
+        print(f'Resume: {ngood:,d} readable files with {sum(existing.values()):,d} events, '
+              f'{len(dead):,d} dead files')
+        if mismatches:
+            print('Resume: command line arguments differ from those stored in existing files:')
+            for (k, stored, current), (nfiles, example) in list(mismatches.items())[:30]:
+                print(f'  {k}: stored={stored!r} current={current!r} '
+                      f'({nfiles:,d} files, e.g. {example})')
+            if not args.ignore_config_mismatch:
+                print('Aborting; use --ignore_config_mismatch to continue anyway')
+                return 2
+            print('Continuing because of --ignore_config_mismatch')
+        if dead:
+            if args.prune_dead_files:
+                prune_dead_files(dead)
+            else:
+                print('Dead files are ignored and left in place (see --prune_dead_files)')
 
-    global begin_utc
-    global num_files_generated
-    global num_events_total
-    global num_tracks_total
-    global num_steps_total
-    global num_rays_total
-    global num_bytes_total
-    global stop_requested
+    plan = [(p_idx, zn, az, events_per_pointing - existing[p_idx])
+            for p_idx, zn, az in valid_pointings if existing[p_idx] < events_per_pointing]
+    num_jobs = sum(-(-remaining // args.block_size) for _, _, _, remaining in plan)
+
+    total_files_to_generate = num_jobs
+    total_events_to_generate = sum(remaining for _, _, _, remaining in plan)
+
+    if args.resume:
+        ncomplete = sum(1 for p_idx, _, _ in valid_pointings if existing[p_idx] >= events_per_pointing)
+        nuntouched = sum(1 for p_idx, _, _ in valid_pointings if existing[p_idx] == 0)
+        npartial = total_pointings - ncomplete - nuntouched
+        print(f'Resume: {ncomplete:,d} pointings complete, {npartial:,d} partial, '
+              f'{nuntouched:,d} untouched; {total_events_to_generate:,d} events in '
+              f'{num_jobs:,d} files to generate')
+    if num_jobs == 0:
+        print('Nothing to generate')
+        return 0
 
     begin_utc        = datetime.datetime.now(datetime.timezone.utc)
     num_files_generated = 0
@@ -887,7 +1317,7 @@ if __name__ == '__main__':
     num_rays_total   = 0
     num_bytes_total  = 0
     stop_requested   = False
-
+    sigint_count     = 0
 
     def process_results(result):
         if result is None:
@@ -908,77 +1338,83 @@ if __name__ == '__main__':
                    num_bytes_total, begin_utc)
 
     def pointing_jobs():
-        # Yield one job per (pointing x file), skipping pointings above grid_znmax.
-        for i in range(total_grid_pointings):
-            p_idx, zn_deg, az_deg = get_grid_pointing(args.grid_nside, i)
-            if zn_deg > args.grid_znmax:
-                continue
+        # Yield one job per file still to be written: (fname, pointing, el, az, nevents)
+        for p_idx, zn_deg, az_deg, remaining in plan:
             el_deg = 90.0 - zn_deg
-            for seq in range(args.nfiles_per_pointing):
-                fname = pointing_filename(
-                    args.output, p_idx, seq, pointing_index_width)
-                yield fname, p_idx, el_deg, az_deg, args.block_size
+            seq = 0
+            while remaining > 0:
+                nevents = min(args.block_size, remaining)
+                fname = pointing_filename(args.output, p_idx, seq, pointing_index_width)
+                if args.resume:
+                    # Never overwrite an existing file (dead files that were not pruned)
+                    while os.path.exists(fname):
+                        seq += 1
+                        fname = pointing_filename(args.output, p_idx, seq, pointing_index_width)
+                seq += 1
+                remaining -= nevents
+                yield fname, p_idx, el_deg, az_deg, nevents
 
-    if max_workers == 1:
-        init(args)
+    if args.dry_run:
         print(get_banner())
         print()
-        signal.signal(signal.SIGINT, handle_sigint)
+        mode = 'in-process' if max_workers == 1 else f'{min(max_workers, num_jobs):,d} worker processes'
+        print(f'Dry run: would generate {total_events_to_generate:,d} events in {num_jobs:,d} files '
+              f'for {len(plan):,d} pointings, {mode}')
+        print('Example files (names containing {id} are random):')
+        for fname, p_idx, el_deg, az_deg, nevents in itertools.islice(pointing_jobs(), 5):
+            print(f'  {fname} [pointing {p_idx}, El={el_deg:.2f} Az={az_deg:.2f}, {nevents:,d} events]')
+        noverwrite = sum(1 for job in pointing_jobs() if os.path.exists(job[0]))
+        if noverwrite:
+            print(f'WARNING: {noverwrite:,d} of these files already exist and would be overwritten')
+        print('Nothing launched')
+        return 0
 
-        for fname, p_idx, el_deg, az_deg, nevents in pointing_jobs():
-            if stop_requested:
-                break
-            result = gen_batch(fname, p_idx, el_deg, az_deg, nevents)
-            process_results(result)
-
-    else:
-        in_flight_cap = 4 * max_workers
-        jobs = pointing_jobs()
-
-        print(f'Launching {max_workers} workers in process pool')
-        with concurrent.futures.ProcessPoolExecutor(
-                initializer=init, initargs=(args,),
-                max_workers=max_workers) as executor:
-
-            futures = {}
-
-            # Wait for all workers to initialise before printing the banner
-            warmup = set()
-            for _ in range(max_workers):
-                warmup.add(executor.submit(get_banner, 5))
-            banner = None
-            while warmup:
-                done, _ = concurrent.futures.wait(
-                    warmup, return_when=concurrent.futures.FIRST_COMPLETED)
-                for fut in done:
-                    warmup.discard(fut)
-                    banner = fut.result()
-            if banner is not None:
-                print(banner)
-                print()
-
+    failed = []
+    try:
+        if max_workers == 1:
+            # In-process: no protection against crashes, but easy to debug
+            init(args)
+            print(get_banner())
+            print()
             signal.signal(signal.SIGINT, handle_sigint)
 
-            # Fill initial queue up to cap
-            for job in jobs:
-                if len(futures) >= in_flight_cap or stop_requested:
+            for fname, p_idx, el_deg, az_deg, nevents in pointing_jobs():
+                if stop_requested:
                     break
-                fname, p_idx, el_deg, az_deg, nevents = job
-                fut = executor.submit(gen_batch, fname, p_idx, el_deg, az_deg, nevents)
-                futures[fut] = p_idx
+                result = gen_batch(fname, p_idx, el_deg, az_deg, nevents)
+                process_results(result)
+        else:
+            nworkers = min(max_workers, num_jobs)
+            print(f'Launching {nworkers} workers')
+            stop_flag = multiprocessing.get_context('fork').RawValue('b', 0)
+            signal.signal(signal.SIGINT, handle_sigint)
 
-            # Drain completions and refill
-            while futures:
-                done, _ = concurrent.futures.wait(
-                    futures, return_when=concurrent.futures.FIRST_COMPLETED)
-                for fut in done:
-                    futures.pop(fut)
-                    process_results(fut.result())
-                    if not stop_requested:
-                        try:
-                            fname, p_idx, el_deg, az_deg, nevents = next(jobs)
-                            new_fut = executor.submit(
-                                gen_batch, fname, p_idx, el_deg, az_deg, nevents)
-                            futures[new_fut] = p_idx
-                        except StopIteration:
-                            pass
+            def on_started():
+                print(get_banner())
+                print()
+
+            supervisor = Supervisor(
+                nworkers, pointing_jobs(), num_jobs, args, process_results, on_started,
+                max_attempts=args.max_attempts, job_timeout=args.job_timeout*60.0,
+                recycle_after=args.recycle_after)
+            failed = supervisor.run()
+    except KeyboardInterrupt:
+        print('\nTerminated immediately; files being written were left incomplete '
+              '(use --resume --prune_dead_files to clean up and continue)', flush=True)
+        return 130
+
+    rc = 0
+    if failed:
+        rc = 1
+        print(f'\n{len(failed):,d} files FAILED and were not generated:')
+        for (fname, p_idx, el_deg, az_deg, nevents), reason in failed:
+            print(f'  {fname} (pointing {p_idx}, El={el_deg:.2f} Az={az_deg:.2f}, '
+                  f'{nevents:,d} events): {reason}')
+        print('Any partial files are unreadable and will be regenerated by --resume')
+    if stop_requested:
+        print(f'\nStopped early with {num_events_total:,d} / {total_events_to_generate:,d} '
+              f'events generated; rerun with --resume to finish')
+    return rc
+
+if __name__ == '__main__':
+    sys.exit(main())

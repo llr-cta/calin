@@ -132,6 +132,7 @@ public:
   CALIN_TYPEALIAS(uint64_bvt, typename VCLArchitecture::uint64_bvt);
   CALIN_TYPEALIAS(float_bvt, typename VCLArchitecture::float_bvt);
   CALIN_TYPEALIAS(double_bvt, typename VCLArchitecture::double_bvt);
+  CALIN_TYPEALIAS(int64_bvt, typename VCLArchitecture::int64_bvt);
   CALIN_TYPEALIAS(Vector3f_vt, typename VCLArchitecture::Vector3f_vt);
   CALIN_TYPEALIAS(Vector3d_vt, typename VCLArchitecture::Vector3d_vt);
 
@@ -835,6 +836,237 @@ public:
     x = inverse_cdf_logit_double(std::forward<Functor>(f));
   }
 
+  int64_vt poisson_small_exp_neg_lambda_int64(const double_vt& exp_neg_lambda)
+  {
+    // Knuth's algorithm for small lambda with precomputed exp(-lambda)
+    double_vt prod = uniform_double();
+    double_bvt active = prod > exp_neg_lambda;
+    int64_vt k = 0;
+
+    while(vcl::horizontal_or(active)) {
+      k = select(int64_bvt(active), k + 1, k);
+      prod = select(active, prod * uniform_double(), prod);
+      active = active & (prod > exp_neg_lambda);
+    }
+    return k;
+  }
+
+  double_vt poisson_small_exp_neg_lambda_double(const double_vt& exp_neg_lambda)
+  {
+    // Knuth's algorithm for small lambda with precomputed exp(-lambda)
+    // Version that returns a double
+    double_vt prod = uniform_double();
+    double_bvt active = prod > exp_neg_lambda;
+    double_vt k = 0;
+
+    while(vcl::horizontal_or(active)) {
+      k = select(active, k + 1, k);
+      prod = select(active, prod * uniform_double(), prod);
+      active = active & (prod > exp_neg_lambda);
+    }
+    return k;
+  }
+
+  int64_vt poisson_small_int64(const double_vt& lambda)
+  {
+    return poisson_small_exp_neg_lambda_int64(vcl::exp(-lambda));
+  }
+
+  double_vt poisson_small_double(const double_vt& lambda)
+  {
+    return poisson_small_exp_neg_lambda_double(vcl::exp(-lambda));
+  }
+
+  static inline double_vt lfactorial_approx_double(const double_vt& k)
+  {
+    constexpr double C_LS2PI  =  0.91893853320467274178; // 0.5 * ln(2*pi)
+    constexpr double C_1_12   =  1.0 / 12.0;
+    constexpr double C_1_360  = -1.0 / 360.0;
+    constexpr double C_1_1260 =  1.0 / 1260.0;
+    constexpr double C_1_1680 = -1.0 / 1680.0;
+
+    double_vt k_safe = max(k, double_vt(1.0));
+    double_vt inv_k = 1.0 / k_safe;
+    double_vt inv_k2 = inv_k * inv_k;
+
+    double_vt poly = mul_add(inv_k2, C_1_1680, C_1_1260);
+    poly = mul_add(inv_k2, poly, C_1_360);
+    poly = mul_add(inv_k2, poly, C_1_12);
+    double_vt series = inv_k * poly;
+
+    double_vt stirling = C_LS2PI + mul_add(k + 0.5, vcl::log(k_safe), -k) + series;
+
+    static const double lfa[10] = {
+      0.0,
+      0.0,
+      0.6931471805599453094,
+      1.7917594692280550008,
+      3.1780538303479456196,
+      4.7874917427820459942,
+      6.5792512120101009951,
+      8.5251613610654143002,
+      10.604602902745250880,
+      12.801827480081469611
+    };
+
+    double_bvt is_small = k < 10.0;
+    if(vcl::horizontal_or(is_small)) {
+      int64_vt ik = truncate_to_int64(k);
+      ik = max(ik, int64_vt(0));
+      ik = min(ik, int64_vt(9));
+      double_vt table_val = vcl::lookup<0x40000000>(ik, lfa);
+      return select(is_small, table_val, stirling);
+    }
+
+    return stirling;
+  }
+
+  int64_vt poisson_ptrs_int64(const double_vt& lambda)
+  {
+    // Wolfgang Hörmann's PTRS algorithm (1993)
+    // Reference: W. Hörmann, Insurance: Mathematics and Economics 12, 39-45 (1993)
+    // Implementation follows NumPy: numpy/random/src/distributions/distributions.c
+    const double_vt slam = vcl::sqrt(lambda);
+    const double_vt loglam = vcl::log(lambda);
+    const double_vt b = 0.931 + 2.53 * slam;
+    const double_vt a = -0.059 + 0.02483 * b;
+    const double_vt invalpha = 1.1239 + 1.1328 / (b - 3.4);
+    const double_vt vr = 0.9277 - 3.6224 / (b - 2.0);
+
+    double_bvt accepted = false;
+    int64_vt result(0);
+
+    while(true) {
+      double_vt U = uniform_double() - 0.5;
+      double_vt V = uniform_double();
+      double_vt us = 0.5 - vcl::abs(U);
+
+      double_vt k_double = vcl::floor((2.0 * a / us + b) * U + lambda + 0.43);
+
+      // Quick accept: k >= 0 AND us >= 0.07 AND V <= vr
+      double_bvt quick_accept = (k_double >= 0.0) & (us >= 0.07) & (V <= vr);
+
+      // Rejection: k < 0 OR (us < 0.013 AND V > us)
+      double_bvt reject = (k_double < 0.0) | ((us < 0.013) & (V > us));
+
+      // Full test (only for lanes not quick-accepted and not rejected)
+      double_bvt need_full = (!accepted) & (!quick_accept) & (!reject);
+      double_bvt full_accept(false);
+      if(vcl::horizontal_or(need_full)) {
+        // Acceptance condition: log(V) + log(invalpha) - log(a/us^2 + b) <= -lambda + k*loglam - lfactorial(k)
+        double_vt log_hat = vcl::log(V * invalpha / (a / (us * us) + b));
+        double_vt lgam_kp1 = lfactorial_approx_double(k_double);
+        double_vt rhs = -lambda + k_double * loglam - lgam_kp1;
+        full_accept = need_full & (log_hat <= rhs);
+      }
+
+      double_bvt newly_accepted = (!accepted) & (quick_accept | full_accept);
+      result = select(int64_bvt(newly_accepted), truncate_to_int64(k_double), result);
+      accepted |= newly_accepted;
+
+      if(vcl::horizontal_and(accepted)) {
+        return result;
+      }
+    }
+  }
+
+  int64_vt poisson_int64(const double_vt& lambda, double small_lambda_max = 10.0)
+  {
+    double_bvt is_small = lambda < small_lambda_max;
+    bool any_small = vcl::horizontal_or(is_small);
+    bool any_large = !vcl::horizontal_and(is_small);
+
+    if(!any_large) {
+      return poisson_small_int64(lambda);
+    }
+    if(!any_small) {
+      return poisson_ptrs_int64(lambda);
+    }
+
+    double_vt lambda_ptrs = select(is_small, double_vt(small_lambda_max), lambda);
+    double_vt lambda_small = select(is_small, lambda, 0.0);
+
+    int64_vt k_ptrs = poisson_ptrs_int64(lambda_ptrs);
+    int64_vt k_small = poisson_small_int64(lambda_small);
+
+    return select(int64_bvt(is_small), k_small, k_ptrs);
+  }
+
+  void poisson_int(int64_vt& n, const double_vt& lambda, double small_lambda_max = 10.0)
+  {
+    n = poisson_int64(lambda, small_lambda_max);
+  }
+
+  int64_vt borel_tanner_int64(const int64_vt& k, const double_vt& mu)
+  {
+    // Borel-Tanner distribution - useful for SiPM crosstalk simulation with 
+    // - k: number of primary avalanches (genuine PEs) and 
+    // - mu: mean number of secondary avalanches per primary or secondary avalanche.
+    double_vt n_double = to_double(k);
+    double_vt a = n_double;
+    while(vcl::horizontal_or(a > 0.0)) {
+      a = to_double(poisson_int64(a * mu));
+      n_double += a;
+    }
+    return truncate_to_int64(n_double);
+  }
+
+  void borel_tanner_int(int64_vt& n, const int64_vt& k, const double_vt& mu)
+  {
+    n = borel_tanner_int64(k, mu);
+  }
+
+  int64_vt borel_tanner_k1_exp_neg_mu_int64(const double_vt& exp_neg_mu)
+  {
+    // Borel-Tanner distribution - useful for SiPM crosstalk simulation with 
+    // - k: fixed to 1 primary avalanche (genuine PE) and
+    // - exp_neg_mu: exp(-mu), where mu is presumed small
+    double_vt a = to_double(poisson_small_exp_neg_lambda_int64(exp_neg_mu));
+    double_vt n_double = 1.0 + a;
+    while(vcl::horizontal_or(a > 0.0)) {
+      double_vt exp_neg_a_mu = select(a > 0.0, exp_neg_mu, 1.0);
+      a = vcl::max(a - 1.0, 0.0);
+      while(vcl::horizontal_or(a > 0.0)) {
+        exp_neg_a_mu *= select(a > 0.0, exp_neg_mu, 1.0);
+        a = vcl::max(a - 1.0, 0.0);
+      }
+      a = to_double(poisson_small_exp_neg_lambda_int64(exp_neg_a_mu));
+      n_double += a;
+    }
+    return truncate_to_int64(n_double);
+  }
+
+  double_vt borel_tanner_k1_exp_neg_mu_double(const double_vt& exp_neg_mu)
+  {
+    // Borel-Tanner distribution - useful for SiPM crosstalk simulation with 
+    // - k: fixed to 1 primary avalanche (genuine PE) and
+    // - exp_neg_mu: exp(-mu), where mu is presumed small
+    // Version that returns a double
+    double_vt a = poisson_small_exp_neg_lambda_double(exp_neg_mu);
+    double_vt n = 1.0 + a;
+    while(vcl::horizontal_or(a > 0.0)) {
+      double_vt exp_neg_a_mu = select(a > 0.0, exp_neg_mu, 1.0);
+      a = vcl::max(a - 1.0, 0.0);
+      while(vcl::horizontal_or(a > 0.0)) {
+        exp_neg_a_mu *= select(a > 0.0, exp_neg_mu, 1.0);
+        a = vcl::max(a - 1.0, 0.0);
+      }
+      a = poisson_small_exp_neg_lambda_double(exp_neg_a_mu);
+      n += a;
+    }
+    return n;
+  }
+
+  void borel_tanner_k1_exp_neg_mu_int(int64_vt& n, const double_vt& exp_neg_mu)
+  {
+    n = borel_tanner_k1_exp_neg_mu_int64(exp_neg_mu);
+  }
+
+  void borel_tanner_k1_exp_neg_mu_real(double_vt& n, const double_vt& exp_neg_mu)
+  {
+    n = borel_tanner_k1_exp_neg_mu_double(exp_neg_mu);
+  }
+
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
     if(seed == 0)seed = RNG::uint64_from_random_device();
@@ -1017,27 +1249,47 @@ public:
     return rvs;
   }
 
-//   double normal(double mean, double sigma) { return mean+normal()*sigma; }
+  Eigen::VectorXi bulk_poisson_int32(unsigned n, double lambda)
+  {
+    if(n % VCLArchitecture::num_int32 != 0) {
+      throw std::runtime_error("bulk_poisson_int32 : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_int32));
+    }
+    Eigen::VectorXi rvs(n);
+    const double_vt lambda_vt(lambda);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_int32) {
+      int64_vt xlo = poisson_int64(lambda_vt);
+      int64_vt xhi = poisson_int64(lambda_vt);
+      int32_vt x = vcl::compress(xlo, xhi);
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
+  Eigen::VectorXi bulk_borel_tanner_int32(unsigned n, int64_t k, double mu)
+  {
+    if(n % VCLArchitecture::num_int32 != 0) {
+      throw std::runtime_error("bulk_borel_tanner_int32 : number of elements must be multiple of " + std::to_string(VCLArchitecture::num_int32));
+    }
+    Eigen::VectorXi rvs(n);
+    const int64_vt k_vt(k);
+    const double_vt mu_vt(mu);
+    for(unsigned i=0; i<n; i+=VCLArchitecture::num_int32) {
+      int64_vt xlo = borel_tanner_int64(k_vt, mu_vt);
+      int64_vt xhi = borel_tanner_int64(k_vt, mu_vt);
+      int32_vt x = vcl::compress(xlo, xhi);
+      x.store(rvs.data() + i);
+    }
+    return rvs;
+  }
+
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
 //   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
 //     double b = mean/(sigma*sigma);
 //     return gamma_by_alpha_and_beta(mean*b,b); }
-//   int poisson(double lambda);
 //   int polya(double mean, double non_poisson_sigma) {
 //     return poisson(gamma_by_mean_and_sigma(mean, non_poisson_sigma)); }
 //   int binomial(double pp, int n);
-//
-//   static uint64_t nonzero_uint64_from_random_device() { uint64_t x;
-//     do x = uint64_from_random_device(); while(x==0ULL); return x; }
-//   static uint32_t nonzero_uint32_from_random_device() { uint32_t x;
-//     do x = uint32_from_random_device(); while(x==0U); return x; }
-//
-//   double inverse_cdf(const std::vector<std::pair<double,double>> &inv_cdf);
-//   static void generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
-//     unsigned nbins=0);
-//
-//   static constexpr uint64_t std_test_seed = 12939; // essential supply
-//
+
   RNG& scalar_rng() {
     if(scalar_rng_ == nullptr) {
       auto* scalar_core = new calin::math::rng::VCLToScalarRNGCore<VCLArchitecture>(core_, /* adopt_core= */ false);

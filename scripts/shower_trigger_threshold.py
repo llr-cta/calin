@@ -26,13 +26,10 @@ import datetime
 import platform
 import numpy
 import calin.math.geometry
-import calin.ix.simulation.vcl_iact
-import calin.simulation.tracker
 import calin.simulation.vs_cta
+import calin.simulation.vs_panoseti
 import calin.simulation.ray_processor
-import calin.simulation.world_magnetic_model
-import calin.simulation.geant4_shower_generator
-import calin.simulation.vcl_iact
+import calin.simulation.iact_factory
 import calin.iact_data.instrument_layout
 import calin.iact_data.nectarcam_layout
 
@@ -50,7 +47,7 @@ parser.add_argument('-o', '--output', type=str, default='tt.pickle',
 parser.add_argument('--omit_untriggered', action='store_true',
                     help='Reduce file size by omitting untriggered events')
 
-parser.add_argument('--site', type=str, default='ctan', choices=['ctan','ctas'],
+parser.add_argument('--site', type=str, default='ctan', choices=['ctan','ctas','dark100'],
                     help='Site to simulate (default: ctan)')
 parser.add_argument('-b', '--bmax', type=float, default=1000.0,
                    help='Specify the maximum shower impact parameter in meters')
@@ -85,8 +82,10 @@ parser.add_argument('--multiple_scattering', type=str,
 parser.add_argument('--nsb', type=float, default=0.30,
                    help='Specify the NSB rate in GHz')
 parser.add_argument('--noise', action='store_true', help='Add electronics noise')
+parser.add_argument('--coupling', choices=['ac', 'dc'], default='ac',
+                    help='Camera coupling mode (default: ac)')
 parser.add_argument('--no_after_pulsing', action='store_true', help='Disable after-pulsing in SPE spectrum (default: enabled)')
-parser.add_argument('-t', '--trigger', type=str, default='3nn', choices=['3nn','4nn','m3','m4','multiplicity'],
+parser.add_argument('-t', '--trigger', type=str, default='3nn', choices=['3nn','4nn','m2','m3','m4','multiplicity'],
                     help='Trigger algorithm to use (default: 3nn)')
 parser.add_argument('-m', '--multiplicity', type=int, default=3,
                     help='Channel multiplicity if "multiplicity" algorithm is selected')
@@ -123,151 +122,94 @@ def init():
 
     # Select simulation classes based on AVX size requested
     if args.avx == 128:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray128
-        electronics_sim_class = calin.simulation.ray_processor.VCLWaveformPEProcessorFloat128 
+        electronics_sim_class = calin.simulation.ray_processor.VCLWaveformPEProcessorFloat128
     elif args.avx == 256:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray256
         electronics_sim_class = calin.simulation.ray_processor.VCLWaveformPEProcessorFloat256
     else:
-        iact_class = calin.simulation.vcl_iact.VCLIACTArray512
         electronics_sim_class = calin.simulation.ray_processor.VCLWaveformPEProcessorFloat512
 
-    # Load camera layout and reoder it by spiral channel index
-    global nchan
-    ncam = calin.iact_data.nectarcam_layout.nectarcam_layout()
-    scam = calin.iact_data.instrument_layout.reorder_camera_channels(ncam, ncam.pixel_spiral_channel_index())
-    nchan = scam.channel_size()
+    # Load site environment (atmosphere, absorption, efficiencies, B-field)
+    global site_env
+    site_env = calin.simulation.iact_factory.load_site_environment(
+        args.site, enable_pe_spectrum=True, no_bfield=args.no_bfield,
+        quiet=True, avx=args.avx)
 
-    # Load site-specific atmosphere, observation level and array layout
-    global zobs
-    global atm
-    global atm_abs
-    global mst
+    # Set up telescope array (site-specific; PANOSETI keeps real positions)
+    array_params, nscope, nchan_from_array, detector_type_name = \
+        calin.simulation.iact_factory.setup_telescope_array(args.site, el_deg=args.el)
+
+    # Use the site camera channel count, and retain every telescope in the array.
+    global nchan
     global nscope
-    if args.site == 'ctan':
-        zobs = calin.simulation.vs_cta.ctan_observation_level()
-        atm = calin.simulation.vs_cta.ctan_atmosphere(quiet=True)
-        atm_abs = calin.simulation.vs_cta.ctan_atmospheric_absorption(quiet=True)
-        mst = calin.simulation.vs_cta.mstn1_config()
+    global scam
+    if args.site in ('ctan', 'ctas'):
+        ncam = calin.iact_data.nectarcam_layout.nectarcam_layout()
+        scam = calin.iact_data.instrument_layout.reorder_camera_channels(
+            ncam, ncam.pixel_spiral_channel_index())
+        nchan = scam.channel_size()
     else:
-        zobs = calin.simulation.vs_cta.ctas_observation_level()
-        atm = calin.simulation.vs_cta.ctas_atmosphere(quiet=True)
-        atm_abs = calin.simulation.vs_cta.ctas_atmospheric_absorption(quiet=True)
-        mst = calin.simulation.vs_cta.msts1_config()
-    mst.mutable_prescribed_array_layout().mutable_scope_positions(0).set_x(0)
-    mst.mutable_prescribed_array_layout().mutable_scope_positions(0).set_y(0)
-    nscope = mst.prescribed_array_layout().scope_positions_size()
+        scam = None
+        nchan = nchan_from_array
 
     # Configure IACT array
     global iact
-    cfg = iact_class.default_config()
-    if args.no_refraction:
-        cfg.set_refraction_mode(calin.ix.simulation.vcl_iact.REFRACT_NO_RAYS)
-    else:
-        cfg.set_refraction_mode(calin.ix.simulation.vcl_iact.REFRACT_ONLY_CLOSE_RAYS)
-    iact = iact_class(atm, atm_abs, cfg)
+    iact, _, _ = calin.simulation.iact_factory.create_iact_array(
+        site_env.atm, site_env.atm_abs, avx=args.avx,
+        no_refraction=args.no_refraction)
 
-    # Load detector and efficiency models and the SPE generator
-    global det_eff
-    global cone_eff
-    global pe_gen
-    det_eff = calin.simulation.vs_cta.mstn_detection_efficiency(quiet=True)
-    cone_eff = calin.simulation.vs_cta.mstn_cone_efficiency(quiet=True)
-    pe_gen = calin.simulation.vs_cta.mstn_spe_amplitude_generator(quiet=True)
-
-    # Add telescope arrays
-    global all_pe_processor
-    global all_prop
-    all_pe_processor = []
-    all_prop = []
-    for i in range(max(1, args.reuse)):
-        iact.add_propagator_set(args.bmax*100, f"Super array {i}")
-        pe_processor = calin.simulation.ray_processor.SimpleListPEProcessor(nscope,nchan)
-        prop = iact.add_davies_cotton_propagator(mst, pe_processor, det_eff, cone_eff, pe_gen, args.tts, 'MSTN')
-        all_pe_processor.append(pe_processor)
-        all_prop.append(prop)
-
-    # Set telescope pointing direction
-    global pt_dir
-    iact.point_all_telescopes_az_el_deg(args.az, args.el)
-    if args.enable_viewcone_cut:
-        iact.set_viewcone_from_telescope_fields_of_view()
-    el = args.el * numpy.pi/180.0
-    az = args.az * numpy.pi/180.0
-    pt_dir  = numpy.asarray([numpy.cos(el)*numpy.sin(az), numpy.cos(el)*numpy.cos(az), numpy.sin(el)])
-
-    # Magnetic field (if not disabled)
-    global bfield
-    if args.no_bfield:
-        bfield = None
-    else:
-        wmm = calin.simulation.world_magnetic_model.WMM()
-        bfield = wmm.field_vs_elevation(mst.array_origin().latitude(), mst.array_origin().longitude())
-
-    # Configure Geant4 shower generator
-    cfg = calin.simulation.geant4_shower_generator.Geant4ShowerGenerator.customized_config(
-        1000, 0, atm.top_of_atmosphere(), calin.simulation.geant4_shower_generator.VerbosityLevel_SUPRESSED_STDOUT)
-    if args.multiple_scattering == 'minimal':
-        cfg.add_pre_init_commands('/process/msc/StepLimit Minimal')
-        cfg.add_pre_init_commands('/process/msc/StepLimitMuHad Minimal')
-    elif args.multiple_scattering == 'simple':
-        cfg.add_pre_init_commands('/process/msc/StepLimit UseSafety')
-        cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseSafety')
-    elif args.multiple_scattering == 'normal':
-        cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-    elif args.multiple_scattering == 'better':
-        cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-        cfg.add_pre_init_commands('/process/msc/RangeFactor 0.01')
-        cfg.add_pre_init_commands('/process/msc/RangeFactorMuHad 0.01')
-    elif args.multiple_scattering == 'insane':
-        cfg.add_pre_init_commands('/process/msc/StepLimit UseDistanceToBoundary')
-        cfg.add_pre_init_commands('/process/msc/StepLimitMuHad UseDistanceToBoundary')
-        cfg.add_pre_init_commands('/process/msc/RangeFactor 0.001')
-        cfg.add_pre_init_commands('/process/msc/RangeFactorMuHad 0.001')
-    if args.primary == 'iron':
-        cfg.set_enable_ions(True)
-
-    # Instantiate Geant4 shower generator
-    global generator
-    generator = calin.simulation.geant4_shower_generator.Geant4ShowerGenerator(atm, cfg, bfield);
-    generator.set_minimum_energy_cut(20); # 20 MeV cut on KE (e-,p+,n,ions) or Etot
-
-    # Load impulse response
+    # Load the selected site/shaper impulse response for waveform simulation.
     global isample0
     global dtsample
     global nsample
-    pulse = calin.simulation.vs_cta.mstn_impulse_response()
+    if args.site == 'dark100':
+        pulse = calin.simulation.vs_panoseti.panoseti_fast_impulse_response()
+    else:
+        pulse = calin.simulation.vs_cta.mstn_impulse_response()
     hg = pulse['hg']
     dtsample = pulse['dt']
     isample0 = len(hg)
-    nsample = 1 << (len(hg)-1).bit_length() + 1  # Next power of two greater than 2*len(hg)
+    nsample = 1 << ((len(hg)-1).bit_length() + 1)  # Next power of two greater than 2*len(hg)
 
-    # Instantiate electronics simulation
-    global electronics_sim
-    electronics_sim = electronics_sim_class(1,scam.channel_size(),nsample,dtsample,isample0)
+    # Each propagator reuse needs its own PE list and waveform state.
+    global all_electronics_sim
+    all_electronics_sim = []
 
-    # Register impulse response
-    electronics_sim.register_impulse_response(hg, 'DC')
+    def make_waveform_pe_processor(ns, nc):
+        electronics_sim = electronics_sim_class(ns, nc, nsample, dtsample, isample0)
+        all_electronics_sim.append(electronics_sim)
+        return electronics_sim
 
-    # Register camera response
-    electronics_sim.add_camera_response(numpy.asarray([0]),True)
+    # Attach propagators
+    global all_pe_processor
+    global all_prop
+    all_pe_processor, all_prop = calin.simulation.iact_factory.attach_iact_propagators(
+        iact, args.site, array_params,
+        bmax_polynomial=args.bmax,   # scalar in metres
+        reuse=args.reuse, nscope=nscope, nchan=nchan,
+        det_eff=site_env.det_eff, cone_eff=site_env.cone_eff,
+        pe_gen=site_env.pe_gen,
+        tts=args.tts,
+        lens_spline=site_env.lens_refractive_index_spline,
+        detector_type_name=detector_type_name,
+        pe_processor_factory=make_waveform_pe_processor)
 
-    # Configure the neighbors matrix
-    electronics_sim.set_cr_neighbors(0, scam)
+    # Set telescope pointing direction and optional viewcone cut.
+    global pt_dir
+    pt_dir, _ = calin.simulation.iact_factory.set_iact_pointing(
+        iact, args.el, args.az, apply_viewcone_cut=args.enable_viewcone_cut)
 
-    # Select trigger algorithm
+    # Configure and instantiate Geant4 shower generator
+    global generator
+    generator, _ = calin.simulation.iact_factory.create_geant4_generator(
+        site_env.atm, bfield=site_env.bfield,
+        multiple_scattering=args.multiple_scattering, primary=args.primary)
+    generator.set_minimum_energy_cut(20)  # 20 MeV cut on KE (e-,p+,n,ions) or Etot
+
+    # Select trigger algorithm once, then configure each independent reuse slot.
     global trigger_method
-    if args.trigger == 'multiplicity':
-        trigger_method = 'trigger_multiplicity_cr'
-        electronics_sim.set_cr_multiplicity(0, args.multiplicity)
-    elif args.trigger == 'm3':
-        trigger_method = 'trigger_multiplicity_cr'
-        electronics_sim.set_cr_multiplicity(0, 3)
-    elif args.trigger == 'm4':
-        trigger_method = 'trigger_multiplicity_cr'
-        electronics_sim.set_cr_multiplicity(0, 4)
+    if args.trigger in ('multiplicity', 'm2', 'm3', 'm4'):
+        trigger_method = ('trigger_panoseti_multiplicity_cr'
+            if args.site == 'dark100' else 'trigger_multiplicity_cr')
     elif args.trigger == '3nn':
         trigger_method = 'trigger_3nn_cr'
     elif args.trigger == '4nn':
@@ -275,30 +217,63 @@ def init():
     else:
         raise ValueError(f'Unknown trigger algorithm: {args.trigger}')
 
-    # Instantiate PE generator
-    pe_gen_nsb = None
-    if args.no_after_pulsing:
-        pe_gen_nsb = calin.simulation.vs_cta.mstn_spe_amplitude_generator(quiet=True)
-    else:
-        pe_gen_nsb = calin.simulation.vs_cta.mstn_spe_and_afterpulsing_amplitude_generator(quiet=True)
-    pe_gen_nsb.this.disown() # Let electronics_sim own it
+    neighbors = None
+    if args.site in ('ctan', 'ctas'):
+        neighbors = scam
+    elif args.trigger in ('3nn', '4nn'):
+        # Dark100 pixels form a square grid; use four-connected neighbors.
+        npixel_axis = int(round(numpy.sqrt(nchan)))
+        if npixel_axis * npixel_axis != nchan:
+            raise ValueError('Dark100 camera channel count is not a square grid')
+        neighbors = numpy.full((4, nchan), -1, dtype=numpy.int32)
+        for iy in range(npixel_axis):
+            for ix in range(npixel_axis):
+                ichan = iy * npixel_axis + ix
+                adjacent = []
+                if ix > 0:
+                    adjacent.append(ichan - 1)
+                if ix + 1 < npixel_axis:
+                    adjacent.append(ichan + 1)
+                if iy > 0:
+                    adjacent.append(ichan - npixel_axis)
+                if iy + 1 < npixel_axis:
+                    adjacent.append(ichan + npixel_axis)
+                neighbors[:len(adjacent), ichan] = adjacent
+    for electronics_sim in all_electronics_sim:
+        electronics_sim.register_impulse_response(hg, 'DC')
+        electronics_sim.add_camera_response(
+            numpy.asarray([0]), args.coupling == 'ac')
+        if neighbors is not None:
+            electronics_sim.set_cr_neighbors(0, neighbors)
 
-    # Define NSB
-    if args.nsb>0:
-        nsb = numpy.zeros(scam.channel_size()) + args.nsb
-        electronics_sim.set_cr_nsb_rate(0, nsb, pe_gen_nsb, True)
+        if trigger_method in ('trigger_multiplicity_cr', 'trigger_panoseti_multiplicity_cr'):
+            multiplicity = {
+                'multiplicity': args.multiplicity,
+                'm2': 2,
+                'm3': 3,
+                'm4': 4,
+            }[args.trigger]
+            electronics_sim.set_cr_multiplicity(0, multiplicity)
 
-    # Define noise spectrum
-    if(args.noise):
-        def noise(f):
-            fhi = 330.0
-            flo = 0.0
-            return (1+0.2*(f/275.0)**2)*(numpy.tanh((fhi-f)/20.0)+1)*0.9 + 0.6  # *(numpy.tanh((f-flo)/1.0)+1)/16
-        freq = electronics_sim.spectral_frequencies_ghz(False)
-        noise_spectrum = noise(freq*1000)
-        noise_spectrum[0] = 0
-        noise_spectrum *= numpy.sqrt(10.5**2/16/electronics_sim.noise_spectrum_var(noise_spectrum))
-        electronics_sim.set_cr_noise_spectrum(0, noise_spectrum)
+        if args.no_after_pulsing:
+            pe_gen_nsb = calin.simulation.vs_cta.vcl_mstn_spe_amplitude_generator(avx=args.avx, quiet=True)
+        else:
+            pe_gen_nsb = calin.simulation.vs_cta.vcl_mstn_spe_amplitude_generator(avx=args.avx, afterpulsing=True, quiet=True)
+        pe_gen_nsb.this.disown()  # Let this electronics processor own it
+
+        if args.nsb > 0:
+            nsb = numpy.zeros(nchan) + args.nsb
+            electronics_sim.set_cr_nsb_rate(0, nsb, pe_gen_nsb, True)
+
+        if args.noise:
+            def noise(f):
+                fhi = 330.0
+                return (1+0.2*(f/275.0)**2)*(numpy.tanh((fhi-f)/20.0)+1)*0.9 + 0.6
+            freq = electronics_sim.spectral_frequencies_ghz(False)
+            noise_spectrum = noise(freq*1000)
+            noise_spectrum[0] = 0
+            noise_spectrum *= numpy.sqrt(10.5**2/16/electronics_sim.noise_spectrum_var(noise_spectrum))
+            electronics_sim.set_cr_noise_spectrum(0, noise_spectrum)
 
 def gen_event():
     e = args.energy * 1e6 # Convert TeV to MeV
@@ -314,30 +289,19 @@ def gen_event():
     u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, v)
     u = calin.math.geometry.rotate_vec_z_to_u_Rzy(u, -pt_dir)
 
-    x0 = numpy.asarray([0,0,atm.zobs(0)]) + u/u[2]*(atm.top_of_atmosphere() - atm.zobs(0))
-    if args.primary == 'gamma':
-        pt = calin.simulation.tracker.ParticleType_GAMMA
-    elif args.primary == 'muon':
-        pt = calin.simulation.tracker.ParticleType_MUON
-    elif args.primary == 'electron':
-        pt = calin.simulation.tracker.ParticleType_ELECTRON
-    elif args.primary == 'proton':
-        pt = calin.simulation.tracker.ParticleType_PROTON
-    elif args.primary == 'helium':
-        pt = calin.simulation.tracker.ParticleType_HELIUM
-    elif args.primary == 'iron':
-        pt = calin.simulation.tracker.ParticleType_IRON
-    else:
-        raise ValueError(f'Unknown primary particle type: {args.primary}')
+    x0 = numpy.asarray([0,0,site_env.atm.zobs(0)]) + u/u[2]*(
+        site_env.atm.top_of_atmosphere() - site_env.atm.zobs(0))
+    pt = calin.simulation.iact_factory.get_tracker_particle_type(args.primary)
 
     generator.generate_showers(iact, 1, pt, e, x0, u)
 
     return e,pt,u,x0,costheta
 
-def find_threshold(iarray):
+def find_threshold(iarray, iscope):
     # Clear previous waveforms, transfer the PEs, add NSB, convolve impulse response
+    electronics_sim = all_electronics_sim[iarray]
     electronics_sim.clear_waveforms()
-    electronics_sim.transfer_scope_pes_to_waveform(all_pe_processor[iarray], 0)
+    electronics_sim.transfer_scope_pes_to_waveform(all_pe_processor[iarray], iscope)
     if args.nsb>0:
         electronics_sim.add_nsb_noise_to_waveform_cr(0)
     electronics_sim.convolve_impulse_response_fftw_codelet_cr(0)
@@ -379,7 +343,11 @@ def one_event():
     try:
         e,pt,u,x0,costheta = gen_event()
         for iarray in range(args.reuse):
-            threshold = find_threshold(iarray)
+            # A common threshold triggers the array if any telescope triggers.
+            # The OR trigger boundary is the largest per-telescope limit.
+            scope_thresholds = [find_threshold(iarray, iscope)
+                                for iscope in range(nscope)]
+            threshold = max(scope_thresholds)
             event_results.append(dict(
                 iarray         = iarray,
                 e              = e,

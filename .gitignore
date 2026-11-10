@@ -1,6 +1,8 @@
 /build/
+/build-dev/
 /mybuild*/
 .#*
 #*#
 .ipynb_checkpoints/
 .vscode/
+.DS_Store

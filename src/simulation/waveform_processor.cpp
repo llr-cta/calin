@@ -229,7 +229,7 @@ void WaveformProcessor::add_nsb(double nsb_rate_ghz,
 }
 
 void WaveformProcessor::vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 128
@@ -240,7 +240,7 @@ void WaveformProcessor::vcl128_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl
 }
 
 void WaveformProcessor::vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -251,7 +251,7 @@ void WaveformProcessor::vcl256_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl
 }
 
 void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 512
@@ -264,7 +264,7 @@ void WaveformProcessor::vcl512_add_nsb(calin::math::rng::VCLRNG<calin::util::vcl
 void WaveformProcessor::vcl128_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 128
@@ -277,7 +277,7 @@ void WaveformProcessor::vcl128_add_nsb(
 void WaveformProcessor::vcl256_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -290,7 +290,7 @@ void WaveformProcessor::vcl256_add_nsb(
 void WaveformProcessor::vcl512_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 512
@@ -304,7 +304,7 @@ void WaveformProcessor::vcl128_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_c, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 128
@@ -318,7 +318,7 @@ void WaveformProcessor::vcl256_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_c, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -332,7 +332,7 @@ void WaveformProcessor::vcl512_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_a,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_c, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 512
@@ -347,7 +347,7 @@ void WaveformProcessor::vcl128_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_c,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>& vcl_rng_d, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL128Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 128
@@ -362,7 +362,7 @@ void WaveformProcessor::vcl256_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_c,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>& vcl_rng_d, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL256Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 256
@@ -377,7 +377,7 @@ void WaveformProcessor::vcl512_add_nsb(
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_b,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_c,
   calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>& vcl_rng_d, double nsb_rate_ghz,
-  calin::simulation::detector_efficiency::SplinePEAmplitudeGenerator* nsb_pegen,
+  calin::simulation::detector_efficiency::VCLPEAmplitudeGenerator<calin::util::vcl::VCL512Architecture>* nsb_pegen,
   bool ac_couple)
 {
 #if MAX_VECTOR_SIZE >= 512
